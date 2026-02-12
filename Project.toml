@@ -1,0 +1,10 @@
+name = "Scri"
+uuid = "ccc3add2-6548-56f5-a99b-c07b0a26ef59"
+authors = ["Michael Boyle <michael.oliver.boyle@gmail.com>"]
+version = "0.1.0"
+
+[workspace]
+projects = ["test", "docs"]
+
+[compat]
+julia = "1.10"
