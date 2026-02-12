@@ -1,0 +1,41 @@
+# Changes here will be overwritten by Copier
+AddAllcontributors: false
+AddCitationCFF: false
+AddCodeOfConduct: false
+AddContributionDocs: false
+AddCopierCI: true
+AddDocs: true
+AddDocsCI: true
+AddFormatterAndLinterConfigFiles: true
+AddGitHubPRTemplate: true
+AddGitHubTemplates: false
+AddLintCI: true
+AddLychee: true
+AddMacToCI: false
+AddPrecommit: true
+AddPrecommitUpdateCI: true
+AddTagBotCI: true
+AddTestCI: true
+AddWinToCI: false
+Authors: Michael Boyle <michael.oliver.boyle@gmail.com>
+CheckExplicitImports: true
+ConfigIndentation: 2
+ExplicitImportsChecklist: exclude_all_qualified_accesses_are_public
+GitHubActionVersionAutoUpdate: dependabot
+JuliaCompatAutoUpdate: dependabot
+JuliaIndentation: 4
+JuliaMinCIVersion: lts
+JuliaMinVersion: '1.10'
+License: MIT
+LicenseCopyrightHolders: Michael Boyle
+MarkdownIndentation: 2
+PackageName: Scri
+PackageOwner: moble
+PackageUUID: ccc3add2-6548-56f5-a99b-c07b0a26ef59
+RunJuliaNightlyOnCI: false
+StrategyConfirmIncluded: true
+StrategyLevel: 2
+StrategyReviewExcluded: true
+TestingStrategy: testitem_cli
+UseCirrusCI: false
+_src_path: /Users/boyle/.julia/packages/BestieTemplate/fOzc4
