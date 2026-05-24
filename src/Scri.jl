@@ -4,11 +4,11 @@ import Quaternionic: QuatVec, Rotor, absvec, abs2vec, 𝐤, ×, ×̂, value, com
 import SphericalFunctions: SSHTDirect, ₛ𝐘, ð, ð̄, golden_ratio_spiral_rotors
 import LinearAlgebra: mul!, ldiv!, lu, I, BLAS, qr
 import OffsetArrays: OffsetVector
+import Logging
+import Hwloc
 import Polyester
 import OhMyThreads
 import Base.Threads: nthreads
-import Hwloc
-import Logging
 
 const cachesize_L2 = Logging.with_logger(Logging.NullLogger()) do
     Hwloc.cachesize(:L2)

@@ -44,17 +44,18 @@ function transform!(
     dc::DataComponents{C};
     εᵅ=+1, εⁱ=+1
 ) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real, C}
-    T = promote_type(T1, T2, T3, T4, T5)
-    if T != T1
-        throw(AssertionError(
-            "\nInput `data` type $T1 does not match common input type $T.\n" *
-            "Because `transform!` modifies `data` in place, its type must be\n" *
-            "compatible with all the other input types:\n" *
-            "  - `t` has element type $T2\n" *
-            "  - `v⃗` has element type $T3\n" *
-            "  - `R` has element type $T4\n" *
-            "  - `α` has element type $T5\n"
-        ))
+    let T = promote_type(T1, T2, T3, T4, T5)
+        if T != T1
+            throw(AssertionError(
+                "\nInput `data` type $T1 does not match common input type $T.\n" *
+                "Because `transform!` modifies `data` in place, its type must be\n" *
+                "compatible with all the other input types:\n" *
+                "  - `t` has element type $T2\n" *
+                "  - `v⃗` has element type $T3\n" *
+                "  - `R` has element type $T4\n" *
+                "  - `α` has element type $T5\n"
+            ))
+        end
     end
 
     # Check that the input data has the expected dimensions and properties
@@ -69,7 +70,7 @@ function transform!(
     @assert length(αᵢₙ) ≤ Nᵐ "Input `αᵢₙ` has $(length(αᵢₙ)) modes, but expected at most $Nᵐ"
     ℓₘₐₓ = L - 1
     Nᵖ = Nᵐ
-    block_size = max(1,  min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T}))))
+    block_size = max(1,  min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
 
     ###
     ### Stage 0: Precompute various quantities needed for the transformation
@@ -86,12 +87,13 @@ function transform!(
     # components.  Moreover, we actually want the grid to be uniformly spaced in the
     # transformed frame, which means that we have to evaluate on a non-uniform grid in the
     # rest frame.
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)
+    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T4)
 
     # That uniformly spaced grid will be as seen in the transformed frame; here we compute
     # the corresponding rotors in the rest frame, on which we will evaluate the input data.
     # This is the boosted or distorted grid.
-    Rₚ = similar(R′ₚ, promote_type(Rotor{T4}, T3))
+    Tₚ = promote_type(Rotor{T4}, T3)
+    Rₚ = similar(R′ₚ, Tₚ)
     Polyester.@batch for i ∈ eachindex(Rₚ)
         Rₚ[i] = aberration(R * R′ₚ[i], v⃗)
     end
@@ -109,7 +111,11 @@ function transform!(
     # Construct the set of spin-spherical-harmonic transforms, for each spin weight.  Here
     # we use `OffsetVector` so that they can be indexed by their spin weight.
     𝒯 = OffsetVector(
-        OhMyThreads.tmap(s -> ₛ𝐘(s, ℓₘₐₓ, T, Rₚ), Matrix{Complex{T}}, -2:2; chunking=false),
+        OhMyThreads.tmap(
+            s -> ₛ𝐘(s, ℓₘₐₓ, basetype(Tₚ), Rₚ), Matrix{Complex{basetype(Tₚ)}},
+            -2:2;
+            chunking=false
+        ),
         -3
     )
     task_augmented_lu = OhMyThreads.@spawn begin
@@ -126,12 +132,12 @@ function transform!(
         # direct SSHT" for details.
         OffsetVector(
             map(-2:2) do s
-                ₛY = ₛ𝐘(s, ℓₘₐₓ, T, R′ₚ)
+                ₛY = ₛ𝐘(s, ℓₘₐₓ, T4, R′ₚ)
                 if s == 0
                     lu(ₛY)
                 else
                     F = qr(ₛY)
-                    Q = F.Q * Matrix{Complex{T}}(I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
+                    Q = F.Q * Matrix{Bool}(I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
                     Q⊥ = Q[:, Nᵐ-s^2+1:end]  # Nᵐ × s² null-space columns
                     lu([Q⊥  ₛY])  # Nᵐ × Nᵐ, square
                 end
@@ -260,7 +266,7 @@ function transform!(
         # `d̈` forward sweep (Thomas algorithm, natural BC: d̈[1]=d̈[Nᵗ]=0)
         @inbounds begin
             @simd ivdep for k ∈ 1:Nᵈ
-                d̈ᵢ[k, 1]  = zero(Complex{T})
+                d̈ᵢ[k, 1]  = 0
             end
             @simd ivdep for k ∈ 1:Nᵈ
                 r = 6 * (cubic_spline_cache.h⁻¹[2] * (dᵢ[k, 3] - dᵢ[k, 2])
@@ -276,7 +282,7 @@ function transform!(
                 end
             end
             @simd ivdep for k ∈ 1:Nᵈ
-                d̈ᵢ[k, Nᵗ] = zero(Complex{T})
+                d̈ᵢ[k, Nᵗ] = 0
             end
         end
 
