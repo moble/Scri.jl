@@ -1,17 +1,43 @@
+# Run `julia --project=docs docs/make.jl` from the top directory to execute this script.
+# Run `julia --project=docs docs/serve.jl` to build and serve the docs locally.
+
 using Scri
 using Documenter
+using DocumenterCitations
+using DocumenterInterLinks
+using Revise
 
-DocMeta.setdocmeta!(Scri, :DocTestSetup, :(using Scri); recursive = true)
+# When run via `docs/serve.jl`, this ensures that any changes in the docstrings are picked
+# up without needing to restart the server.
+Revise.revise()
+
+DocMeta.setdocmeta!(Scri, :DocTestSetup, :(using Scri); recursive=true)
+
+include("local_notes.jl")
+
+bibliography = CitationBibliography(
+    joinpath(@__DIR__, "src", "references.bib"); style=:numeric
+)
+
+# Add ability to link to other packages' docs.  The keys are the names of packages used in
+# external references by this package's docs, and the values are the base URLs of the
+# documentation for those packages.  Use these as, e.g., [`Quaternionic.rotor`](@extref).
+links = InterLinks(
+    "Quaternionic" => "https://moble.github.io/Quaternionic.jl/stable/",
+    "SphericalFunctions" => "https://moble.github.io/SphericalFunctions.jl/stable/",
+)
 
 # Add titles of sections and overrides page titles
 const titles = Dict(
     # "10-tutorials" => "Tutorials", # example folder title
+    "80-details" => "Details",
     "91-developer.md" => "Developer docs",
+    "99-local_notes" => "Notes",
 )
 
-function recursively_list_pages(folder; path_prefix = "")
+function recursively_list_pages(folder; path_prefix="")
     pages_list = Any[]
-    for file in readdir(folder)
+    for file ∈ readdir(folder)
         if file == "index.md"
             # We add index.md separately to make sure it is the first in the list
             continue
@@ -23,7 +49,7 @@ function recursively_list_pages(folder; path_prefix = "")
 
         if isdir(fullpath)
             # If this is a folder, enter the recursion case
-            subsection = recursively_list_pages(fullpath; path_prefix = relpath)
+            subsection = recursively_list_pages(fullpath; path_prefix=relpath)
 
             # Ignore empty folders
             if length(subsection) > 0
@@ -59,12 +85,20 @@ function list_pages()
 end
 
 makedocs(;
-    modules = [Scri],
-    authors = "Michael Boyle <michael.oliver.boyle@gmail.com>",
-    repo = "https://github.com/moble/Scri.jl/blob/{commit}{path}#{line}",
-    sitename = "Scri.jl",
-    format = Documenter.HTML(; canonical = "https://moble.github.io/Scri.jl"),
-    pages = list_pages(),
+    modules=[Scri],
+    authors="Michael Boyle <michael.oliver.boyle@gmail.com>",
+    # repo="https://github.com/moble/Scri.jl/blob/{commit}{path}#{line}",
+    repo=Documenter.Remotes.GitHub("moble", "Scri.jl"),
+    sitename="Scri.jl",
+    format=Documenter.HTML(;
+        prettyurls = !("local" in ARGS),  # Use clean URLs, unless built as a "local" build
+        edit_link = "main",  # Link out to "main" branch on github
+        canonical="https://moble.github.io/Scri.jl",
+        assets=String["assets/citations.css", "assets/custom.css"],
+    ),
+    remotes=notes_remotes,
+    pages=[list_pages()..., notes_pages...],
+    plugins=[bibliography, links],
 )
 
-deploydocs(; repo = "github.com/moble/Scri.jl")
+deploydocs(; repo="github.com/moble/Scri.jl")

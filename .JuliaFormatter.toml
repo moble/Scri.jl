@@ -1,3 +1,5 @@
-indent = 4
-margin = 92
-normalize_line_endings = "unix"
+#ignore = ["src/.jl"]
+always_for_in = true
+for_in_replacement = "∈"
+import_to_using = false
+style = "blue"

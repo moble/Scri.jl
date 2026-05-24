@@ -1,3 +1,7 @@
 {
-    "julia.environmentPath": "/Users/boyle/Research/Code/Scri.jl"
+  "cSpell.words": [
+    "envdir",
+    "runtests"
+  ],
+  "julia.environmentPath": "/Users/boyle/Research/Code/Scri.jl"
 }

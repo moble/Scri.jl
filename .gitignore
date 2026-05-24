@@ -11,3 +11,7 @@ docs/build/
 env
 node_modules
 .vscode
+notes
+docs/src/local_notes
+.devcontainer
+.githooks
