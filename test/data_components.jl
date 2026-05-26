@@ -6,39 +6,39 @@
     import Scri: DataComponents
 
     # Stand-alone components (no hierarchy dependency below them).
-    @test DataComponents(:Ψ₄)    isa DataComponents
+    @test DataComponents(:ψ₄)    isa DataComponents
     @test DataComponents(:σ)     isa DataComponents
     @test DataComponents(:h)     isa DataComponents
     @test DataComponents(:News)  isa DataComponents
 
     # Ordered Weyl chains from the base up.
-    @test DataComponents(:Ψ₄, :Ψ₃)                      isa DataComponents
-    @test DataComponents(:Ψ₄, :Ψ₃, :Ψ₂)                 isa DataComponents
-    @test DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁)            isa DataComponents
-    @test DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)       isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃)                      isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂)                 isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁)            isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)       isa DataComponents
 
     # Mixed sets.
-    @test DataComponents(:Ψ₄, :σ, :h, :News)                        isa DataComponents
-    @test DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ)             isa DataComponents
-    @test DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ, :h, :News)  isa DataComponents
+    @test DataComponents(:ψ₄, :σ, :h, :News)                        isa DataComponents
+    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)             isa DataComponents
+    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)  isa DataComponents
 
     # Type parameter encodes the exact tuple.
-    dc = DataComponents(:Ψ₄, :σ)
-    @test dc isa DataComponents{(:Ψ₄, :σ)}
+    dc = DataComponents(:ψ₄, :σ)
+    @test dc isa DataComponents{(:ψ₄, :σ)}
 end
 
 @testitem "DataComponents: hierarchy violations are rejected" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    # Ψₙ (n < 4) without its required upper neighbours.
-    @test_throws AssertionError DataComponents(:Ψ₃)           # missing Ψ₄
-    @test_throws AssertionError DataComponents(:Ψ₂)           # missing Ψ₃, Ψ₄
-    @test_throws AssertionError DataComponents(:Ψ₁)           # missing Ψ₂..Ψ₄
-    @test_throws AssertionError DataComponents(:Ψ₀)           # missing Ψ₁..Ψ₄
+    # ψₙ (n < 4) without its required upper neighbours.
+    @test_throws AssertionError DataComponents(:ψ₃)           # missing ψ₄
+    @test_throws AssertionError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
+    @test_throws AssertionError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
+    @test_throws AssertionError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
 
     # Gaps in the chain.
-    @test_throws AssertionError DataComponents(:Ψ₂, :Ψ₄)           # missing Ψ₃
-    @test_throws AssertionError DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₄) # missing Ψ₃
+    @test_throws AssertionError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
+    @test_throws AssertionError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
 end
 
 @testitem "DataComponents: invalid symbols are rejected" tags = [:unit, :fast] begin
@@ -46,7 +46,7 @@ end
 
     @test_throws AssertionError DataComponents(:foo)
     @test_throws AssertionError DataComponents(:Weyl₀)
-    @test_throws AssertionError DataComponents(:Ψ₄, :bad_component)
+    @test_throws AssertionError DataComponents(:ψ₄, :bad_component)
 end
 
 # ── Accessors ─────────────────────────────────────────────────────────────────
@@ -54,13 +54,13 @@ end
 @testitem "component_index: returns correct 1-based position" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    # Weyl-only, Ψ₄-first ordering.
-    dc = DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)
-    @test Scri.component_index(dc, Val(:Ψ₄)) == 1
-    @test Scri.component_index(dc, Val(:Ψ₃)) == 2
-    @test Scri.component_index(dc, Val(:Ψ₂)) == 3
-    @test Scri.component_index(dc, Val(:Ψ₁)) == 4
-    @test Scri.component_index(dc, Val(:Ψ₀)) == 5
+    # Weyl-only, ψ₄-first ordering.
+    dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
+    @test Scri.component_index(dc, Val(:ψ₄)) == 1
+    @test Scri.component_index(dc, Val(:ψ₃)) == 2
+    @test Scri.component_index(dc, Val(:ψ₂)) == 3
+    @test Scri.component_index(dc, Val(:ψ₁)) == 4
+    @test Scri.component_index(dc, Val(:ψ₀)) == 5
 
     # Non-Weyl, arbitrary ordering.
     dc2 = DataComponents(:σ, :h, :News)
@@ -72,10 +72,10 @@ end
 @testitem "component_index: returns nothing for absent components" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    dc = DataComponents(:Ψ₄, :Ψ₃)
-    @test isnothing(Scri.component_index(dc, Val(:Ψ₂)))
-    @test isnothing(Scri.component_index(dc, Val(:Ψ₁)))
-    @test isnothing(Scri.component_index(dc, Val(:Ψ₀)))
+    dc = DataComponents(:ψ₄, :ψ₃)
+    @test isnothing(Scri.component_index(dc, Val(:ψ₂)))
+    @test isnothing(Scri.component_index(dc, Val(:ψ₁)))
+    @test isnothing(Scri.component_index(dc, Val(:ψ₀)))
     @test isnothing(Scri.component_index(dc, Val(:σ)))
     @test isnothing(Scri.component_index(dc, Val(:h)))
     @test isnothing(Scri.component_index(dc, Val(:News)))
@@ -84,7 +84,7 @@ end
 @testitem "has_component: consistent with component_index" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    dc = DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :σ)
+    dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :σ)
     for s ∈ Scri.ValidDataComponents
         present = !isnothing(Scri.component_index(dc, Val(s)))
         @test Scri.has_component(dc, Val(s)) == present
@@ -94,21 +94,21 @@ end
 @testitem "ncomponents: matches constructor arity" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    @test Scri.ncomponents(DataComponents(:Ψ₄))                                      == 1
-    @test Scri.ncomponents(DataComponents(:Ψ₄, :Ψ₃))                                 == 2
-    @test Scri.ncomponents(DataComponents(:Ψ₄, :Ψ₃, :Ψ₂))                            == 3
-    @test Scri.ncomponents(DataComponents(:Ψ₄, :σ, :h, :News))                       == 4
-    @test Scri.ncomponents(DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ, :h, :News))   == 8
+    @test Scri.ncomponents(DataComponents(:ψ₄))                                      == 1
+    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃))                                 == 2
+    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃, :ψ₂))                            == 3
+    @test Scri.ncomponents(DataComponents(:ψ₄, :σ, :h, :News))                       == 4
+    @test Scri.ncomponents(DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News))   == 8
 end
 
 # ── spin_weight and conformal_weight ──────────────────────────────────────────
 
 @testitem "spin_weight: known values for all components" tags = [:unit, :fast] begin
-    @test Scri.spin_weight(Val(:Ψ₀)) ==  2
-    @test Scri.spin_weight(Val(:Ψ₁)) ==  1
-    @test Scri.spin_weight(Val(:Ψ₂)) ==  0
-    @test Scri.spin_weight(Val(:Ψ₃)) == -1
-    @test Scri.spin_weight(Val(:Ψ₄)) == -2
+    @test Scri.spin_weight(Val(:ψ₀)) ==  2
+    @test Scri.spin_weight(Val(:ψ₁)) ==  1
+    @test Scri.spin_weight(Val(:ψ₂)) ==  0
+    @test Scri.spin_weight(Val(:ψ₃)) == -1
+    @test Scri.spin_weight(Val(:ψ₄)) == -2
     @test Scri.spin_weight(Val(:σ))  ==  2
     @test Scri.spin_weight(Val(:h))  == -2
     @test Scri.spin_weight(Val(:News)) == -2
@@ -116,7 +116,7 @@ end
 
 @testitem "conformal_weight: known values for all components" tags = [:unit, :fast] begin
     # All five Weyl components share conformal weight −3.
-    for s ∈ (:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄)
+    for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
         @test Scri.conformal_weight(Val(s)) == -3
     end
     # Shear and strain have conformal weight −1; News has −2.
@@ -132,7 +132,7 @@ end
     import Scri: DataComponents
 
     rng = Random.Xoshiro(42)
-    dc  = DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ, :h, :News)
+    dc  = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
@@ -149,13 +149,13 @@ end
     # ðu′╱k = −(ðk/k)·u), each component scales by k^(conformal_weight).
     # Weyl: k⁻³; σ,h: k⁻¹; News: k⁻².
     rng = Random.Xoshiro(7)
-    dc  = DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ, :h, :News)
+    dc  = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
         k⁻¹  = 0.4 + 0.3 * randn(rng)
         Scri.mix_components!(data, k⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
-        for s ∈ (:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄)
+        for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ k⁻¹^3 * orig[i]
         end
@@ -165,20 +165,20 @@ end
     end
 end
 
-@testitem "mix_components!: Ψ₄-seed propagation (k⁻¹=1)" tags = [:unit, :fast, :validation] begin
+@testitem "mix_components!: ψ₄-seed propagation (k⁻¹=1)" tags = [:unit, :fast, :validation] begin
     import Random
     import Scri: DataComponents
 
-    # When only Ψ₄ = z is non-zero and k⁻¹=1, the lower Weyl components receive
-    # the values Ψₙ' = (−ðu′╱k)^(4−n) · z — purely from the nested polynomial.
+    # When only ψ₄ = z is non-zero and k⁻¹=1, the lower Weyl components receive
+    # the values ψₙ' = (−ðu′╱k)^(4−n) · z — purely from the nested polynomial.
     rng = Random.Xoshiro(11)
-    dc  = DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)
+    dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     for _ ∈ 1:8
         z = randn(rng, ComplexF64)
         f = randn(rng, ComplexF64)   # ðu′╱k
-        data = ComplexF64[z, 0, 0, 0, 0]   # Ψ₄=z, Ψ₃=Ψ₂=Ψ₁=Ψ₀=0
+        data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
         Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
-        for (s, exp) ∈ ((:Ψ₄, 0), (:Ψ₃, 1), (:Ψ₂, 2), (:Ψ₁, 3), (:Ψ₀, 4))
+        for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ (-f)^exp * z atol = 4eps(Float64) * abs(f)^exp * abs(z)
         end
@@ -188,14 +188,14 @@ end
 @testitem "mix_components!: all-ones Weyl gives binomial pattern" tags = [:unit, :fast, :validation] begin
     import Scri: DataComponents
 
-    # When all five Ψ inputs equal 1, each output is k⁻³·(1−ðu′╱k)^(4−n).
+    # When all five ψ inputs equal 1, each output is k⁻³·(1−ðu′╱k)^(4−n).
     # This follows from the binomial expansion of (1 − ðu′╱k * ∂_u)^4 acting on 1.
-    dc  = DataComponents(:Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)
+    dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     k⁻¹ = 2.0
     f   = 3.0 + 2.0im
     data = ones(ComplexF64, 5)
     Scri.mix_components!(data, k⁻¹, f, 0.0 + 0im, dc)
-    for (s, exp) ∈ ((:Ψ₄, 0), (:Ψ₃, 1), (:Ψ₂, 2), (:Ψ₁, 3), (:Ψ₀, 4))
+    for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
         i = Scri.component_index(dc, Val(s))
         @test data[i] ≈ k⁻¹^3 * (1 - f)^exp
     end

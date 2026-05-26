@@ -1,4 +1,4 @@
-const ValidDataComponents = (:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
 
 """
     DataComponents{C, εᴵ}
@@ -14,9 +14,9 @@ most applications will be for ``ℐ⁺``.
 
 Examples:
 
-    DataComponents(:Ψ₄)                          # gravitational waves only
-    DataComponents(:Ψ₄, :Ψ₃, :Ψ₂)                # top three Weyl components
-    DataComponents(:Ψ₀, :Ψ₁, :Ψ₂, :Ψ₃, :Ψ₄, :σ)  # full Weyl set with strain
+    DataComponents(:ψ₄)                          # gravitational waves only
+    DataComponents(:ψ₄, :ψ₃, :ψ₂)                # top three Weyl components
+    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)  # full Weyl set with strain
     DataComponents(:φ₀, :φ₁, :φ₂)                # Faraday components
     DataComponents(:φ₀, :φ₁, :φ₂; εᴵ=-1)         # Faraday components on ℐ⁻
 """
@@ -32,17 +32,17 @@ function validate_data_components(cs, εᴵ)
     @assert all(c -> c ∈ ValidDataComponents, cs) "" *
         "Invalid component in $cs; allowed: $ValidDataComponents"
     if εᴵ == 1
-        :Ψ₀ ∈ cs && @assert :Ψ₁ ∈ cs "Ψ₀ requires Ψ₁ on ℐ⁺ (εᴵ=+1)"
-        :Ψ₁ ∈ cs && @assert :Ψ₂ ∈ cs "Ψ₁ requires Ψ₂ on ℐ⁺ (εᴵ=+1)"
-        :Ψ₂ ∈ cs && @assert :Ψ₃ ∈ cs "Ψ₂ requires Ψ₃ on ℐ⁺ (εᴵ=+1)"
-        :Ψ₃ ∈ cs && @assert :Ψ₄ ∈ cs "Ψ₃ requires Ψ₄ on ℐ⁺ (εᴵ=+1)"
+        :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (εᴵ=+1)"
+        :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (εᴵ=+1)"
+        :ψ₂ ∈ cs && @assert :ψ₃ ∈ cs "ψ₂ requires ψ₃ on ℐ⁺ (εᴵ=+1)"
+        :ψ₃ ∈ cs && @assert :ψ₄ ∈ cs "ψ₃ requires ψ₄ on ℐ⁺ (εᴵ=+1)"
         :φ₀ ∈ cs && @assert :φ₁ ∈ cs "φ₀ requires φ₁ on ℐ⁺ (εᴵ=+1)"
         :φ₁ ∈ cs && @assert :φ₂ ∈ cs "φ₁ requires φ₂ on ℐ⁺ (εᴵ=+1)"
     elseif εᴵ == -1
-        :Ψ₄ ∈ cs && @assert :Ψ₃ ∈ cs "Ψ₄ requires Ψ₃ on ℐ⁻ (εᴵ=-1)"
-        :Ψ₃ ∈ cs && @assert :Ψ₂ ∈ cs "Ψ₃ requires Ψ₂ on ℐ⁻ (εᴵ=-1)"
-        :Ψ₂ ∈ cs && @assert :Ψ₁ ∈ cs "Ψ₂ requires Ψ₁ on ℐ⁻ (εᴵ=-1)"
-        :Ψ₁ ∈ cs && @assert :Ψ₀ ∈ cs "Ψ₁ requires Ψ₀ on ℐ⁻ (εᴵ=-1)"
+        :ψ₄ ∈ cs && @assert :ψ₃ ∈ cs "ψ₄ requires ψ₃ on ℐ⁻ (εᴵ=-1)"
+        :ψ₃ ∈ cs && @assert :ψ₂ ∈ cs "ψ₃ requires ψ₂ on ℐ⁻ (εᴵ=-1)"
+        :ψ₂ ∈ cs && @assert :ψ₁ ∈ cs "ψ₂ requires ψ₁ on ℐ⁻ (εᴵ=-1)"
+        :ψ₁ ∈ cs && @assert :ψ₀ ∈ cs "ψ₁ requires ψ₀ on ℐ⁻ (εᴵ=-1)"
         :φ₂ ∈ cs && @assert :φ₁ ∈ cs "φ₂ requires φ₁ on ℐ⁻ (εᴵ=-1)"
         :φ₁ ∈ cs && @assert :φ₀ ∈ cs "φ₁ requires φ₀ on ℐ⁻ (εᴵ=-1)"
     else
@@ -82,11 +82,11 @@ ncomponents(::DataComponents{C}) where C = length(C)
 
 Return the spin weight of field component `S`.
 """
-spin_weight(::Val{:Ψ₀}) =  2
-spin_weight(::Val{:Ψ₁}) =  1
-spin_weight(::Val{:Ψ₂}) =  0
-spin_weight(::Val{:Ψ₃}) = -1
-spin_weight(::Val{:Ψ₄}) = -2
+spin_weight(::Val{:ψ₀}) =  2
+spin_weight(::Val{:ψ₁}) =  1
+spin_weight(::Val{:ψ₂}) =  0
+spin_weight(::Val{:ψ₃}) = -1
+spin_weight(::Val{:ψ₄}) = -2
 spin_weight(::Val{:σ})  =  2
 spin_weight(::Val{:h})  = -2
 spin_weight(::Val{:News})  = -2
@@ -116,18 +116,18 @@ Since ``Ψ`` and ``Φ`` are the physical quantities, they do not change under co
 transformations.
 
 Meanwhile the basis spinors each transform with a factor of ``1/√k``.  The Weyl components
-``Ψₙ`` are defined by contracting the Weyl spinor with four basis spinors, so they pick up a
-factor of ``k⁻²`` from the basis spinors and an additional factor of ``k⁻¹`` from the
-conformal factor, for a total of ``k⁻³``.  Similarly, the Faraday components ``Φₙ`` are
-defined by contracting the Faraday spinor with two basis spinors, so they pick up a factor
+``ψₙ`` are defined by contracting the Weyl spinor with *four* basis spinors, so they pick up
+a factor of ``k⁻²`` from the basis spinors and an additional factor of ``k⁻¹`` from the
+conformal factor, for a total of ``k⁻³``.  Similarly, the Faraday components ``φₙ`` are
+defined by contracting the Faraday spinor with *two* basis spinors, so they pick up a factor
 of ``k⁻¹`` from the conformal factor and an additional factor of ``k⁻¹`` from the basis
 spinors, for a total of ``k⁻²``.
 """
-conformal_weight(::Val{:Ψ₀}) = -3
-conformal_weight(::Val{:Ψ₁}) = -3
-conformal_weight(::Val{:Ψ₂}) = -3
-conformal_weight(::Val{:Ψ₃}) = -3
-conformal_weight(::Val{:Ψ₄}) = -3
+conformal_weight(::Val{:ψ₀}) = -3
+conformal_weight(::Val{:ψ₁}) = -3
+conformal_weight(::Val{:ψ₂}) = -3
+conformal_weight(::Val{:ψ₃}) = -3
+conformal_weight(::Val{:ψ₄}) = -3
 conformal_weight(::Val{:σ})  = -1
 conformal_weight(::Val{:h})  = -1
 conformal_weight(::Val{:News})  = -2
@@ -163,11 +163,11 @@ components are being processed.
     k⁻³ = k⁻² * k⁻¹
     ð̄²α = conj(ð²α)
 
-    iΨ₄ = component_index(dc, Val(:Ψ₄))
-    iΨ₃ = component_index(dc, Val(:Ψ₃))
-    iΨ₂ = component_index(dc, Val(:Ψ₂))
-    iΨ₁ = component_index(dc, Val(:Ψ₁))
-    iΨ₀ = component_index(dc, Val(:Ψ₀))
+    iψ₄ = component_index(dc, Val(:ψ₄))
+    iψ₃ = component_index(dc, Val(:ψ₃))
+    iψ₂ = component_index(dc, Val(:ψ₂))
+    iψ₁ = component_index(dc, Val(:ψ₁))
+    iψ₀ = component_index(dc, Val(:ψ₀))
     iσ  = component_index(dc, Val(:σ))
     ih  = component_index(dc, Val(:h))
     iNews = component_index(dc, Val(:News))
@@ -176,11 +176,11 @@ components are being processed.
     iφ₀ = component_index(dc, Val(:φ₀))
 
     @inbounds begin
-        ψ₀ = isnothing(iΨ₀) ? 0 : dataᵢⱼ[iΨ₀]
-        ψ₁ = isnothing(iΨ₁) ? 0 : dataᵢⱼ[iΨ₁]
-        ψ₂ = isnothing(iΨ₂) ? 0 : dataᵢⱼ[iΨ₂]
-        ψ₃ = isnothing(iΨ₃) ? 0 : dataᵢⱼ[iΨ₃]
-        ψ₄ = isnothing(iΨ₄) ? 0 : dataᵢⱼ[iΨ₄]
+        ψ₀ = isnothing(iψ₀) ? 0 : dataᵢⱼ[iψ₀]
+        ψ₁ = isnothing(iψ₁) ? 0 : dataᵢⱼ[iψ₁]
+        ψ₂ = isnothing(iψ₂) ? 0 : dataᵢⱼ[iψ₂]
+        ψ₃ = isnothing(iψ₃) ? 0 : dataᵢⱼ[iψ₃]
+        ψ₄ = isnothing(iψ₄) ? 0 : dataᵢⱼ[iψ₄]
         σ  = isnothing(iσ)  ? 0 : dataᵢⱼ[iσ]
         h  = isnothing(ih)  ? 0 : dataᵢⱼ[ih]
         News = isnothing(iNews) ? 0 : dataᵢⱼ[iNews]
@@ -189,28 +189,28 @@ components are being processed.
         φ₂ = isnothing(iφ₂) ? 0 : dataᵢⱼ[iφ₂]
 
         if Eᴵ == +1
-            if !isnothing(iΨ₀)
-                dataᵢⱼ[iΨ₀] = k⁻³ * (
+            if !isnothing(iψ₀)
+                dataᵢⱼ[iψ₀] = k⁻³ * (
                     ψ₀ - ðu′╱k * (4ψ₁ - ðu′╱k * (6ψ₂ - ðu′╱k * (4ψ₃ - ðu′╱k * ψ₄)))
                 )
             end
-            if !isnothing(iΨ₁)
-                dataᵢⱼ[iΨ₁] = k⁻³ * (
+            if !isnothing(iψ₁)
+                dataᵢⱼ[iψ₁] = k⁻³ * (
                     ψ₁ - ðu′╱k * (3ψ₂ - ðu′╱k * (3ψ₃ - ðu′╱k * ψ₄))
                 )
             end
-            if !isnothing(iΨ₂)
-                dataᵢⱼ[iΨ₂] = k⁻³ * (
+            if !isnothing(iψ₂)
+                dataᵢⱼ[iψ₂] = k⁻³ * (
                     ψ₂ - ðu′╱k * (2ψ₃ - ðu′╱k * ψ₄)
                 )
             end
-            if !isnothing(iΨ₃)
-                dataᵢⱼ[iΨ₃] = k⁻³ * (
+            if !isnothing(iψ₃)
+                dataᵢⱼ[iψ₃] = k⁻³ * (
                     ψ₃ - ðu′╱k * ψ₄
                 )
             end
-            if !isnothing(iΨ₄)
-                dataᵢⱼ[iΨ₄] = k⁻³ * (
+            if !isnothing(iψ₄)
+                dataᵢⱼ[iψ₄] = k⁻³ * (
                     ψ₄
                 )
             end
@@ -239,28 +239,28 @@ components are being processed.
                 )
             end
         else  # Eᴵ == -1
-            if !isnothing(iΨ₄)
-                dataᵢⱼ[iΨ₄] = k⁻³ * (
+            if !isnothing(iψ₄)
+                dataᵢⱼ[iψ₄] = k⁻³ * (
                     ψ₄ - ðu′╱k * (4ψ₃ - ðu′╱k * (6ψ₂ - ðu′╱k * (4ψ₁ - ðu′╱k * ψ₀)))
                 )
             end
-            if !isnothing(iΨ₃)
-                dataᵢⱼ[iΨ₃] = k⁻³ * (
+            if !isnothing(iψ₃)
+                dataᵢⱼ[iψ₃] = k⁻³ * (
                     ψ₃ - ðu′╱k * (3ψ₂ - ðu′╱k * (3ψ₁ - ðu′╱k * ψ₀))
                 )
             end
-            if !isnothing(iΨ₂)
-                dataᵢⱼ[iΨ₂] = k⁻³ * (
+            if !isnothing(iψ₂)
+                dataᵢⱼ[iψ₂] = k⁻³ * (
                     ψ₂ - ðu′╱k * (2ψ₁ - ðu′╱k * ψ₀)
                 )
             end
-            if !isnothing(iΨ₁)
-                dataᵢⱼ[iΨ₁] = k⁻³ * (
+            if !isnothing(iψ₁)
+                dataᵢⱼ[iψ₁] = k⁻³ * (
                     ψ₁ - ðu′╱k * ψ₀
                 )
             end
-            if !isnothing(iΨ₀)
-                dataᵢⱼ[iΨ₀] = k⁻³ * (
+            if !isnothing(iψ₀)
+                dataᵢⱼ[iψ₀] = k⁻³ * (
                     ψ₀
                 )
             end

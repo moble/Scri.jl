@@ -30,8 +30,8 @@ rather than being done in place.
 
 The `dc` argument is a [`DataComponents`](@ref) value specifying which field components are
 stored in `data`, in the order they appear along its third dimension.  Because of the
-hierarchical nature of the BMS transformation, any Weyl component ``Ψᵢ`` must be accompanied
-by all higher-index components ``Ψⱼ`` for ``j > i``.  At most one of `:σ` and `:h` can be
+hierarchical nature of the BMS transformation, any Weyl component ``ψᵢ`` must be accompanied
+by all higher-index components ``ψⱼ`` for ``j > i``.  At most one of `:σ` and `:h` can be
 included.  Note that `DataComponents` includes a sign indicating whether `data` represents
 data on ``ℐ⁺`` if εᴵ = +1 or ``ℐ⁻`` if εᴵ = -1.
 
@@ -335,8 +335,8 @@ end
     transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, εᵅ=+1, εᴵ=+1)
 
 Backward-compatible keyword-argument form.  `data_components` may be a `DataComponents`
-value, a tuple of symbols such as `(:Ψ₄, :Ψ₃)`, or `nothing` (defaults to the first
-`Nᵈ` of `(:σ, :Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)` with a warning).
+value, a tuple of symbols such as `(:ψ₄, :ψ₃)`, or `nothing` (defaults to the first
+`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` with a warning).
 """
 function transform!(
     data::Array{Complex{T1}}, t::Vector{T2},
@@ -347,10 +347,10 @@ function transform!(
     dc = if data_components isa DataComponents
         data_components
     elseif isnothing(data_components)
-        @warn "Defaulting to data components $( (:σ, :Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)[1:Nᵈ] ).\n" *
+        @warn "Defaulting to data components $( (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ] ).\n" *
               "Check that this is correct for your input data.\n" *
               "Consider passing a `DataComponents` value explicitly."
-        DataComponents((:σ, :Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)[1:Nᵈ]...)
+        DataComponents((:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]...)
     else
         DataComponents(data_components...; εᴵ)
     end
