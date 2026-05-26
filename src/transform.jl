@@ -1,5 +1,5 @@
 """
-    transform!(data, t, v⃗, R, αᵢₙ, dc; εᵅ=+1, εⁱ=+1)
+    transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ=+1)
 
 Transform the mode weights in `data` — sampled at times `t` — from the rest frame to the
 BMS-transformed frame.  The BMS transformation is specified by the boost velocity `v⃗`, the
@@ -28,22 +28,24 @@ the sphere.  The reality condition is that the mode weights satisfy ``α_{ℓ,-m
 with its complex conjugate partner.  This is done in a copy of the array for simplicity,
 rather than being done in place.
 
-The `dc` argument is a [`DataComponents`](@ref) value specifying which field components
-are stored in `data`, in the order they appear along its third dimension.  Because of the
-hierarchical nature of the BMS transformation, any Weyl component ``Ψᵢ`` must be
-accompanied by all higher-index components ``Ψⱼ`` for ``j > i``.  At most one of `:σ`
-and `:h` can be included.
+The `dc` argument is a [`DataComponents`](@ref) value specifying which field components are
+stored in `data`, in the order they appear along its third dimension.  Because of the
+hierarchical nature of the BMS transformation, any Weyl component ``Ψᵢ`` must be accompanied
+by all higher-index components ``Ψⱼ`` for ``j > i``.  At most one of `:σ` and `:h` can be
+included.  Note that `DataComponents` includes a sign indicating whether `data` represents
+data on ``ℐ⁺`` if εᴵ = +1 or ``ℐ⁻`` if εᴵ = -1.
 
-The optional keywords `εᵅ` and `εⁱ` represent signs: the time-transformation law is
-``t′ = t - εᵅ α`` and `data` represents data on ``ℐ⁺`` if εⁱ = +1 or ``ℐ⁻`` if εⁱ = -1.
+The optional keyword `εᵅ` represents the sign in the time-transformation law ``t′ = t - εᵅ
+α``.
 
 """
 function transform!(
     data::Array{Complex{T1}}, t::Vector{T2},
     v⃗::QuatVec{T3}, R::Rotor{T4}, αᵢₙ::Vector{Complex{T5}},
-    dc::DataComponents{C};
-    εᵅ=+1, εⁱ=+1
-) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real, C}
+    dc::DataComponents{C, Eᴵ}, εᵅ=+1
+) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real, C, Eᴵ}
+    # Use this `let` block to ensure that we don't accidentally use `T` below, because that
+    # could lead to type instability.
     let T = promote_type(T1, T2, T3, T4, T5)
         if T != T1
             throw(AssertionError(
@@ -119,15 +121,6 @@ function transform!(
         -3
     )
     task_augmented_lu = OhMyThreads.@spawn begin
-        # 𝒯′_inner = OffsetVector(
-        #     OhMyThreads.tmap(
-        #         s -> SSHTDirect(s, ℓₘₐₓ; T, Rθϕ=R′ₚ),
-        #         -2:2;
-        #         chunking=false
-        #     ),
-        #     -3
-        # )
-
         # Build augmented square analysis matrices.  See the documentation page "Augmented
         # direct SSHT" for details.
         OffsetVector(
@@ -181,7 +174,7 @@ function transform!(
                 + (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ + (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ)
             Λᶻ = ((Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ
                 + (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ + (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ)
-            ðu′╱k[2, i] = (Λˣ + im * Λʸ) / (Λᶻ - εⁱ)
+            ðu′╱k[2, i] = (Λˣ + im * Λʸ) / (Λᶻ - Eᴵ)
             ðu′╱k[1, i] = ðu′╱k[2, i] * αₚ[i] + ðαₚ[i]
         end
         ðu′╱k
@@ -201,29 +194,20 @@ function transform!(
     # sub-block loop is necessary because each task's column-count (≈ Nᵗ/nthreads()) is
     # far larger than block_size — without it the task-local buffer would require
     # ~Nᵐ × Nᵗ/nthreads() × 16 B ≈ 69 MB, comparable to a full out-of-place copy.
-    let block_size=block_size÷2
-        blas_num_threads = BLAS.get_num_threads()
-        BLAS.set_num_threads(1)
-        t1 = time_ns()
+    let
+        cols = axes(data, 2)
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
             valid_modes = (s^2 + 1):Nᵐ  # skip leading ℓ < |s| entries
             data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
-            OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-                OhMyThreads.@set scheduler = :static
-                OhMyThreads.@local workspace = Matrix{Complex{T1}}(undef, Nᵐ-s^2, block_size)
-                for sub_start ∈ cols.start:block_size:cols.stop
-                    sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-                    workspace_view = view(workspace, :, 1:length(sub))
-                    copyto!(workspace_view, view(data_k, valid_modes, sub))
-                    mul!(view(data_k, :, sub), 𝒯[s], workspace_view)
-                end
+            workspace = Matrix{Complex{T1}}(undef, Nᵐ - s^2, block_size)
+            for sub_start ∈ cols[begin:block_size:end]
+                sub = sub_start:min(sub_start + block_size - 1, cols[end])
+                workspace_view = view(workspace, :, 1:length(sub))
+                copyto!(workspace_view, view(data_k, valid_modes, sub))
+                mul!(view(data_k, :, sub), 𝒯[s], workspace_view)
             end
         end
-        t2 = time_ns()
-        @show block_size
-        @info "Stage 1: $((t2 - t1)*1e-9) seconds"
-        BLAS.set_num_threads(blas_num_threads)
     end
 
     ###
@@ -264,7 +248,7 @@ function transform!(
         permutedims!(dᵢ, data_view, (2,1))
 
         # `d̈` forward sweep (Thomas algorithm, natural BC: d̈[1]=d̈[Nᵗ]=0)
-        @inbounds begin
+        @inbounds let
             @simd ivdep for k ∈ 1:Nᵈ
                 d̈ᵢ[k, 1]  = 0
             end
@@ -334,142 +318,21 @@ function transform!(
     ###
 
     augmented_lu = fetch(task_augmented_lu)
-    # 𝒯′, augmented_lu = fetch(task_𝒯′)
-    # let  ## V1 Using explicit matrix inverse
-    #     blas_num_threads = BLAS.get_num_threads()
-    #     BLAS.set_num_threads(1)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         M_analysis = 𝒯′[s].ₛ𝐘decomposition \ Matrix{Complex{T}}(I, Nᵐ, Nᵐ)
-    #         Nₛᵐ = size(M_analysis, 1)          # Nᵐ − s² valid modes for this spin weight
-    #         valid_modes = (Nᵐ - Nₛᵐ + 1):Nᵐ  # skip leading ℓ < |s| entries
-    #         data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
-    #         OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-    #             OhMyThreads.@set scheduler = :static
-    #             OhMyThreads.@local workspace = Matrix{Complex{T}}(undef, Nᵐ, block_size)
-    #             for sub_start ∈ cols.start:block_size:cols.stop
-    #                 sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-    #                 workspace_view = view(workspace, :, 1:length(sub))
-    #                 copyto!(workspace_view, view(data_k, :, sub))
-    #                 mul!(view(data_k, valid_modes, sub), M_analysis, workspace_view)
-    #             end
-    #         end
-    #     end
-    #     BLAS.set_num_threads(blas_num_threads)
-    # end
-    # let  # V2 using QR but with workspaces
-    #     blas_num_threads = BLAS.get_num_threads()
-    #     BLAS.set_num_threads(1)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         Nₛᵐ = size(𝒯′[s].ₛ𝐘, 2)          # Nᵐ − s² valid modes for this spin weight
-    #         valid_modes = (Nᵐ - Nₛᵐ + 1):Nᵐ  # skip leading ℓ < |s| entries
-    #         data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
-    #         OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-    #             OhMyThreads.@set scheduler = :static
-    #             OhMyThreads.@local workspace = Matrix{Complex{T}}(undef, Nᵐ, block_size)
-    #             for sub_start ∈ cols.start:block_size:cols.stop
-    #                 sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-    #                 workspace_view = view(workspace, :, 1:length(sub))
-    #                 copyto!(workspace_view, view(data_k, :, sub))
-    #                 ldiv!(𝒯′[s].ₛ𝐘decomposition, workspace_view)
-    #                 copyto!(view(data_k, valid_modes, sub), view(workspace_view, 1:Nₛᵐ, :))
-    #             end
-    #         end
-    #     end
-    #     BLAS.set_num_threads(blas_num_threads)
-    # end
-    # let  # V2 (active): QR + workspace + ldiv! with valid_modes copy-back
-    #     blas_num_threads = BLAS.get_num_threads()
-    #     BLAS.set_num_threads(1)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         Nₛᵐ = size(𝒯′[s].ₛ𝐘, 2)          # Nᵐ − s² valid modes for this spin weight
-    #         valid_modes = (Nᵐ - Nₛᵐ + 1):Nᵐ  # skip leading ℓ < |s| entries
-    #         data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
-    #         OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-    #             OhMyThreads.@set scheduler = :static
-    #             OhMyThreads.@local workspace = Matrix{Complex{T}}(undef, Nᵐ, block_size)
-    #             for sub_start ∈ cols.start:block_size:cols.stop
-    #                 sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-    #                 workspace_view = view(workspace, :, 1:length(sub))
-    #                 copyto!(workspace_view, view(data_k, :, sub))
-    #                 ldiv!(𝒯′[s].ₛ𝐘decomposition, workspace_view)
-    #                 copyto!(view(data_k, valid_modes, sub), view(workspace_view, 1:Nₛᵐ, :))
-    #             end
-    #         end
-    #     end
-    #     BLAS.set_num_threads(blas_num_threads)
-    # end
-    # let  # V3: augmented Nᵐ×Nᵐ matrix [Q⊥ | ₛ𝐘]; in-place ldiv!, no workspace needed
-    #     blas_num_threads = BLAS.get_num_threads()
-    #     BLAS.set_num_threads(1)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         data_k = view(data, :, :, k)
-    #         OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-    #             OhMyThreads.@set scheduler = :static
-    #             for sub_start ∈ cols.start:block_size:cols.stop
-    #                 sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-    #                 ldiv!(augmented_lu[s], view(data_k, :, sub))
-    #             end
-    #         end
-    #     end
-    #     BLAS.set_num_threads(blas_num_threads)
-    # end
-    # let  # V3b: Like V3 but chunking more reasonably
-    #     blas_num_threads = BLAS.get_num_threads()
-    #     BLAS.set_num_threads(1)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         data_k = view(data, :, :, k)
-    #         OhMyThreads.@tasks for cols ∈ OhMyThreads.chunks(axes(data_k, 2); n=nthreads())
-    #             OhMyThreads.@set scheduler = :static
-    #             for sub_start ∈ cols.start:block_size:cols.stop
-    #                 sub = sub_start:min(sub_start + block_size - 1, cols.stop)
-    #                 ldiv!(augmented_lu[s], view(data_k, :, sub))
-    #             end
-    #         end
-    #     end
-    #     BLAS.set_num_threads(blas_num_threads)
-    # end
-    # let  # V4: BLAS threads for augmented Nᵐ×Nᵐ matrix
-    #     BLAS.set_num_threads(8)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(Val(C[k]))
-    #         for j ∈ 1:Nᵗ
-    #             dⱼₖ = view(data, :, j, k)
-    #             ldiv!(augmented_lu[s], dⱼₖ)
-    #         end
-    #     end
-    # end
-    let  # V5: one ldiv! per component, BLAS owns all the threads
-        blas_num_threads = BLAS.get_num_threads()
-        BLAS.set_num_threads(8)
-        t1 = time_ns()
+    let
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
-            ldiv!(augmented_lu[s], view(data, :, :, k))
+            for sub_start ∈ 1:block_size:Nᵗ
+                sub = sub_start:min(sub_start + block_size - 1, Nᵗ)
+                ldiv!(augmented_lu[s], view(data, :, sub, k))
+            end
         end
-        t2 = time_ns()
-        @info "Stage 3: $((t2 - t1)*1e-9) seconds"
-         BLAS.set_num_threads(blas_num_threads)
     end
-    # let  # V6: one ldiv! per component, BLAS owns all the threads, chunk by block_size
-    #     BLAS.set_num_threads(8)
-    #     for k ∈ 1:Nᵈ
-    #         s = spin_weight(C[k])
-    #         for J ∈ OhMyThreads.chunks(1:Nᵗ; size=block_size)
-    #             ldiv!(augmented_lu[s], view(data, :, J, k))
-    #         end
-    #     end
-    # end
 
     return data, t′
 end
 
 """
-    transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, εᵅ=+1, εⁱ=+1)
+    transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, εᵅ=+1, εᴵ=+1)
 
 Backward-compatible keyword-argument form.  `data_components` may be a `DataComponents`
 value, a tuple of symbols such as `(:Ψ₄, :Ψ₃)`, or `nothing` (defaults to the first
@@ -478,7 +341,7 @@ value, a tuple of symbols such as `(:Ψ₄, :Ψ₃)`, or `nothing` (defaults to 
 function transform!(
     data::Array{Complex{T1}}, t::Vector{T2},
     v⃗::QuatVec{T3}, R::Rotor{T4}, αᵢₙ::Vector{Complex{T5}};
-    data_components=nothing, εᵅ=+1, εⁱ=+1
+    data_components=nothing, εᵅ::Int=+1, εᴵ::Int=+1
 ) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real}
     Nᵈ = size(data, 3)
     dc = if data_components isa DataComponents
@@ -489,7 +352,7 @@ function transform!(
               "Consider passing a `DataComponents` value explicitly."
         DataComponents((:σ, :Ψ₄, :Ψ₃, :Ψ₂, :Ψ₁, :Ψ₀)[1:Nᵈ]...)
     else
-        DataComponents(data_components...)
+        DataComponents(data_components...; εᴵ)
     end
-    transform!(data, t, v⃗, R, αᵢₙ, dc; εᵅ, εⁱ)
+    transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
 end
