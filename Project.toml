@@ -17,12 +17,21 @@ Quaternionic = "0756cd96-85bf-4b6f-a009-b5012ea7a443"
 SphericalFunctions = "af6d55de-b1f7-4743-b797-0829a72cf84e"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
+[weakdeps]
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[extensions]
+ScriPlotsExt = ["Plots", "Colors"]
+
 [compat]
+Colors = "0.13.1"
 Hwloc = "3"
 LinearAlgebra = "1.12.0"
 Logging = "1.11.0"
 OffsetArrays = "1.17.0"
 OhMyThreads = "0.8.5"
+Plots = "1"
 Polyester = "0.7.19"
 Quaternionic = "4.0.1"
 SphericalFunctions = "2.2.8"

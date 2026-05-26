@@ -85,3 +85,30 @@ function compute_t′(t, αₚ, Rₚ, v⃗)
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
     return t′, tᵪ
 end
+
+"""
+    diagnostics(data, data_components)
+
+Compute power monitors for the input data.
+"""
+function diagnostics(data, data_components::DataComponents{C, εᴵ}) where {C, εᴵ}
+    Nᵐ, Nᵗ, Nᵈ = size(data)
+    L = isqrt(Nᵐ)
+    @assert L^2 == Nᵐ "Input `data` has $Nᵐ modes, which is not a perfect square"
+    ℓₘₐₓ = L - 1
+    diag = Dict{Symbol, Matrix{real(eltype(data))}}()
+    for (d, comp) ∈ enumerate(C)
+        power = Matrix{real(eltype(data))}(undef, Nᵗ, ℓₘₐₓ+1)
+        for ℓ ∈ 0:ℓₘₐₓ
+            mode_indices = ℓ^2+1:(ℓ+1)^2
+            power[:, ℓ+1] = sum(abs2, (@view data[mode_indices, :, d]), dims=1)[1, :]
+        end
+        diag[comp] = power
+        # for ℓ ∈ 0:ℓₘₐₓ
+        #     mode_indices = ℓ^2+1:(ℓ+1)^2
+        #     power = sum(abs2, (@view data[mode_indices, :, d]), dims=1)[1, :]
+        #     diag[comp] = power
+        # end
+    end
+    return diag
+end

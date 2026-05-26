@@ -25,12 +25,12 @@ const cachesize_L3 = Logging.with_logger(Logging.NullLogger()) do
     end
 end
 
-include("utilities.jl")
 include("cubic_spline.jl")
 include("data_components.jl")
+include("utilities.jl")
 include("aberration.jl")
 include("transform.jl")
 
-export transform!
+export transform!, diagnostics
 
 end
