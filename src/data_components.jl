@@ -137,10 +137,10 @@ conformal_weight(::Val{:φ₂}) = -2
 
 
 """
-    mix_components!(dataᵢⱼ, k⁻¹, ðu′╱k, ð²α, dc)
+    mix_components!(dataᵢⱼ, k⁻¹, ðt′╱k, ð²α, dc)
 
 Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `k⁻¹` is the inverse conformal
-factor for this pixel, `ðu′╱k` is the eth-derivative of the retarded time in the new frame
+factor for this pixel, `ðt′╱k` is the eth-derivative of the retarded time in the new frame
 divided by ``k``, and `ð²α` is the sign-adjusted second anti-eth-derivative of the
 supertranslation (used for the strain/shear component).
 
@@ -155,7 +155,7 @@ components are being processed.
 @inline function mix_components!(
     dataᵢⱼ::AbstractVector{Complex{T}},
     k⁻¹,
-    ðu′╱k,
+    ðt′╱k,
     ð²α,
     dc::DataComponents{C, Eᴵ}
 ) where {T, C, Eᴵ}
@@ -191,22 +191,22 @@ components are being processed.
         if Eᴵ == +1
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] = k⁻³ * (
-                    ψ₀ - ðu′╱k * (4ψ₁ - ðu′╱k * (6ψ₂ - ðu′╱k * (4ψ₃ - ðu′╱k * ψ₄)))
+                    ψ₀ - ðt′╱k * (4ψ₁ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₃ - ðt′╱k * ψ₄)))
                 )
             end
             if !isnothing(iψ₁)
                 dataᵢⱼ[iψ₁] = k⁻³ * (
-                    ψ₁ - ðu′╱k * (3ψ₂ - ðu′╱k * (3ψ₃ - ðu′╱k * ψ₄))
+                    ψ₁ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₃ - ðt′╱k * ψ₄))
                 )
             end
             if !isnothing(iψ₂)
                 dataᵢⱼ[iψ₂] = k⁻³ * (
-                    ψ₂ - ðu′╱k * (2ψ₃ - ðu′╱k * ψ₄)
+                    ψ₂ - ðt′╱k * (2ψ₃ - ðt′╱k * ψ₄)
                 )
             end
             if !isnothing(iψ₃)
                 dataᵢⱼ[iψ₃] = k⁻³ * (
-                    ψ₃ - ðu′╱k * ψ₄
+                    ψ₃ - ðt′╱k * ψ₄
                 )
             end
             if !isnothing(iψ₄)
@@ -225,12 +225,12 @@ components are being processed.
             end
             if !isnothing(iφ₀)
                 dataᵢⱼ[iφ₀] = k⁻² * (
-                    φ₀ - ðu′╱k * (2φ₁ - ðu′╱k * φ₂)
+                    φ₀ - ðt′╱k * (2φ₁ - ðt′╱k * φ₂)
                 )
             end
             if !isnothing(iφ₁)
                 dataᵢⱼ[iφ₁] = k⁻² * (
-                    φ₁ - ðu′╱k * φ₂
+                    φ₁ - ðt′╱k * φ₂
                 )
             end
             if !isnothing(iφ₂)
@@ -241,22 +241,22 @@ components are being processed.
         else  # Eᴵ == -1
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] = k⁻³ * (
-                    ψ₄ - ðu′╱k * (4ψ₃ - ðu′╱k * (6ψ₂ - ðu′╱k * (4ψ₁ - ðu′╱k * ψ₀)))
+                    ψ₄ - ðt′╱k * (4ψ₃ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₁ - ðt′╱k * ψ₀)))
                 )
             end
             if !isnothing(iψ₃)
                 dataᵢⱼ[iψ₃] = k⁻³ * (
-                    ψ₃ - ðu′╱k * (3ψ₂ - ðu′╱k * (3ψ₁ - ðu′╱k * ψ₀))
+                    ψ₃ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₁ - ðt′╱k * ψ₀))
                 )
             end
             if !isnothing(iψ₂)
                 dataᵢⱼ[iψ₂] = k⁻³ * (
-                    ψ₂ - ðu′╱k * (2ψ₁ - ðu′╱k * ψ₀)
+                    ψ₂ - ðt′╱k * (2ψ₁ - ðt′╱k * ψ₀)
                 )
             end
             if !isnothing(iψ₁)
                 dataᵢⱼ[iψ₁] = k⁻³ * (
-                    ψ₁ - ðu′╱k * ψ₀
+                    ψ₁ - ðt′╱k * ψ₀
                 )
             end
             if !isnothing(iψ₀)
@@ -275,12 +275,12 @@ components are being processed.
             end
             if !isnothing(iφ₂)
                 dataᵢⱼ[iφ₂] = k⁻² * (
-                    φ₂ - ðu′╱k * (2φ₁ - ðu′╱k * φ₀)
+                    φ₂ - ðt′╱k * (2φ₁ - ðt′╱k * φ₀)
                 )
             end
             if !isnothing(iφ₁)
                 dataᵢⱼ[iφ₁] = k⁻² * (
-                    φ₁ - ðu′╱k * φ₀
+                    φ₁ - ðt′╱k * φ₀
                 )
             end
             if !isnothing(iφ₀)

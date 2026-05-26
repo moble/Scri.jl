@@ -127,7 +127,7 @@ end
 
 # ── mix_components! ───────────────────────────────────────────────────────────
 
-@testitem "mix_components!: identity (k⁻¹=1, ðu′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: identity (k⁻¹=1, ðt′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
@@ -141,12 +141,12 @@ end
     end
 end
 
-@testitem "mix_components!: pure conformal scaling (ðu′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: pure conformal scaling (ðt′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
-    # When ðu′╱k = 0 (e.g., at u = 0 for a boost with no supertranslation, since
-    # ðu′╱k = −(ðk/k)·u), each component scales by k^(conformal_weight).
+    # When ðt′╱k = 0 (e.g., at u = 0 for a boost with no supertranslation, since
+    # ðt′╱k = −(ðk/k)·u), each component scales by k^(conformal_weight).
     # Weyl: k⁻³; σ,h: k⁻¹; News: k⁻².
     rng = Random.Xoshiro(7)
     dc  = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
@@ -170,12 +170,12 @@ end
     import Scri: DataComponents
 
     # When only ψ₄ = z is non-zero and k⁻¹=1, the lower Weyl components receive
-    # the values ψₙ' = (−ðu′╱k)^(4−n) · z — purely from the nested polynomial.
+    # the values ψₙ' = (−ðt′╱k)^(4−n) · z — purely from the nested polynomial.
     rng = Random.Xoshiro(11)
     dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     for _ ∈ 1:8
         z = randn(rng, ComplexF64)
-        f = randn(rng, ComplexF64)   # ðu′╱k
+        f = randn(rng, ComplexF64)   # ðt′╱k
         data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
         Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
         for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
@@ -188,8 +188,8 @@ end
 @testitem "mix_components!: all-ones Weyl gives binomial pattern" tags = [:unit, :fast, :validation] begin
     import Scri: DataComponents
 
-    # When all five ψ inputs equal 1, each output is k⁻³·(1−ðu′╱k)^(4−n).
-    # This follows from the binomial expansion of (1 − ðu′╱k * ∂_u)^4 acting on 1.
+    # When all five ψ inputs equal 1, each output is k⁻³·(1−ðt′╱k)^(4−n).
+    # This follows from the binomial expansion of (1 − ðt′╱k * ∂_u)^4 acting on 1.
     dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     k⁻¹ = 2.0
     f   = 3.0 + 2.0im
