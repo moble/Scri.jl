@@ -23,8 +23,8 @@ function Scri.diagnostics(t, data, data_components)
         )
         labels = reshape([string(ℓ) for ℓ ∈ 0:ℓₘₐₓ], 1, :)
         p = Plots.plot(
-            t, values, linecolors=colors, label=labels,
-            yscale=:log10, title=string(comp), xlabel="Time", ylabel="Power"
+            t, sqrt.(values), linecolors=colors, label=labels,
+            yscale=:log10, title=string(comp), xlabel="Time", ylabel="Energy"
         )
         plots[comp] = p
     end

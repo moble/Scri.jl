@@ -114,7 +114,8 @@ function transform!(
     # we use `OffsetVector` so that they can be indexed by their spin weight.
     𝒯 = OffsetVector(
         OhMyThreads.tmap(
-            s -> ₛ𝐘(s, ℓₘₐₓ, basetype(Tₚ), Rₚ), Matrix{Complex{basetype(Tₚ)}},
+            s -> ₛ𝐘(s, ℓₘₐₓ, basetype(Tₚ), Rₚ),
+            Matrix{Complex{basetype(Tₚ)}},
             -2:2;
             chunking=false
         ),

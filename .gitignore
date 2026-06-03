@@ -41,3 +41,5 @@ docs/src/local_notes
 .devcontainer
 .githooks
 memory
+examples/*jld2
+examples/*png

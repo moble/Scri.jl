@@ -35,24 +35,24 @@ For a given spin weight ``s``, we suppose that we have a set of mode
 weights ``𝐦``.  Then it is easy to evaluate those weights on a set of
 pixels by matrix multiplication:
 ```math
-ₛ𝐘 · 𝐦 = 𝐩,
+{}_{s}𝐘 · 𝐦 = 𝐩,
 ```
-where ``ₛ𝐘_{ij} = {}ₛY_{ℓ,m}(R_j)`` is the synthesis matrix of the
+where ``{}_{s}𝐘_{ij} = {}{}_{s}Y_{ℓ,m}(R_j)`` is the synthesis matrix of the
 SSHT, the index ``(ℓ,m)`` corresponds to the ``i``-th entry of the
 vector of mode weights, and ``R_j`` is the position of the ``j``-th
 pixel.  The pixel values are then modified as needed, and the analysis step is given by the inverse operation:
 ```math
-ₛ𝐘^{-1} · 𝐩 = 𝐦.
+{}_{s}𝐘^{-1} · 𝐩 = 𝐦.
 ```
 Obviously, rather than computing the inverse of the synthesis matrix,
 we can perform the analysis step by solving the linear system as usual
 using an LU or QR factorization that is precomputed and stored in the
-`ₛ𝐘` object.
+`{}_{s}𝐘` object.
 
 ## Augmenting the matrix
 
 When all spin-weight components share a common pixel grid and there
-are different spin weights, the synthesis matrix ``ₛ𝐘`` has ``Nᵖ``
+are different spin weights, the synthesis matrix ``{}_{s}𝐘`` has ``Nᵖ``
 rows and ``Nᵐ`` columns, with ``Nᵖ > Nᵐ``: there are more pixels than
 modes.  The analysis step is then an overdetermined linear system, and
 a naive least-squares approach is both more expensive and less clean
@@ -60,15 +60,15 @@ than what the structure of the problem already provides.
 
 ### Column space and null space
 
-The ``Nᵐ`` columns of ``ₛ𝐘`` span an ``Nᵐ``-dimensional subspace of
-``ℂ^{Nᵖ}`` — the *column space* of ``ₛ𝐘``.  Any physically meaningful
+The ``Nᵐ`` columns of ``{}_{s}𝐘`` span an ``Nᵐ``-dimensional subspace of
+``ℂ^{Nᵖ}`` — the *column space* of ``{}_{s}𝐘``.  Any physically meaningful
 pixel vector must lie exactly there: the synthesis equation ``𝐩 =
-{ₛ𝐘} \cdot 𝐦`` admits no solution unless ``𝐩`` is already in
-col(``ₛ𝐘``).
+{{}_{s}𝐘} \cdot 𝐦`` admits no solution unless ``𝐩`` is already in
+col(``{}_{s}𝐘``).
 
-The orthogonal complement of col(``ₛ𝐘``) has dimension ``Nᵖ - Nᵐ``
-and is called the *null space of ``ₛ𝐘ᴴ``*: the set of pixel vectors
-``𝐯 ∈ ℂ^{Nᵖ}`` satisfying ``ₛ𝐘ᴴ\, 𝐯 = 0``.  Such a vector is
+The orthogonal complement of col(``{}_{s}𝐘``) has dimension ``Nᵖ - Nᵐ``
+and is called the *null space of ``{}_{s}𝐘ᴴ``*: the set of pixel vectors
+``𝐯 ∈ ℂ^{Nᵖ}`` satisfying ``{}_{s}𝐘ᴴ\, 𝐯 = 0``.  Such a vector is
 orthogonal to every mode shape on the pixel grid; no linear
 combination of harmonics up to ``ℓₘₐₓ`` can produce any component in
 this direction.  This is not a numerical artifact — it is the
@@ -77,11 +77,11 @@ grid that is larger than strictly necessary.
 
 ### QR decomposition identifies both subspaces at once
 
-The QR decomposition of ``ₛ𝐘`` produces a unitary ``Q ∈ ℂ^{Nᵖ×Nᵖ}``
+The QR decomposition of ``{}_{s}𝐘`` produces a unitary ``Q ∈ ℂ^{Nᵖ×Nᵖ}``
 such that the first ``Nᵐ`` columns of ``Q`` form an orthonormal basis
-for col(``ₛ𝐘``).  Because ``Q`` is unitary, its remaining ``Nᵖ - Nᵐ``
+for col(``{}_{s}𝐘``).  Because ``Q`` is unitary, its remaining ``Nᵖ - Nᵐ``
 columns are automatically orthogonal to the first ``Nᵐ`` and therefore
-span *exactly* the null space of ``ₛ𝐘ᴴ``.
+span *exactly* the null space of ``{}_{s}𝐘ᴴ``.
 
 It so happens that `LinearAlgebra.qr` in Julia stores the ``Q`` factor
 as Householder reflections.  To obtain the orthogonal columns, we just
@@ -90,12 +90,12 @@ obtain ``Q_⊥`` by slicing.
 
 ### Augmenting to a square, prefactorable system
 
-Prepending ``Q_⊥`` to ``ₛ𝐘`` yields a square ``Nᵖ × Nᵖ`` matrix whose
+Prepending ``Q_⊥`` to ``{}_{s}𝐘`` yields a square ``Nᵖ × Nᵖ`` matrix whose
 columns span all of ``ℂ^{Nᵖ}``.  Every pixel vector decomposes
-uniquely into a component in col(``ₛ𝐘``) and a component in
+uniquely into a component in col(``{}_{s}𝐘``) and a component in
 col(``Q_⊥``), so the augmented system
 ```math
-\bigl[Q_⊥ \big| {ₛ𝐘}\bigr]
+\bigl[Q_⊥ \big| {{}_{s}𝐘}\bigr]
 \begin{bmatrix} ξ \\ 𝐦 \end{bmatrix}
 = 𝐩
 ```
@@ -122,9 +122,10 @@ power in the ``ξ`` component therefore provides a consistency check on
 the transformation at small extra cost.
 
 Because ``Q_⊥`` has orthonormal columns, the augmented matrix inherits
-the conditioning of ``ₛ𝐘`` itself.  Its LU factorization is computed
-once during setup; every subsequent analysis step reduces to a single
-in-place triangular solve, with no temporary allocations and no
-regularization choices.  When ``Nᵖ = Nᵐ`` — that is, when the spin
+the conditioning of ``{}_{s}𝐘`` itself.  Its LU factorization is
+computed once during setup; every subsequent analysis step reduces to
+a single in-place triangular solve, with no temporary allocations and
+no regularization choices.  When ``Nᵖ = Nᵐ`` — that is, when the spin
 weight is low enough that the mode basis already fills the pixel grid
-— no augmentation is necessary and a direct LU of ``ₛ𝐘`` suffices.
+— no augmentation is necessary and a direct LU of ``{}_{s}𝐘``
+suffices.
