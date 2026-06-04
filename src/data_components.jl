@@ -1,5 +1,20 @@
 const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
 
+# This utility function just translates any reasonable string representation of a data
+# component's name into the canonical symbol.
+function parse_data_component(s::AbstractString)
+    Symbol(replace(s,
+        '_' => "", '{' => "", '}' => "",
+        '0' => '₀', '1' => '₁', '2' => '₂', '3' => '₃', '4' => '₄',
+        "σ" => "σ", "Σ" => "σ", "sigma" => "σ", "Sigma" => "σ", "SIGMA" => "σ",
+        "h" => "h", "H" => "h", "strain" => "h", "Strain" => "h", "STRAIN" => "h",
+        "News" => "News", "news" => "News", "NEWS" => "News", "N" => "News", "n" => "News",
+        "ψ" => "ψ", "Ψ" => "ψ", "psi" => "ψ", "Psi" => "ψ", "PSI" => "ψ",
+        "φ" => "φ", "ϕ" => "φ", "Φ" => "φ", "phi" => "φ", "Phi" => "φ", "PHI" => "φ",
+        "varphi" => "φ", "varPhi" => "φ", "varPHI" => "φ", "VARPHI" => "φ"
+    ))
+end
+
 """
     DataComponents{C, εᴵ}
 
@@ -11,6 +26,11 @@ Encodes a fixed set of waveform data components at the type level.  `C` is an
 The parameter `εᴵ` is the sign of the time direction for which these components are defined:
 `+1` for ``ℐ⁺`` (outgoing) and `-1` for ``ℐ⁻`` (incoming).  The default value is `+1`, since
 most applications will be for ``ℐ⁺``.
+
+The inputs may alternatively be strings; any reasonable spelling will be parsed into the
+canonical symbol form.  For example, `DataComponents("Psi_3", "psi4", "sigma")` will be
+parsed into `DataComponents(:ψ₃, :ψ₄, :σ)`.  The constructor will throw an error if the
+input components are invalid.
 
 Examples:
 
@@ -25,12 +45,15 @@ struct DataComponents{C, Eᴵ}
         validate_data_components(cs, εᴵ)
         new{cs, εᴵ}()
     end
+    function DataComponents(cs::AbstractString...; εᴵ=1)
+        DataComponents((parse_data_component.(cs))...; εᴵ)
+    end
 end
-
 
 function validate_data_components(cs, εᴵ)
     @assert all(c -> c ∈ ValidDataComponents, cs) "" *
         "Invalid component in $cs; allowed: $ValidDataComponents"
+    @assert length(Set(cs)) == length(cs) "Duplicate components in $cs"
     if εᴵ == 1
         :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (εᴵ=+1)"
         :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (εᴵ=+1)"

@@ -335,9 +335,13 @@ end
 """
     transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, εᵅ=+1, εᴵ=+1)
 
-Backward-compatible keyword-argument form.  `data_components` may be a `DataComponents`
-value, a tuple of symbols such as `(:ψ₄, :ψ₃)`, or `nothing` (defaults to the first
-`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` with a warning).
+Backward-compatible keyword-argument form.  See the main docstring for details.
+
+The `data_components` argument may be a `DataComponents` value, a tuple of symbols such as
+`(:ψ₄, :ψ₃)`, or a sequence of strings that indicate those symbols.  The strings are parsed
+in a flexible way, so that, for example, `"psi4"`, `"Psi_4"`, and `"PSI₄"` all indicate the
+same component `:ψ₄`.  Alternatively, if the argument is `nothing` (the default), the first
+`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` will be chosen — though a warning will be issued.
 """
 function transform!(
     data::Array{Complex{T1}}, t::Vector{T2},
@@ -348,10 +352,11 @@ function transform!(
     dc = if data_components isa DataComponents
         data_components
     elseif isnothing(data_components)
-        @warn "Defaulting to data components $( (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ] ).\n" *
+        default_dc = (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]
+        @warn "Defaulting to data components $(default_dc).\n" *
               "Check that this is correct for your input data.\n" *
               "Consider passing a `DataComponents` value explicitly."
-        DataComponents((:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]...)
+        DataComponents(default_dc...; εᴵ)
     else
         DataComponents(data_components...; εᴵ)
     end
