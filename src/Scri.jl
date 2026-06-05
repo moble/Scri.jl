@@ -10,6 +10,10 @@ import Polyester
 import OhMyThreads
 import Base.Threads: nthreads
 
+# These are just for precompilation
+using PrecompileTools: @setup_workload, @compile_workload
+using Random: Xoshiro
+
 const cachesize_L2 = Logging.with_logger(Logging.NullLogger()) do
     Hwloc.cachesize(:L2)
 end
@@ -32,5 +36,7 @@ include("aberration.jl")
 include("transform.jl")
 
 export transform!, diagnostics
+
+include("precompilation.jl")
 
 end
