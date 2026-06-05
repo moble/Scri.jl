@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>The BMS Group · Scri.jl</title><meta name="title" content="The BMS Group · Scri.jl"/><meta property="og:title" content="The BMS Group · Scri.jl"/><meta property="twitter:title" content="The BMS Group · Scri.jl"/><meta name="description" content="Documentation for Scri.jl."/><meta property="og:description" content="Documentation for Scri.jl."/><meta property="twitter:description" content="Documentation for Scri.jl."/><meta property="og:url" content="https://moble.github.io/Scri.jl/80-details/30-bms_group/"/><meta property="twitter:url" content="https://moble.github.io/Scri.jl/80-details/30-bms_group/"/><link rel="canonical" href="https://moble.github.io/Scri.jl/80-details/30-bms_group/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/citations.css" rel="stylesheet" type="text/css"/><link href="../../assets/custom.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Scri.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Scri</a></li><li><a class="tocitem" href="../../50-conventions/">Conventions</a></li><li><a class="tocitem" href="../../60-references/">References</a></li><li><a class="tocitem" href="../../65-api/">API</a></li><li><span class="tocitem">Details</span><ul><li><a class="tocitem" href="../10-geometric_algebra_primer/">A Primer on Geometric Algebra</a></li><li><a class="tocitem" href="../20-lorentz_group/">The Lorentz Group</a></li><li class="is-active"><a class="tocitem" href>The BMS Group</a><ul class="internal"><li><a class="tocitem" href="#Bondi-Sachs-coordinates,-metric,-and-gauge"><span>Bondi-Sachs coordinates, metric, and gauge</span></a></li><li><a class="tocitem" href="#The-null-cone-and-the-celestial-sphere"><span>The null cone and the celestial sphere</span></a></li><li><a class="tocitem" href="#Lorentz-transformations-ℒ-and-the-conformal-factor-K"><span>Lorentz transformations <span>$ℒ$</span> and the conformal factor <span>$K$</span></span></a></li><li><a class="tocitem" href="#Supertranslations-𝒮"><span>Supertranslations <span>$𝒮$</span></span></a></li><li><a class="tocitem" href="#BMS"><span>BMS</span></a></li><li><a class="tocitem" href="#Decomposition-of-BMS"><span>Decomposition of BMS</span></a></li></ul></li><li><a class="tocitem" href="../40-aberration/">Aberration of Gravitational Waves</a></li><li><a class="tocitem" href="../augmented_swsh_inversion/">Augmented Direct SSHT</a></li><li><a class="tocitem" href="../computing_eth_tprime_over_k/">Computing <span>$ðt&#39;/k$</span></a></li><li><a class="tocitem" href="../spline_errors/">Spline Errors</a></li><li><a class="tocitem" href="../spline_optimization/">Cubic spline optimization</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Details</a></li><li class="is-active"><a href>The BMS Group</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>The BMS Group</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/moble/Scri.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/moble/Scri.jl/blob/main/docs/src/80-details/30-bms_group.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="The-BMS-Group"><a class="docs-heading-anchor" href="#The-BMS-Group">The BMS Group</a><a id="The-BMS-Group-1"></a><a class="docs-heading-anchor-permalink" href="#The-BMS-Group" title="Permalink"></a></h1><h2 id="Bondi-Sachs-coordinates,-metric,-and-gauge"><a class="docs-heading-anchor" href="#Bondi-Sachs-coordinates,-metric,-and-gauge">Bondi-Sachs coordinates, metric, and gauge</a><a id="Bondi-Sachs-coordinates,-metric,-and-gauge-1"></a><a class="docs-heading-anchor-permalink" href="#Bondi-Sachs-coordinates,-metric,-and-gauge" title="Permalink"></a></h2><h2 id="The-null-cone-and-the-celestial-sphere"><a class="docs-heading-anchor" href="#The-null-cone-and-the-celestial-sphere">The null cone and the celestial sphere</a><a id="The-null-cone-and-the-celestial-sphere-1"></a><a class="docs-heading-anchor-permalink" href="#The-null-cone-and-the-celestial-sphere" title="Permalink"></a></h2><ul><li><p>Future null cone and celestial sphere</p><ul><li><p><span>$𝒩⁺$</span> with metric asymptotically Minkowski <span>$ηᵦᵧ$</span></p></li><li><p>celestial sphere <span>$𝕊²$</span> is the space of future null <em>rays</em> <span>$𝒩⁺/ℝ⁺$</span></p><ul><li>choose some <span>$t$</span> vector</li><li>each null vector decomposes as a term proportional to <span>$t$</span> plus a spatial vector</li><li>each null vector then gives rise to a unique spatial unit vector <span>$n̂$</span> by normalizing the spatial part</li><li>consider <span>$𝕊²$</span> to be represented by these spatial unit vectors</li><li>also use coordinates <span>$xᴬ$</span>, which may be <span>$(θ, φ)$</span></li></ul></li><li><p>section <span>$σ:𝕊²→𝒩⁺$</span> via <span>$σ:n̂↦ℓᵝ=(1,n̂)$</span>.  That is, <span>$σᵝ(xᴬ) = (1, n̂(xᴬ))$</span></p></li><li><p>(note that <span>$ℓᵝ = -ηᵝᵞ(dt-dr)ᵧ \sim -ηᵝᵞ(du)ᵧ$</span>)</p></li><li><p>induced metric on <span>$𝕊²$</span> is the pullback</p><p class="math-container">\[dΩ² = σ^* η = ηᵦᵧ \frac{∂σᵝ}{∂xᴬ} \frac{∂σᵞ}{∂xᴮ} dxᴬ dxᴮ\]</p><p>or</p><p class="math-container">\[g_{AB} = ηᵦᵧ \frac{∂σᵝ}{∂xᴬ} \frac{∂σᵞ}{∂xᴮ}.\]</p></li></ul></li></ul><h2 id="Lorentz-transformations-ℒ-and-the-conformal-factor-K"><a class="docs-heading-anchor" href="#Lorentz-transformations-ℒ-and-the-conformal-factor-K">Lorentz transformations <span>$ℒ$</span> and the conformal factor <span>$K$</span></a><a id="Lorentz-transformations-ℒ-and-the-conformal-factor-K-1"></a><a class="docs-heading-anchor-permalink" href="#Lorentz-transformations-ℒ-and-the-conformal-factor-K" title="Permalink"></a></h2><ul><li><p>Lorentz transformations preserve <span>$𝒩⁺$</span> but not the section with <span>$ℓ⁰=1$</span></p></li><li><p>Define <span>$K$</span> in terms of time component <span>${Λ⁰}_μ ℓ^μ = γ(1-v⃗⋅n̂) = 1/K$</span></p></li><li><p>Lorentz transformation <span>$Λ$</span> induces a transformation of the section as <span>$σ&#39; = K (Λ ∘ σ)$</span> (rescaling by <span>$K$</span> to get back to the preferred section)</p></li><li><p>Differentiating <span>${σ&#39;}ᵝ = K {Λᵝ}ᵧσᵞ$</span> by <span>$xᴬ$</span> gives us two terms, the first differentiating <span>$K$</span> and the second differentiating <span>$σ$</span>:</p><p class="math-container">\[\frac{∂{σ&#39;}ᵝ}{∂xᴬ} = \frac{∂K}{∂xᴬ} {Λᵝ}ᵧσᵞ + K {Λᵝ}ᵧ \frac{∂σᵞ}{∂xᴬ}.\]</p><p>That derivative is then contracted twice with the Minkowski metric to give us the new metric in the primed frame:</p><p class="math-container">\[g&#39;_{AB} = ηᵦᵧ \frac{∂{σ&#39;}ᵝ}{∂xᴬ} \frac{∂{σ&#39;}ᵞ}{∂xᴮ}.\]</p><p>We will expand this expression, but we need a few preliminary results first.  First, note that in all resulting terms, we have the <span>$Λ$</span>s contracted with the metric, which they preserve:</p><p class="math-container">\[ηᵦᵧ {Λᵝ}ᵤ {Λᵞ}ᵥ = ηᵤᵥ.\]</p><p>Next, we will need the fact that the section is null, which means that</p><p class="math-container">\[ηᵦᵧ σᵝ σᵞ = 0.\]</p><p>Finally, we can differentiate that expression to find that</p><p class="math-container">\[ηᵦᵧ σᵝ \frac{∂σᵞ}{∂xᴬ} = 0.\]</p><p>We can now use the expression for the derivative of <span>$σ&#39;$</span> to expand the expression for <span>$g&#39;_{AB}$</span>, and use these results to simplify, then find</p><p class="math-container">\[g&#39;_{AB} = K² ηᵦᵧ \frac{∂{σ}ᵝ}{∂xᴬ} \frac{∂{σ}ᵞ}{∂xᴮ} = K² g_{AB}.\]</p><p>That is, <span>${dΩ&#39;}² = K² dΩ²$</span>.  This is the key result: Lorentz transformations transform the unit sphere metric on the celestial sphere by a conformal factor <span>$K²$</span>.</p></li><li><p>Combine that with the fact that Bondi gauge requires the angular part of the metric to be <em>asymptotically</em> <span>$r² dΩ²$</span>, and if the transformation is an isometry we must have the <em>asymptotic</em> relation <span>$r² dΩ² \sim {r&#39;}² {dΩ&#39;}²$</span>, and we find that <span>$r \sim K r&#39;$</span>, which is Sachs&#39;s <em>definition</em> of <span>$K$</span>.</p></li></ul><div class="admonition is-info" id="To-do-c9e525548f686046"><header class="admonition-header">To do<a class="admonition-anchor" href="#To-do-c9e525548f686046" title="Permalink"></a></header><div class="admonition-body"><p>Here&#39;s a more mechanical and unenlightening derivation, though it may be more familiar, so it could be useful to have both.</p><ul><li>Conformal factor under boost:<ul><li>aberration formula <span>$\cos θ&#39; = (\cos θ - β) / (1 - β \cos θ)$</span></li><li>differentiate to find <span>$\sin θ&#39;\, dθ&#39; = K² \sin θ\, dθ$</span></li><li>use <span>$\sin² θ&#39; = 1-\cos² θ&#39;$</span> to find <span>$\sin θ&#39; = K \sin θ$</span></li><li>also have <span>$dθ&#39; = K dθ$</span></li><li>combine to show that a boost along <span>$z$</span> transforms the unit sphere metric as <span>${dΩ&#39;}² = K² dΩ²$</span>.</li><li>rotations preserve the unit sphere metric, so arbitrary Lorentz transformations transform the unit sphere metric as <span>${dΩ&#39;}² = K² dΩ²$</span>, with <span>$K$</span> as we defined it.</li></ul></li></ul></div></div><h2 id="Supertranslations-𝒮"><a class="docs-heading-anchor" href="#Supertranslations-𝒮">Supertranslations <span>$𝒮$</span></a><a id="Supertranslations-𝒮-1"></a><a class="docs-heading-anchor-permalink" href="#Supertranslations-𝒮" title="Permalink"></a></h2><h2 id="BMS"><a class="docs-heading-anchor" href="#BMS">BMS</a><a id="BMS-1"></a><a class="docs-heading-anchor-permalink" href="#BMS" title="Permalink"></a></h2><p>Denote the (proper orthochronous) Lorentz group by <span>$ℒ$</span> and the supertranslations by <span>$𝒮$</span>.  Then the BMS group is the <a href="https://en.wikipedia.org/wiki/Semidirect_product">semidirect product</a> of these two groups:</p><p class="math-container">\[\text{BMS} = 𝒮 ⋊ ℒ.\]</p><p>In particular, note that <span>$𝒮$</span> is a <a href="https://en.wikipedia.org/wiki/Normal_subgroup">normal subgroup</a> of <span>$\text{BMS}$</span>, but <span>$ℒ$</span> is not.  That is, for <span>$Λ ∈ ℒ$</span> and <span>$α ∈ 𝒮$</span>, the element <span>$Λ α Λ⁻¹$</span> is still an element of <span>$𝒮$</span>, but <span>$α Λ α⁻¹$</span> is not an element of <span>$ℒ$</span>.  This fact will be useful later.</p><p>We have essentially <em>constructed</em> the BMS group, but <a href="../../60-references/#Sachs_1962a">Sachs [11]</a> actually <em>derived</em> it from the asymptotic metric conditions, and analyzed the group structure after the fact [<a href="../../60-references/#Sachs_1962b">12</a>].</p><p><a href="../../60-references/#Sachs_1962a">Sachs [11]</a> was the first to describe the BMS group.  (He referred to it as the &quot;Generalized Bondi-Metzner group&quot;, or GBM group; later authors renamed it the Bondi-Metzner-Sachs group to honor his contribution.)  His slightly later paper [<a href="../../60-references/#Sachs_1962b">12</a>] was more specifically about the BMS group itself, and proved some important properties, including:</p><ol><li>The supertranslations form an abelian normal subgroup <span>$N$</span> of the generalized Bondi-Metzner group; the factor group is isomorphic to the orthochronous homogeneous Lorentz group.</li><li>The translations form a normal four-dimensional subgroup of the proper Bondi Metzner group.</li><li>If <span>$N&#39;$</span> is a four dimensional normal subgroup of the proper GBM group then <span>$N&#39;$</span> is contained in the supertranslation group <span>$N$</span>.</li><li>The only normal four dimensional subgroup of the GBM group is the translation group.</li></ol><p>We can write an arbitrary element of <span>$\text{BMS}$</span> <em>uniquely</em> [<a href="../../60-references/#DummitFoote_1999">13</a>, page 173] as <span>$(Λ, α)$</span> for some elements <span>$Λ ∈ ℒ$</span> and <span>$α ∈ 𝒮$</span>.  We interpret this as the composition of the supertranslation <span>$α$</span> <em>followed by</em> the Lorentz transformation <span>$Λ$</span>.<sup class="footnote-reference"><a id="citeref-1" href="#footnote-1" class="footnote-ref">[1]</a><span class="footnote-preview" id="fn-1"></span></sup>  The group operation is then</p><p class="math-container">\[(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + Λ₁⁻¹ α₂),\]</p><p>where <span>$Λ₁⁻¹ α₂$</span> is the function that first rotates the argument of <span>$α₂$</span> by <span>$Λ₁$</span> (not its inverse), and then evaluates <span>$α₂$</span> at that rotated argument.</p><p>The supertranslations form an <em>abelian</em> subgroup of <span>$\text{BMS}$</span> because</p><p class="math-container">\[(\text{id}, α₂) (\text{id}, α₁)
+= (\text{id}, α₁ + α₂)
+= (\text{id}, α₂ + α₁)
+= (\text{id}, α₁) (\text{id}, α₂).\]</p><h2 id="Decomposition-of-BMS"><a class="docs-heading-anchor" href="#Decomposition-of-BMS">Decomposition of BMS</a><a id="Decomposition-of-BMS-1"></a><a class="docs-heading-anchor-permalink" href="#Decomposition-of-BMS" title="Permalink"></a></h2><p>Essentially by our definition, we have already decomposed <span>$\text{BMS}$</span> into the supertranslations and the Lorentz transformations.  However, it can also be useful to further decompose these parts.  Once we have chosen a frame <span>$𝐭, 𝐱, 𝐲, 𝐳$</span> to work with, we can conventionally decompose any element of the BMS group as shown in the diagram below.</p><div class="composition-diagram" style="text-align: center; margin: 1.5em 0;">
+<!--
+  Node layout — to move a node, change its translate(cx, cy).
+  Row y-centers:  0=30, 1=107, 2=214, 3=335
+  Edges use those same centers; boxes & text are local to each <g>.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 390"
+     width="100%" style="max-width: 740px;">
+  <style>
+    .bms-tree text {
+      fill: currentColor;
+      text-anchor: middle;
+    }
+    .bms-tree .box {
+      fill: var(--bg, #888);
+      stroke: currentColor;
+      stroke-width: 1.4;
+    }
+    .bms-tree .edge {
+      stroke: currentColor;
+      stroke-width: 1.2;
+    }
+  </style>
+
+  <g class="bms-tree">
+
+    <!-- ===== Edges (drawn first, behind nodes) ===== -->
+
+    <!-- BMS → Supertranslations, Lorentz -->
+    <line class="edge" x1="530" y1="30" x2="260" y2="107"/>
+    <line class="edge" x1="530" y1="30" x2="800" y2="107"/>
+
+    <!-- Supertranslations → Proper, Spacetime -->
+    <line class="edge" x1="260" y1="107" x2="100" y2="214"/>
+    <line class="edge" x1="260" y1="107" x2="370" y2="214"/>
+
+    <!-- Lorentz → Rotations, Boosts -->
+    <line class="edge" x1="800" y1="107" x2="680" y2="214"/>
+    <line class="edge" x1="800" y1="107" x2="920" y2="214"/>
+
+    <!-- Spacetime → Time, Space -->
+    <line class="edge" x1="370" y1="214" x2="300" y2="335"/>
+    <line class="edge" x1="370" y1="214" x2="440" y2="335"/>
+
+    <!-- Rotations → Spherical, Spin angle -->
+    <line class="edge" x1="680" y1="214" x2="630" y2="335"/>
+    <line class="edge" x1="680" y1="214" x2="750" y2="335"/>
+
+    <!-- Boosts → 1-D boosts, Null rotations -->
+    <line class="edge" x1="920" y1="214" x2="880" y2="335"/>
+    <line class="edge" x1="920" y1="214" x2="1000" y2="335"/>
+
+    <!-- ===== Nodes ===== -->
+
+    <!-- Level 0: BMS -->
+    <g transform="translate(530, 30)">
+      <rect class="box" x="-40" y="-17" width="80" height="34" rx="6"/>
+      <text y="6" class="katex"><tspan class="mord">BMS</tspan></text>
+    </g>
+
+    <!-- Level 1: Supertranslations 𝒮 -->
+    <g transform="translate(260, 107)">
+      <rect class="box" x="-100" y="-25" width="200" height="50" rx="6"/>
+      <text y="-5">Supertranslations <tspan class="katex"><tspan class="mord mathscr">S</tspan></tspan></text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">α</tspan></text>
+    </g>
+
+    <!-- Level 1: Lorentz ℒ -->
+    <g transform="translate(800, 107)">
+      <rect class="box" x="-90" y="-25" width="180" height="50" rx="6"/>
+      <text y="-5">Lorentz <tspan class="katex"><tspan class="mord mathscr">L</tspan></tspan></text>
+      <text y="14" class="katex"><tspan class="mord">Λ</tspan></text>
+    </g>
+
+    <!-- Level 2: Proper supertranslations -->
+    <g transform="translate(100, 214)">
+      <rect class="box" x="-95" y="-25" width="190" height="50" rx="6"/>
+      <text y="-5">Proper</text>
+      <text y="14">supertranslations</text>
+    </g>
+
+    <!-- Level 2: Spacetime translations -->
+    <g transform="translate(370, 214)">
+      <rect class="box" x="-85" y="-25" width="170" height="50" rx="6"/>
+      <text y="-5">Spacetime</text>
+      <text y="14">translations</text>
+    </g>
+
+    <!-- Level 2: Rotations Spin(3) -->
+    <g transform="translate(680, 214)">
+      <rect class="box" x="-65" y="-25" width="130" height="50" rx="6"/>
+      <text y="-5">Rotations</text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">R</tspan></text>
+    </g>
+
+    <!-- Level 2: Boosts -->
+    <g transform="translate(920, 214)">
+      <rect class="box" x="-50" y="-25" width="100" height="50" rx="6"/>
+      <text y="-5">Boosts</text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">v⃗</tspan></text>
+    </g>
+
+    <!-- Level 3: Time translations δt -->
+    <g transform="translate(300, 335)">
+      <rect class="box" x="-60" y="-31" width="120" height="62" rx="6"/>
+      <text y="-13">Time</text>
+      <text y="4">translations</text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">δt</tspan></text>
+    </g>
+
+    <!-- Level 3: Space translations δx⃗ -->
+    <g transform="translate(440, 335)">
+      <rect class="box" x="-65" y="-31" width="130" height="62" rx="6"/>
+      <text y="-13">Space</text>
+      <text y="4">translations</text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">δx⃗</tspan></text>
+    </g>
+
+    <!-- Level 3: Spherical coordinates (θ, φ) -->
+    <g transform="translate(630, 335)">
+      <rect class="box" x="-55" y="-31" width="110" height="62" rx="6"/>
+      <text y="-13">Spherical</text>
+      <text y="4">coordinates</text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">(<tspan class="mord mathnormal">θ</tspan>, <tspan class="mord mathnormal">φ</tspan>)</tspan></text>
+    </g>
+
+    <!-- Level 3: Spin angle ψ -->
+    <g transform="translate(750, 335)">
+      <rect class="box" x="-50" y="-25" width="100" height="50" rx="6"/>
+      <text y="-5">Spin angle</text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">ψ</tspan></text>
+    </g>
+
+    <!-- Level 3: 1-D boosts η -->
+    <g transform="translate(880, 335)">
+      <rect class="box" x="-55" y="-25" width="110" height="50" rx="6"/>
+      <text y="-5">1-D boosts</text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">η</tspan></text>
+    </g>
+
+    <!-- Level 3: Null rotations -->
+    <g transform="translate(1000, 335)">
+      <rect class="box" x="-50" y="-31" width="100" height="62" rx="6"/>
+      <text y="-13">Null</text>
+      <text y="4">rotations</text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">ζ</tspan></text>
+    </g>
+  </g>
+</svg>
+<script>
+(function() {
+  var bg = getComputedStyle(document.documentElement).backgroundColor;
+  document.querySelector('.bms-tree').style.setProperty('--bg', bg);
+})();
+</script>
+</div><p>The supertranslations decompose naturally into &quot;proper&quot; supertranslations and ordinary spacetime translations — the latter of which further decompose into time translations <span>$δt$</span> and space translations <span>$δx⃗$</span>.  In general, the supertranslations are functions on the sphere, which we decompose into spherical harmonics.  If the supertranslation is a pure spacetime translation, then the only nonzero spherical harmonic modes are the <span>$ℓ=0$</span> mode for time translations and the <span>$ℓ=1$</span> modes for space translations. Equivalently, we can think of such translations in terms of their physical parameters <span>$δt$</span> and <span>$δx⃗$</span>.</p><p>The Lorentz transformations decompose naturally into rotations <span>$R$</span> and boosts <span>$v⃗$</span>.  It is already convenient to represent the rotation as a quaternion, which can be constructed in numerous ways, including the generator of the rotation, the axis and angle of the rotation, the Euler angles, or the spherical coordinates and spin angle (which is essentially a different version of Euler angles).  Finally, a general boost may be decomposed into a 1-D boost of rapidity <span>$η$</span> in the <span>$(θ, φ)$</span> direction, and a null rotation of parameter <span>$ζ$</span> about that direction.  This is not often an intuitive decomposition, but it is important in discussions of boost weight.</p><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a>We can equivalently write an arbitrary element of <span>$\text{BMS}$</span> in the opposite order: as some <span>$Λ&#39;$</span> followed by some <span>$α&#39;$</span>.  We have <span>$α&#39; Λ&#39; = Λ&#39; \left(Λ&#39;⁻¹ α&#39; Λ&#39;\right)$</span>, and the fact that <span>$𝒮$</span> is a normal subgroup of <span>$\text{BMS}$</span> guarantees that <span>$Λ&#39;⁻¹ α&#39; Λ&#39;$</span> is still an element of <span>$𝒮$</span>, so either order is permissible.</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../20-lorentz_group/">« The Lorentz Group</a><a class="docs-footer-nextpage" href="../40-aberration/">Aberration of Gravitational Waves »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 5 June 2026 13:48">Friday 5 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
