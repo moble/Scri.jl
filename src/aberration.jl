@@ -69,7 +69,7 @@ for automatic differentiation.  Branch selection is based on `value(β sinΘ̑)`
 derivative of the chosen branch is always evaluated, with no discontinuity in derivatives at
 the branch boundary.
 """
-function aberration(RRₚᵢ, v⃗; emitted::Bool = true)
+function aberration(RRₚᵢ, v⃗; emitted::Bool=true)
     # Equation numbers refer to Appendix C of Boyle (2015).
     β = absvec(v⃗)
     φ = atanh(β)
@@ -96,16 +96,16 @@ function aberration(RRₚᵢ, v⃗; emitted::Bool = true)
         # Flipping ε negates φ (i.e., β → -β), so even powers are unchanged and odd
         # powers pick up a sign; using εβ in the Horner form handles this automatically.
         cosΔΘ╱2 = (
-            1
-            + εβ * (
-                0
-                + εβ * (
-                    -sinΘ̑^2 / 8
-                    + εβ * (
-                        sinΘ̑^2 * cosΘ̑ / 8
-                        + εβ * (
-                            5 * (3sinΘ̑^2 - 4) * sinΘ̑^2 / 128
-                            + εβ * (10 - 7sinΘ̑^2) * sinΘ̑^2 * cosΘ̑ / 64
+            1 +
+            εβ * (
+                0 +
+                εβ * (
+                    -sinΘ̑^2 / 8 +
+                    εβ * (
+                        sinΘ̑^2 * cosΘ̑ / 8 +
+                        εβ * (
+                            5 * (3sinΘ̑^2 - 4) * sinΘ̑^2 / 128 +
+                            εβ * (10 - 7sinΘ̑^2) * sinΘ̑^2 * cosΘ̑ / 64
                         )
                     )
                 )
@@ -117,22 +117,23 @@ function aberration(RRₚᵢ, v⃗; emitted::Bool = true)
         # εβ inside restores a uniform +1/2 leading term in the series body.
         # Multiplying by n̂′xv⃗ (which carries the explicit factor of β sinΘ̑) gives the
         # full vector term sin((Θ̑−Θ)/2) * (n̂′×v⃗)/|n̂′×v⃗| without any division by μ.
-        sinΔΘ╱2╱βsinΘ̑ = ε * (
-            1
-            + εβ * (
-                -cosΘ̑ / 2
-                + εβ * (
-                    (1 - 3sinΘ̑^2 / 4) / 2
-                    + εβ * (
-                        (-5cosΘ̑^2 - 1) * cosΘ̑ / 16
-                        + εβ * (
-                            (35sinΘ̑^4 / 16 - 19sinΘ̑^2 / 4 + 3) / 8
-                            + εβ * (-61cosΘ̑^4 + 34cosΘ̑^2 + 27) * cosΘ̑ / 768
+        sinΔΘ╱2╱βsinΘ̑ =
+            ε * (
+                1 +
+                εβ * (
+                    -cosΘ̑ / 2 +
+                    εβ * (
+                        (1 - 3sinΘ̑^2 / 4) / 2 +
+                        εβ * (
+                            (-5cosΘ̑^2 - 1) * cosΘ̑ / 16 +
+                            εβ * (
+                                (35sinΘ̑^4 / 16 - 19sinΘ̑^2 / 4 + 3) / 8 +
+                                εβ * (-61cosΘ̑^4 + 34cosΘ̑^2 + 27) * cosΘ̑ / 768
+                            )
                         )
                     )
                 )
-            )
-        ) / 2
+            ) / 2
 
         # exp[n̂′×v⃗/|n̂′×v⃗| * (Θ̑−Θ)/2] to fifth order in |n̂′xv⃗|
         Q = cosΔΘ╱2 + n̂′xv⃗ * sinΔΘ╱2╱βsinΘ̑

@@ -24,6 +24,7 @@ time point ``j``.  We want to evaluate the spline at a set of query
 time points ``t'_{j'}`` that are contained within the range of the
 ``tⱼ`` (no extrapolation beyond machine-precision errors).  We abuse
 notation to write the spline as a function ``dₖ``, which is given by
+
 ```math
 \begin{aligned}
 dₖ(t) &=
@@ -35,22 +36,28 @@ dₖ(t) &=
 + \frac{dₖⱼ - d̈ₖⱼ (tⱼ₊₁-tⱼ)²}{6} \frac{tⱼ₊₁ - t}{tⱼ₊₁-tⱼ},
 \end{aligned}
 ```
+
 where the ``d̈ₖⱼ`` are found by imposing ``C^2`` continuity between
 adjacent segments, giving rise to the tridiagonal system
+
 ```math
 (tᵢ-tᵢ₋₁) d̈ₖⱼ₋₁ + 2 (tᵢ₊₁ - tᵢ₋₁) d̈ₖⱼ + (tᵢ₊₁ - tᵢ) d̈ₖⱼ₊₁
 = 6 \left( \frac{dₖⱼ₊₁ - dₖⱼ}{tᵢ₊₁ - tᵢ} - \frac{dₖⱼ - dₖⱼ₋₁}{tᵢ - tᵢ₋₁} \right).
 ```
+
 The latter may be written in matrix form as
+
 ```math
 A\, d̈ₖ = rₖ,
 ```
+
 where ``A`` is a tridiagonal matrix that depends only on the input
 time points, and ``rₖ`` is a vector that depends on the input time
 points and data values for component ``k``.  The goal is to solve for
 the second derivatives ``d̈ₖ`` given ``rₖ``, so that we may evaluate
 the spline at the query points.  To do so, we first decompose the
 matrix ``A`` into its LU factors
+
 ```math
 A = L U
 =
@@ -67,6 +74,7 @@ u₁ & s₁ &    &    &  \\
    &    &    & \ddots & \ddots
 \end{pmatrix},
 ```
+
 This decomposition into ``L`` and ``U`` only needs to be computed once
 for a given set of input time points, and can be reused for all data
 components.  As usual, the solution proceeds in two steps: first we
@@ -75,10 +83,13 @@ forward substitution with ``L``, and then we solve for ``d̈ₖ`` by
 backward substitution with ``U``.  Because ``L`` and ``U`` are simple
 bidiagonal matrices, these steps are very efficient and can be
 implemented with minimal overhead.  But they must be done recursively:
+
 ```math
 zₖⱼ = rₖⱼ - lⱼ zₖⱼ₋₁, \quad j ∈ 2:N-1,
 ```
+
 and
+
 ```math
 d̈ₖⱼ = \frac{zₖⱼ - sⱼ d̈ₖⱼ₊₁}{uⱼ}, \quad j ∈ N-1:-1:2
 ```

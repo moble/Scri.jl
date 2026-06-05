@@ -23,14 +23,14 @@ function _print_help()
         julia --project=test test/runtests.jl --pattern "Some pattern"      # Run test names or files that match pattern
         julia --project=test test/runtests.jl --exclude tag1,tags2          # Exclude tests with any of the tags
     """
-    return
+    return nothing
 end
 
 function _list_available_tags()
     @info "Available tags for filtering tests:"
     println()
 
-    for (tag, desc) in TAGS_DATA
+    for (tag, desc) ∈ TAGS_DATA
         if isempty(desc)
             println("  $tag")
         else
@@ -38,7 +38,7 @@ function _list_available_tags()
         end
     end
 
-    return
+    return nothing
 end
 
 const TAGS_DATA = Dict( # The tags below are a suggestion
@@ -59,12 +59,12 @@ function main()
 
     if args.help
         _print_help()
-        return
+        return nothing
     end
 
     if args.list
         _list_available_tags()
-        return
+        return nothing
     end
 
     println("Running Test Items")
@@ -79,7 +79,7 @@ function main()
             cp(test_project_toml_path, joinpath(envdir, "Project.toml"))
             # `pkg> dev` the package
             Pkg.activate(envdir)
-            Pkg.develop(; path = joinpath(@__DIR__, ".."))
+            Pkg.develop(; path=joinpath(@__DIR__, ".."))
             # Run the tests
             if isnothing(filter_func)
                 @run_package_tests verbose = args.verbose
@@ -89,7 +89,7 @@ function main()
         end
     end
 
-    return
+    return nothing
 end
 
 """
@@ -112,7 +112,7 @@ Parse a command-line argument that expects a value.
 - Error if flag is present but no value follows
 - Error if transformation fails
 """
-function _parse_argument_with_value(flag, transform = identity)
+function _parse_argument_with_value(flag, transform=identity)
     occurrences = findall(x -> x == flag, ARGS)
     isempty(occurrences) && return nothing
 
@@ -125,7 +125,7 @@ function _parse_argument_with_value(flag, transform = identity)
         error("Missing argument for '$flag'")
     end
     try
-        return transform(ARGS[idx+1])
+        return transform(ARGS[idx + 1])
     catch e
         error("Invalid value for flag '$flag': $(ARGS[idx + 1])")
     end
@@ -215,23 +215,22 @@ function parse_arguments()
         return tag
     end
 
-    tag_transform(list_of_tags) =
-        map(split(list_of_tags, ",")) do tag
-            ensure_tag_existence(Symbol(tag))
-        end
+    tag_transform(list_of_tags) = map(split(list_of_tags, ",")) do tag
+        ensure_tag_existence(Symbol(tag))
+    end
 
     tags_filter = _parse_argument_with_value("--tags", tag_transform)
     exclude_filter = _parse_argument_with_value("--exclude", tag_transform)
 
     return (
-        verbose = verbose,
-        help = help,
-        list = list,
-        file = file_filter,
-        tags = tags_filter,
-        exclude = exclude_filter,
-        name = name_filter,
-        pattern = pattern_filter,
+        verbose=verbose,
+        help=help,
+        list=list,
+        file=file_filter,
+        tags=tags_filter,
+        exclude=exclude_filter,
+        name=name_filter,
+        pattern=pattern_filter,
     )
 end
 
@@ -245,12 +244,12 @@ function _create_filter(args)
 
     # Tags filter
     if !isnothing(args.tags)
-        push!(filters, test_item -> all(tag in test_item.tags for tag in args.tags))
+        push!(filters, test_item -> all(tag ∈ test_item.tags for tag ∈ args.tags))
     end
 
     # Exclude filter
     if !isnothing(args.exclude)
-        push!(filters, test_item -> !(any(tag in test_item.tags for tag in args.exclude)))
+        push!(filters, test_item -> !(any(tag ∈ test_item.tags for tag ∈ args.exclude)))
     end
 
     # Name filter
@@ -273,7 +272,7 @@ function _create_filter(args)
     end
 
     # Combine all filters with AND logic
-    return test_item -> all(f(test_item) for f in filters)
+    return test_item -> all(f(test_item) for f ∈ filters)
 end
 
 # Run only if this script is executed directly

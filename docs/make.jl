@@ -93,8 +93,8 @@ makedocs(;
     repo=Documenter.Remotes.GitHub("moble", "Scri.jl"),
     sitename="Scri.jl",
     format=Documenter.HTML(;
-        prettyurls = !("local" in ARGS),  # Use clean URLs, unless built as a "local" build
-        edit_link = "main",  # Link out to "main" branch on github
+        prettyurls=(!("local" in ARGS)),  # Use clean URLs, unless built as a "local" build
+        edit_link="main",  # Link out to "main" branch on github
         canonical="https://moble.github.io/Scri.jl",
         assets=String["assets/citations.css", "assets/custom.css"],
     ),

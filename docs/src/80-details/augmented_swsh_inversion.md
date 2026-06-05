@@ -31,19 +31,24 @@ fields.  But if the data components need to be mixed together, we need
 to evaluate them on the same set of pixels.
 
 ## Direct SSHT
+
 For a given spin weight ``s``, we suppose that we have a set of mode
 weights ``𝐦``.  Then it is easy to evaluate those weights on a set of
 pixels by matrix multiplication:
+
 ```math
 {}_{s}𝐘 · 𝐦 = 𝐩,
 ```
+
 where ``{}_{s}𝐘_{ij} = {}{}_{s}Y_{ℓ,m}(R_j)`` is the synthesis matrix of the
 SSHT, the index ``(ℓ,m)`` corresponds to the ``i``-th entry of the
 vector of mode weights, and ``R_j`` is the position of the ``j``-th
 pixel.  The pixel values are then modified as needed, and the analysis step is given by the inverse operation:
+
 ```math
 {}_{s}𝐘^{-1} · 𝐩 = 𝐦.
 ```
+
 Obviously, rather than computing the inverse of the synthesis matrix,
 we can perform the analysis step by solving the linear system as usual
 using an LU or QR factorization that is precomputed and stored in the
@@ -94,11 +99,13 @@ Prepending ``Q_⊥`` to ``{}_{s}𝐘`` yields a square ``Nᵖ × Nᵖ`` matrix w
 columns span all of ``ℂ^{Nᵖ}``.  Every pixel vector decomposes
 uniquely into a component in col(``{}_{s}𝐘``) and a component in
 col(``Q_⊥``), so the augmented system
+
 ```math
 \bigl[Q_⊥ \big| {{}_{s}𝐘}\bigr]
 \begin{bmatrix} ξ \\ 𝐦 \end{bmatrix}
 = 𝐩
 ```
+
 always has a unique solution.  The mode weights ``𝐦`` appear in the
 lower ``Nᵐ`` entries of the solution vector, and the auxiliary
 variable ``ξ`` absorbs whatever null-space content is present in

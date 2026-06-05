@@ -168,6 +168,7 @@ transformations.  However, it can also be useful to further decompose
 these parts.  Once we have chosen a frame ``𝐭, 𝐱, 𝐲, 𝐳`` to work
 with, we can conventionally decompose any element of the BMS group as
 shown in the diagram below.
+
 ```@raw html
 <div class="composition-diagram" style="text-align: center; margin: 1.5em 0;">
 <!--
@@ -326,6 +327,7 @@ shown in the diagram below.
 </script>
 </div>
 ```
+
 The supertranslations decompose naturally into "proper"
 supertranslations and ordinary spacetime translations — the latter of
 which further decompose into time translations ``δt`` and space

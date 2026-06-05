@@ -20,29 +20,29 @@ end
     αᵢₙ = [ComplexF64(2k - 1, 2k) for k ∈ 1:16]
     α = Scri.impose_reality(αᵢₙ, 3, 1)
 
-    @test α[1]  ==  1 + 0im   # ℓ=0 m=0
+    @test α[1] == 1 + 0im   # ℓ=0 m=0
 
-    @test α[3]  ==  5 + 0im   # ℓ=1 m= 0
-    @test α[4]  ==  2 + 6im   # ℓ=1 m=+1
-    @test α[2]  == -2 + 6im   # ℓ=1 m=−1
+    @test α[3] == 5 + 0im   # ℓ=1 m= 0
+    @test α[4] == 2 + 6im   # ℓ=1 m=+1
+    @test α[2] == -2 + 6im   # ℓ=1 m=−1
 
-    @test α[7]  == 13 + 0im   # ℓ=2 m= 0
-    @test α[8]  ==  2 + 14im  # ℓ=2 m=+1
-    @test α[6]  == -2 + 14im  # ℓ=2 m=−1
-    @test α[9]  == 13 + 4im   # ℓ=2 m=+2
-    @test α[5]  == 13 - 4im   # ℓ=2 m=−2
+    @test α[7] == 13 + 0im   # ℓ=2 m= 0
+    @test α[8] == 2 + 14im  # ℓ=2 m=+1
+    @test α[6] == -2 + 14im  # ℓ=2 m=−1
+    @test α[9] == 13 + 4im   # ℓ=2 m=+2
+    @test α[5] == 13 - 4im   # ℓ=2 m=−2
 
     @test α[13] == 25 + 0im   # ℓ=3 m= 0
-    @test α[14] ==  2 + 26im  # ℓ=3 m=+1
+    @test α[14] == 2 + 26im  # ℓ=3 m=+1
     @test α[12] == -2 + 26im  # ℓ=3 m=−1
     @test α[15] == 25 + 4im   # ℓ=3 m=+2
     @test α[11] == 25 - 4im   # ℓ=3 m=−2
-    @test α[16] ==  6 + 26im  # ℓ=3 m=+3
+    @test α[16] == 6 + 26im  # ℓ=3 m=+3
     @test α[10] == -6 + 26im  # ℓ=3 m=−3
 end
 
 @testitem "impose_reality: output satisfies reality condition" tags = [:unit, :fast] setup = [
-    RealitySetup,
+    RealitySetup
 ] begin
     import Random
     using .RealitySetup: FloatTypes
@@ -53,7 +53,7 @@ end
         for T ∈ FloatTypes
             α = Scri.impose_reality(Complex{T}.(α_big), L - 1, 1)
             for ℓ ∈ 0:(L - 1)
-                @test imag(α[ℓ^2 + ℓ + 1]) == 0  # m=0 modes are real
+                @test imag(α[ℓ ^ 2 + ℓ + 1]) == 0  # m=0 modes are real
                 for m ∈ 1:ℓ
                     i = ℓ^2 + ℓ + m + 1
                     j = ℓ^2 + ℓ - m + 1
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "impose_reality: valid input is a fixed point" tags = [:unit, :fast] setup = [
-    RealitySetup,
+    RealitySetup
 ] begin
     import Random
     using .RealitySetup: FloatTypes
@@ -96,7 +96,7 @@ end
         # preserved through Complex{T}.(α_big) for every T.
         α_big = zeros(Complex{BigFloat}, L^2)
         for ℓ ∈ 0:(L - 1)
-            α_big[ℓ^2 + ℓ + 1] = randn(rng, BigFloat)  # m=0: real
+            α_big[ℓ ^ 2 + ℓ + 1] = randn(rng, BigFloat)  # m=0: real
             for m ∈ 1:ℓ
                 i = ℓ^2 + ℓ + m + 1
                 j = ℓ^2 + ℓ - m + 1
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "impose_reality: output size, padding, and εᵅ scaling" tags = [:unit, :fast] setup = [
-    RealitySetup,
+    RealitySetup
 ] begin
     import Random
     using .RealitySetup: FloatTypes
@@ -127,10 +127,11 @@ end
             α_padded = Scri.impose_reality(αᵢₙ, ℓₘₐₓ, 1)
             @test length(α_padded) == (ℓₘₐₓ + 1)^2
             # Modes beyond the input ℓₘₐₓ are zero-padded.
-            @test all(iszero, α_padded[(L^2 + 1):end])
+            @test all(iszero, α_padded[(L ^ 2 + 1):end])
             # εᵅ scales the output linearly (verified to be exact for real εᵅ).
             c = T(3) / T(2)
-            @test Scri.impose_reality(αᵢₙ, L - 1, c) == c .* Scri.impose_reality(αᵢₙ, L - 1, 1)
+            @test Scri.impose_reality(αᵢₙ, L - 1, c) ==
+                c .* Scri.impose_reality(αᵢₙ, L - 1, 1)
         end
     end
 end
@@ -148,48 +149,51 @@ end
     # With β=0 the rotors are irrelevant; γ=1 and k⁻¹=1 for every pixel.
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [1.0, -0.5, 2.0]   # min = -0.5, max = 2.0
-    v⃗  = QuatVec(0.0, 0.0, 0.0)
-    t  = collect(range(-10.0, 10.0; length = 101))
+    v⃗ = QuatVec(0.0, 0.0, 0.0)
+    t = collect(range(-10.0, 10.0; length=101))
     # εᵅ = -1:
     #   t′ₘᵢₙ = max_p(tₘᵢₙ - αₚ[p]) = tₘᵢₙ - min(αₚ) = -10 - (-0.5) = -9.5
     #   t′ₘₐₓ = min_p(tₘₐₓ - αₚ[p]) = tₘₐₓ - max(αₚ) = 10 - 2 = 8
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ -9.5
-    @test t′[end]   ≈  8.0
+    @test t′[end] ≈ 8.0
 end
 
-@testitem "compute_t′: α=0, boost along z contracts range by Doppler factor" tags = [:unit, :fast] begin
+@testitem "compute_t′: α=0, boost along z contracts range by Doppler factor" tags = [
+    :unit, :fast
+] begin
     import Quaternionic: Rotor, QuatVec
-    β  = 0.5
-    γ  = 1 / √(1 - β^2)
+    β = 0.5
+    γ = 1 / √(1 - β^2)
     # Pixel at +z (identity rotor): k⁻¹ = γ(1-β)  — blue-shifted, weak constraint
     # Pixel at -z (Rotor(0,1,0,0)): k⁻¹ = γ(1+β)  — red-shifted, binding constraint
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(0.0, 1.0, 0.0, 0.0)]
     αₚ = [0.0, 0.0]
-    v⃗  = QuatVec(0.0, 0.0, β)
-    t  = collect(range(-10.0, 10.0; length = 101))
+    v⃗ = QuatVec(0.0, 0.0, β)
+    t = collect(range(-10.0, 10.0; length=101))
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     # For tₘᵢₙ<0<tₘₐₓ both bounds are set by the anti-boost (-z) pixel:
     @test length(t′) == length(t)
     @test t′[begin] ≈ -10.0 / (γ * (1 + β))
-    @test t′[end]   ≈  10.0 / (γ * (1 + β))
+    @test t′[end] ≈ 10.0 / (γ * (1 + β))
 end
 
 @testitem "compute_t′: inlined vdotn formula matches R(𝐤) direct application" tags = [
-    :unit, :validation, :fast,
+    :unit, :validation, :fast
 ] begin
     import Quaternionic: RotorF64, QuatVecF64, 𝐤
     import Random
 
     rng = Random.Xoshiro(42)
     for _ ∈ 1:30
-        R  = randn(rng, RotorF64)
-        v⃗  = randn(rng, QuatVecF64)
+        R = randn(rng, RotorF64)
+        v⃗ = randn(rng, QuatVecF64)
         v_x, v_y, v_z = v⃗[2], v⃗[3], v⃗[4]   # QuatVec: [1]=w=0, [2..4]=x,y,z
         w, x, y, z = R[1], R[2], R[3], R[4]
         # Inlined formula used by compute_t′:
-        vdotn = 2v_x * (w * y + x * z) + 2v_y * (y * z - w * x) + v_z * (w^2 + z^2 - x^2 - y^2)
+        vdotn =
+            2v_x * (w * y + x * z) + 2v_y * (y * z - w * x) + v_z * (w^2 + z^2 - x^2 - y^2)
         # Reference: apply rotor to 𝐤, then take dot product component-wise
         n̂ = R(𝐤)
         vdotn_ref = v⃗[2] * n̂[2] + v⃗[3] * n̂[3] + v⃗[4] * n̂[4]
@@ -197,20 +201,22 @@ end
     end
 end
 
-@testitem "compute_t′: output preserves length and is strictly monotone" tags = [:unit, :fast] begin
+@testitem "compute_t′: output preserves length and is strictly monotone" tags = [
+    :unit, :fast
+] begin
     import Quaternionic: RotorF64, QuatVec
     import Random
 
     rng = Random.Xoshiro(7)
     for _ ∈ 1:10
         Nm = 20
-        β  = 0.1 + 0.6 * rand(rng)
+        β = 0.1 + 0.6 * rand(rng)
         Rₚ = randn(rng, RotorF64, Nm)
         αₚ = 0.05 .* randn(rng, Nm)   # small enough that range doesn't collapse
-        v⃗  = QuatVec(0.0, 0.0, β)
+        v⃗ = QuatVec(0.0, 0.0, β)
         # Non-uniform time grid centered near zero
-        dt  = abs.(randn(rng, 100)) .+ 0.01
-        t   = cumsum(dt) .- sum(dt) / 2
+        dt = abs.(randn(rng, 100)) .+ 0.01
+        t = cumsum(dt) .- sum(dt) / 2
         (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         @test length(t′) == length(t)
         @test all(diff(t′) .> 0)
@@ -223,11 +229,11 @@ end
 
     rng = Random.Xoshiro(12)
     for _ ∈ 1:5
-        Nm  = 10
-        Rₚ  = randn(rng, RotorF64, Nm)
-        αₚ  = zeros(Nm)
-        v⃗   = QuatVec(0.0, 0.0, 0.0)
-        t   = collect(range(-5.0, 5.0; length = 51))
+        Nm = 10
+        Rₚ = randn(rng, RotorF64, Nm)
+        αₚ = zeros(Nm)
+        v⃗ = QuatVec(0.0, 0.0, 0.0)
+        t = collect(range(-5.0, 5.0; length=51))
         (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         # With β=0 and α=0, k⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
         # t′ₘₐₓ=tₘₐₓ, scale=1, and t′ = t exactly.
@@ -236,25 +242,25 @@ end
 end
 
 @testitem "compute_t′: tᵪ is a fixed point of the affine map t↦t′(t)" tags = [
-    :unit, :fast, :validation,
+    :unit, :fast, :validation
 ] begin
     import Quaternionic: RotorF64, QuatVec
     import Random
 
     rng = Random.Xoshiro(77)
     for _ ∈ 1:10
-        Nm  = 15
-        β   = 0.1 + 0.5 * rand(rng)
-        Rₚ  = randn(rng, RotorF64, Nm)
-        αₚ  = 0.05 .* randn(rng, Nm)
-        v⃗   = QuatVec(0.0, 0.0, β)
-        t   = collect(range(-10.0, 10.0; length = 101))
+        Nm = 15
+        β = 0.1 + 0.5 * rand(rng)
+        Rₚ = randn(rng, RotorF64, Nm)
+        αₚ = 0.05 .* randn(rng, Nm)
+        v⃗ = QuatVec(0.0, 0.0, β)
+        t = collect(range(-10.0, 10.0; length=101))
         (t′, tᵪ) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         # Reconstruct the affine map from returned endpoints and verify t′(tᵪ) = tᵪ.
-        tₘᵢₙ, tₘₐₓ     = t[begin], t[end]
-        t′ₘᵢₙ, t′ₘₐₓ   = t′[begin], t′[end]
-        scale             = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
-        t′_at_tᵪ          = t′ₘᵢₙ + scale * (tᵪ - tₘᵢₙ)
+        tₘᵢₙ, tₘₐₓ = t[begin], t[end]
+        t′ₘᵢₙ, t′ₘₐₓ = t′[begin], t′[end]
+        scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
+        t′_at_tᵪ = t′ₘᵢₙ + scale * (tᵪ - tₘᵢₙ)
         @test t′_at_tᵪ ≈ tᵪ atol = 4eps(max(abs(tᵪ), 1.0))
     end
 end
@@ -265,53 +271,53 @@ end
 
     rng = Random.Xoshiro(55)
     for _ ∈ 1:10
-        Nm  = 12
-        β   = 0.2 + 0.4 * rand(rng)
-        Rₚ  = randn(rng, RotorF64, Nm)
-        αₚ  = 0.05 .* randn(rng, Nm)
-        v⃗   = QuatVec(0.0, 0.0, β)
-        t   = collect(range(-8.0, 8.0; length = 81))
+        Nm = 12
+        β = 0.2 + 0.4 * rand(rng)
+        Rₚ = randn(rng, RotorF64, Nm)
+        αₚ = 0.05 .* randn(rng, Nm)
+        v⃗ = QuatVec(0.0, 0.0, β)
+        t = collect(range(-8.0, 8.0; length=81))
         (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         Δt′ = diff(t′)
         # The map t↦t′ is affine, so equal steps in t produce equal steps in t′.
         # Tolerance is relative to the full range, not the step: the forced
         # t′[end] = t′ₘₐₓ assignment can shift the last step by up to eps(range).
-        @test all(isapprox.(Δt′, Δt′[begin]; atol = 4eps(t′[end] - t′[begin])))
+        @test all(isapprox.(Δt′, Δt′[begin]; atol=4eps(t′[end] - t′[begin])))
     end
 end
 
 @testitem "compute_t′: t grid entirely positive works correctly" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
 
-    β     = 0.3
-    γ     = 1 / √(1 - β^2)
+    β = 0.3
+    γ = 1 / √(1 - β^2)
     k_inv = γ * (1 - β)
     # Single pixel at +z, no supertranslation, boost along +z.
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [0.0]
-    v⃗  = QuatVec(0.0, 0.0, β)
-    t  = collect(range(5.0, 20.0; length = 101))
+    v⃗ = QuatVec(0.0, 0.0, β)
+    t = collect(range(5.0, 20.0; length=101))
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ t[begin] / k_inv atol = 4eps(t′[begin])
-    @test t′[end]   ≈ t[end]   / k_inv atol = 4eps(t′[end])
+    @test t′[end] ≈ t[end] / k_inv atol = 4eps(t′[end])
 end
 
 @testitem "compute_t′: t grid entirely negative works correctly" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
 
-    β     = 0.3
-    γ     = 1 / √(1 - β^2)
+    β = 0.3
+    γ = 1 / √(1 - β^2)
     k_inv = γ * (1 - β)
     # Single pixel at +z, no supertranslation, boost along +z.
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [0.0]
-    v⃗  = QuatVec(0.0, 0.0, β)
-    t  = collect(range(-20.0, -5.0; length = 101))
+    v⃗ = QuatVec(0.0, 0.0, β)
+    t = collect(range(-20.0, -5.0; length=101))
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ t[begin] / k_inv atol = 4eps(t′[begin])
-    @test t′[end]   ≈ t[end]   / k_inv atol = 4eps(t′[end])
+    @test t′[end] ≈ t[end] / k_inv atol = 4eps(t′[end])
 end
 
 @testitem "compute_t′: collapsed range throws an error" tags = [:unit, :fast] begin
@@ -324,7 +330,7 @@ end
     # Here the supertranslation spread (10) exceeds the time range (2).
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [-5.0, 5.0]
-    v⃗  = QuatVec(0.0, 0.0, 0.0)
-    t  = collect(range(-1.0, 1.0; length = 51))
+    v⃗ = QuatVec(0.0, 0.0, 0.0)
+    t = collect(range(-1.0, 1.0; length=51))
     @test_throws ErrorException Scri.compute_t′(t, αₚ, Rₚ, v⃗)
 end

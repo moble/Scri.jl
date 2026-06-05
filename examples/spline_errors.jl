@@ -128,7 +128,7 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     N = floor(Int, 1/2β)  # Time samples away from 0 where plateau begins
     t₋, t₊ = let
         i₀ = argmin(abs.(t))
-        t[i₀-N], t[i₀+N]
+        t[i₀ - N], t[i₀ + N]
     end
 
     t1 = time_ns()
@@ -139,47 +139,57 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     (; data, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊)
 end
 
-function plot_example(data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊, β) where {T}
+function plot_example(
+    data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊, β
+) where {T}
     ℓₘₐₓ = isqrt(size(data, 1)) - 1
-    beta = Float64(round(β, sigdigits=3))
+    beta = Float64(round(β; sigdigits=3))
     dc = Scri.DataComponents(:σ)
     plt = Scri.diagnostics(t′, data′, dc)[:σ]
-    hline!(plt, [ℓₘₐₓ * eps(T)], color=:grey, ls=:dot, z_order=:back, label="")
-    hline!(plt, [ϵₜ], color=:purple, z_order=:back, label=L"|\sigma^{(4)}| δt^4 ℓ_\mathrm{max}^{-3/2}")
-    vline!(plt, [t₋, t₊], color=:black, z_order=:back, label=L"N = \lfloor 1/(2β) \rfloor")
-    plot!(plt, legend_position=(0.82,0.99), title=L"\sigma' \quad(\beta=%$beta c)", dpi=300)
+    hline!(plt, [ℓₘₐₓ * eps(T)]; color=:grey, ls=:dot, z_order=:back, label="")
+    hline!(
+        plt,
+        [ϵₜ];
+        color=:purple,
+        z_order=:back,
+        label=L"|\sigma^{(4)}| δt^4 ℓ_\mathrm{max}^{-3/2}",
+    )
+    vline!(plt, [t₋, t₊]; color=:black, z_order=:back, label=L"N = \lfloor 1/(2β) \rfloor")
+    plot!(
+        plt; legend_position=(0.82, 0.99), title=L"\sigma' \quad(\beta=%$beta c)", dpi=300
+    )
     savefig(plt, "spline_errors_$T.png")
 end
 
 function main(args=ARGS)
     println("Running on $(Threads.nthreads()) threads")
 
-    s = ArgParse.ArgParseSettings(
+    s = ArgParse.ArgParseSettings(;
         description="Demonstrate spline interpolation errors in BMS transformations"
     )
     ArgParse.@add_arg_table! s begin
         "T"
-            help = "Floating-point precision type (e.g. Float64, Double64, BigFloat)"
-            required = true
+        help = "Floating-point precision type (e.g. Float64, Double64, BigFloat)"
+        required = true
         "lmax"
-            help = "Maximum harmonic mode ℓₘₐₓ"
-            arg_type = Int
-            required = true
+        help = "Maximum harmonic mode ℓₘₐₓ"
+        arg_type = Int
+        required = true
         "--Nt"
-            help = "Number of time samples"
-            arg_type = Int
-            default = 10_001
+        help = "Number of time samples"
+        arg_type = Int
+        default = 10_001
         "--t1"
-            help = "Start time"
-            arg_type = Float64
-            default = -5_000.0
+        help = "Start time"
+        arg_type = Float64
+        default = -5_000.0
         "--t2"
-            help = "End time"
-            arg_type = Float64
-            default = 5_000.0
+        help = "End time"
+        arg_type = Float64
+        default = 5_000.0
         "--beta"
-            help = "Boost velocity as rational p/q (e.g., 1/1000)"
-            default = "1/1000"
+        help = "Boost velocity as rational p/q (e.g., 1/1000)"
+        default = "1/1000"
     end
 
     parsed = ArgParse.parse_args(args, s)
@@ -190,7 +200,11 @@ function main(args=ARGS)
     t₁ = parsed["t1"]
     t₂ = parsed["t2"]
     β = let parts = split(parsed["beta"], '/')
-        length(parts) == 2 ? Rational(parse(Int, parts[1]), parse(Int, parts[2])) : Rational(parse(Int, parts[1]))
+        if length(parts) == 2
+            Rational(parse(Int, parts[1]), parse(Int, parts[2]))
+        else
+            Rational(parse(Int, parts[1]))
+        end
     end
 
     result = compute_example(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)

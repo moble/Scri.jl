@@ -22,7 +22,6 @@ struct CubicSplineCache{T<:AbstractFloat}
     u⁻¹::Vector{T}
 end
 
-
 """
     CubicSplineCache(t)
 
@@ -71,23 +70,24 @@ function CubicSplineCache(t::AbstractVector{T}) where {T<:AbstractFloat}
     N = length(t)
     N ≥ 4 || throw(ArgumentError("CubicSplineCache requires at least 4 knots, got $N"))
     h = Vector{T}(undef, N - 1)
-    for j ∈ 1:N-1
-        h[j] = t[j+1] - t[j]
-        h[j] > 0 || throw(ArgumentError(
-            "Knot vector must be strictly increasing: t[$j]=$(t[j]) ≥ t[$(j+1)]=$(t[j+1])"
-        ))
+    for j ∈ 1:(N - 1)
+        h[j] = t[j + 1] - t[j]
+        h[j] > 0 || throw(
+            ArgumentError(
+                "Knot vector must be strictly increasing: t[$j]=$(t[j]) ≥ t[$(j+1)]=$(t[j+1])",
+            ),
+        )
     end
     h⁻¹ = inv.(h)
     u⁻¹ = Vector{T}(undef, N - 2)
-    l   = Vector{T}(undef, N - 3)
+    l = Vector{T}(undef, N - 3)
     u⁻¹[1] = inv(2 * (h[1] + h[2]))
-    for k ∈ 2:N-2
-        l[k-1]  = h[k] * u⁻¹[k-1]
-        u⁻¹[k] = inv(2 * (h[k] + h[k+1]) - l[k-1] * h[k])
+    for k ∈ 2:(N - 2)
+        l[k - 1] = h[k] * u⁻¹[k - 1]
+        u⁻¹[k] = inv(2 * (h[k] + h[k + 1]) - l[k - 1] * h[k])
     end
     return CubicSplineCache{T}(h, h⁻¹, l, u⁻¹)
 end
-
 
 """
     spline_eval(dⱼ, dⱼ₊₁, d̈ⱼ, d̈ⱼ₊₁, hⱼ, h⁻¹ⱼ, τ)
