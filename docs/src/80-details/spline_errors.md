@@ -1,4 +1,4 @@
-# Splines
+# Spline Errors
 
 Given tabulated gravitational-wave data sampled at discrete retarded
 times, BMS transformations (other than simple time shifts or
@@ -114,14 +114,19 @@ Augmenting-to-a-square,-prefactorable-system).  The fact that they are
 smaller than any other modes is a good consistency check that the
 algorithm is working as expected.
 
-![Plot showing converging modes until reaching the spline plateau](spline_example.png)
+![Plot showing converging modes until reaching the spline plateau](spline_errors_Float64.png)
 
 One very important point is that this structure is the same regardless
-of the precision of the numbers being used.  We can use [`Double64`
-numbers](https://juliamath.github.io/DoubleFloats.jl/stable/), which
-have ``ϵ ≈ 10^{-32}``.  We also have to extend to ``ℓₘₐₓ = 20`` to
-obtain full convergence to this new ``ℓₘₐₓ ϵ``.  Nonetheless, the
-"noise" plateau does not change significantly — either in the width of
-the "good" region, or in the level of the plateau.  That is, the
-plateau is not a numerical artifact, but a real feature whenever we
-interpolate with finite smoothness.
+of the precision of the numbers being used.  We can use Julia's
+built-in extended-precision number type
+[`BigFloat`](https://docs.julialang.org/en/v1/manual/integers-and-floating-point-numbers/#Arbitrary-Precision-Arithmetic),
+which have ``ϵ ≈ 10^{-77}``.  We also have to extend to ``ℓₘₐₓ = 35``
+to obtain full convergence to this new ``ℓₘₐₓ ϵ``.  As seen in the
+plot below, near ``t=0``, the modes do indeed converge nicely all the
+way down to nearly that precision.  However, exactly at the expected
+distance from ``t=0``, the modes again jump up to the *same* plateau
+as before.  There is no improvement in the plateau level, despite the
+much higher precision, because the plateau is determined by the spline
+interpolation error, which is independent of the numerical precision.
+
+![Extended-precision version of the plot above, converging to 1e-72 near t=0, but still rising to the same plateau as above away from t=0](spline_errors_BigFloat.png)

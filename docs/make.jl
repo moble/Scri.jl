@@ -25,6 +25,7 @@ bibliography = CitationBibliography(
 links = InterLinks(
     "Quaternionic" => "https://moble.github.io/Quaternionic.jl/stable/",
     "SphericalFunctions" => "https://moble.github.io/SphericalFunctions.jl/stable/",
+    "Julia" => "https://docs.julialang.org/en/v1/",
 )
 
 # Add titles of sections and overrides page titles
@@ -32,6 +33,7 @@ const titles = Dict(
     # "10-tutorials" => "Tutorials", # example folder title
     "80-details" => "Details",
     "91-developer.md" => "Developer docs",
+    "65-api.md" => "API",
     "99-local_notes" => "Notes",
 )
 

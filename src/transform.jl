@@ -25,15 +25,14 @@ possible since we are transforming `data` in-place.)  This array is expected to 
 supertranslation in the rest frame, which is a real-valued function (with spin weight 0) on
 the sphere.  The reality condition is that the mode weights satisfy ``α_{ℓ,-m} = (-1)^m
 ᾱ_{ℓ,m}``.  This function will automatically impose this condition by averaging each mode
-with its complex conjugate partner.  This is done in a copy of the array for simplicity,
+with its complex-conjugate partner.  This is done in a copy of the array for simplicity,
 rather than being done in place.
 
 The `dc` argument is a [`DataComponents`](@ref) value specifying which field components are
 stored in `data`, in the order they appear along its third dimension.  Because of the
 hierarchical nature of the BMS transformation, any Weyl component ``ψᵢ`` must be accompanied
-by all higher-index components ``ψⱼ`` for ``j > i``.  At most one of `:σ` and `:h` can be
-included.  Note that `DataComponents` includes a sign indicating whether `data` represents
-data on ``ℐ⁺`` if εᴵ = +1 or ``ℐ⁻`` if εᴵ = -1.
+by all higher-index components ``ψⱼ`` for ``j > i``.  Note that `DataComponents` includes a
+sign indicating whether `data` represents data on ``ℐ⁺`` if εᴵ = +1 or ``ℐ⁻`` if εᴵ = -1.
 
 The optional keyword `εᵅ` represents the sign in the time-transformation law ``t′ = t - εᵅ
 α``.

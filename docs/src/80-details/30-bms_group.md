@@ -1,4 +1,4 @@
-# The BMS group
+# The BMS Group
 
 ## Bondi-Sachs coordinates, metric, and gauge
 

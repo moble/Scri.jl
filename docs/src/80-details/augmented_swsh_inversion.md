@@ -1,4 +1,4 @@
-# Augmented direct SSHT
+# Augmented Direct SSHT
 
 The spin-spherical-harmonic transform (SSHT) is a key component of the
 BMS pipeline, and its performance is critical to the overall
