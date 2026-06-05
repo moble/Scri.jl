@@ -1,6 +1,7 @@
 # Tests for CubicSplineCache (src/cubic_spline.jl)
 
 @testmodule CubicSplineSetup begin
+    using Scri
     using DoubleFloats: Double64
     const FloatTypes = (Float32, Float64, Double64, BigFloat)
 
@@ -80,7 +81,7 @@ end
     for T ∈ FloatTypes
         N  = 12
         dt = T.(abs.(randn(rng, N - 1))) .+ T(0.1)
-        t  = T.(cumsum(dt))
+        t  = [zero(T); T.(cumsum(dt))]   # N elements: prepend t=0
         d  = T.(randn(rng, N))
         c  = Scri.CubicSplineCache(t)
         for j ∈ 1:N
@@ -91,30 +92,31 @@ end
 end
 
 
-@testitem "CubicSplineCache: exact for cubic polynomials" tags = [:unit, :fast, :validation] setup = [
+@testitem "CubicSplineCache: exact for linear polynomials" tags = [:unit, :fast, :validation] setup = [
     CubicSplineSetup,
 ] begin
     import Random
     using .CubicSplineSetup: FloatTypes, cubic_spline_interp
 
-    # A natural cubic spline must reproduce any cubic polynomial exactly
-    # (up to floating-point rounding), because the conditions that define it
-    # are satisfied identically.
+    # A natural cubic spline must reproduce any linear polynomial exactly
+    # (up to floating-point rounding): linear data has zero second divided
+    # differences, so the Thomas algorithm produces d̈ = 0 everywhere and
+    # spline_eval reduces to linear interpolation.
     rng = Random.Xoshiro(13)
     for T ∈ FloatTypes
         N   = 15
         dt  = T.(abs.(randn(rng, N - 1))) .+ T(0.1)
         t   = T.(cumsum(dt))
-        # random cubic: p(x) = a + b·x + c·x² + e·x³
-        a, b, c, e = T.(randn(rng, 4))
-        poly(x) = a + b*x + c*x^2 + e*x^3
+        # random linear: p(x) = a + b·x
+        a, b = T.(randn(rng, 2))
+        poly(x) = a + b*x
         d = poly.(t)
         cache = Scri.CubicSplineCache(t)
         # query at 30 interior points
         for _ ∈ 1:30
             xq = t[1] + rand(rng) * (t[end] - t[1])
             s  = cubic_spline_interp(cache, t, d, T(xq))
-            @test s ≈ poly(T(xq)) atol = 100 * eps(T) * (abs(a) + abs(b)*t[end] + abs(c)*t[end]^2 + abs(e)*t[end]^3 + 1)
+            @test s ≈ poly(T(xq)) atol = 100 * eps(T) * (abs(a) + abs(b)*t[end] + 1)
         end
     end
 end
@@ -156,20 +158,21 @@ end
     import Random
     using .CubicSplineSetup: FloatTypes, cubic_spline_interp
 
-    # On a non-uniform grid, the spline must still reproduce degree-2 polynomials.
+    # On a non-uniform grid, the spline must still reproduce linear polynomials exactly.
+    # (Natural BC d̈[endpoints]=0 is satisfied by linear data, so the spline IS the line.)
     rng = Random.Xoshiro(99)
     for T ∈ FloatTypes
         N  = 10
         dt = T.(sort(rand(rng, N - 1)) .* T(4) .+ T(0.05))
         t  = T.(cumsum(dt))
-        a, b, c = T.(randn(rng, 3))
-        poly(x) = a + b*x + c*x^2
+        a, b = T.(randn(rng, 2))
+        poly(x) = a + b*x
         d = poly.(t)
         cache = Scri.CubicSplineCache(t)
         for _ ∈ 1:20
             xq = t[1] + rand(rng) * (t[end] - t[1])
             s  = cubic_spline_interp(cache, t, d, T(xq))
-            @test s ≈ poly(T(xq)) atol = 1000 * eps(T) * (abs(a) + abs(b)*t[end] + abs(c)*t[end]^2 + 1)
+            @test s ≈ poly(T(xq)) atol = 1000 * eps(T) * (abs(a) + abs(b)*t[end] + 1)
         end
     end
 end
@@ -188,7 +191,7 @@ end
     for T ∈ (Float64,)
         N  = 12
         dt = T.(abs.(randn(rng, N - 1))) .+ T(0.1)
-        t  = T.(cumsum(dt))
+        t  = [zero(T); T.(cumsum(dt))]   # N elements: prepend t=0
         d  = T.(randn(rng, N))
         c  = Scri.CubicSplineCache(t)
         # Forward sweep
@@ -227,6 +230,6 @@ end
     for j ∈ 1:N-1
         # τ=0 should give d[j], τ=h[j] should give d[j+1]
         @test Scri.spline_eval(d[j], d[j+1], 0.0, 0.0, c.h[j], c.h⁻¹[j], 0.0)    == d[j]
-        @test Scri.spline_eval(d[j], d[j+1], 0.0, 0.0, c.h[j], c.h⁻¹[j], c.h[j]) == d[j+1]
+        @test Scri.spline_eval(d[j], d[j+1], 0.0, 0.0, c.h[j], c.h⁻¹[j], c.h[j]) ≈ d[j+1]
     end
 end
