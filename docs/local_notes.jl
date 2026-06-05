@@ -1,9 +1,9 @@
 # Conditionally include private local notes when building docs.  The directory
-# `docs/src/97-local_notes` should be a symlink into a private notes git repo.  When absent
+# `docs/src/99-local_notes` should be a symlink into a private notes git repo.  When absent
 # (e.g., in CI), `notes_pages` and `notes_remotes` are empty and the build proceeds
 # normally.
 
-notes_src = joinpath(@__DIR__, "src", "97-local_notes")
+notes_src = joinpath(@__DIR__, "src", "99-local_notes")
 
 if isdir(notes_src)
     files = filter(f -> endswith(f, ".md"), readdir(notes_src; sort=true))

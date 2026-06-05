@@ -39,23 +39,29 @@ The optional keyword `εᵅ` represents the sign in the time-transformation law 
 
 """
 function transform!(
-    data::Array{Complex{T1}}, t::Vector{T2},
-    v⃗::QuatVec{T3}, R::Rotor{T4}, αᵢₙ::Vector{Complex{T5}},
-    dc::DataComponents{C, Eᴵ}, εᵅ=+1
-) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real, C, Eᴵ}
+    data::Array{Complex{T1}},
+    t::Vector{T2},
+    v⃗::QuatVec{T3},
+    R::Rotor{T4},
+    αᵢₙ::Vector{Complex{T5}},
+    dc::DataComponents{C,Eᴵ},
+    εᵅ=+1,
+) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,Eᴵ}
     # Use this `let` block to ensure that we don't accidentally use `T` below, because that
     # could lead to type instability.
     let T = promote_type(T1, T2, T3, T4, T5)
         if T != T1
-            throw(AssertionError(
-                "\nInput `data` type $T1 does not match common input type $T.\n" *
-                "Because `transform!` modifies `data` in place, its type must be\n" *
-                "compatible with all the other input types:\n" *
-                "  - `t` has element type $T2\n" *
-                "  - `v⃗` has element type $T3\n" *
-                "  - `R` has element type $T4\n" *
-                "  - `α` has element type $T5\n"
-            ))
+            throw(
+                AssertionError(
+                    "\nInput `data` type $T1 does not match common input type $T.\n" *
+                    "Because `transform!` modifies `data` in place, its type must be\n" *
+                    "compatible with all the other input types:\n" *
+                    "  - `t` has element type $T2\n" *
+                    "  - `v⃗` has element type $T3\n" *
+                    "  - `R` has element type $T4\n" *
+                    "  - `α` has element type $T5\n",
+                ),
+            )
         end
     end
 
@@ -71,14 +77,14 @@ function transform!(
     @assert length(αᵢₙ) ≤ Nᵐ "Input `αᵢₙ` has $(length(αᵢₙ)) modes, but expected at most $Nᵐ"
     ℓₘₐₓ = L - 1
     Nᵖ = Nᵐ
-    block_size = max(1,  min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
+    block_size = max(1, min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
 
     ###
     ### Stage 0: Precompute various quantities needed for the transformation
     ###
 
-    β   = absvec(v⃗)
-    γ   = 1 / √(1 - β^2)
+    β = absvec(v⃗)
+    γ = 1 / √(1 - β^2)
     vˣ, vʸ, vᶻ = vec(v⃗)
 
     # Compute uniformly spaced rotors that are simple to produce, but close to ideal for
@@ -116,9 +122,9 @@ function transform!(
             s -> ₛ𝐘(s, ℓₘₐₓ, basetype(Tₚ), Rₚ),
             Matrix{Complex{basetype(Tₚ)}},
             -2:2;
-            chunking=false
+            chunking=false,
         ),
-        -3
+        -3,
     )
     task_augmented_lu = OhMyThreads.@spawn begin
         # Build augmented square analysis matrices.  See the documentation page "Augmented
@@ -131,11 +137,11 @@ function transform!(
                 else
                     F = qr(ₛY)
                     Q = F.Q * Matrix{Bool}(I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
-                    Q⊥ = Q[:, Nᵐ-s^2+1:end]  # Nᵐ × s² null-space columns
-                    lu([Q⊥  ₛY])  # Nᵐ × Nᵐ, square
+                    Q⊥ = Q[:, (Nᵐ - s ^ 2 + 1):end]  # Nᵐ × s² null-space columns
+                    lu([Q⊥ ₛY])  # Nᵐ × Nᵐ, square
                 end
             end,
-            -3
+            -3,
         )
     end
 
@@ -168,12 +174,21 @@ function transform!(
         ðt′╱k = Matrix{Complex{T1}}(undef, 2, Nᵖ)
         @simd ivdep for i ∈ eachindex(Rₚ)
             Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
-            Λˣ = ((Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ
-                + (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ + (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ)
-            Λʸ = ((Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ
-                + (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ + (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ)
-            Λᶻ = ((Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ
-                + (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ + (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ)
+            Λˣ = (
+                (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ +
+                (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ +
+                (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ
+            )
+            Λʸ = (
+                (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ +
+                (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ +
+                (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ
+            )
+            Λᶻ = (
+                (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ +
+                (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
+                (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
+            )
             ðt′╱k[2, i] = (Λˣ + im * Λʸ) / (Λᶻ - Eᴵ)
             ðt′╱k[1, i] = ðt′╱k[2, i] * αₚ[i] + ðαₚ[i]
         end
@@ -198,8 +213,8 @@ function transform!(
         cols = axes(data, 2)
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
-            valid_modes = (s^2 + 1):Nᵐ  # skip leading ℓ < |s| entries
-            data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
+            valid_modes = (s ^ 2 + 1):Nᵐ  # skip leading ℓ < |s| entries
+            data_k = view(data,:,:,k)  # (Nᵐ × Nᵗ), fully contiguous
             workspace = Matrix{Complex{T1}}(undef, Nᵐ - s^2, block_size)
             for sub_start ∈ cols[begin:block_size:end]
                 sub = sub_start:min(sub_start + block_size - 1, cols[end])
@@ -223,16 +238,16 @@ function transform!(
         OhMyThreads.@set scheduler = :static
         OhMyThreads.@set ntasks = nthreads()
         OhMyThreads.@local begin
-            dᵢ  = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
-            d̈ᵢ  = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
+            dᵢ = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
+            d̈ᵢ = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
             d′ᵢ = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
         end
 
         v⃗dotn̂ᵢ = let (Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ) = components(Rₚ[i])
             (
-                2vˣ * (Rₚᵢʷ * Rₚᵢʸ + Rₚᵢˣ * Rₚᵢᶻ)
-                + 2vʸ * (Rₚᵢʸ * Rₚᵢᶻ - Rₚᵢʷ * Rₚᵢˣ)
-                + vᶻ  * (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)
+                2vˣ * (Rₚᵢʷ * Rₚᵢʸ + Rₚᵢˣ * Rₚᵢᶻ) +
+                2vʸ * (Rₚᵢʸ * Rₚᵢᶻ - Rₚᵢʷ * Rₚᵢˣ) +
+                vᶻ * (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)
             )
         end
         k⁻¹ᵢ = γ * (1 - v⃗dotn̂ᵢ)
@@ -244,25 +259,32 @@ function transform!(
         # Copy pixel time series into the dᵢ buffer.  Note that tests comparing this
         # `permutedims!` approach to `LinearAlgebra.copy_transpose!` and to `.= transpose`
         # show this to be fastest and least allocating by up to ~2x, depending on Nᵈ.
-        data_view = view(data, i, :, :)
-        permutedims!(dᵢ, data_view, (2,1))
+        data_view = view(data,i,:,:)
+        permutedims!(dᵢ, data_view, (2, 1))
 
         # `d̈` forward sweep (Thomas algorithm, natural BC: d̈[1]=d̈[Nᵗ]=0)
         @inbounds let
             @simd ivdep for k ∈ 1:Nᵈ
-                d̈ᵢ[k, 1]  = 0
+                d̈ᵢ[k, 1] = 0
             end
             @simd ivdep for k ∈ 1:Nᵈ
-                r = 6 * (cubic_spline_cache.h⁻¹[2] * (dᵢ[k, 3] - dᵢ[k, 2])
-                    - cubic_spline_cache.h⁻¹[1] * (dᵢ[k, 2] - dᵢ[k, 1]))
+                r =
+                    6 * (
+                        cubic_spline_cache.h⁻¹[2] * (dᵢ[k, 3] - dᵢ[k, 2]) -
+                        cubic_spline_cache.h⁻¹[1] * (dᵢ[k, 2] - dᵢ[k, 1])
+                    )
                 d̈ᵢ[k, 2] = r * cubic_spline_cache.u⁻¹[1]
             end
-            for j ∈ 3:Nᵗ-1
+            for j ∈ 3:(Nᵗ - 1)
                 @simd ivdep for k ∈ 1:Nᵈ
-                    r = 6 * (cubic_spline_cache.h⁻¹[j] * (dᵢ[k, j+1] - dᵢ[k, j])
-                        - cubic_spline_cache.h⁻¹[j-1] * (dᵢ[k, j] - dᵢ[k, j-1]))
-                    d̈ᵢ[k, j] = (r - cubic_spline_cache.h[j-1] * d̈ᵢ[k, j-1]) *
-                        cubic_spline_cache.u⁻¹[j-1]
+                    r =
+                        6 * (
+                            cubic_spline_cache.h⁻¹[j] * (dᵢ[k, j + 1] - dᵢ[k, j]) -
+                            cubic_spline_cache.h⁻¹[j - 1] * (dᵢ[k, j] - dᵢ[k, j - 1])
+                        )
+                    d̈ᵢ[k, j] =
+                        (r - cubic_spline_cache.h[j - 1] * d̈ᵢ[k, j - 1]) *
+                        cubic_spline_cache.u⁻¹[j - 1]
                 end
             end
             @simd ivdep for k ∈ 1:Nᵈ
@@ -275,12 +297,12 @@ function transform!(
         @inbounds let
             j′ = Nᵗ
             tᵢⱼ′ = t′[j′] * k⁻¹ᵢ + αₚᵢ  # original-frame time for output index j′
-            for j ∈ Nᵗ-1:-1:1
+            for j ∈ (Nᵗ - 1):-1:1
                 # Backward sweep step: d̈ᵢ[j] = z[j] − l[j-1]·d̈ᵢ[j+1]
                 # (j=Nᵗ-1 and j=1 are natural-BC endpoints; no update needed)
                 if 2 ≤ j ≤ Nᵗ-2
                     @simd ivdep for k ∈ 1:Nᵈ
-                        d̈ᵢ[k, j] -= cubic_spline_cache.l[j-1] * d̈ᵢ[k, j+1]
+                        d̈ᵢ[k, j] -= cubic_spline_cache.l[j - 1] * d̈ᵢ[k, j + 1]
                     end
                 end
 
@@ -292,10 +314,13 @@ function transform!(
                     let τ = tᵢⱼ′ - t[j]
                         @simd ivdep for k ∈ 1:Nᵈ
                             d′ᵢ[k, j′] = spline_eval(
-                                dᵢ[k, j], dᵢ[k, j+1],
-                                d̈ᵢ[k, j], d̈ᵢ[k, j+1],
-                                cubic_spline_cache.h[j], cubic_spline_cache.h⁻¹[j],
-                                τ
+                                dᵢ[k, j],
+                                dᵢ[k, j + 1],
+                                d̈ᵢ[k, j],
+                                d̈ᵢ[k, j + 1],
+                                cubic_spline_cache.h[j],
+                                cubic_spline_cache.h⁻¹[j],
+                                τ,
                             )
                         end
                     end
@@ -310,7 +335,7 @@ function transform!(
         end
 
         # Copy the transformed pixel time series back from the d′ᵢ buffer
-        permutedims!(data_view, d′ᵢ, (2,1))
+        permutedims!(data_view, d′ᵢ, (2, 1))
     end  # OhMyThreads.@tasks
 
     ###
@@ -343,18 +368,23 @@ same component `:ψ₄`.  Alternatively, if the argument is `nothing` (the defau
 `Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` will be chosen — though a warning will be issued.
 """
 function transform!(
-    data::Array{Complex{T1}}, t::Vector{T2},
-    v⃗::QuatVec{T3}, R::Rotor{T4}, αᵢₙ::Vector{Complex{T5}};
-    data_components=nothing, εᵅ::Int=+1, εᴵ::Int=+1
-) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real, T5<:Real}
+    data::Array{Complex{T1}},
+    t::Vector{T2},
+    v⃗::QuatVec{T3},
+    R::Rotor{T4},
+    αᵢₙ::Vector{Complex{T5}};
+    data_components=nothing,
+    εᵅ::Int=+1,
+    εᴵ::Int=+1,
+) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}
     Nᵈ = size(data, 3)
     dc = if data_components isa DataComponents
         data_components
     elseif isnothing(data_components)
         default_dc = (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]
         @warn "Defaulting to data components $(default_dc).\n" *
-              "Check that this is correct for your input data.\n" *
-              "Consider passing a `DataComponents` value explicitly."
+            "Check that this is correct for your input data.\n" *
+            "Consider passing a `DataComponents` value explicitly."
         DataComponents(default_dc...; εᴵ)
     else
         DataComponents(data_components...; εᴵ)

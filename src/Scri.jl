@@ -1,8 +1,8 @@
 module Scri
 
-import Quaternionic: QuatVec, Rotor, absvec, abs2vec, 𝐤, ×, ×̂, value, components, basetype
-import SphericalFunctions: SSHTDirect, ₛ𝐘, ð, ð̄, golden_ratio_spiral_rotors
-import LinearAlgebra: mul!, ldiv!, lu, I, BLAS, qr
+import Quaternionic: QuatVec, Rotor, absvec, 𝐤, value, components, basetype
+import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
+import LinearAlgebra: mul!, ldiv!, lu, I, qr
 import OffsetArrays: OffsetVector
 import Logging
 import Hwloc

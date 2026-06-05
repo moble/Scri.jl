@@ -17,13 +17,16 @@ end
                 Rotor(cos(π/4), 0, 0, sin(π/4)),
                 Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
             ]
-                @test components(Scri.aberration(R, v⃗_zero; emitted)) ≈ components(R) atol = 4eps(T)
+                @test components(Scri.aberration(R, v⃗_zero; emitted)) ≈ components(R) atol =
+                    4eps(T)
             end
         end
     end
 end
 
-@testitem "aberration: pole invariance — no tangent rotation along boost axis" tags = [:unit, :fast] setup = [AberrationSetup] begin
+@testitem "aberration: pole invariance — no tangent rotation along boost axis" tags = [
+    :unit, :fast
+] setup = [AberrationSetup] begin
     import Quaternionic: Rotor, QuatVec, components
     using .AberrationSetup: FloatTypes
 
@@ -37,15 +40,17 @@ end
             R_south = Rotor(0, one(T), 0, 0)
             for β ∈ T.([0.1, 0.5, 0.9])
                 v⃗ = QuatVec(0, 0, β)
-                @test components(Scri.aberration(R_north, v⃗; emitted)) ≈ components(R_north) atol = 4eps(T)
-                @test components(Scri.aberration(R_south, v⃗; emitted)) ≈ components(R_south) atol = 4eps(T)
+                @test components(Scri.aberration(R_north, v⃗; emitted)) ≈
+                    components(R_north) atol = 4eps(T)
+                @test components(Scri.aberration(R_south, v⃗; emitted)) ≈
+                    components(R_south) atol = 4eps(T)
             end
         end
     end
 end
 
 @testitem "aberration: geometric sign — equatorial pixel: cosΘ = εβ" tags = [
-    :unit, :validation, :fast,
+    :unit, :validation, :fast
 ] setup = [AberrationSetup] begin
     import Quaternionic: Rotor, QuatVec, 𝐤
     using .AberrationSetup: FloatTypes
@@ -70,7 +75,9 @@ end
     end
 end
 
-@testitem "aberration: round-trip with inverse gives identity" tags = [:unit, :validation] setup = [AberrationSetup] begin
+@testitem "aberration: round-trip with inverse gives identity" tags = [:unit, :validation] setup = [
+    AberrationSetup
+] begin
     import Quaternionic: Rotor, QuatVec, 𝐤, absvec, components, ×̂
     using .AberrationSetup: FloatTypes
 
@@ -86,7 +93,7 @@ end
         cos_Θ = clamp(-(n̂ * v̂).w, -one(β), one(β))
         Θ = acos(cos_Θ)
         Θ′ = 2atan(exp(φ) * tan(Θ / 2))
-        exp(((Θ - Θ′) / 2) * (n̂ ×̂ v̂)) * R
+        exp(((Θ - Θ′) / 2) * (n̂×̂v̂)) * R
     end
 
     for T ∈ FloatTypes
@@ -101,12 +108,14 @@ end
                 v⃗ = QuatVec(T(0.6) * β, T(-0.8) * β, 0)
                 # Cross-check against alternative implementation (looser tolerance due to acos).
                 R_boost = boosted_rotor(v⃗, R)
-                @test components(Scri.aberration(R_boost, v⃗)) ≈ components(R) atol = 100eps(T)
+                @test components(Scri.aberration(R_boost, v⃗)) ≈ components(R) atol =
+                    100eps(T)
                 # emitted and received are mutual inverses in both directions.
                 for ε ∈ (-1, +1)
                     emitted = (ε == 1)
                     R_first = Scri.aberration(R, v⃗; emitted)
-                    @test components(Scri.aberration(R_first, v⃗; emitted = !emitted)) ≈ components(R) atol = 4eps(T)
+                    @test components(Scri.aberration(R_first, v⃗; emitted=(!emitted))) ≈
+                        components(R) atol = 4eps(T)
                 end
             end
         end
@@ -114,7 +123,7 @@ end
 end
 
 @testitem "aberration: azimuthal symmetry — z-rotation commutes with z-boost" tags = [
-    :unit, :validation, :fast,
+    :unit, :validation, :fast
 ] setup = [AberrationSetup] begin
     import Quaternionic: Rotor, QuatVec, components
     using .AberrationSetup: FloatTypes
@@ -139,7 +148,7 @@ end
 end
 
 @testitem "aberration:\n    Taylor branch matches exact formula near Float64/BigFloat threshold" tags = [
-    :unit, :validation, :fast,
+    :unit, :validation, :fast
 ] begin
     import Quaternionic: Rotor, QuatVec, components
 
@@ -166,15 +175,14 @@ end
             result_f64 = Scri.aberration(Rotor{Float64}(R_big), QuatVec{Float64}(v⃗_big))
 
             # Round the BigFloat result down to Float64 and compare component-wise.
-            @test components(Rotor{Float64}(result_big)) ≈ components(Rotor{Float64}(result_f64)) atol =
-                4eps(Float64)
+            @test components(Rotor{Float64}(result_big)) ≈
+                components(Rotor{Float64}(result_f64)) atol = 4eps(Float64)
         end
     end
 end
 
-
 @testitem "aberration: two-boost composition matches vR decomposition (Wigner rotation)" tags = [
-    :unit, :validation,
+    :unit, :validation
 ] setup = [AberrationSetup] begin
     import Quaternionic
     import Quaternionic: Boost, Rotor, QuatVec, components
@@ -189,9 +197,9 @@ end
         let π = T(π)
             s = T(1) / sqrt(T(2))   # 1/√2, exact in T
             boost_pairs = [
-                (T(0.5), T[1, 0, 0],  T(0.4), T[0, 1, 0]),   # x then y
-                (T(0.3), T[s, s, 0],  T(0.6), T[0, s, s]),   # diagonals in xy and yz
-                (T(0.8), T[0, 0, 1],  T(0.5), T[s, 0, s]),   # z then xz-plane
+                (T(0.5), T[1, 0, 0], T(0.4), T[0, 1, 0]),   # x then y
+                (T(0.3), T[s, s, 0], T(0.6), T[0, s, s]),   # diagonals in xy and yz
+                (T(0.8), T[0, 0, 1], T(0.5), T[s, 0, s]),   # z then xz-plane
             ]
             rotors = [
                 Rotor(one(T), 0, 0, 0),
@@ -200,7 +208,8 @@ end
                 Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
             ]
             for (η₁, n̂₁, η₂, n̂₂) ∈ boost_pairs
-                L₁ = Boost(η₁, n̂₁);  L₂ = Boost(η₂, n̂₂)
+                L₁ = Boost(η₁, n̂₁);
+                L₂ = Boost(η₂, n̂₂)
                 v⃗_eff, R_Wigner = Quaternionic.vR(L₂ * L₁)
                 v⃗₁ = tanh(η₁) * QuatVec(n̂₁[1], n̂₁[2], n̂₁[3])
                 v⃗₂ = tanh(η₂) * QuatVec(n̂₂[1], n̂₂[2], n̂₂[3])

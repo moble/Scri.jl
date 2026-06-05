@@ -5,5 +5,5 @@ import LiveServer: servedocs
 
 servedocs(;
     include_dirs=["src/", realpath(joinpath("docs", "src", "99-local_notes"))],
-    launch_browser=true
+    launch_browser=true,
 )

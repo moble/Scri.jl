@@ -50,15 +50,19 @@ The spectral consequences of the kink are quantified by
 singularity of order ``p`` along a smooth curve has energy spectrum
 ``E(ℓ) ∼ ℓ⁻⁽ᵖ⁺¹⁾``, where energy is defined as the sum of the squares
 of the SWSH coefficients at each ``ℓ``:
+
 ```math
 E(ℓ) = \sum_{m=-ℓ}^ℓ |f_{ℓm}|^2.
 ```
+
 For an order-``n`` B-spline the singularity order is ``p = n-1``,
 giving
+
 ```math
 E(ℓ) ∼ ℓ^{-n},
 \qquad ϵ_\text{trunc} ∼ Mₙ(δ t)^n ⋅ (ℓ_\text{max}')^{-(n-1)/2}.
 ```
+
 For cubic splines (``n = 4``) this yields ``E(ℓ) ∼ ℓ^{-4}`` and
 ``ϵ_\text{trunc} ∼ M₄ (δt)^4 (ℓ_\text{max}')^{-3/2}``, a persistent
 power-law floor analogous to the Gibbs phenomenon
@@ -77,17 +81,18 @@ constructed functions are better thought of as *representative* of
 gravitational waveforms exclusively for testing purposes, rather than
 representing true physics.
 
-
 ## Example
 
 Here, we demonstrate these effects using a simple test waveform
 boosted to ``\beta = 0.001c``.  The test waveform is given by
+
 ```math
 σ_{ℓ,m} = \begin{cases}
 Ω^{ℓ/3} \exp\left(-i m Ω t\right) & 2 \leq ℓ \leq 8, \\
 0 & \text{otherwise},
 \end{cases}
 ```
+
 with ``Ω ≈ 0.025``, ``v = ∛Ω``, and sampling of ``δt ≈ 1``.  The
 ``Ω^{ℓ/3}`` is chosen to *very* roughly correspond to the
 post-Newtonian scaling, and the phase corresponds to rigid rotation

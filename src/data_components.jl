@@ -3,16 +3,49 @@ const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :N
 # This utility function just translates any reasonable string representation of a data
 # component's name into the canonical symbol.
 function parse_data_component(s::AbstractString)
-    Symbol(replace(s,
-        '_' => "", '{' => "", '}' => "",
-        '0' => '₀', '1' => '₁', '2' => '₂', '3' => '₃', '4' => '₄',
-        "σ" => "σ", "Σ" => "σ", "sigma" => "σ", "Sigma" => "σ", "SIGMA" => "σ",
-        "h" => "h", "H" => "h", "strain" => "h", "Strain" => "h", "STRAIN" => "h",
-        "News" => "News", "news" => "News", "NEWS" => "News", "N" => "News", "n" => "News",
-        "ψ" => "ψ", "Ψ" => "ψ", "psi" => "ψ", "Psi" => "ψ", "PSI" => "ψ",
-        "φ" => "φ", "ϕ" => "φ", "Φ" => "φ", "phi" => "φ", "Phi" => "φ", "PHI" => "φ",
-        "varphi" => "φ", "varPhi" => "φ", "varPHI" => "φ", "VARPHI" => "φ"
-    ))
+    Symbol(
+        replace(
+            s,
+            '_' => "",
+            '{' => "",
+            '}' => "",
+            '0' => '₀',
+            '1' => '₁',
+            '2' => '₂',
+            '3' => '₃',
+            '4' => '₄',
+            "σ" => "σ",
+            "Σ" => "σ",
+            "sigma" => "σ",
+            "Sigma" => "σ",
+            "SIGMA" => "σ",
+            "h" => "h",
+            "H" => "h",
+            "strain" => "h",
+            "Strain" => "h",
+            "STRAIN" => "h",
+            "News" => "News",
+            "news" => "News",
+            "NEWS" => "News",
+            "N" => "News",
+            "n" => "News",
+            "ψ" => "ψ",
+            "Ψ" => "ψ",
+            "psi" => "ψ",
+            "Psi" => "ψ",
+            "PSI" => "ψ",
+            "φ" => "φ",
+            "ϕ" => "φ",
+            "Φ" => "φ",
+            "phi" => "φ",
+            "Phi" => "φ",
+            "PHI" => "φ",
+            "varphi" => "φ",
+            "varPhi" => "φ",
+            "varPHI" => "φ",
+            "VARPHI" => "φ",
+        ),
+    )
 end
 
 """
@@ -40,10 +73,10 @@ Examples:
     DataComponents(:φ₀, :φ₁, :φ₂)                # Faraday components
     DataComponents(:φ₀, :φ₁, :φ₂; εᴵ=-1)         # Faraday components on ℐ⁻
 """
-struct DataComponents{C, Eᴵ}
+struct DataComponents{C,Eᴵ}
     function DataComponents(cs::Symbol...; εᴵ=1)
         validate_data_components(cs, εᴵ)
-        new{cs, εᴵ}()
+        new{cs,εᴵ}()
     end
     function DataComponents(cs::AbstractString...; εᴵ=1)
         DataComponents((parse_data_component.(cs))...; εᴵ)
@@ -73,48 +106,43 @@ function validate_data_components(cs, εᴵ)
     end
 end
 
-
 """
     component_index(dc::DataComponents{C}, ::Val{S})
 
 Return the index of component `S` within `dc`, or `nothing` if absent.  The return type is
 inferred as a compile-time constant when `dc` has a concrete type.
 """
-@inline component_index(::DataComponents{C}, ::Val{S}) where {C, S} =
-    findfirst(==(S), C)
-
+@inline component_index(::DataComponents{C}, ::Val{S}) where {C,S} = findfirst(==(S), C)
 
 """
     has_component(dc::DataComponents{C}, ::Val{S})
 
 Return `true` if component `S` is present in `dc`.
 """
-@inline has_component(::DataComponents{C}, ::Val{S}) where {C, S} = S ∈ C
-
+@inline has_component(::DataComponents{C}, ::Val{S}) where {C,S} = S ∈ C
 
 """
     ncomponents(dc::DataComponents)
 
 Return the number of components in `dc`.
 """
-ncomponents(::DataComponents{C}) where C = length(C)
-
+ncomponents(::DataComponents{C}) where {C} = length(C)
 
 """
     spin_weight(::Val{S})
 
 Return the spin weight of field component `S`.
 """
-spin_weight(::Val{:ψ₀}) =  2
-spin_weight(::Val{:ψ₁}) =  1
-spin_weight(::Val{:ψ₂}) =  0
+spin_weight(::Val{:ψ₀}) = 2
+spin_weight(::Val{:ψ₁}) = 1
+spin_weight(::Val{:ψ₂}) = 0
 spin_weight(::Val{:ψ₃}) = -1
 spin_weight(::Val{:ψ₄}) = -2
-spin_weight(::Val{:σ})  =  2
-spin_weight(::Val{:h})  = -2
-spin_weight(::Val{:News})  = -2
-spin_weight(::Val{:φ₀}) =  1
-spin_weight(::Val{:φ₁}) =  0
+spin_weight(::Val{:σ}) = 2
+spin_weight(::Val{:h}) = -2
+spin_weight(::Val{:News}) = -2
+spin_weight(::Val{:φ₀}) = 1
+spin_weight(::Val{:φ₁}) = 0
 spin_weight(::Val{:φ₂}) = -1
 Base.@constprop :aggressive spin_weight(s)::Int = spin_weight(Val(s))
 
@@ -151,13 +179,12 @@ conformal_weight(::Val{:ψ₁}) = -3
 conformal_weight(::Val{:ψ₂}) = -3
 conformal_weight(::Val{:ψ₃}) = -3
 conformal_weight(::Val{:ψ₄}) = -3
-conformal_weight(::Val{:σ})  = -1
-conformal_weight(::Val{:h})  = -1
-conformal_weight(::Val{:News})  = -2
+conformal_weight(::Val{:σ}) = -1
+conformal_weight(::Val{:h}) = -1
+conformal_weight(::Val{:News}) = -2
 conformal_weight(::Val{:φ₀}) = -2
 conformal_weight(::Val{:φ₁}) = -2
 conformal_weight(::Val{:φ₂}) = -2
-
 
 """
     mix_components!(dataᵢⱼ, k⁻¹, ðt′╱k, ð²α, dc)
@@ -176,12 +203,8 @@ with no branches and only the necessary components, making it very fast in pract
 components are being processed.
 """
 @inline function mix_components!(
-    dataᵢⱼ::AbstractVector{Complex{T}},
-    k⁻¹,
-    ðt′╱k,
-    ð²α,
-    dc::DataComponents{C, Eᴵ}
-) where {T, C, Eᴵ}
+    dataᵢⱼ::AbstractVector{Complex{T}}, k⁻¹, ðt′╱k, ð²α, dc::DataComponents{C,Eᴵ}
+) where {T,C,Eᴵ}
     k⁻² = k⁻¹ * k⁻¹
     k⁻³ = k⁻² * k⁻¹
     ð̄²α = conj(ð²α)
@@ -191,8 +214,8 @@ components are being processed.
     iψ₂ = component_index(dc, Val(:ψ₂))
     iψ₁ = component_index(dc, Val(:ψ₁))
     iψ₀ = component_index(dc, Val(:ψ₀))
-    iσ  = component_index(dc, Val(:σ))
-    ih  = component_index(dc, Val(:h))
+    iσ = component_index(dc, Val(:σ))
+    ih = component_index(dc, Val(:h))
     iNews = component_index(dc, Val(:News))
     iφ₂ = component_index(dc, Val(:φ₂))
     iφ₁ = component_index(dc, Val(:φ₁))
@@ -204,8 +227,8 @@ components are being processed.
         ψ₂ = isnothing(iψ₂) ? 0 : dataᵢⱼ[iψ₂]
         ψ₃ = isnothing(iψ₃) ? 0 : dataᵢⱼ[iψ₃]
         ψ₄ = isnothing(iψ₄) ? 0 : dataᵢⱼ[iψ₄]
-        σ  = isnothing(iσ)  ? 0 : dataᵢⱼ[iσ]
-        h  = isnothing(ih)  ? 0 : dataᵢⱼ[ih]
+        σ = isnothing(iσ) ? 0 : dataᵢⱼ[iσ]
+        h = isnothing(ih) ? 0 : dataᵢⱼ[ih]
         News = isnothing(iNews) ? 0 : dataᵢⱼ[iNews]
         φ₀ = isnothing(iφ₀) ? 0 : dataᵢⱼ[iφ₀]
         φ₁ = isnothing(iφ₁) ? 0 : dataᵢⱼ[iφ₁]
@@ -213,29 +236,20 @@ components are being processed.
 
         if Eᴵ == +1
             if !isnothing(iψ₀)
-                dataᵢⱼ[iψ₀] = k⁻³ * (
-                    ψ₀ - ðt′╱k * (4ψ₁ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₃ - ðt′╱k * ψ₄)))
-                )
+                dataᵢⱼ[iψ₀] =
+                    k⁻³ * (ψ₀ - ðt′╱k * (4ψ₁ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₃ - ðt′╱k * ψ₄))))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = k⁻³ * (
-                    ψ₁ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₃ - ðt′╱k * ψ₄))
-                )
+                dataᵢⱼ[iψ₁] = k⁻³ * (ψ₁ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₃ - ðt′╱k * ψ₄)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = k⁻³ * (
-                    ψ₂ - ðt′╱k * (2ψ₃ - ðt′╱k * ψ₄)
-                )
+                dataᵢⱼ[iψ₂] = k⁻³ * (ψ₂ - ðt′╱k * (2ψ₃ - ðt′╱k * ψ₄))
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = k⁻³ * (
-                    ψ₃ - ðt′╱k * ψ₄
-                )
+                dataᵢⱼ[iψ₃] = k⁻³ * (ψ₃ - ðt′╱k * ψ₄)
             end
             if !isnothing(iψ₄)
-                dataᵢⱼ[iψ₄] = k⁻³ * (
-                    ψ₄
-                )
+                dataᵢⱼ[iψ₄] = k⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
                 dataᵢⱼ[iσ] = k⁻¹ * (σ + ð²α)
@@ -247,45 +261,30 @@ components are being processed.
                 dataᵢⱼ[iNews] = k⁻² * News
             end
             if !isnothing(iφ₀)
-                dataᵢⱼ[iφ₀] = k⁻² * (
-                    φ₀ - ðt′╱k * (2φ₁ - ðt′╱k * φ₂)
-                )
+                dataᵢⱼ[iφ₀] = k⁻² * (φ₀ - ðt′╱k * (2φ₁ - ðt′╱k * φ₂))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = k⁻² * (
-                    φ₁ - ðt′╱k * φ₂
-                )
+                dataᵢⱼ[iφ₁] = k⁻² * (φ₁ - ðt′╱k * φ₂)
             end
             if !isnothing(iφ₂)
-                dataᵢⱼ[iφ₂] = k⁻² * (
-                    φ₂
-                )
+                dataᵢⱼ[iφ₂] = k⁻² * (φ₂)
             end
         else  # Eᴵ == -1
             if !isnothing(iψ₄)
-                dataᵢⱼ[iψ₄] = k⁻³ * (
-                    ψ₄ - ðt′╱k * (4ψ₃ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₁ - ðt′╱k * ψ₀)))
-                )
+                dataᵢⱼ[iψ₄] =
+                    k⁻³ * (ψ₄ - ðt′╱k * (4ψ₃ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₁ - ðt′╱k * ψ₀))))
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = k⁻³ * (
-                    ψ₃ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₁ - ðt′╱k * ψ₀))
-                )
+                dataᵢⱼ[iψ₃] = k⁻³ * (ψ₃ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₁ - ðt′╱k * ψ₀)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = k⁻³ * (
-                    ψ₂ - ðt′╱k * (2ψ₁ - ðt′╱k * ψ₀)
-                )
+                dataᵢⱼ[iψ₂] = k⁻³ * (ψ₂ - ðt′╱k * (2ψ₁ - ðt′╱k * ψ₀))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = k⁻³ * (
-                    ψ₁ - ðt′╱k * ψ₀
-                )
+                dataᵢⱼ[iψ₁] = k⁻³ * (ψ₁ - ðt′╱k * ψ₀)
             end
             if !isnothing(iψ₀)
-                dataᵢⱼ[iψ₀] = k⁻³ * (
-                    ψ₀
-                )
+                dataᵢⱼ[iψ₀] = k⁻³ * (ψ₀)
             end
             if !isnothing(iσ)
                 dataᵢⱼ[iσ] = k⁻¹ * (σ - ð²α)
@@ -297,19 +296,13 @@ components are being processed.
                 dataᵢⱼ[iNews] = k⁻² * News
             end
             if !isnothing(iφ₂)
-                dataᵢⱼ[iφ₂] = k⁻² * (
-                    φ₂ - ðt′╱k * (2φ₁ - ðt′╱k * φ₀)
-                )
+                dataᵢⱼ[iφ₂] = k⁻² * (φ₂ - ðt′╱k * (2φ₁ - ðt′╱k * φ₀))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = k⁻² * (
-                    φ₁ - ðt′╱k * φ₀
-                )
+                dataᵢⱼ[iφ₁] = k⁻² * (φ₁ - ðt′╱k * φ₀)
             end
             if !isnothing(iφ₀)
-                dataᵢⱼ[iφ₀] = k⁻² * (
-                    φ₀
-                )
+                dataᵢⱼ[iφ₀] = k⁻² * (φ₀)
             end
         end
     end

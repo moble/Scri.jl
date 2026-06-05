@@ -6,21 +6,21 @@
     import Scri: DataComponents
 
     # Stand-alone components (no hierarchy dependency below them).
-    @test DataComponents(:ψ₄)    isa DataComponents
-    @test DataComponents(:σ)     isa DataComponents
-    @test DataComponents(:h)     isa DataComponents
-    @test DataComponents(:News)  isa DataComponents
+    @test DataComponents(:ψ₄) isa DataComponents
+    @test DataComponents(:σ) isa DataComponents
+    @test DataComponents(:h) isa DataComponents
+    @test DataComponents(:News) isa DataComponents
 
     # Ordered Weyl chains from the base up.
-    @test DataComponents(:ψ₄, :ψ₃)                      isa DataComponents
-    @test DataComponents(:ψ₄, :ψ₃, :ψ₂)                 isa DataComponents
-    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁)            isa DataComponents
-    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)       isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃) isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂) isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁) isa DataComponents
+    @test DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀) isa DataComponents
 
     # Mixed sets.
-    @test DataComponents(:ψ₄, :σ, :h, :News)                        isa DataComponents
-    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)             isa DataComponents
-    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)  isa DataComponents
+    @test DataComponents(:ψ₄, :σ, :h, :News) isa DataComponents
+    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ) isa DataComponents
+    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News) isa DataComponents
 
     # Type parameter encodes the exact tuple.
     dc = DataComponents(:ψ₄, :σ)
@@ -64,8 +64,8 @@ end
 
     # Non-Weyl, arbitrary ordering.
     dc2 = DataComponents(:σ, :h, :News)
-    @test Scri.component_index(dc2, Val(:σ))   == 1
-    @test Scri.component_index(dc2, Val(:h))   == 2
+    @test Scri.component_index(dc2, Val(:σ)) == 1
+    @test Scri.component_index(dc2, Val(:h)) == 2
     @test Scri.component_index(dc2, Val(:News)) == 3
 end
 
@@ -94,23 +94,23 @@ end
 @testitem "ncomponents: matches constructor arity" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    @test Scri.ncomponents(DataComponents(:ψ₄))                                      == 1
-    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃))                                 == 2
-    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃, :ψ₂))                            == 3
-    @test Scri.ncomponents(DataComponents(:ψ₄, :σ, :h, :News))                       == 4
-    @test Scri.ncomponents(DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News))   == 8
+    @test Scri.ncomponents(DataComponents(:ψ₄)) == 1
+    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃)) == 2
+    @test Scri.ncomponents(DataComponents(:ψ₄, :ψ₃, :ψ₂)) == 3
+    @test Scri.ncomponents(DataComponents(:ψ₄, :σ, :h, :News)) == 4
+    @test Scri.ncomponents(DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)) == 8
 end
 
 # ── spin_weight and conformal_weight ──────────────────────────────────────────
 
 @testitem "spin_weight: known values for all components" tags = [:unit, :fast] begin
-    @test Scri.spin_weight(Val(:ψ₀)) ==  2
-    @test Scri.spin_weight(Val(:ψ₁)) ==  1
-    @test Scri.spin_weight(Val(:ψ₂)) ==  0
+    @test Scri.spin_weight(Val(:ψ₀)) == 2
+    @test Scri.spin_weight(Val(:ψ₁)) == 1
+    @test Scri.spin_weight(Val(:ψ₂)) == 0
     @test Scri.spin_weight(Val(:ψ₃)) == -1
     @test Scri.spin_weight(Val(:ψ₄)) == -2
-    @test Scri.spin_weight(Val(:σ))  ==  2
-    @test Scri.spin_weight(Val(:h))  == -2
+    @test Scri.spin_weight(Val(:σ)) == 2
+    @test Scri.spin_weight(Val(:h)) == -2
     @test Scri.spin_weight(Val(:News)) == -2
 end
 
@@ -120,8 +120,8 @@ end
         @test Scri.conformal_weight(Val(s)) == -3
     end
     # Shear and strain have conformal weight −1; News has −2.
-    @test Scri.conformal_weight(Val(:σ))   == -1
-    @test Scri.conformal_weight(Val(:h))   == -1
+    @test Scri.conformal_weight(Val(:σ)) == -1
+    @test Scri.conformal_weight(Val(:h)) == -1
     @test Scri.conformal_weight(Val(:News)) == -2
 end
 
@@ -132,7 +132,7 @@ end
     import Scri: DataComponents
 
     rng = Random.Xoshiro(42)
-    dc  = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
+    dc = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
@@ -149,19 +149,22 @@ end
     # ðt′╱k = −(ðk/k)·u), each component scales by k^(conformal_weight).
     # Weyl: k⁻³; σ,h: k⁻¹; News: k⁻².
     rng = Random.Xoshiro(7)
-    dc  = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
+    dc = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
-        k⁻¹  = 0.4 + 0.3 * randn(rng)
+        k⁻¹ = 0.4 + 0.3 * randn(rng)
         Scri.mix_components!(data, k⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
         for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ k⁻¹^3 * orig[i]
         end
-        @test data[Scri.component_index(dc, Val(:σ))]   ≈ k⁻¹ * orig[Scri.component_index(dc, Val(:σ))]
-        @test data[Scri.component_index(dc, Val(:h))]   ≈ k⁻¹ * orig[Scri.component_index(dc, Val(:h))]
-        @test data[Scri.component_index(dc, Val(:News))] ≈ k⁻¹^2 * orig[Scri.component_index(dc, Val(:News))]
+        @test data[Scri.component_index(dc, Val(:σ))] ≈
+            k⁻¹ * orig[Scri.component_index(dc, Val(:σ))]
+        @test data[Scri.component_index(dc, Val(:h))] ≈
+            k⁻¹ * orig[Scri.component_index(dc, Val(:h))]
+        @test data[Scri.component_index(dc, Val(:News))] ≈
+            k⁻¹^2 * orig[Scri.component_index(dc, Val(:News))]
     end
 end
 
@@ -172,7 +175,7 @@ end
     # When only ψ₄ = z is non-zero and k⁻¹=1, the lower Weyl components receive
     # the values ψₙ' = (−ðt′╱k)^(4−n) · z — purely from the nested polynomial.
     rng = Random.Xoshiro(11)
-    dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
+    dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     for _ ∈ 1:8
         z = randn(rng, ComplexF64)
         f = randn(rng, ComplexF64)   # ðt′╱k
@@ -185,14 +188,16 @@ end
     end
 end
 
-@testitem "mix_components!: all-ones Weyl gives binomial pattern" tags = [:unit, :fast, :validation] begin
+@testitem "mix_components!: all-ones Weyl gives binomial pattern" tags = [
+    :unit, :fast, :validation
+] begin
     import Scri: DataComponents
 
     # When all five ψ inputs equal 1, each output is k⁻³·(1−ðt′╱k)^(4−n).
     # This follows from the binomial expansion of (1 − ðt′╱k * ∂_u)^4 acting on 1.
-    dc  = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
+    dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     k⁻¹ = 2.0
-    f   = 3.0 + 2.0im
+    f = 3.0 + 2.0im
     data = ones(ComplexF64, 5)
     Scri.mix_components!(data, k⁻¹, f, 0.0 + 0im, dc)
     for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
@@ -207,16 +212,16 @@ end
 
     # σ' = k⁻¹·(σ + ð²α),  h' = k⁻¹·(h + conj(ð²α))
     rng = Random.Xoshiro(99)
-    dc  = DataComponents(:σ, :h)
+    dc = DataComponents(:σ, :h)
     for _ ∈ 1:8
-        σ_v  = randn(rng, ComplexF64)
-        h_v  = randn(rng, ComplexF64)
-        k⁻¹  = 0.5 + randn(rng)
-        ð²α  = randn(rng, ComplexF64)
+        σ_v = randn(rng, ComplexF64)
+        h_v = randn(rng, ComplexF64)
+        k⁻¹ = 0.5 + randn(rng)
+        ð²α = randn(rng, ComplexF64)
         data = ComplexF64[σ_v, h_v]
         Scri.mix_components!(data, k⁻¹, 0.0 + 0im, ð²α, dc)
         @test data[1] ≈ k⁻¹ * (σ_v + ð²α)
-        @test data[2] ≈ k⁻¹ * (h_v  + conj(ð²α))
+        @test data[2] ≈ k⁻¹ * (h_v + conj(ð²α))
     end
 end
 
@@ -225,10 +230,10 @@ end
     import Scri: DataComponents
 
     rng = Random.Xoshiro(13)
-    dc  = DataComponents(:News)
+    dc = DataComponents(:News)
     for _ ∈ 1:8
         news = randn(rng, ComplexF64)
-        k⁻¹  = 0.5 + randn(rng)
+        k⁻¹ = 0.5 + randn(rng)
         data = ComplexF64[news]
         Scri.mix_components!(data, k⁻¹, randn(rng, ComplexF64), randn(rng, ComplexF64), dc)
         @test data[1] ≈ k⁻¹^2 * news

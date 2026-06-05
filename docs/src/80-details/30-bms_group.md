@@ -129,6 +129,24 @@ We have essentially *constructed* the BMS group, but
 conditions, and analyzed the group structure after the fact
 [Sachs_1962b](@cite).
 
+[Sachs_1962a](@citet) was the first to describe the BMS group.  (He
+referred to it as the "Generalized Bondi-Metzner group", or GBM group;
+later authors renamed it the Bondi-Metzner-Sachs group to honor his
+contribution.)  His slightly later paper [Sachs_1962b](@cite) was more
+specifically about the BMS group itself, and proved some important
+properties, including:
+
+  1. The supertranslations form an abelian normal subgroup ``N`` of
+     the generalized Bondi-Metzner group; the factor group is
+     isomorphic to the orthochronous homogeneous Lorentz group.
+  2. The translations form a normal four-dimensional subgroup of the
+     proper Bondi Metzner group.
+  3. If ``N'`` is a four dimensional normal subgroup of the proper GBM
+     group then ``N'`` is contained in the supertranslation group
+     ``N``.
+  4. The only normal four dimensional subgroup of the GBM group is the
+     translation group.
+
 We can write an arbitrary element of ``\text{BMS}`` *uniquely*
 [DummitFoote_1999; page 173](@cite) as ``(Λ, α)`` for some elements
 ``Λ ∈ ℒ`` and ``α ∈ 𝒮``.  We interpret this as the composition of the
@@ -168,6 +186,7 @@ transformations.  However, it can also be useful to further decompose
 these parts.  Once we have chosen a frame ``𝐭, 𝐱, 𝐲, 𝐳`` to work
 with, we can conventionally decompose any element of the BMS group as
 shown in the diagram below.
+
 ```@raw html
 <div class="composition-diagram" style="text-align: center; margin: 1.5em 0;">
 <!--
@@ -326,6 +345,7 @@ shown in the diagram below.
 </script>
 </div>
 ```
+
 The supertranslations decompose naturally into "proper"
 supertranslations and ordinary spacetime translations — the latter of
 which further decompose into time translations ``δt`` and space

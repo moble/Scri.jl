@@ -18,6 +18,11 @@ on:
       - "*.toml"
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: write
+  pull-requests: read
+  actions: write
+
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -41,6 +46,8 @@ jobs:
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
+      - name: Remove broken symlinks in docs/src
+        run: find docs/src -xtype l -delete
       - name: Run doctest
         run: |
           julia --project=docs -e '
