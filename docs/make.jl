@@ -103,4 +103,4 @@ makedocs(;
     plugins=[bibliography, links],
 )
 
-deploydocs(; repo="github.com/moble/Scri.jl")
+deploydocs(; repo="github.com/moble/Scri.jl", devbranch="main", push_preview=true)
