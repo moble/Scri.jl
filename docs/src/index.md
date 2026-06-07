@@ -88,3 +88,17 @@ Note a few very important points:
       Internally, `transform!` automatically imposes the reality
       condition on `α` by averaging each mode with its
       complex-conjugate partner.
+
+## Name and Pronunciation
+
+"Scri" (rhymes with "sky") is the pronunciation of the character ``ℐ``
+(script I; given by the latex `\mathscr{I}`), which is the notation
+for [null infinity](https://en.wikipedia.org/wiki/Null_infinity) in
+the theory of asymptotically flat spacetimes, introduced by [Penrose
+in 1963](@cite Penrose_1963) and now standard throughout the
+literature.  We usually distinguish between future null infinity,
+denoted ``ℐ⁺``, and past null infinity, denoted ``ℐ⁻``.  This package
+defaults to working with future null infinity, since the author's
+primary interest is in the emission of gravitational waves from
+isolated systems, but there are options to model past null
+infinity, to investigate the detection of incoming radiation.

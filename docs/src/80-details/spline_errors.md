@@ -114,7 +114,7 @@ predicted level.
 
 Note that the ``ℓ=0`` and ``1`` modes shown in red would analytically
 be zero, but are retained for diagnostic purposes.  These are the
-``\xi`` quantities described in [the previous page](@ref
+``\xi`` quantities described in [the explanation of the SSHT](@ref
 Augmenting-to-a-square,-prefactorable-system).  The fact that they are
 smaller than any other modes is a good consistency check that the
 algorithm is working as expected.
