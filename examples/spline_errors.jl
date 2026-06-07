@@ -117,7 +117,7 @@ function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     M₄ = maximum(ℓ -> v^ℓ * (ℓ * Ω)^4, 2:ℓₘₐₓ)
     ϵₜ = M₄ * δt^4 * ℓₘₐₓ^BigFloat(-3//2)
 
-    (; data, t=T.(t), v⃗=QuatVec{T}(v⃗), R, αᵢₙ, M₄=T(M₄), ϵₜ=T(ϵₜ))
+    return (; data, t=T.(t), v⃗=QuatVec{T}(v⃗), R, αᵢₙ, M₄=T(M₄), ϵₜ=T(ϵₜ))
 end
 
 function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, β::Rational{Int}=1//1000)
@@ -136,7 +136,7 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     t2 = time_ns()
     println("Transformation took $((t2-t1)/1e9) seconds")
     JLD2.@save "spline_errors_$T.jld2" data t v⃗ data′ t′ M₄ ϵₜ t₋ t₊
-    (; data, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊)
+    return (; data, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊)
 end
 
 function plot_example(
@@ -158,7 +158,7 @@ function plot_example(
     plot!(
         plt; legend_position=(0.82, 0.99), title=L"\sigma' \quad(\beta=%$beta c)", dpi=300
     )
-    savefig(plt, "spline_errors_$T.png")
+    return savefig(plt, "spline_errors_$T.png")
 end
 
 function main(args=ARGS)

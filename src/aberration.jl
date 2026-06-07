@@ -143,5 +143,5 @@ function aberration(RRₚᵢ, v⃗; emitted::Bool=true)
         exp((n̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) carries ε
     end
 
-    B′ * RRₚᵢ
+    return B′ * RRₚᵢ
 end

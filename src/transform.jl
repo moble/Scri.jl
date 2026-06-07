@@ -392,5 +392,5 @@ function transform!(
     else
         DataComponents(data_components...; εᴵ)
     end
-    transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
+    return transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
 end

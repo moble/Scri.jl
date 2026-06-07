@@ -139,7 +139,7 @@ end
         d = f.(t)
         c = Scri.CubicSplineCache(t)
         maximum(x_test) do xq
-            abs(cubic_spline_interp(c, t, d, xq) - f(xq))
+            return abs(cubic_spline_interp(c, t, d, xq) - f(xq))
         end
     end
 

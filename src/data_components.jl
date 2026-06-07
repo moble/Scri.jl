@@ -3,7 +3,7 @@ const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :N
 # This utility function just translates any reasonable string representation of a data
 # component's name into the canonical symbol.
 function parse_data_component(s::AbstractString)
-    Symbol(
+    return Symbol(
         replace(
             s,
             '_' => "",
@@ -76,10 +76,10 @@ Examples:
 struct DataComponents{C,Eᴵ}
     function DataComponents(cs::Symbol...; εᴵ=1)
         validate_data_components(cs, εᴵ)
-        new{cs,εᴵ}()
+        return new{cs,εᴵ}()
     end
     function DataComponents(cs::AbstractString...; εᴵ=1)
-        DataComponents((parse_data_component.(cs))...; εᴵ)
+        return DataComponents((parse_data_component.(cs))...; εᴵ)
     end
 end
 

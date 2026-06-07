@@ -216,7 +216,7 @@ function parse_arguments()
     end
 
     tag_transform(list_of_tags) = map(split(list_of_tags, ",")) do tag
-        ensure_tag_existence(Symbol(tag))
+        return ensure_tag_existence(Symbol(tag))
     end
 
     tags_filter = _parse_argument_with_value("--tags", tag_transform)

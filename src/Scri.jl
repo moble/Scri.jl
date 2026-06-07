@@ -15,7 +15,7 @@ using PrecompileTools: @setup_workload, @compile_workload
 using Random: Xoshiro
 
 const cachesize_L2 = Logging.with_logger(Logging.NullLogger()) do
-    Hwloc.cachesize(:L2)
+    return Hwloc.cachesize(:L2)
 end
 const cachesize_L3 = Logging.with_logger(Logging.NullLogger()) do
     try

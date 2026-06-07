@@ -93,7 +93,7 @@ end
         cos_Θ = clamp(-(n̂ * v̂).w, -one(β), one(β))
         Θ = acos(cos_Θ)
         Θ′ = 2atan(exp(φ) * tan(Θ / 2))
-        exp(((Θ - Θ′) / 2) * (n̂×̂v̂)) * R
+        return exp(((Θ - Θ′) / 2) * (n̂×̂v̂)) * R
     end
 
     for T ∈ FloatTypes
