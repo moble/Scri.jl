@@ -31,12 +31,13 @@
 
 ## Lorentz transformations ``ℒ`` and the conformal factor ``K``
 
-* Lorentz transformations preserve ``𝒩⁺`` but not the section with ``ℓ⁰=1``
+* Lorentz transformations preserve ``𝒩⁺`` but not the section with
+  ``ℓ⁰=1``.
 * Define ``K`` in terms of time component ``{Λ⁰}_μ ℓ^μ = γ(1-v⃗⋅n̂) =
-  1/K``
+  1/K``.
 * Lorentz transformation ``Λ`` induces a transformation of the section
-  as ``σ' = K (Λ ∘ σ)`` (rescaling by ``K`` to get back to the
-  preferred section)
+  as ``σ' = K (Λ ∘ σ)`` — where we have to rescale by ``K`` to get
+  back to the preferred section with ``ℓ^{0'}=1``.
 * Differentiating ``{σ'}ᵝ = K {Λᵝ}ᵧσᵞ`` by ``xᴬ`` gives us two terms,
   the first differentiating ``K`` and the second differentiating
   ``σ``:
@@ -120,32 +121,11 @@ two groups:
 
 In particular, note that ``𝒮`` is a [normal
 subgroup](https://en.wikipedia.org/wiki/Normal_subgroup) of
-``\text{BMS}``, but ``ℒ`` is not.  That is, for ``Λ ∈ ℒ`` and ``α ∈
-𝒮``, the element ``Λ α Λ⁻¹`` is still an element of ``𝒮``, but ``α Λ
-α⁻¹`` is not an element of ``ℒ``.  This fact will be useful later.
+``\text{BMS}``, but ``ℒ`` is not.
 
-We have essentially *constructed* the BMS group, but
-[Sachs_1962a](@citet) actually *derived* it from the asymptotic metric
-conditions, and analyzed the group structure after the fact
-[Sachs_1962b](@cite).
-
-[Sachs_1962a](@citet) was the first to describe the BMS group.  (He
-referred to it as the "Generalized Bondi-Metzner group", or GBM group;
-later authors renamed it the Bondi-Metzner-Sachs group to honor his
-contribution.)  His slightly later paper [Sachs_1962b](@cite) was more
-specifically about the BMS group itself, and proved some important
-properties, including:
-
-  1. The supertranslations form an abelian normal subgroup ``N`` of
-     the generalized Bondi-Metzner group; the factor group is
-     isomorphic to the orthochronous homogeneous Lorentz group.
-  2. The translations form a normal four-dimensional subgroup of the
-     proper Bondi Metzner group.
-  3. If ``N'`` is a four dimensional normal subgroup of the proper GBM
-     group then ``N'`` is contained in the supertranslation group
-     ``N``.
-  4. The only normal four dimensional subgroup of the GBM group is the
-     translation group.
+That is, for ``Λ ∈ ℒ`` and ``α ∈ 𝒮``, the element ``Λ α Λ⁻¹`` is
+still an element of ``𝒮``, but ``α Λ α⁻¹`` is not an element of
+``ℒ``.  This fact will be useful later.
 
 We can write an arbitrary element of ``\text{BMS}`` *uniquely*
 [DummitFoote_1999; page 173](@cite) as ``(Λ, α)`` for some elements
@@ -177,6 +157,29 @@ because
 = (\text{id}, α₂ + α₁)
 = (\text{id}, α₁) (\text{id}, α₂).
 ```
+
+We have essentially *constructed* the BMS group, but
+[Sachs_1962a](@citet) actually *derived* it from the asymptotic metric
+conditions, and analyzed the group structure after the fact
+[Sachs_1962b](@cite).
+
+[Sachs_1962a](@citet) was the first to describe the BMS group.  (He
+referred to it as the "Generalized Bondi-Metzner group", or GBM group;
+later authors renamed it the Bondi-Metzner-Sachs group to honor his
+contribution.)  His slightly later paper [Sachs_1962b](@cite) was more
+specifically about the BMS group itself, and proved some important
+properties, including:
+
+  1. The supertranslations form an abelian normal subgroup ``N`` of
+     the generalized Bondi-Metzner group; the factor group is
+     isomorphic to the orthochronous homogeneous Lorentz group.
+  2. The translations form a normal four-dimensional subgroup of the
+     proper Bondi Metzner group.
+  3. If ``N'`` is a four dimensional normal subgroup of the proper GBM
+     group then ``N'`` is contained in the supertranslation group
+     ``N``.
+  4. The only normal four dimensional subgroup of the GBM group is the
+     translation group.
 
 ## Decomposition of BMS
 
