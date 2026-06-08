@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: Scri.jl
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Michael
+    family-names: Boyle
+    email: michael.boyle@cornell.edu
+    affiliation: Cornell University
+    orcid: 'https://orcid.org/0000-0002-5075-5116'
+repository-code: 'https://github.com/moble/Scri.jl/'
+abstract: >-
+  Julia code for manipulating time-dependent functions of
+  spin-weighted spherical harmonics
+license: MIT
+version: '0.1'
+date-released: '2026-06-10'
