@@ -59,14 +59,16 @@ spatial wavevector ``\vec{k} = (k^x, k^y, k^z)`` to satisfy
 k^μ = ω(1,\, ε\hat{n}),
 ```
 
-where ``\hat{n}`` is a unit 3-vector and ``ε = \pm 1``:
+where ``\hat{n}`` is a unit 3-vector and ``ε = \pm 1``, as defined
+above:
 
-- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{n}`` points **away** from A — it is the
-  propagation direction of the wave.  (Think of gravitational waves emitted by A; each
-  frequency component travels outward in direction ``\hat{n}``.)
-- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{n}`` points **toward** A — it is the
-  direction from which the wave arrives.  (Think of a plane wave whose source is far
-  away in the direction ``\hat{n}``.)
+- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{n}`` points **away from**
+  A — it is the propagation direction of the wave.  (Think of
+  gravitational waves emitted by A; the chosen portion of the field
+  travels outward in direction ``\hat{n}``.)
+- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{n}`` points **toward** A
+  — still the propagation direction of the wave.  (Think of a plane
+  wave whose source is far away in the direction ``-\hat{n}``.)
 
 This is identical to the null section ``σ_ε: \hat{n} \mapsto (1,
 ε\hat{n})`` introduced in the [BMS group page](@ref "Lorentz

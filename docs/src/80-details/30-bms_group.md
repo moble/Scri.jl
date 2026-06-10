@@ -37,7 +37,7 @@
   1/K``.
 * Lorentz transformation ``Λ`` induces a transformation of the section
   as ``σ' = K (Λ ∘ σ)`` — where we have to rescale by ``K`` to get
-  back to the preferred section with ``ℓ^{0'}=1``.
+  back to the preferred section with ``ℓ'^{0'}=1``.
 * Differentiating ``{σ'}ᵝ = K {Λᵝ}ᵧσᵞ`` by ``xᴬ`` gives us two terms,
   the first differentiating ``K`` and the second differentiating
   ``σ``:
@@ -106,56 +106,141 @@
         Lorentz transformations transform the unit sphere metric as
         ``{dΩ'}² = K² dΩ²``, with ``K`` as we defined it.
 
+!!! info "To do"
+
+    Show that the conformal factor of a product of Lorentz
+    transformations is the product of the conformal factors:
+    ``K(Λ₂ Λ₁) = K(Λ₂) K(Λ₁)``.  This is a consequence of the
+    group structure, but it is not *entirely* trivial to show.
+
 ## Supertranslations ``𝒮``
+
+We stick with the approach implicit in the original papers, which is
+to define our transformations as acting *passively*.  And in this
+case, the supertranslations are defined as transformations of the time
+coordinate.  (Again, we can refer to either the retarded time ``u`` or
+the advanced time ``v``, so we will use the more neutral notation
+``t``.)  So a supertranslation relates the time coordinate of a point
+``p`` in one frame to the time coordinate of *the same point* ``p`` in
+another frame as
+
+```math
+t'(p) = t(p) - εᵅ α(p),
+```
+
+where ``p`` refers to a point on ``ℐ``, and ``α`` is a real-valued
+function that is independent of ``t``.  The ``εᵅ`` is just a
+bookkeeping device to keep track of the differing conventions for the
+sign in the formula above.
+
 
 ## BMS
 
-Denote the (proper orthochronous) Lorentz group by ``ℒ`` and the
-supertranslations by ``𝒮``.  Then the BMS group is the [semidirect
-product](https://en.wikipedia.org/wiki/Semidirect_product) of these
-two groups:
+We now have two groups: the (proper orthochronous) Lorentz group ``ℒ``
+and the supertranslations ``𝒮``.  The supertranslation ``α ∈ 𝒮``
+acts solely on the time coordinate as ``t' = t - εᵅ α``.  The Lorentz
+transformation ``Λ ∈ ℒ`` acts on the spatial coordinates as well as
+the time coordinate, the latter as ``t' = Kt``.  We can combine these
+two transformations, applying ``α`` first and then ``Λ``, to get the
+general transformation of the time coordinate:
 
 ```math
-\text{BMS} = 𝒮 ⋊ ℒ.
+t' = K(t - εᵅ α),
 ```
 
-In particular, note that ``𝒮`` is a [normal
+where we implicitly evaluate all fields at the same point on ``ℐ``.
+To be a little more explicit, we can treat these quantities as
+functions on null rays: ``α(λ𝐤) = α(𝐤)`` for any scalar ``λ > 0``
+and null vector ``𝐤``.  Then the transformation law is
+
+```math
+\begin{aligned}
+t'(𝐤) &= K(𝐤)(t(𝐤) - εᵅ α(𝐤)), \\
+𝐤' &= Λ 𝐤.
+\end{aligned}
+```
+
+Recall that ``K(𝐤) = {Λ⁰}ᵦkᵝ/k⁰``.  Now, we can investigate how
+repeated transformations compose.  Take ``α₁, α₂ ∈ 𝒮`` and ``Λ₁, Λ₂ ∈
+ℒ``.  We have
+
+```math
+\begin{aligned}
+t'(𝐤) &= K₂(𝐤') \left\{K₁(𝐤)[t(𝐤) - εᵅ α₁(𝐤)] - εᵅ α₂(𝐤')\right\} \\
+      &= K₂(𝐤') K₁(𝐤) t(𝐤) - K₂(𝐤') εᵅ α₁(𝐤) - K₂(𝐤') εᵅ α₂(𝐤') \\
+      &= [K₂(𝐤') K₁(𝐤)] \left\{t(𝐤) - εᵅ \left[α₁(𝐤) + α₂(𝐤')/K₁(𝐤)\right] \right\}.
+\end{aligned}
+```
+
+That is, the result of a sequence of two transformations is another
+transformation of the same form, with
+
+```math
+\begin{aligned}
+Λ &= Λ₂ Λ₁, \\
+α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/K₁(𝐤).
+\end{aligned}
+```
+
+Note that ``α₂`` is to be evaluated at the same geometric point on
+``ℐ`` as ``α₁`` and ``K₁``, but is presumably expressed in the
+*transformed* coordinates.
+
+We can formalize this a little more directly by forming the (outer)
+[semidirect
+product](https://en.wikipedia.org/wiki/Semidirect_product#Outer_semidirect_product)
+[Aluffi_2009; page 230](@cite) of these two groups:
+
+```math
+\text{BMS} = ℒ ⋉_φ 𝒮,
+```
+
+where the homomorphism ``φ: ℒ → \text{Aut}(𝒮)`` is given by
+
+```math
+φ(Λ)(α) = α/K.
+```
+
+The identity element of this group is the pair ``(1, 0)``, and a
+general element is
+
+```math
+(Λ, α) = (Λ, 0) ∘ (1, α).
+```
+
+The group operation is defined as
+
+```math
+(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂/K₁).
+```
+
+It's easy to see that multiplication by ``1/K = γ(1-v⃗⋅n̂)`` preserves
+the defining properties of the supertranslations, so ``φ(Λ)`` is
+indeed an automorphism.  And repeated multiplication by ``1/Kᵢ`` is
+consistent with the composition of Lorentz transformations, so ``φ``
+is a homomorphism.
+
+The groups ``ℒ`` and ``𝒮`` are isomorphic to subgroups of
+``\text{BMS}`` in the obvious way: we can identify any Lorentz
+transformation with the element ``(Λ, 0)``, and any supertranslation
+with the element ``(1, α)``.  We will abuse notation slightly and
+refer to the elements ``Λ`` and ``α`` themselves as elements of the
+BMS group.
+
+Note that ``𝒮`` is a [normal
 subgroup](https://en.wikipedia.org/wiki/Normal_subgroup) of
-``\text{BMS}``, but ``ℒ`` is not.
-
-That is, for ``Λ ∈ ℒ`` and ``α ∈ 𝒮``, the element ``Λ α Λ⁻¹`` is
-still an element of ``𝒮``, but ``α Λ α⁻¹`` is not an element of
-``ℒ``.  This fact will be useful later.
-
-We can write an arbitrary element of ``\text{BMS}`` *uniquely*
-[DummitFoote_1999; page 173](@cite) as ``(Λ, α)`` for some elements
-``Λ ∈ ℒ`` and ``α ∈ 𝒮``.  We interpret this as the composition of the
-supertranslation ``α`` *followed by* the Lorentz transformation
-``Λ``.[^1]  The group operation is then
-
-```math
-(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + Λ₁⁻¹ α₂),
-```
-
-where ``Λ₁⁻¹ α₂`` is the function that first rotates the argument of
-``α₂`` by ``Λ₁`` (not its inverse), and then evaluates ``α₂`` at that
-rotated argument.
-
-[^1]: We can equivalently write an arbitrary element of ``\text{BMS}``
-    in the opposite order: as some ``Λ'`` followed by some ``α'``.  We
-    have ``α' Λ' = Λ' \left(Λ'⁻¹ α' Λ'\right)``, and the fact that
-    ``𝒮`` is a normal subgroup of ``\text{BMS}`` guarantees that
-    ``Λ'⁻¹ α' Λ'`` is still an element of ``𝒮``, so either order is
-    permissible.
+``\text{BMS}``, but ``ℒ`` is not.  That is, for ``Λ ∈ ℒ`` and ``α ∈
+𝒮``, the element ``Λ α Λ⁻¹`` is still an element of ``𝒮``, but ``α Λ
+α⁻¹`` is not an element of ``ℒ``.  This fact will be useful later.
 
 The supertranslations form an *abelian* subgroup of ``\text{BMS}``
 because
 
 ```math
-(\text{id}, α₂) (\text{id}, α₁)
-= (\text{id}, α₁ + α₂)
-= (\text{id}, α₂ + α₁)
-= (\text{id}, α₁) (\text{id}, α₂).
+(1, α₂) (1, α₁)
+= (1, α₁ + α₂)
+= (1, α₂ + α₁)
+= (1, α₁) (1, α₂).
 ```
 
 We have essentially *constructed* the BMS group, but
