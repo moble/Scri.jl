@@ -9,6 +9,7 @@ import Hwloc
 import Polyester
 import OhMyThreads
 import Base.Threads: nthreads
+import TestItems: @testitem
 
 # These are just for precompilation
 using PrecompileTools: @setup_workload, @compile_workload
