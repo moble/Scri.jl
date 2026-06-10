@@ -217,7 +217,7 @@ function transform!(
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
             valid_modes = (s ^ 2 + 1):Nᵐ  # skip leading ℓ < |s| entries
-            data_k = view(data,:,:,k)  # (Nᵐ × Nᵗ), fully contiguous
+            data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
             workspace = Matrix{Complex{T1}}(undef, Nᵐ - s^2, block_size)
             for sub_start ∈ cols[begin:block_size:end]
                 sub = sub_start:min(sub_start + block_size - 1, cols[end])
@@ -262,7 +262,7 @@ function transform!(
         # Copy pixel time series into the dᵢ buffer.  Note that tests comparing this
         # `permutedims!` approach to `LinearAlgebra.copy_transpose!` and to `.= transpose`
         # show this to be fastest and least allocating by up to ~2x, depending on Nᵈ.
-        data_view = view(data,i,:,:)
+        data_view = view(data, i, :, :)
         permutedims!(dᵢ, data_view, (2, 1))
 
         # `d̈` forward sweep (Thomas algorithm, natural BC: d̈[1]=d̈[Nᵗ]=0)
