@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Computing ðtk · Scri.jl</title><meta name="title" content="Computing ðtk · Scri.jl"/><meta property="og:title" content="Computing ðtk · Scri.jl"/><meta property="twitter:title" content="Computing ðtk · Scri.jl"/><meta name="description" content="Documentation for Scri.jl."/><meta property="og:description" content="Documentation for Scri.jl."/><meta property="twitter:description" content="Documentation for Scri.jl."/><meta property="og:url" content="https://moble.github.io/Scri.jl/80-details/computing_eth_tprime_over_k/"/><meta property="twitter:url" content="https://moble.github.io/Scri.jl/80-details/computing_eth_tprime_over_k/"/><link rel="canonical" href="https://moble.github.io/Scri.jl/80-details/computing_eth_tprime_over_k/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/citations.css" rel="stylesheet" type="text/css"/><link href="../../assets/custom.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Scri.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Scri</a></li><li><a class="tocitem" href="../../50-conventions/">Conventions</a></li><li><a class="tocitem" href="../../60-references/">References</a></li><li><a class="tocitem" href="../../65-api/">API</a></li><li><span class="tocitem">Details</span><ul><li><a class="tocitem" href="../10-geometric_algebra_primer/">A Primer on Geometric Algebra</a></li><li><a class="tocitem" href="../20-lorentz_group/">The Lorentz Group</a></li><li><a class="tocitem" href="../30-bms_group/">The BMS Group</a></li><li><a class="tocitem" href="../40-aberration/">Aberration of Gravitational Waves</a></li><li><a class="tocitem" href="../augmented_swsh_inversion/">Augmented Direct SSHT</a></li><li class="is-active"><a class="tocitem" href>Computing <span>$ðt&#39;/k$</span></a><ul class="internal"><li><a class="tocitem" href="#Computing-ð(vn)"><span>Computing <span>$ð(v⃗⋅n̂)$</span></span></a></li><li><a class="tocitem" href="#SWSHs-and-quaternions"><span>SWSHs and quaternions</span></a></li><li><a class="tocitem" href="#Expressing-ðt&#39;/k-with-rotor-components"><span>Expressing <span>$ðt&#39;/k$</span> with rotor components</span></a></li></ul></li><li><a class="tocitem" href="../spline_errors/">Spline Errors</a></li><li><a class="tocitem" href="../spline_optimization/">Cubic spline optimization</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Details</a></li><li class="is-active"><a href>Computing <span>$ðt&#39;/k$</span></a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Computing <span>$ðt&#39;/k$</span></a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/moble/Scri.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/moble/Scri.jl/blob/main/docs/src/80-details/computing_eth_tprime_over_k.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Computing-ðt&#39;/k"><a class="docs-heading-anchor" href="#Computing-ðt&#39;/k">Computing <span>$ðt&#39;/k$</span></a><a id="Computing-ðt&#39;/k-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-ðt&#39;/k" title="Permalink"></a></h1><p>The combination <span>$ðt&#39;/k$</span> appears in the BMS transformation of the Weyl components.  Thus, efficiently computing it is a key part of the BMS pipeline.</p><p>We have the coordinate transformation</p><p class="math-container">\[\begin{gather}
+t&#39; = k(t - ε^α α),
+\\
+\frac{1}{k} = γ(1 - ε^ℐv⃗⋅n̂),
+\end{gather}\]</p><p>where <span>$ε^α$</span> accounts for differences in the definition of the supertranslation parameter <span>$α$</span>, and <span>$ε^ℐ$</span> accounts for whether we&#39;re dealing with <span>$ℐ⁺$</span> (<span>$ε^ℐ = +1$</span>) or <span>$ℐ⁻$</span> (<span>$ε^ℐ = -1$</span>).</p><p>Note that <span>$1/k$</span> has a simple form — and specifically, it decomposes into a pure <span>$ℓ = 0$</span> plus a pure <span>$ℓ = 1$</span> function on the sphere.  This allows us to compute <span>$ð(1/k)$</span> in closed form, without needing to evaluate the synthesis sum at all.  The <span>$ð$</span> operator is a derivation, meaning that it obeys the Leibniz rule, so as usual we have <span>$ð(k) = -ð(1/k) k^2$</span>.</p><p class="math-container">\[\begin{align}
+\frac{ðt&#39;}{k} &amp;= -ð(1/k) k (t - ε^α α) - ε^α ðα \\
+&amp;= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα.
+\end{align}\]</p><p>Since <span>$α$</span> and <span>$ðα$</span> may contain — in principle — arbitrarily high <span>$ℓ$</span> modes, it will be best to compute them via <code>SphericalFunctions.jl</code>.  However, the <span>$v⃗⋅n̂$</span> and <span>$ð(v⃗⋅n̂)$</span> terms are simple enough that it will be more efficient to compute them directly in closed form, using rotor components.  That is the objective of what follows.</p><h2 id="Computing-ð(vn)"><a class="docs-heading-anchor" href="#Computing-ð(vn)">Computing <span>$ð(v⃗⋅n̂)$</span></a><a id="Computing-ð(vn)-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-ð(vn)" title="Permalink"></a></h2><p>So we have simplified the problem to computing <span>$ð(v⃗⋅n̂)$</span>.  The product <span>$v⃗⋅n̂$</span> is an <span>$s=0$</span>, <span>$ℓ = 1$</span> function.  The <span>$ð$</span> operator has a very simple action in mode space, so one approach is to just evaluate the mode weights of <span>$v⃗⋅n̂$</span> and apply the known mode-space formula for <span>$ð$</span>.</p><p>Given the standard spherical-harmonic formulas</p><p class="math-container">\[\begin{aligned}
+Y_{1,0}(θ, φ) &amp;= \sqrt{\frac{3}{4π}}\,\cos θ,
+\\
+Y_{1,\pm 1}(θ, φ) &amp;= \mp\sqrt{\frac{3}{8π}}\,\sin θ\,e^{\pm iφ},
+\end{aligned}\]</p><p>we have</p><p class="math-container">\[\begin{aligned}
+\cos θ &amp;= \sqrt{\frac{4π}{3}}\,Y_{1,0},
+\\
+\sin θ \cos φ &amp;= -\frac{1}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} - Y_{1,-1}\right),
+\\
+\sin θ \sin φ &amp;= \frac{i}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} + Y_{1,-1}\right).
+\end{aligned}\]</p><p>We can re-express the dot product as</p><p class="math-container">\[\begin{aligned}
+v⃗⋅n̂
+&amp;= v_x\sin θ\cos φ + v_y\sin θ\sin φ + v_z\cos θ \\
+&amp;= -v_x\frac{1}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} - Y_{1,-1}\right)
+   + v_y\frac{i}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} + Y_{1,-1}\right)
+   + v_z \sqrt{\frac{4π}{3}} Y_{1,0} \\
+\end{aligned}\]</p><p>Now, we also know that the <span>$ð$</span> operator acts on spin-weighted spherical harmonics by</p><p class="math-container">\[ð {}_{s}Y_{ℓ,m} = \sqrt{(ℓ-s)(ℓ+s+1)}\, {}_{s+1}Y_{ℓ,m}.\]</p><p>Of course, with <span>$s=0$</span> and <span>$ℓ=1$</span>, the factor is just <span>$\sqrt{2}$</span>, so we have</p><p class="math-container">\[\begin{aligned}
+ð(v⃗⋅n̂)
+&amp;= -v_x\sqrt{\frac{4π}{3}}\,\left({}_{1}Y_{1,1} - {}_{1}Y_{1,-1}\right)
+   + v_y i\sqrt{\frac{4π}{3}}\,\left({}_{1}Y_{1,1} + {}_{1}Y_{1,-1}\right)
+   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0} \\
+&amp;= (-v_x+ v_y i)\sqrt{\frac{4π}{3}}\,{}_{1}Y_{1,1}
+   + (v_x+ v_y i)\sqrt{\frac{4π}{3}}\, {}_{1}Y_{1,-1}
+   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0}
+\end{aligned}\]</p><p>Another approach is to use the original form of <span>$ð$</span> in terms of partial derivatives with respect to spherical coordinates.  For <span>$s=0$</span>, it is just</p><p class="math-container">\[ð f = -\left(\partial_θ f + \frac{i}{\sin θ}\,\partial_φ f\right).\]</p><p>Applying this to the explicit formula for <span>$v⃗⋅n̂$</span> given above, we have</p><p class="math-container">\[\begin{aligned}
+ð(v⃗⋅n̂)
+&amp;= -v_x\cos θ\cos φ - v_y\cos θ\sin φ + v_z\sin θ
+ - \frac{i}{\sin θ} \left(-v_x\sin θ\sin φ + v_y\sin θ\cos φ\right) \\
+&amp;= -v_x(\cos θ\cos φ - i\sin φ) - v_y(\cos θ\sin φ + i\cos φ) + v_z\sin θ
+\end{aligned}\]</p><p>We have a pair of expressions for Wikipedia:</p><p class="math-container">\[\begin{aligned}
+{}_1 Y_{10}(\theta,\phi)     &amp;=  \sqrt{\frac{3}{8\pi}}\,\sin\theta, \\
+{}_1 Y_{1\pm 1}(\theta,\phi) &amp;= -\sqrt{\frac{3}{16\pi}}(1 \mp \cos\theta)\,e^{\pm i\phi}.
+\end{aligned}\]</p><p>Plugging these in, we can verify that the two approaches give the same result.</p><p>However, it will be better to compute this directly in terms of the rotor components, which is more efficient and numerically well-behaved (no need to evaluate any trigonometric functions, and no spurious poles at the poles).  This is the objective of the next section.</p><h2 id="SWSHs-and-quaternions"><a class="docs-heading-anchor" href="#SWSHs-and-quaternions">SWSHs and quaternions</a><a id="SWSHs-and-quaternions-1"></a><a class="docs-heading-anchor-permalink" href="#SWSHs-and-quaternions" title="Permalink"></a></h2><p>The SWSH is related to Wigner&#39;s <span>$D$</span> matrix by</p><p class="math-container">\[{}_{s}Y_{\ell,m}(R) = (-1)^{s} \sqrt{ \frac{2\ell + 1} {4\pi}} \mathfrak{D}^{(\ell)}_{m, -s} (R),\]</p><p>and</p><p class="math-container">\[  \mathfrak{D}^{(\ell)}_{m&#39;,m}(R) = \sum_{\rho}
+  \binom{\ell+m&#39;} {\rho}\, \binom{\ell-m&#39;} {\ell-\rho-m}\,
+  (-1)^{\rho}\, R_s^{\ell+m&#39;-\rho}\, \bar{R}_s^{\ell-\rho-m}\,
+  R_a^{\rho-m&#39;+m}\, \bar{R}_a^{\rho}\, \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m&#39;)!\, (\ell-m&#39;)! } },\]</p><p>where <span>$R_s = R_1 + i R_z$</span> and <span>$R_a = R_y + i R_x$</span>.  This gives a direct way to evaluate the SWSHs in terms of the rotor components, without needing to compute any trigonometric functions.</p><p class="math-container">\[\begin{gather}
+R = \cos(θ/2) \cos(ϕ/2) - 𝐢 \sin(θ/2) \sin(ϕ/2) + 𝐣 \sin(θ/2) \cos(ϕ/2) + 𝐤 \cos(θ/2) \sin(ϕ/2),
+\\
+R_s = R_1 + i R_z = \cos(θ/2) \cos(ϕ/2) + i \cos(θ/2) \sin(ϕ/2) = \cos(θ/2) e^{iϕ/2},
+\\
+R_a = R_y + i R_x = \sin(θ/2) \cos(ϕ/2) + i (-\sin(θ/2) \sin(ϕ/2)) = \sin(θ/2) e^{-iϕ/2}.
+\end{gather}\]</p><p class="math-container">\[\begin{aligned}
+{}_{1}Y_{1,m}(R) &amp;= -\sqrt{\frac{3} {4\pi}} \mathfrak{D}^{(1)}_{m, -1} (R) \\
+&amp;= -\sqrt{\frac{3} {4\pi}} \sum_{\rho}
+  \binom{1+m} {\rho}\, \binom{1-m} {2-\rho}\,
+  (-1)^{\rho}\, R_s^{1+m-\rho}\, \bar{R}_s^{2-\rho}\,
+  R_a^{\rho-m-1}\, \bar{R}_a^{\rho}\, \sqrt{ \frac{ 2 } { (1+m)!\, (1-m)! } }
+\end{aligned}\]</p><p>For <span>$m=0$</span>, we must have <span>$\rho=1$</span>:</p><p class="math-container">\[\begin{aligned}
+{}_{1}Y_{1,0}(R)
+&amp;= \sqrt{\frac{3} {2\pi}} \bar{R}_s\, \bar{R}_a \\
+&amp;= \sqrt{\frac{3} {2\pi}} \sin(θ/2) \cos(θ/2) \\
+&amp;= \sqrt{\frac{3} {8\pi}} \sin(θ)
+\end{aligned}\]</p><p>For <span>$m=1$</span> we have <span>$\rho=2$</span>:</p><p class="math-container">\[\begin{aligned}
+{}_{1}Y_{1,1}(R)
+&amp;= -\sqrt{\frac{3} {4\pi}} \bar{R}_a^{2} \\
+&amp;= -\sqrt{\frac{3} {4\pi}} \sin^2(θ/2) e^{iϕ} \\
+&amp;= -\sqrt{\frac{3} {16\pi}} (1 - \cos θ) e^{iϕ}
+\end{aligned}\]</p><p>For <span>$m=-1$</span>, we have <span>$\rho=0$</span>:</p><p class="math-container">\[\begin{aligned}
+{}_{1}Y_{1,-1}(R)
+&amp;= -\sqrt{\frac{3} {4\pi}} \bar{R}_s^{2} \\
+&amp;= -\sqrt{\frac{3} {4\pi}} \cos^2(θ/2) e^{-iϕ} \\
+&amp;= -\sqrt{\frac{3} {16\pi}} (1 + \cos θ) e^{-iϕ}
+\end{aligned}\]</p><p>We have derived the same expressions in terms of spherical coordinates as are found on Wikipedia, but we have also found their simple expressions in terms of the rotor components, which is what we will actually use.  We now express the full result</p><h2 id="Expressing-ðt&#39;/k-with-rotor-components"><a class="docs-heading-anchor" href="#Expressing-ðt&#39;/k-with-rotor-components">Expressing <span>$ðt&#39;/k$</span> with rotor components</a><a id="Expressing-ðt&#39;/k-with-rotor-components-1"></a><a class="docs-heading-anchor-permalink" href="#Expressing-ðt&#39;/k-with-rotor-components" title="Permalink"></a></h2><p>A significant simplification will come from the fact that the rotation of <code>v</code> by a rotor <code>R</code> is expressed as <code>R*v*conj(R) = R(v)</code> with this result:</p><pre><code class="language-julia hljs">function (R::Rotor)(v::QuatVec)
+    quatvec(SA[
+        false,
+        ((R[1]^2 + R[2]^2 - R[3]^2 - R[4]^2)*v[2]
+            + (R[1]*R[3] + R[2]*R[4])*2v[4] + (R[2]*R[3] - R[1]*R[4])*2v[3]),
+        ((R[1]^2 - R[2]^2 + R[3]^2 - R[4]^2)*v[3]
+            + (R[2]*R[3] + R[1]*R[4])*2v[2] + (R[3]*R[4] - R[1]*R[2])*2v[4]),
+        ((R[1]^2 + R[4]^2 - R[2]^2 - R[3]^2)*v[4]
+            + (R[1]*R[2] + R[3]*R[4])*2v[3] + (R[2]*R[4] - R[1]*R[3])*2v[2])
+    ])
+end</code></pre><p>Now, we expand the SWHSs in rotor components and find</p><p class="math-container">\[\begin{aligned}
+ð(v⃗⋅n̂)
+&amp;= (-v_x + v_y i)\sqrt{\frac{4π}{3}}\,{}_{1}Y_{1,1}
+   + (v_x + v_y i)\sqrt{\frac{4π}{3}}\, {}_{1}Y_{1,-1}
+   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0} \\
+&amp;= (v_x - v_y i) \bar{R}_a^{2}
+   - (v_x + v_y i) \bar{R}_s^{2}
+   + 2v_z \bar{R}_s\, \bar{R}_a \\
+&amp;= (v_x - v_y i) (R_y - i R_x)^{2}
+   - (v_x + v_y i) (R_1 - i R_z)^{2}
+   + 2v_z (R_1 - i R_z)\, (R_y - i R_x) \\
+&amp;= (v_x - v_y i) (R_y^2 - R_x^2 - 2i R_x R_y) \\&amp;\quad
+   - (v_x + v_y i) (R_1^2 - R_z^2 - 2i R_1 R_z) \\&amp;\quad
+   + 2v_z (R_1 R_y - i R_y R_z - i R_1 R_x - R_x R_z) \\
+&amp;= v_x (- R_1^2 - R_x^2 + R_y^2 + R_z^2 + 2i (R_1 R_z - R_x R_y)) \\&amp;\quad
+   - i v_y (R_1^2 - R_x^2 + R_y^2 - R_z^2 - 2i (R_x R_y + R_1 R_z)) \\&amp;\quad
+   + 2v_z (R_1 R_y - i R_y R_z - i R_1 R_x - R_x R_z) \\
+&amp;= -\left( \tilde{R} \vec{v} R \right) \cdot \left( \hat{x} + i \hat{y} \right).
+\end{aligned}\]</p><p>Similarly, we have</p><p class="math-container">\[\begin{aligned}
+v⃗⋅n̂
+&amp;= (R_1^2 + R_z^2 - R_x^2 - R_y^2)v_z + 2(-R_1 R_x + R_y R_z)v_y + 2(R_x R_z + R_1 R_y)v_x \\
+&amp;= \left( \tilde{R} \vec{v} R \right) \cdot \hat{z}
+\end{aligned}\]</p><p>These are very easy to calculate.  If we define <span>$λ = R̃v⃗R$</span> then we have</p><p class="math-container">\[\begin{align}
+\frac{ðt&#39;}{k}
+&amp;= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα \\
+&amp;= \frac{-ε^ℐ (λ_x + i λ_y)}{1 - ε^ℐ λ_z} (t - ε^α α) - ε^α ðα.
+\end{align}\]</p><p>The term proportional to <span>$t$</span> will vary between time steps, so we factor out a term constant in time and one proportional to time:</p><p class="math-container">\[\frac{ðt&#39;}{k}
+= \left(\frac{ðt&#39;}{k}\right)_0 + \left(\frac{ðt&#39;}{k}\right)_1 t,\]</p><p>where</p><p class="math-container">\[\begin{aligned}
+\left(\frac{ðt&#39;}{k}\right)_0 &amp;= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ε^ℐ} α + ðα \right), \\
+\left(\frac{ðt&#39;}{k}\right)_1 &amp;= \frac{λ_x + i λ_y}{λ_z - ε^ℐ}.
+\end{aligned}\]</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../augmented_swsh_inversion/">« Augmented Direct SSHT</a><a class="docs-footer-nextpage" href="../spline_errors/">Spline Errors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 10 June 2026 18:01">Wednesday 10 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
