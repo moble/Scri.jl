@@ -1,4 +1,4 @@
-# The BMS Group
+# [The BMS Group](@id bms_group)
 
 ## Bondi-Sachs coordinates, metric, and gauge
 
@@ -33,8 +33,12 @@
 
 * Lorentz transformations preserve ``𝒩⁺`` but not the section with
   ``ℓ⁰=1``.
-* Define ``K`` in terms of time component ``{Λ⁰}_μ ℓ^μ = γ(1-v⃗⋅n̂) =
-  1/K``.
+* Define ``K`` in terms of time component
+
+  ```math
+  K(Λ, 𝐤) = \frac{k⁰}{{Λ⁰}ᵦkᵝ} = \frac{1}{γ(1-v⃗⋅n̂)}.
+  ```
+
 * Lorentz transformation ``Λ`` induces a transformation of the section
   as ``σ' = K (Λ ∘ σ)`` — where we have to rescale by ``K`` to get
   back to the preferred section with ``ℓ'^{0'}=1``.
@@ -112,6 +116,10 @@
     transformations is the product of the conformal factors:
     ``K(Λ₂ Λ₁) = K(Λ₂) K(Λ₁)``.  This is a consequence of the
     group structure, but it is not *entirely* trivial to show.
+    Specifically, it's technically a *crossed* homomorphism,
+    because the second factor is evaluated at the transformed
+    point; if we ignore the evaluation point, then it's just a
+    homomorphism.
 
 ## Supertranslations ``𝒮``
 
@@ -133,58 +141,91 @@ function that is independent of ``t``.  The ``εᵅ`` is just a
 bookkeeping device to keep track of the differing conventions for the
 sign in the formula above.
 
-
 ## BMS
 
 We now have two groups: the (proper orthochronous) Lorentz group ``ℒ``
 and the supertranslations ``𝒮``.  The supertranslation ``α ∈ 𝒮``
-acts solely on the time coordinate as ``t' = t - εᵅ α``.  The Lorentz
-transformation ``Λ ∈ ℒ`` acts on the spatial coordinates as well as
-the time coordinate, the latter as ``t' = Kt``.  We can combine these
-two transformations, applying ``α`` first and then ``Λ``, to get the
-general transformation of the time coordinate:
+acts solely on the time coordinate as
 
 ```math
-t' = K(t - εᵅ α),
+t'(t, 𝐤) = t - εᵅ α(𝐤).
 ```
 
-where we implicitly evaluate all fields at the same point on ``ℐ``.
-To be a little more explicit, we can treat these quantities as
-functions on null rays: ``α(λ𝐤) = α(𝐤)`` for any scalar ``λ > 0``
-and null vector ``𝐤``.  Then the transformation law is
+The Lorentz transformation ``Λ ∈ ℒ`` acts on the spatial coordinates
+as well as the time coordinate, the latter as
+
+```math
+t'(t, 𝐤) = K(Λ, 𝐤) t.
+```
+
+We can combine these two transformations, applying ``α`` first and
+then ``Λ``, to get the general transformation of the time coordinate:
+
+```math
+t'(t, 𝐤) = K(Λ, 𝐤) [t - εᵅ α(𝐤)].
+```
+
+Now, we can investigate how repeated transformations compose.  Take
+``α₁, α₂ ∈ 𝒮`` and ``Λ₁, Λ₂ ∈ ℒ``, and we apply ``α₁`` followed by
+``Λ₁``, and then ``α₂`` followed by ``Λ₂``.  First, note that the null
+ray transforms as
+
+```math
+𝐤' = Λ₁ 𝐤.
+```
+
+Also, using the definition of ``K``, we can compute[^1]
 
 ```math
 \begin{aligned}
-t'(𝐤) &= K(𝐤)(t(𝐤) - εᵅ α(𝐤)), \\
-𝐤' &= Λ 𝐤.
+K(Λ₂Λ₁, 𝐤)
+&= \frac{k⁰}{{(Λ₂Λ₁)⁰}ᵦkᵝ} \\
+&= \frac{k⁰}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \\
+&= \frac{{(Λ₁)⁰}ᵦkᵝ}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \frac{k⁰}{{(Λ₁)⁰}ᵦkᵝ} \\
+&= K(Λ₂, Λ₁𝐤)\,K(Λ₁, 𝐤).
 \end{aligned}
 ```
 
-Recall that ``K(𝐤) = {Λ⁰}ᵦkᵝ/k⁰``.  Now, we can investigate how
-repeated transformations compose.  Take ``α₁, α₂ ∈ 𝒮`` and ``Λ₁, Λ₂ ∈
-ℒ``.  We have
+These allow us to write
 
 ```math
 \begin{aligned}
-t'(𝐤) &= K₂(𝐤') \left\{K₁(𝐤)[t(𝐤) - εᵅ α₁(𝐤)] - εᵅ α₂(𝐤')\right\} \\
-      &= K₂(𝐤') K₁(𝐤) t(𝐤) - K₂(𝐤') εᵅ α₁(𝐤) - K₂(𝐤') εᵅ α₂(𝐤') \\
-      &= [K₂(𝐤') K₁(𝐤)] \left\{t(𝐤) - εᵅ \left[α₁(𝐤) + α₂(𝐤')/K₁(𝐤)\right] \right\}.
+t''(t', 𝐤')
+&= K(Λ₂, 𝐤') [t' - εᵅ α₂(𝐤')] \\
+&= K(Λ₂, Λ₁𝐤) \left\{K(Λ₁, 𝐤) [t - εᵅ α₁(𝐤)] - εᵅ α₂(Λ₁𝐤)\right\} \\
+&= K(Λ₂Λ₁, 𝐤) \left\{t - εᵅ [α₁(𝐤) + α₂(Λ₁𝐤) / K(Λ₁, 𝐤)]\right\} \\
 \end{aligned}
 ```
 
 That is, the result of a sequence of two transformations is another
-transformation of the same form, with
+transformation of the same form:
+
+```math
+t''(t, 𝐤) = K(Λ, 𝐤) [t - εᵅ α(𝐤)],
+```
+
+where
 
 ```math
 \begin{aligned}
 Λ &= Λ₂ Λ₁, \\
-α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/K₁(𝐤).
+α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/K(Λ₁, 𝐤).
 \end{aligned}
 ```
 
 Note that ``α₂`` is to be evaluated at the same geometric point on
-``ℐ`` as ``α₁`` and ``K₁``, but is presumably expressed in the
-*transformed* coordinates.
+``ℐ`` as ``α₁`` and ``K`` in this expression, but is presumably
+expressed with respect to the *transformed* frame — it is given as a
+function of the null rays in those transformed components.
+
+[^1]: The equality between the first and last lines of this equation
+    is the defining feature of a "crossed homomorphism" — or more
+    specifically a "1-cocycle" — of the Lorentz group with values in
+    the multiplicative group of positive real numbers (the ``K``
+    function) [Brown_1982, nlab:crossed_homomorphism](@cite).  Though
+    we explicitly compute it here, that equality is a general
+    consequence of the definition of ``K`` as the factor needed to
+    restore the preferred section after a Lorentz transformation.
 
 We can formalize this a little more directly by forming the (outer)
 [semidirect
@@ -211,7 +252,7 @@ general element is
 The group operation is defined as
 
 ```math
-(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂/K₁).
+(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂ ∘ Λ₁ / K₁).
 ```
 
 It's easy to see that multiplication by ``1/K = γ(1-v⃗⋅n̂)`` preserves
@@ -225,46 +266,63 @@ The groups ``ℒ`` and ``𝒮`` are isomorphic to subgroups of
 transformation with the element ``(Λ, 0)``, and any supertranslation
 with the element ``(1, α)``.  We will abuse notation slightly and
 refer to the elements ``Λ`` and ``α`` themselves as elements of the
-BMS group.
-
-Note that ``𝒮`` is a [normal
+BMS group.  Note that, by this construction, ``𝒮`` is a [normal
 subgroup](https://en.wikipedia.org/wiki/Normal_subgroup) of
 ``\text{BMS}``, but ``ℒ`` is not.  That is, for ``Λ ∈ ℒ`` and ``α ∈
 𝒮``, the element ``Λ α Λ⁻¹`` is still an element of ``𝒮``, but ``α Λ
 α⁻¹`` is not an element of ``ℒ``.  This fact will be useful later.
 
-The supertranslations form an *abelian* subgroup of ``\text{BMS}``
-because
-
-```math
-(1, α₂) (1, α₁)
-= (1, α₁ + α₂)
-= (1, α₂ + α₁)
-= (1, α₁) (1, α₂).
-```
-
 We have essentially *constructed* the BMS group, but
 [Sachs_1962a](@citet) actually *derived* it from the asymptotic metric
 conditions, and analyzed the group structure after the fact
-[Sachs_1962b](@cite).
-
-[Sachs_1962a](@citet) was the first to describe the BMS group.  (He
-referred to it as the "Generalized Bondi-Metzner group", or GBM group;
-later authors renamed it the Bondi-Metzner-Sachs group to honor his
-contribution.)  His slightly later paper [Sachs_1962b](@cite) was more
-specifically about the BMS group itself, and proved some important
-properties, including:
+[Sachs_1962b](@cite).  [Sachs_1962a](@citet) was the first to describe
+the BMS group.  (He referred to it as the "Generalized Bondi-Metzner
+group", or GBM group; later authors renamed it the Bondi-Metzner-Sachs
+group to honor his contribution.)  His slightly later paper
+[Sachs_1962b](@cite) was more specifically about the BMS group itself,
+and proved some important properties, including:
 
   1. The supertranslations form an abelian normal subgroup ``N`` of
-     the generalized Bondi-Metzner group; the factor group is
-     isomorphic to the orthochronous homogeneous Lorentz group.
+     the BMS group; the factor group is isomorphic to the Poincaré
+     group.
   2. The translations form a normal four-dimensional subgroup of the
-     proper Bondi Metzner group.
-  3. If ``N'`` is a four dimensional normal subgroup of the proper GBM
+     proper BMS group.
+  3. If ``N'`` is a four dimensional normal subgroup of the proper BMS
      group then ``N'`` is contained in the supertranslation group
      ``N``.
-  4. The only normal four dimensional subgroup of the GBM group is the
+  4. The only normal four dimensional subgroup of the BMS group is the
      translation group.
+
+In particular, the Poincaré group — which Sachs refers to by its
+longer name: the inhomogeneous (proper) orthochronous Lorentz group —
+is a subgroup of the BMS group, though it is not a normal subgroup
+because conjugating a spatial translation by a Lorentz transformation
+results in a general supertranslation.
+
+!!! note "Which way around is 𝐾?"
+
+    It is easy to confuse ``K`` with ``1/K`` in these formulas — not
+    least because different references actually define it both ways.  A
+    discerning consistency check is *Poincaré closure*.  That is, we
+    perform a transformation that comes from the Poincaré subgroup of
+    BMS and check that the BMS result is the same as the simpler
+    Poincaré result.  Specifically, the time translation ``α = δt``
+    corresponds to a spacetime translation by the 4-vector
+    ``\boldsymbol{δ} = (δt, 0, 0, 0)``.  We can readily compute
+    ``Λ^{-1} \boldsymbol{δ} Λ = γ\,δt\,(1; v⃗)`` for a pure boost
+    with velocity v⃗, which is equivalent to the BMS
+    supertranslation ``α' = γ\,δt\,(1 - v⃗⋅n̂) = δt/K``.
+
+    Our group multiplication law is consistent, because we take
+    ``Λ₂=Λ⁻¹``, ``Λ₁=Λ``, ``α₁=0``, and ``α₂=δt`` to find that
+    ```math
+    (Λ₂, α₂) (Λ₁, α₁) = Λ⁻¹ ∘ δt ∘ Λ = (1, α ∘ Λ / K) = (1, δt / K).
+    ```
+    The last equality is because ``α`` is constant, so evaluating
+    at ``Λ𝐤`` is the same as evaluating at ``𝐤``, and that value is
+    ``δt``.  That factor of  ``1/K`` is given by our composition
+    law, and is exactly the same as the result of the Poincaré
+    transformation.
 
 ## Decomposition of BMS
 
