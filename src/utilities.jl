@@ -30,11 +30,12 @@ function impose_reality(αᵢₙ, ℓₘₐₓ, εᵅ)
 end
 
 """
-    compute_t′(t, αₚ, Rₚ, v⃗)
+    compute_t′(t, αₚ, Rₚ, v⃗, εᴵ=1)
 
 Compute the new time samples `t′` corresponding to the input time samples `t` after a BMS
 transformation with supertranslation `αₚ` and boost velocity `v⃗`.  The `Rₚ` describe the
-locations of the pixels.
+locations of the pixels.  The null-infinity sign `εᴵ = ±1` enters the conformal factor as
+`1/k = γ(1 - εᴵ v⃗⋅n̂)` (`+1` for ``ℐ⁺``, `-1` for ``ℐ⁻``).
 
 The objective is to create a new time grid that has the same number of samples as `t` and
 has roughly the same spacing, while accounting for the fact that some parts of the cylinder
@@ -52,7 +53,7 @@ fixed point of the t ↦ t′ map), which we can derive from the above formula a
 
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
 """
-function compute_t′(t, αₚ, Rₚ, v⃗)
+function compute_t′(t, αₚ, Rₚ, v⃗, εᴵ=1)
     β = absvec(v⃗)
     γ = 1 / √(1 - β^2)
     vˣ, vʸ, vᶻ = vec(v⃗)
@@ -66,7 +67,7 @@ function compute_t′(t, αₚ, Rₚ, v⃗)
             2vʸ * (Rʸ * Rᶻ - Rʷ * Rˣ) +
             vᶻ * (Rʷ^2 + Rᶻ^2 - Rˣ^2 - Rʸ^2)
         )
-        k⁻¹ = γ * (1 - v⃗dotn̂)
+        k⁻¹ = γ * (1 - εᴵ * v⃗dotn̂)
         t′ₘᵢₙ = max(t′ₘᵢₙ, (tₘᵢₙ - αₚ[p]) / k⁻¹)
         t′ₘₐₓ = min(t′ₘₐₓ, (tₘₐₓ - αₚ[p]) / k⁻¹)
     end

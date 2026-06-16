@@ -1,6 +1,17 @@
 module Scri
 
-import Quaternionic: QuatVec, Rotor, absvec, 𝐤, value, components, basetype
+import Quaternionic
+import Quaternionic:
+    QuatVec,
+    Rotor,
+    Lorentz,
+    Boost,
+    absvec,
+    𝐤,
+    value,
+    components,
+    basetype,
+    from_spherical_coordinates
 import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
 import LinearAlgebra: mul!, ldiv!, lu, I, qr
 import OffsetArrays: OffsetVector
@@ -9,7 +20,7 @@ import Hwloc
 import Polyester
 import OhMyThreads
 import Base.Threads: nthreads
-import TestItems: @testitem
+import TestItems: @testitem, @testmodule
 
 # These are just for precompilation
 using PrecompileTools: @setup_workload, @compile_workload
@@ -34,9 +45,10 @@ include("cubic_spline.jl")
 include("data_components.jl")
 include("utilities.jl")
 include("aberration.jl")
+include("bms.jl")
 include("transform.jl")
 
-export transform!, diagnostics
+export transform!, diagnostics, BMS
 
 include("precompilation.jl")
 

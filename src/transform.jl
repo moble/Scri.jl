@@ -101,8 +101,11 @@ function transform!(
     # This is the boosted or distorted grid.
     Tₚ = promote_type(Rotor{T4}, T3)
     Rₚ = similar(R′ₚ, Tₚ)
+    # `emitted = true` (ℐ⁺) vs `false` (ℐ⁻) selects the past-vs-future-cone direction map;
+    # see the `aberration` docstring and the "Future and past null infinity" conventions.
+    emitted = (Eᴵ == 1)
     Polyester.@batch for i ∈ eachindex(Rₚ)
-        Rₚ[i] = aberration(R * R′ₚ[i], v⃗)
+        Rₚ[i] = aberration(R * R′ₚ[i], v⃗; emitted)
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
@@ -164,7 +167,7 @@ function transform!(
 
     # Compute t′
     αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
-    task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗)
+    task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗, Eᴵ)
 
     # Compute ðt′/k parts.  We split this into the term independent of t (ðt′╱kₚ[1, :]), and
     # the term proportional to t (ðt′╱kₚ[2, :]).  Note that the latter term is just ðk/k,
@@ -217,7 +220,7 @@ function transform!(
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
             valid_modes = (s ^ 2 + 1):Nᵐ  # skip leading ℓ < |s| entries
-            data_k = view(data,:,:,k)  # (Nᵐ × Nᵗ), fully contiguous
+            data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
             workspace = Matrix{Complex{T1}}(undef, Nᵐ - s^2, block_size)
             for sub_start ∈ cols[begin:block_size:end]
                 sub = sub_start:min(sub_start + block_size - 1, cols[end])
@@ -253,7 +256,7 @@ function transform!(
                 vᶻ * (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)
             )
         end
-        k⁻¹ᵢ = γ * (1 - v⃗dotn̂ᵢ)
+        k⁻¹ᵢ = γ * (1 - Eᴵ * v⃗dotn̂ᵢ)
         ðt′╱kₚ₀ᵢ = ðt′╱kₚ[1, i]
         ðt′╱kₚ₁ᵢ = ðt′╱kₚ[2, i]
         ð²αₚᵢ = ð²αₚ[i]
@@ -262,7 +265,7 @@ function transform!(
         # Copy pixel time series into the dᵢ buffer.  Note that tests comparing this
         # `permutedims!` approach to `LinearAlgebra.copy_transpose!` and to `.= transpose`
         # show this to be fastest and least allocating by up to ~2x, depending on Nᵈ.
-        data_view = view(data,i,:,:)
+        data_view = view(data, i, :, :)
         permutedims!(dᵢ, data_view, (2, 1))
 
         # `d̈` forward sweep (Thomas algorithm, natural BC: d̈[1]=d̈[Nᵗ]=0)
@@ -393,4 +396,26 @@ function transform!(
         DataComponents(data_components...; εᴵ)
     end
     return transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
+end
+
+"""
+    transform!(data, t, g::BMS, dc::DataComponents)
+
+Apply the BMS element `g` to `data` in place.  This convenience wrapper unpacks the boost
+velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity`](@ref),
+[`frame_rotation`](@ref), and [`supertranslation`](@ref) — and forwards to the main
+[`transform!`](@ref) method.  Because the accessors define `lorentz(g) = inv(Boost(v⃗) *
+Lorentz(R))`, these parts carry exactly the meaning the `v⃗` and `R` arguments have in the
+main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
+
+The supertranslation-sign convention `εᵅ` is taken from `g`'s own `Eᵅ` type parameter, and
+the null-infinity sign `εᴵ` from `dc` — a `BMS` element is null-infinity-agnostic, while the
+data live on a fixed null infinity.  Returns `(data, t′)`, as the main method does.
+"""
+function transform!(
+    data::Array{<:Complex}, t::Vector{<:Real}, g::BMS{Tg,Eᵅ}, dc::DataComponents
+) where {Tg<:Real,Eᵅ}
+    return transform!(
+        data, t, boost_velocity(g), frame_rotation(g), supertranslation(g), dc, Eᵅ
+    )
 end
