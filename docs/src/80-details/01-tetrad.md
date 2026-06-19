@@ -12,10 +12,10 @@ The standard null tetrad is then
 
 ```math
 \begin{aligned}
-l^a &= \frac{1}{\sqrt{2}} \left(∂ₜ + ∂ᵣ\right)ᵃ, \\
-m^a &= \frac{1}{r\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\bar{m}^a &= \frac{1}{r\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-n^a &= \frac{1}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
+lᵃ &= \frac{1}{\sqrt{2}} \left(∂ₜ + ∂ᵣ\right)ᵃ, \\
+mᵃ &= \frac{1}{r\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+m̄ᵃ &= \frac{1}{r\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+nᵃ &= \frac{1}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
 \end{aligned}
 ```
 
@@ -36,10 +36,10 @@ so the tetrad is
 
 ```math
 \begin{aligned}
-l^a &= \frac{1}{\sqrt{2}} \left(-ω² \, ∂_ω\right)ᵃ, \\
-m^a &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\bar{m}^a &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-n^a &= \frac{1}{\sqrt{2}} \left(2∂ᵤ + ω² \, ∂_ω\right)ᵃ.
+lᵃ &= \frac{1}{\sqrt{2}} \left(-ω² \, ∂_ω\right)ᵃ, \\
+mᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+m̄ᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+nᵃ &= \frac{1}{\sqrt{2}} \left(2∂ᵤ + ω² \, ∂_ω\right)ᵃ.
 \end{aligned}
 ```
 
@@ -48,10 +48,10 @@ rescale to obtain a tetrad that remains regular at null infinity:
 
 ```math
 \begin{aligned}
-\frac{1}{ω²} l^a &\to l̃^a = -\frac{1}{\sqrt{2}} \left(∂_ω\right)ᵃ, \\
-\frac{1}{ω} m^a &\to m̃^a = \frac{1}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\frac{1}{ω} \bar{m}^a &\to \bar{m̃}^a = \frac{1}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-n^a &\to ñ^a = \sqrt{2} \left(∂ᵤ\right)ᵃ.
+\frac{1}{ω²} lᵃ &\to l̃ᵃ = -\frac{1}{\sqrt{2}} \left(∂_ω\right)ᵃ, \\
+\frac{1}{ω} mᵃ &\to m̃ᵃ = \frac{1}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+\frac{1}{ω} m̄ᵃ &\to \bar{m̃}ᵃ = \frac{1}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+nᵃ &\to ñᵃ = \sqrt{2} \left(∂ᵤ\right)ᵃ.
 \end{aligned}
 ```
 
@@ -67,10 +67,10 @@ The tetrad is
 
 ```math
 \begin{aligned}
-l^a &= \frac{1}{\sqrt{2}} \left(2∂ᵥ - ω² \, ∂_ω\right)ᵃ, \\
-m^a &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\bar{m}^a &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-n^a &= \frac{1}{\sqrt{2}} \left(ω² \, ∂_ω\right)ᵃ.
+lᵃ &= \frac{1}{\sqrt{2}} \left(2∂ᵥ - ω² \, ∂_ω\right)ᵃ, \\
+mᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+m̄ᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+nᵃ &= \frac{1}{\sqrt{2}} \left(ω² \, ∂_ω\right)ᵃ.
 \end{aligned}
 ```
 
@@ -79,9 +79,9 @@ though this time the scaling is opposite for the ``l`` and ``n`` legs:
 
 ```math
 \begin{aligned}
-l^a &\to l̃^a = \sqrt{2} \left(∂ᵥ\right)ᵃ, \\
-\frac{1}{ω} m^a &\to m̃^a = \frac{1}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\frac{1}{ω} \bar{m}^a &\to \bar{m̃}^a = \frac{1}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
-\frac{1}{ω²} n^a &\to ñ^a = \frac{1}{\sqrt{2}} \left(∂_ω\right)ᵃ.
+lᵃ &\to l̃ᵃ = \sqrt{2} \left(∂ᵥ\right)ᵃ, \\
+\frac{1}{ω} mᵃ &\to m̃ᵃ = \frac{1}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+\frac{1}{ω} m̄ᵃ &\to \bar{m̃}ᵃ = \frac{1}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_φ\right)ᵃ, \\
+\frac{1}{ω²} nᵃ &\to ñᵃ = \frac{1}{\sqrt{2}} \left(∂_ω\right)ᵃ.
 \end{aligned}
 ```

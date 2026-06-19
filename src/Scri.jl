@@ -2,6 +2,7 @@ module Scri
 
 import Quaternionic
 import Quaternionic:
+    Quaternion,
     QuatVec,
     Rotor,
     Lorentz,
@@ -11,7 +12,8 @@ import Quaternionic:
     value,
     components,
     basetype,
-    from_spherical_coordinates
+    from_spherical_coordinates,
+    ℂreal
 import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
 import LinearAlgebra: mul!, ldiv!, lu, I, qr
 import OffsetArrays: OffsetVector
