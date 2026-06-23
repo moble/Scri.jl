@@ -150,13 +150,13 @@ function transform!(
 
     # NOTE: From this point on, `α` will represent the corrected version that accounts for
     # `εᵅ`.  That is, we can now interpret `α` as being involved in the time translation as
-    # t' = k(t - α), rather than trying to keep that factor of εᵅ around.
+    # t' = κ(t - α), rather than trying to keep that factor of εᵅ around.
     α = fetch(task_α)
 
     # Evaluate α on the boosted grid.  Make a copy because the 𝒯 act in place.
     task_αₚ = OhMyThreads.@spawn real.(𝒯[0] * copy(α))
 
-    # Compute ðα, which is needed for ðt′/k in the Weyl transformation laws.
+    # Compute ðα, which is needed for ðt′/κ in the Weyl transformation laws.
     # ð returns a full Nᵐ-element vector, but spin-1 modes start at ℓ=1, so skip the first
     # 1² = 1 leading zero entry before passing to 𝒯[1] (which expects Nᵐ − 1² modes).
     task_ðαₚ = OhMyThreads.@spawn 𝒯[1] * (ð(0, 0, ℓₘₐₓ, T5) * α)[2:end]
@@ -169,15 +169,15 @@ function transform!(
     αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
     task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗, Eᴵ)
 
-    # Compute ðt′/k parts.  We split this into the term independent of t (ðt′╱kₚ[1, :]), and
-    # the term proportional to t (ðt′╱kₚ[2, :]).  Note that the latter term is just ðk/k,
+    # Compute ðt′/κ parts.  We split this into the term independent of t (ðt′╱κₚ[1, :]), and
+    # the term proportional to t (ðt′╱κₚ[2, :]).  Note that the latter term is just ðκ/κ,
     # which we can compute efficiently in terms of v⃗⋅(R𝐞R̄), where 𝐞 are the spatial
     # basis vectors.  These products are given by the components of λ=R̄v⃗R as computed
     # below.
     ðαₚ = fetch(task_ðαₚ)
-    task_ðt′╱kₚ = OhMyThreads.@spawn @inbounds begin
+    task_ðt′╱κₚ = OhMyThreads.@spawn @inbounds begin
         # ðαₚ = fetch(task_ðαₚ)  # ðαₚ is only needed here, so fetch it inside the task
-        ðt′╱k = Matrix{Complex{T1}}(undef, 2, Nᵖ)
+        ðt′╱κ = Matrix{Complex{T1}}(undef, 2, Nᵖ)
         @simd ivdep for i ∈ eachindex(Rₚ)
             Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
             λˣ = (
@@ -195,10 +195,10 @@ function transform!(
                 (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
                 (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
             )
-            ðt′╱k[2, i] = -(λˣ + im * λʸ) / (λᶻ - Eᴵ)
-            ðt′╱k[1, i] = ðt′╱k[2, i] * αₚ[i] + ðαₚ[i]
+            ðt′╱κ[2, i] = -(λˣ + im * λʸ) / (λᶻ - Eᴵ)
+            ðt′╱κ[1, i] = ðt′╱κ[2, i] * αₚ[i] + ðαₚ[i]
         end
-        ðt′╱k
+        ðt′╱κ
     end
 
     ###
@@ -237,7 +237,7 @@ function transform!(
 
     cubic_spline_cache = fetch(task_cubic_spline_cache)
     t′, tᵪ = fetch(task_t′_tᵪ)
-    ðt′╱kₚ = fetch(task_ðt′╱kₚ)
+    ðt′╱κₚ = fetch(task_ðt′╱κₚ)
     ð²αₚ = fetch(task_ð²αₚ)
 
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
@@ -256,9 +256,9 @@ function transform!(
                 vᶻ * (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)
             )
         end
-        k⁻¹ᵢ = γ * (1 - Eᴵ * v⃗dotn̂ᵢ)
-        ðt′╱kₚ₀ᵢ = ðt′╱kₚ[1, i]
-        ðt′╱kₚ₁ᵢ = ðt′╱kₚ[2, i]
+        κ⁻¹ᵢ = γ * (1 - Eᴵ * v⃗dotn̂ᵢ)
+        ðt′╱κₚ₀ᵢ = ðt′╱κₚ[1, i]
+        ðt′╱κₚ₁ᵢ = ðt′╱κₚ[2, i]
         ð²αₚᵢ = ð²αₚ[i]
         αₚᵢ = αₚ[i]
 
@@ -302,7 +302,7 @@ function transform!(
         # transformation laws
         @inbounds let
             j′ = Nᵗ
-            tᵢⱼ′ = t′[j′] * k⁻¹ᵢ + αₚᵢ  # original-frame time for output index j′
+            tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ  # original-frame time for output index j′
             for j ∈ (Nᵗ - 1):-1:1
                 # Backward sweep step: d̈ᵢ[j] = z[j] − l[j-1]·d̈ᵢ[j+1]
                 # (j=Nᵗ-1 and j=1 are natural-BC endpoints; no update needed)
@@ -330,11 +330,11 @@ function transform!(
                             )
                         end
                     end
-                    ðt′╱kᵢⱼ = ðt′╱kₚ₀ᵢ + tᵢⱼ′ * ðt′╱kₚ₁ᵢ
-                    @views mix_components!(d′ᵢ[:, j′], k⁻¹ᵢ, ðt′╱kᵢⱼ, ð²αₚᵢ, dc)
+                    ðt′╱κᵢⱼ = ðt′╱κₚ₀ᵢ + tᵢⱼ′ * ðt′╱κₚ₁ᵢ
+                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱κᵢⱼ, ð²αₚᵢ, dc)
                     j′ -= 1
                     if j′ ≥ 1
-                        tᵢⱼ′ = t′[j′] * k⁻¹ᵢ + αₚᵢ
+                        tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ
                     end
                 end
             end

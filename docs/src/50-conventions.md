@@ -117,12 +117,12 @@ axis ``𝐭``.  Observer ``B``'s worldline is parallel to
 
 which lies inside the future light cone and has positive components
 along both ``𝐭`` and ``v⃗``.  The boost rescales the retarded time by
-the conformal factor ``K``:
+the conformal factor ``κ``:
 
 ```math
-t' = K(𝐧)\, t,
+t' = κ(𝐧)\, t,
 \qquad
-K(𝐧) = \frac{1}{γ(1 - ε^ℐ\, v⃗ ⋅ 𝐧)},
+κ(𝐧) = \frac{1}{γ(1 - ε^ℐ\, v⃗ ⋅ 𝐧)},
 ```
 
 where ``𝐧`` here is the null ray *before* any boost or rotation has
@@ -131,12 +131,12 @@ been applied, and ``ε^ℐ = ±1`` selects future or past null infinity (see
 the element ``(Λ = b∘R, α)`` on ``A``'s coordinates ``(t, 𝐧)`` is then
 
 ```math
-t' = K(Λ, 𝐧) \bigl[t - εᵅ α(𝐧)\bigr],
+t' = κ(Λ, 𝐧) \bigl[t - εᵅ α(𝐧)\bigr],
 \qquad
 𝐧' = \frac{Λ𝐧}{(Λ𝐧)^0},
 ```
 
-where ``K(Λ, 𝐧) = n⁰/(Λ𝐧)⁰`` is the conformal factor for the
+where ``κ(Λ, 𝐧) = n⁰/(Λ𝐧)⁰`` is the conformal factor for the
 combined Lorentz transformation ``Λ`` evaluated on the null ray, which
 is given in $A$'s coordinate frame as ``𝐧 = (1, ε^ℐ n̂)`` up to
 normalization.
@@ -170,23 +170,23 @@ n̂)``, which is the single place the convention enters.  Propagating
 it through the conformal factor gives
 
 ```math
-K(𝐧) = \frac{1}{γ(1 - ε^ℐ\, v⃗ ⋅ n̂)}.
+κ(𝐧) = \frac{1}{γ(1 - ε^ℐ\, v⃗ ⋅ n̂)}.
 ```
 
 The sign flip is exactly the past-cone Doppler factor: an observer
 boosted with velocity ``v⃗`` sees radiation arriving from ``n̂``
 shifted by ``γ(1 + v⃗ ⋅ n̂)`` (blueshift toward the direction of
-motion), which is ``K^{-1}`` at ``ε^ℐ = -1``.  This is the same sign
+motion), which is ``κ^{-1}`` at ``ε^ℐ = -1``.  This is the same sign
 difference Penrose and Rindler note at their Eq. (1.3.5), and it is
 the convention implemented throughout this package — in
 [`aberration`](@ref Scri.aberration) (its `emitted` keyword), in the
 conformal factor used by [`transform!`](@ref), in the ``ε^ℐ`` type
 parameter of [`DataComponents`](@ref Scri.DataComponents) (data live
 on a fixed null infinity), and in the ``ε^ℐ`` argument of the
-[`BMS`](@ref) operations.  Because ``K`` itself is a spin-0
+[`BMS`](@ref) operations.  Because ``κ`` itself is a spin-0
 (orientation-blind) quantity, the choice also governs the *handedness*
 of the spin-weighted ``ð`` operator that appears in the
 component-mixing law, which is why the Weyl/Faraday peeling tower runs
-in the opposite direction at ``ℐ⁻`` (see [Computing ``ðt'/K``](@ref
-computing_eth_tprime_over_K) and [`DataComponents`](@ref
+in the opposite direction at ``ℐ⁻`` (see [Computing ``ðt'/κ``](@ref
+computing_eth_tprime_over_kappa) and [`DataComponents`](@ref
 Scri.DataComponents)).

@@ -146,7 +146,7 @@ end
 
 @testitem "compute_t′: β=0, only supertranslation shifts valid range" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
-    # With β=0 the rotors are irrelevant; γ=1 and k⁻¹=1 for every pixel.
+    # With β=0 the rotors are irrelevant; γ=1 and κ⁻¹=1 for every pixel.
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [1.0, -0.5, 2.0]   # min = -0.5, max = 2.0
     v⃗ = QuatVec(0.0, 0.0, 0.0)
@@ -166,8 +166,8 @@ end
     import Quaternionic: Rotor, QuatVec
     β = 0.5
     γ = 1 / √(1 - β^2)
-    # Pixel at +z (identity rotor): k⁻¹ = γ(1-β)  — blue-shifted, weak constraint
-    # Pixel at -z (Rotor(0,1,0,0)): k⁻¹ = γ(1+β)  — red-shifted, binding constraint
+    # Pixel at +z (identity rotor): κ⁻¹ = γ(1-β)  — blue-shifted, weak constraint
+    # Pixel at -z (Rotor(0,1,0,0)): κ⁻¹ = γ(1+β)  — red-shifted, binding constraint
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(0.0, 1.0, 0.0, 0.0)]
     αₚ = [0.0, 0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
@@ -235,7 +235,7 @@ end
         v⃗ = QuatVec(0.0, 0.0, 0.0)
         t = collect(range(-5.0, 5.0; length=51))
         (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
-        # With β=0 and α=0, k⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
+        # With β=0 and α=0, κ⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
         # t′ₘₐₓ=tₘₐₓ, scale=1, and t′ = t exactly.
         @test t′ ≈ t atol = 4eps(maximum(abs, t))
     end
@@ -323,7 +323,7 @@ end
 @testitem "compute_t′: collapsed range throws an error" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
 
-    # With β=0, k⁻¹=1 for all pixels, so:
+    # With β=0, κ⁻¹=1 for all pixels, so:
     #   t′ₘᵢₙ = tₘᵢₙ − min(αₚ)
     #   t′ₘₐₓ = tₘₐₓ − max(αₚ)
     # Range collapses when max(αₚ)−min(αₚ) > tₘₐₓ−tₘᵢₙ.

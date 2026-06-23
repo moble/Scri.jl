@@ -146,12 +146,11 @@ function aberration(RRₚᵢ, v⃗; emitted::Bool=true)
     return B′ * RRₚᵢ
 end
 
-const u₊ = Quaternion(1//2, 0, 0, -im//2)
-
-function aberration(RRₚᵢ, v⃗, εᴵ::Int=+1, random_extra_arg=nothing)
+function aberration(RRₚᵢ::Rotor{T}, v⃗, εᴵ::Int=+1) where {T}
+    u₊ = (1 + im * 𝐤) / T(2)
     B = Boost(εᴵ * v⃗)
-    ψ = B * RRₚᵢ
-    η = ψ * u₊
-    ρ = ℂreal(η)
+    Λ = B * RRₚᵢ
+    λ = Λ * u₊
+    ρ = ℂreal(λ)
     return Rotor(ρ)
 end

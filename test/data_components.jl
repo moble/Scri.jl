@@ -127,7 +127,7 @@ end
 
 # ── mix_components! ───────────────────────────────────────────────────────────
 
-@testitem "mix_components!: identity (k⁻¹=1, ðt′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: identity (κ⁻¹=1, ðt′╱κ=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
@@ -141,44 +141,44 @@ end
     end
 end
 
-@testitem "mix_components!: pure conformal scaling (ðt′╱k=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: pure conformal scaling (ðt′╱κ=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
-    # When ðt′╱k = 0 (e.g., at u = 0 for a boost with no supertranslation, since
-    # ðt′╱k = −(ðk/k)·u), each component scales by k^(conformal_weight).
-    # Weyl: k⁻³; σ,h: k⁻¹; News: k⁻².
+    # When ðt′╱κ = 0 (e.g., at u = 0 for a boost with no supertranslation, since
+    # ðt′╱κ = −(ðκ/κ)·u), each component scales by κ^(conformal_weight).
+    # Weyl: κ⁻³; σ,h: κ⁻¹; News: κ⁻².
     rng = Random.Xoshiro(7)
     dc = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
-        k⁻¹ = 0.4 + 0.3 * randn(rng)
-        Scri.mix_components!(data, k⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
+        κ⁻¹ = 0.4 + 0.3 * randn(rng)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
         for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
             i = Scri.component_index(dc, Val(s))
-            @test data[i] ≈ k⁻¹^3 * orig[i]
+            @test data[i] ≈ κ⁻¹^3 * orig[i]
         end
         @test data[Scri.component_index(dc, Val(:σ))] ≈
-            k⁻¹ * orig[Scri.component_index(dc, Val(:σ))]
+            κ⁻¹ * orig[Scri.component_index(dc, Val(:σ))]
         @test data[Scri.component_index(dc, Val(:h))] ≈
-            k⁻¹ * orig[Scri.component_index(dc, Val(:h))]
+            κ⁻¹ * orig[Scri.component_index(dc, Val(:h))]
         @test data[Scri.component_index(dc, Val(:News))] ≈
-            k⁻¹^2 * orig[Scri.component_index(dc, Val(:News))]
+            κ⁻¹^2 * orig[Scri.component_index(dc, Val(:News))]
     end
 end
 
-@testitem "mix_components!: ψ₄-seed propagation (k⁻¹=1)" tags = [:unit, :fast, :validation] begin
+@testitem "mix_components!: ψ₄-seed propagation (κ⁻¹=1)" tags = [:unit, :fast, :validation] begin
     import Random
     import Scri: DataComponents
 
-    # When only ψ₄ = z is non-zero and k⁻¹=1, the lower Weyl components receive
-    # the values ψₙ' = (−ðt′╱k)^(4−n) · z — purely from the nested polynomial.
+    # When only ψ₄ = z is non-zero and κ⁻¹=1, the lower Weyl components receive
+    # the values ψₙ' = (−ðt′╱κ)^(4−n) · z — purely from the nested polynomial.
     rng = Random.Xoshiro(11)
     dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     for _ ∈ 1:8
         z = randn(rng, ComplexF64)
-        f = randn(rng, ComplexF64)   # ðt′╱k
+        f = randn(rng, ComplexF64)   # ðt′╱κ
         data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
         Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
         for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
@@ -193,16 +193,16 @@ end
 ] begin
     import Scri: DataComponents
 
-    # When all five ψ inputs equal 1, each output is k⁻³·(1−ðt′╱k)^(4−n).
-    # This follows from the binomial expansion of (1 − ðt′╱k * ∂_u)^4 acting on 1.
+    # When all five ψ inputs equal 1, each output is κ⁻³·(1−ðt′╱κ)^(4−n).
+    # This follows from the binomial expansion of (1 − ðt′╱κ * ∂_u)^4 acting on 1.
     dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
-    k⁻¹ = 2.0
+    κ⁻¹ = 2.0
     f = 3.0 + 2.0im
     data = ones(ComplexF64, 5)
-    Scri.mix_components!(data, k⁻¹, f, 0.0 + 0im, dc)
+    Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, dc)
     for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
         i = Scri.component_index(dc, Val(s))
-        @test data[i] ≈ k⁻¹^3 * (1 - f)^exp
+        @test data[i] ≈ κ⁻¹^3 * (1 - f)^exp
     end
 end
 
@@ -210,22 +210,22 @@ end
     import Random
     import Scri: DataComponents
 
-    # σ' = k⁻¹·(σ + ð²α),  h' = k⁻¹·(h + conj(ð²α))
+    # σ' = κ⁻¹·(σ + ð²α),  h' = κ⁻¹·(h + conj(ð²α))
     rng = Random.Xoshiro(99)
     dc = DataComponents(:σ, :h)
     for _ ∈ 1:8
         σ_v = randn(rng, ComplexF64)
         h_v = randn(rng, ComplexF64)
-        k⁻¹ = 0.5 + randn(rng)
+        κ⁻¹ = 0.5 + randn(rng)
         ð²α = randn(rng, ComplexF64)
         data = ComplexF64[σ_v, h_v]
-        Scri.mix_components!(data, k⁻¹, 0.0 + 0im, ð²α, dc)
-        @test data[1] ≈ k⁻¹ * (σ_v + ð²α)
-        @test data[2] ≈ k⁻¹ * (h_v + conj(ð²α))
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc)
+        @test data[1] ≈ κ⁻¹ * (σ_v + ð²α)
+        @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α))
     end
 end
 
-@testitem "mix_components!: News scales by k⁻² with no mixing" tags = [:unit, :fast] begin
+@testitem "mix_components!: News scales by κ⁻² with no mixing" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
@@ -233,9 +233,9 @@ end
     dc = DataComponents(:News)
     for _ ∈ 1:8
         news = randn(rng, ComplexF64)
-        k⁻¹ = 0.5 + randn(rng)
+        κ⁻¹ = 0.5 + randn(rng)
         data = ComplexF64[news]
-        Scri.mix_components!(data, k⁻¹, randn(rng, ComplexF64), randn(rng, ComplexF64), dc)
-        @test data[1] ≈ k⁻¹^2 * news
+        Scri.mix_components!(data, κ⁻¹, randn(rng, ComplexF64), randn(rng, ComplexF64), dc)
+        @test data[1] ≈ κ⁻¹^2 * news
     end
 end

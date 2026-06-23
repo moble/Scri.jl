@@ -29,25 +29,25 @@
     g_{AB} = ηᵦᵧ \frac{∂σᵝ}{∂xᴬ} \frac{∂σᵞ}{∂xᴮ}.
     ```
 
-## Lorentz transformations ``ℒ`` and the conformal factor ``K``
+## Lorentz transformations ``ℒ`` and the conformal factor ``κ``
 
 * Lorentz transformations preserve ``𝒩⁺`` but not the section with
   ``ℓ⁰=1``.
-* Define ``K`` in terms of time component
+* Define ``κ`` in terms of time component
 
   ```math
-  K(Λ, 𝐤) = \frac{k⁰}{{Λ⁰}ᵦkᵝ} = \frac{1}{γ(1-v⃗⋅n̂)}.
+  κ(Λ, 𝐤) = \frac{k⁰}{{Λ⁰}ᵦkᵝ} = \frac{1}{γ(1-v⃗⋅n̂)}.
   ```
 
 * Lorentz transformation ``Λ`` induces a transformation of the section
-  as ``σ' = K (Λ ∘ σ)`` — where we have to rescale by ``K`` to get
+  as ``σ' = κ (Λ ∘ σ)`` — where we have to rescale by ``κ`` to get
   back to the preferred section with ``ℓ'^{0'}=1``.
-* Differentiating ``{σ'}ᵝ = K {Λᵝ}ᵧσᵞ`` by ``xᴬ`` gives us two terms,
-  the first differentiating ``K`` and the second differentiating
+* Differentiating ``{σ'}ᵝ = κ {Λᵝ}ᵧσᵞ`` by ``xᴬ`` gives us two terms,
+  the first differentiating ``κ`` and the second differentiating
   ``σ``:
 
   ```math
-  \frac{∂{σ'}ᵝ}{∂xᴬ} = \frac{∂K}{∂xᴬ} {Λᵝ}ᵧσᵞ + K {Λᵝ}ᵧ \frac{∂σᵞ}{∂xᴬ}.
+  \frac{∂{σ'}ᵝ}{∂xᴬ} = \frac{∂κ}{∂xᴬ} {Λᵝ}ᵧσᵞ + κ {Λᵝ}ᵧ \frac{∂σᵞ}{∂xᴬ}.
   ```
 
   That derivative is then contracted twice with the Minkowski metric
@@ -83,17 +83,17 @@
   then find
 
   ```math
-  g'_{AB} = K² ηᵦᵧ \frac{∂{σ}ᵝ}{∂xᴬ} \frac{∂{σ}ᵞ}{∂xᴮ} = K² g_{AB}.
+  g'_{AB} = κ² ηᵦᵧ \frac{∂{σ}ᵝ}{∂xᴬ} \frac{∂{σ}ᵞ}{∂xᴮ} = κ² g_{AB}.
   ```
 
-  That is, ``{dΩ'}² = K² dΩ²``.  This is the key result: Lorentz
+  That is, ``{dΩ'}² = κ² dΩ²``.  This is the key result: Lorentz
   transformations transform the unit sphere metric on the celestial
-  sphere by a conformal factor ``K²``.
+  sphere by a conformal factor ``κ²``.
 * Combine that with the fact that Bondi gauge requires the angular
   part of the metric to be *asymptotically* ``r² dΩ²``, and if the
   transformation is an isometry we must have the *asymptotic* relation
-  ``r² dΩ² \sim {r'}² {dΩ'}²``, and we find that ``r \sim K r'``,
-  which is Sachs's *definition* of ``K``.
+  ``r² dΩ² \sim {r'}² {dΩ'}²``, and we find that ``r \sim κ r'``,
+  which is Sachs's *definition* of ``κ``.
 
 !!! info "To do"
 
@@ -101,20 +101,20 @@
     may be more familiar, so it could be useful to have both.
     * Conformal factor under boost:
       - aberration formula ``\cos θ' = (\cos θ - β) / (1 - β \cos θ)``
-      - differentiate to find ``\sin θ'\, dθ' = K² \sin θ\, dθ``
-      - use ``\sin² θ' = 1-\cos² θ'`` to find ``\sin θ' = K \sin θ``
-      - also have ``dθ' = K dθ``
+      - differentiate to find ``\sin θ'\, dθ' = κ² \sin θ\, dθ``
+      - use ``\sin² θ' = 1-\cos² θ'`` to find ``\sin θ' = κ \sin θ``
+      - also have ``dθ' = κ dθ``
       - combine to show that a boost along ``z`` transforms the unit
-        sphere metric as ``{dΩ'}² = K² dΩ²``.
+        sphere metric as ``{dΩ'}² = κ² dΩ²``.
       - rotations preserve the unit sphere metric, so arbitrary
         Lorentz transformations transform the unit sphere metric as
-        ``{dΩ'}² = K² dΩ²``, with ``K`` as we defined it.
+        ``{dΩ'}² = κ² dΩ²``, with ``κ`` as we defined it.
 
 !!! info "To do"
 
     Show that the conformal factor of a product of Lorentz
     transformations is the product of the conformal factors:
-    ``K(Λ₂ Λ₁) = K(Λ₂) K(Λ₁)``.  This is a consequence of the
+    ``κ(Λ₂ Λ₁) = κ(Λ₂) κ(Λ₁)``.  This is a consequence of the
     group structure, but it is not *entirely* trivial to show.
     Specifically, it's technically a *crossed* homomorphism,
     because the second factor is evaluated at the transformed
@@ -155,14 +155,14 @@ The Lorentz transformation ``Λ ∈ ℒ`` acts on the spatial coordinates
 as well as the time coordinate, the latter as
 
 ```math
-t'(t, 𝐤) = K(Λ, 𝐤) t.
+t'(t, 𝐤) = κ(Λ, 𝐤) t.
 ```
 
 We can combine these two transformations, applying ``α`` first and
 then ``Λ``, to get the general transformation of the time coordinate:
 
 ```math
-t'(t, 𝐤) = K(Λ, 𝐤) [t - εᵅ α(𝐤)].
+t'(t, 𝐤) = κ(Λ, 𝐤) [t - εᵅ α(𝐤)].
 ```
 
 Now, we can investigate how repeated transformations compose.  Take
@@ -174,15 +174,15 @@ ray transforms as
 𝐤' = Λ₁ 𝐤.
 ```
 
-Also, using the definition of ``K``, we can compute[^1]
+Also, using the definition of ``κ``, we can compute[^1]
 
 ```math
 \begin{aligned}
-K(Λ₂Λ₁, 𝐤)
+κ(Λ₂Λ₁, 𝐤)
 &= \frac{k⁰}{{(Λ₂Λ₁)⁰}ᵦkᵝ} \\
 &= \frac{k⁰}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \\
 &= \frac{{(Λ₁)⁰}ᵦkᵝ}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \frac{k⁰}{{(Λ₁)⁰}ᵦkᵝ} \\
-&= K(Λ₂, Λ₁𝐤)\,K(Λ₁, 𝐤).
+&= κ(Λ₂, Λ₁𝐤)\,κ(Λ₁, 𝐤).
 \end{aligned}
 ```
 
@@ -191,9 +191,9 @@ These allow us to write
 ```math
 \begin{aligned}
 t''(t', 𝐤')
-&= K(Λ₂, 𝐤') [t' - εᵅ α₂(𝐤')] \\
-&= K(Λ₂, Λ₁𝐤) \left\{K(Λ₁, 𝐤) [t - εᵅ α₁(𝐤)] - εᵅ α₂(Λ₁𝐤)\right\} \\
-&= K(Λ₂Λ₁, 𝐤) \left\{t - εᵅ [α₁(𝐤) + α₂(Λ₁𝐤) / K(Λ₁, 𝐤)]\right\} \\
+&= κ(Λ₂, 𝐤') [t' - εᵅ α₂(𝐤')] \\
+&= κ(Λ₂, Λ₁𝐤) \left\{κ(Λ₁, 𝐤) [t - εᵅ α₁(𝐤)] - εᵅ α₂(Λ₁𝐤)\right\} \\
+&= κ(Λ₂Λ₁, 𝐤) \left\{t - εᵅ [α₁(𝐤) + α₂(Λ₁𝐤) / κ(Λ₁, 𝐤)]\right\} \\
 \end{aligned}
 ```
 
@@ -201,7 +201,7 @@ That is, the result of a sequence of two transformations is another
 transformation of the same form:
 
 ```math
-t''(t, 𝐤) = K(Λ, 𝐤) [t - εᵅ α(𝐤)],
+t''(t, 𝐤) = κ(Λ, 𝐤) [t - εᵅ α(𝐤)],
 ```
 
 where
@@ -209,22 +209,22 @@ where
 ```math
 \begin{aligned}
 Λ &= Λ₂ Λ₁, \\
-α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/K(Λ₁, 𝐤).
+α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/κ(Λ₁, 𝐤).
 \end{aligned}
 ```
 
 Note that ``α₂`` is to be evaluated at the same geometric point on
-``ℐ`` as ``α₁`` and ``K`` in this expression, but is presumably
+``ℐ`` as ``α₁`` and ``κ`` in this expression, but is presumably
 expressed with respect to the *transformed* frame — it is given as a
 function of the null rays in those transformed components.
 
 [^1]: The equality between the first and last lines of this equation
     is the defining feature of a "crossed homomorphism" — or more
     specifically a "1-cocycle" — of the Lorentz group with values in
-    the multiplicative group of positive real numbers (the ``K``
+    the multiplicative group of positive real numbers (the ``κ``
     function) [Brown_1982, nlab:crossed_homomorphism](@cite).  Though
     we explicitly compute it here, that equality is a general
-    consequence of the definition of ``K`` as the factor needed to
+    consequence of the definition of ``κ`` as the factor needed to
     restore the preferred section after a Lorentz transformation.
 
 We can formalize this a little more directly by forming the (outer)
@@ -239,7 +239,7 @@ product](https://en.wikipedia.org/wiki/Semidirect_product#Outer_semidirect_produ
 where the homomorphism ``φ: ℒ → \text{Aut}(𝒮)`` is given by
 
 ```math
-φ(Λ)(α) = α/K.
+φ(Λ)(α) = α/κ.
 ```
 
 The identity element of this group is the pair ``(1, 0)``, and a
@@ -252,12 +252,12 @@ general element is
 The group operation is defined as
 
 ```math
-(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂ ∘ Λ₁ / K₁).
+(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂ ∘ Λ₁ / κ₁).
 ```
 
-It's easy to see that multiplication by ``1/K = γ(1-v⃗⋅n̂)`` preserves
+It's easy to see that multiplication by ``1/κ = γ(1-v⃗⋅n̂)`` preserves
 the defining properties of the supertranslations, so ``φ(Λ)`` is
-indeed an automorphism.  And repeated multiplication by ``1/Kᵢ`` is
+indeed an automorphism.  And repeated multiplication by ``1/κᵢ`` is
 consistent with the composition of Lorentz transformations, so ``φ``
 is a homomorphism.
 
@@ -299,9 +299,9 @@ is a subgroup of the BMS group, though it is not a normal subgroup
 because conjugating a spatial translation by a Lorentz transformation
 results in a general supertranslation.
 
-!!! note "Which way around is 𝐾?"
+!!! note "Which way around is κ?"
 
-    It is easy to confuse ``K`` with ``1/K`` in these formulas — not
+    It is easy to confuse ``κ`` with ``1/κ`` in these formulas — not
     least because different references actually define it both ways.  A
     discerning consistency check is *Poincaré closure*.  That is, we
     perform a transformation that comes from the Poincaré subgroup of
@@ -311,16 +311,16 @@ results in a general supertranslation.
     ``\boldsymbol{δ} = (δt, 0, 0, 0)``.  We can readily compute
     ``Λ^{-1} \boldsymbol{δ} Λ = γ\,δt\,(1; v⃗)`` for a pure boost
     with velocity v⃗, which is equivalent to the BMS
-    supertranslation ``α' = γ\,δt\,(1 - v⃗⋅n̂) = δt/K``.
+    supertranslation ``α' = γ\,δt\,(1 - v⃗⋅n̂) = δt/κ``.
 
     Our group multiplication law is consistent, because we take
     ``Λ₂=Λ⁻¹``, ``Λ₁=Λ``, ``α₁=0``, and ``α₂=δt`` to find that
     ```math
-    (Λ₂, α₂) (Λ₁, α₁) = Λ⁻¹ ∘ δt ∘ Λ = (1, α ∘ Λ / K) = (1, δt / K).
+    (Λ₂, α₂) (Λ₁, α₁) = Λ⁻¹ ∘ δt ∘ Λ = (1, α ∘ Λ / κ) = (1, δt / κ).
     ```
     The last equality is because ``α`` is constant, so evaluating
     at ``Λ𝐤`` is the same as evaluating at ``𝐤``, and that value is
-    ``δt``.  That factor of  ``1/K`` is given by our composition
+    ``δt``.  That factor of  ``1/κ`` is given by our composition
     law, and is exactly the same as the result of the Poincaré
     transformation.
 

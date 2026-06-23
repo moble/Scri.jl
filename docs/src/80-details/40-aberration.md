@@ -72,7 +72,7 @@ above:
 
 This is identical to the null section ``σ_ε: \hat{n} \mapsto (1,
 ε\hat{n})`` introduced in the [BMS group page](@ref "Lorentz
-transformations ``ℒ`` and the conformal factor ``K``") in its
+transformations ``ℒ`` and the conformal factor ``κ``") in its
 discussion of the celestial sphere.  The same rotor language connects
 naturally to the [Spacetime Algebra](@extref Quaternionic :doc:`spacetime_algebra`) developed in Quaternionic.jl, where null vectors arise from
 combinations of boost and rotation generators in the even subalgebra
@@ -108,12 +108,12 @@ the source.
 The ratio
 
 ```math
-K = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{n})}
+κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{n})}
 ```
 
 is exactly the conformal factor introduced in the BMS page: for ``ε =
-+1`` it reduces to ``K = 1/[γ(1-\vec{v}\cdot\hat{n})]`` while for ``ε
-= -1`` it becomes ``K = 1/[γ(1+\vec{v}\cdot\hat{n})]``.
++1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{n})]`` while for ``ε
+= -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{n})]``.
 
 ## The aberration formula
 

@@ -10,7 +10,7 @@
 
     # For a pure boost (no rotation, no supertranslation) acting on a spin-0 ψ₂ field with
     # the rest of its peeling tower set to zero, there is no component mixing, so the law is
-    # simply ψ₂′ = k⁻³ ψ₂ with 1/k = γ(1 - εᴵ v⃗⋅n̂).  We reconstruct that pointwise from the
+    # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - εᴵ v⃗⋅n̂).  We reconstruct that pointwise from the
     # *output* modes and compare against an independent evaluation — pinning the conformal
     # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `emitted`)
     # at both null infinities.  At εᴵ = +1 this is also a regression guard for ℐ⁺.
@@ -38,15 +38,15 @@
         emitted = (εᴵ == 1)
         Rₚ = [Scri.aberration(R′ₚ, v⃗; emitted) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
         ψ₂_rest = ₛ𝐘(0, ℓ, Float64, Rₚ) * α0                    # input ψ₂ at rest directions
-        k⁻¹ = [γ * (1 - εᴵ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
-        expected = @. k⁻¹^3 * ψ₂_rest                            # ψ₂′ = k⁻³ ψ₂ (no mixing)
+        κ⁻¹ = [γ * (1 - εᴵ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
+        expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)
 
         # The square s=0 analysis is exactly invertible, so synthesizing the output modes on
         # the B-frame grid recovers the transformed pixel values.
         out_pixels = ₛ𝐘(0, ℓ, Float64, Rs) * data[:, 1, 1]
         @test maximum(abs, out_pixels .- expected) < 1e-12
 
-        # ψ₂′ is constant in time (constant input, time-independent k⁻³), so every slice
+        # ψ₂′ is constant in time (constant input, time-independent κ⁻³), so every slice
         # agrees — a check that the time interpolation is exact here.
         @test maximum(abs, data[:, 1, 1] .- data[:, 3, 1]) < 1e-12
     end

@@ -150,7 +150,7 @@ Base.@constprop :aggressive spin_weight(s)::Int = spin_weight(Val(s))
     conformal_weight(::Val{S})
 
 Return the conformal weight (spin weight + boost weight) of field component `S`, which is
-the power of the conformal factor ``k`` in the BMS transformation law.
+the power of the conformal factor ``κ`` in the BMS transformation law.
 
 Note that we are assuming that these fields represent the asymptotic values of the physical
 fields at null infinity, so they have already been rescaled by the appropriate power of the
@@ -161,18 +161,18 @@ weight, but the asymptotic fields are the ones we are transforming.
 More specifically, the *asymptotic* Weyl spinor ``ψ`` and Faraday spinor ``φ`` are related
 to the finite-radius Weyl spinor ``Ψ`` by ``ψ = ωΨ`` and the finite-radius Faraday spinor
 ``Φ`` by ``φ = ωΦ``.  The factor ``ω`` is the conformal factor that goes to zero (but has
-nonzero derivative) at null infinity, which transforms as ``ω′=kω``, so we pick up a factor
-of ``k⁻¹`` in the transformation laws for ``ψ`` and ``φ`` compared to ``Ψ`` and ``Φ``.
+nonzero derivative) at null infinity, which transforms as ``ω′=κω``, so we pick up a factor
+of ``κ⁻¹`` in the transformation laws for ``ψ`` and ``φ`` compared to ``Ψ`` and ``Φ``.
 Since ``Ψ`` and ``Φ`` are the physical quantities, they do not change under coordinate
 transformations.
 
-Meanwhile the basis spinors each transform with a factor of ``1/√k``.  The Weyl components
+Meanwhile the basis spinors each transform with a factor of ``1/√κ``.  The Weyl components
 ``ψₙ`` are defined by contracting the Weyl spinor with *four* basis spinors, so they pick up
-a factor of ``k⁻²`` from the basis spinors and an additional factor of ``k⁻¹`` from the
-conformal factor, for a total of ``k⁻³``.  Similarly, the Faraday components ``φₙ`` are
+a factor of ``κ⁻²`` from the basis spinors and an additional factor of ``κ⁻¹`` from the
+conformal factor, for a total of ``κ⁻³``.  Similarly, the Faraday components ``φₙ`` are
 defined by contracting the Faraday spinor with *two* basis spinors, so they pick up a factor
-of ``k⁻¹`` from the conformal factor and an additional factor of ``k⁻¹`` from the basis
-spinors, for a total of ``k⁻²``.
+of ``κ⁻¹`` from the conformal factor and an additional factor of ``κ⁻¹`` from the basis
+spinors, for a total of ``κ⁻²``.
 """
 conformal_weight(::Val{:ψ₀}) = -3
 conformal_weight(::Val{:ψ₁}) = -3
@@ -187,11 +187,11 @@ conformal_weight(::Val{:φ₁}) = -2
 conformal_weight(::Val{:φ₂}) = -2
 
 """
-    mix_components!(dataᵢⱼ, k⁻¹, ðt′╱k, ð²α, dc)
+    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱κ, ð²α, dc)
 
-Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `k⁻¹` is the inverse conformal
-factor for this pixel, `ðt′╱k` is the eth-derivative of the retarded time in the new frame
-divided by ``k``, and `ð²α` is the sign-adjusted second anti-eth-derivative of the
+Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the inverse conformal
+factor for this pixel, `ðt′╱κ` is the eth-derivative of the retarded time in the new frame
+divided by ``κ``, and `ð²α` is the sign-adjusted second anti-eth-derivative of the
 supertranslation (used for the strain/shear component).
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
@@ -203,10 +203,10 @@ with no branches and only the necessary components, making it very fast in pract
 components are being processed.
 """
 @inline function mix_components!(
-    dataᵢⱼ::AbstractVector{Complex{T}}, k⁻¹, ðt′╱k, ð²α, dc::DataComponents{C,Eᴵ}
+    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱κ, ð²α, dc::DataComponents{C,Eᴵ}
 ) where {T,C,Eᴵ}
-    k⁻² = k⁻¹ * k⁻¹
-    k⁻³ = k⁻² * k⁻¹
+    κ⁻² = κ⁻¹ * κ⁻¹
+    κ⁻³ = κ⁻² * κ⁻¹
     ð̄²α = conj(ð²α)
 
     iψ₄ = component_index(dc, Val(:ψ₄))
@@ -237,72 +237,72 @@ components are being processed.
         if Eᴵ == +1
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
-                    k⁻³ * (ψ₀ - ðt′╱k * (4ψ₁ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₃ - ðt′╱k * ψ₄))))
+                    κ⁻³ * (ψ₀ - ðt′╱κ * (4ψ₁ - ðt′╱κ * (6ψ₂ - ðt′╱κ * (4ψ₃ - ðt′╱κ * ψ₄))))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = k⁻³ * (ψ₁ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₃ - ðt′╱k * ψ₄)))
+                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ - ðt′╱κ * (3ψ₂ - ðt′╱κ * (3ψ₃ - ðt′╱κ * ψ₄)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = k⁻³ * (ψ₂ - ðt′╱k * (2ψ₃ - ðt′╱k * ψ₄))
+                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ - ðt′╱κ * (2ψ₃ - ðt′╱κ * ψ₄))
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = k⁻³ * (ψ₃ - ðt′╱k * ψ₄)
+                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ - ðt′╱κ * ψ₄)
             end
             if !isnothing(iψ₄)
-                dataᵢⱼ[iψ₄] = k⁻³ * (ψ₄)
+                dataᵢⱼ[iψ₄] = κ⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = k⁻¹ * (σ + ð²α)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ + ð²α)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = k⁻¹ * (h + ð̄²α)
+                dataᵢⱼ[ih] = κ⁻¹ * (h + ð̄²α)
             end
             if !isnothing(iNews)
-                dataᵢⱼ[iNews] = k⁻² * News
+                dataᵢⱼ[iNews] = κ⁻² * News
             end
             if !isnothing(iφ₀)
-                dataᵢⱼ[iφ₀] = k⁻² * (φ₀ - ðt′╱k * (2φ₁ - ðt′╱k * φ₂))
+                dataᵢⱼ[iφ₀] = κ⁻² * (φ₀ - ðt′╱κ * (2φ₁ - ðt′╱κ * φ₂))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = k⁻² * (φ₁ - ðt′╱k * φ₂)
+                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ - ðt′╱κ * φ₂)
             end
             if !isnothing(iφ₂)
-                dataᵢⱼ[iφ₂] = k⁻² * (φ₂)
+                dataᵢⱼ[iφ₂] = κ⁻² * (φ₂)
             end
         else  # Eᴵ == -1
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =
-                    k⁻³ * (ψ₄ - ðt′╱k * (4ψ₃ - ðt′╱k * (6ψ₂ - ðt′╱k * (4ψ₁ - ðt′╱k * ψ₀))))
+                    κ⁻³ * (ψ₄ - ðt′╱κ * (4ψ₃ - ðt′╱κ * (6ψ₂ - ðt′╱κ * (4ψ₁ - ðt′╱κ * ψ₀))))
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = k⁻³ * (ψ₃ - ðt′╱k * (3ψ₂ - ðt′╱k * (3ψ₁ - ðt′╱k * ψ₀)))
+                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ - ðt′╱κ * (3ψ₂ - ðt′╱κ * (3ψ₁ - ðt′╱κ * ψ₀)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = k⁻³ * (ψ₂ - ðt′╱k * (2ψ₁ - ðt′╱k * ψ₀))
+                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ - ðt′╱κ * (2ψ₁ - ðt′╱κ * ψ₀))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = k⁻³ * (ψ₁ - ðt′╱k * ψ₀)
+                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ - ðt′╱κ * ψ₀)
             end
             if !isnothing(iψ₀)
-                dataᵢⱼ[iψ₀] = k⁻³ * (ψ₀)
+                dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = k⁻¹ * (σ - ð²α)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ - ð²α)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = k⁻¹ * (h - ð̄²α)
+                dataᵢⱼ[ih] = κ⁻¹ * (h - ð̄²α)
             end
             if !isnothing(iNews)
-                dataᵢⱼ[iNews] = k⁻² * News
+                dataᵢⱼ[iNews] = κ⁻² * News
             end
             if !isnothing(iφ₂)
-                dataᵢⱼ[iφ₂] = k⁻² * (φ₂ - ðt′╱k * (2φ₁ - ðt′╱k * φ₀))
+                dataᵢⱼ[iφ₂] = κ⁻² * (φ₂ - ðt′╱κ * (2φ₁ - ðt′╱κ * φ₀))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = k⁻² * (φ₁ - ðt′╱k * φ₀)
+                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ - ðt′╱κ * φ₀)
             end
             if !isnothing(iφ₀)
-                dataᵢⱼ[iφ₀] = k⁻² * (φ₀)
+                dataᵢⱼ[iφ₀] = κ⁻² * (φ₀)
             end
         end
     end

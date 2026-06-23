@@ -120,8 +120,11 @@ exhibited in a simpler and more geometric form.
 
 ## Iwasawa's ``KAN`` decomposition
 
-[Knapp_1996](@cite) describes the Iwasawa decomposition of the Lorentz
-group, which is a factorization of the group into three subgroups:
+[Knapp_1996](@Citet) describes [Iwasawa's
+decomposition](https://en.wikipedia.org/wiki/Iwasawa_decomposition) —
+a factorization of the Lorentz group or its double cover
+``\mathrm{Spin}^+(3,1)`` (or any semisimple Lie group) into three
+subgroups:
 
 ```math
 G = KAN.
@@ -130,13 +133,16 @@ G = KAN.
 This decomposition is most useful when we have a preferred time axis
 and preferred spatial direction.  We use those to pick out boosts
 along that spatial direction, and null rotations that fix the
-corresponding null vector.  Specifically, we have the following
-subgroups:
+corresponding null vector.  The decomposition results in the following
+subgroups, though we assume the particular forms given:
 
-- **``K``** is the maximal compact subgroup, which in the case of the
-  Lorentz group is isomorphic to the rotation group
-  ``\mathrm{SO}(3)``.  This subgroup consists of all rotations that
-  preserve the spatial part of spacetime.
+- **``K``** is the maximal compact subgroup ("K" from the German
+  "kompakt"), which in the case of the Lorentz group is the rotation
+  group ``\mathrm{SO}(3)``, and in the case of ``\mathrm{Spin}(3,1)``
+  is ``\mathrm{Spin}(3)`` — which we choose to be given by the usual
+  construction via the spatial bivectors, exponentiating ``𝐢 =
+  𝐳𝐲``, ``𝐣 = 𝐱𝐳``, and ``𝐤 = 𝐲𝐱``.  Note that this subgroup
+  does not involve any factors of ``𝐭``; it is purely spatial.
 - **``A``** is the abelian subgroup of boosts in a fixed direction.
   We take this direction to be the z-axis, so that we have ``A =
   \left\{ \exp\left[\tfrac{φₐ}{2} \, 𝐭𝐳 \right] \mid φₐ ∈ ℝ
@@ -146,7 +152,10 @@ subgroups:
   null rotations about a fixed null vector.  We take this vector to be
   the null vector ``\boldsymbol{ℓ}``, so that we have ``N = \left\{
   \exp\left[\tfrac{1}{2} \boldsymbol{ℓ ξ}\right] \mid \boldsymbol{ξ} =
-  ξˣ𝐱 + ξʸ𝐲 \right\}``.
+  ξˣ𝐱 + ξʸ𝐲 \right\}``.  Nilpotency means that the generator
+  ``\boldsymbol{ℓ ξ}`` raised to an integer power is zero — in this
+  case, ``(\boldsymbol{ℓ ξ})² = 0`` because ``\boldsymbol{ℓ}`` and
+  ``\boldsymbol{ξ}`` anticommute and ``\boldsymbol{ℓ}² = 0``.
 
 Note that ``φₐ`` here is *not* the rapidity of the overall boost if we
 factor a transformation as a boost and a rotation.  Rather, it is the
@@ -155,99 +164,112 @@ construction.  ``N`` also contributes to the overall boost, so the
 overall rapidity is not just ``φₐ``.
 
 One nice feature of this decomposition is that we can compute the
-factorization of a given Lorentz transformation ``Λ`` fairly simply.
-We first introduce the idempotent
+factorization of a given Lorentz transformation ``Λ`` fairly simply,
+without any transcendental functions — just basic algebra and one
+square root.  The method is described in detail in [the `Quaternionic`
+documentation](@extref Quaternionic :std:label:`iwasawa-kan`), and
+implemented in [`Quaternionic.KAN`](@extref Quaternionic
+:jl:function:`Quaternionic.KAN`).
 
-```math
-u₊ = \frac{1}{2} (1 + 𝐭𝐳).
-```
+However, for our purposes, we do not actually need the full
+factorization; we just need the ``K`` factor, which is somewhat faster
+to compute.
 
-It is easy to verify that ``u₊𝐭𝐳 = 𝐭𝐳u₊ = u₊`` and hence the
-idempotent identity: ``u₊² = u₊``.  Next, we write
+## Iwasawa and Hopf
 
-```math
-Λ = Rₖ Rₐ Rₙ,
-```
+We can further decompose the ``K`` factor ``\mathrm{Spin}(3)`` via the
+Hopf fibration — not into sub*groups*, but into sub*spaces*.
+``\mathrm{Spin}(3)`` is homeomorphic to ``𝕊³``, and the Hopf
+fibration decomposes it into ``𝕊²`` and ``𝕊¹``.  Here, ``𝕊²``
+corresponds to points on the null cone, while ``𝕊¹`` corresponds to
+rotations about the null direction.
 
-where ``Rₖ ∈ K``, ``Rₐ ∈ A``, and ``Rₙ ∈ N``.  Starting with the
-rightmost factor, we have
-
-```math
-Rₙ = \exp\left[\tfrac{1}{2} \boldsymbol{ℓ ξ}\right] = 1 + \frac{1}{2} \boldsymbol{ℓ ξ},
-```
-
-because ``\boldsymbol{ℓ}`` and ``\boldsymbol{ξ}`` anticommute, and
-because ``\boldsymbol{ℓ}² = 0``, their product ``\boldsymbol{ℓ ξ}``
-itself is also nilpotent.  (Remember, that's what the "N" stands for.)
-We can simply compute the product ``Rₙ u₊`` by using the fact that
-``\boldsymbol{ξ} u₊ =  u₊ \boldsymbol{ξ}`` and expanding terms in our
-basis, then find
-
-```math
-Rₙ u₊ %&= \left(1 + \frac{1}{2} \boldsymbol{ℓ ξ}\right) u₊, \\
-%  &= u₊ + \frac{1}{2} \boldsymbol{ℓ ξ} u₊, \\
-%  &= u₊ + \frac{1}{2} \boldsymbol{ℓ} u₊ \boldsymbol{ξ}, \\
-%  &= u₊ + \frac{1}{4\sqrt{2}} (𝐭+𝐳) (1+𝐭𝐳) \boldsymbol{ξ}, \\
-%  &= u₊ + \frac{1}{4\sqrt{2}} (𝐭+𝐳+𝐭𝐭𝐳+𝐳𝐭𝐳) \boldsymbol{ξ}, \\
-%  &= u₊ + \frac{1}{4\sqrt{2}} (𝐭+𝐳-𝐳-𝐭) \boldsymbol{ξ}, \\
-= u₊.
-```
-
-Now, with
-
-```math
-Rₐ = \exp\left[\tfrac{φₐ}{2} \, 𝐭𝐳 \right]
-= \cosh\left(\frac{φₐ}{2}\right) + \sinh\left(\frac{φₐ}{2}\right) 𝐭𝐳,
-```
-
-and the fact that ``𝐭𝐳u₊ = u₊``, we have
+Specifically, given the choice of ``𝐳``, we have the Hopf map
 
 ```math
 \begin{aligned}
-Rₐ u₊ &= \left[\cosh\left(\frac{φₐ}{2}\right) + \sinh\left(\frac{φₐ}{2}\right)\right] u₊,
- &= e^{φₐ/2} u₊.
+𝔥 &: \mathrm{Spin}(3) \to 𝕊² \\
+𝔥 &: 𝐑 \mapsto n̂ = 𝐑 𝐳 𝐑̄.
 \end{aligned}
 ```
 
-Putting these together, we have
+A section is a choice of ``𝐑 ∈ \mathrm{Spin}(3)`` for a given point
+in ``𝕊²``, serving as a sort of inverse of ``𝔥``.  We choose the
+"smallest" ``𝐑`` that rotates ``𝐳`` to the desired direction, if
+defined, and make a particular choice for the one case where it is
+not, at ``-𝐳``:
 
 ```math
-Λ u₊ = e^{φₐ/2} Rₖ u₊.
+\begin{aligned}
+σ &: 𝕊² \to \mathrm{Spin}(3) \\
+σ &: n̂ \mapsto \begin{cases}
+\frac{1 - n̂𝐳}{\sqrt{2 + 2 n̂⋅𝐳}} & \text{if } n̂ \neq -𝐳, \\
+\exp\left[\frac{π}{2} 𝐲𝐳 \right] & \text{if } n̂ = -𝐳.
+\end{cases}
+\end{aligned}
 ```
 
-Recall that ``e^{φₐ/2}`` is a strictly positive real number, and
-``Rₖ`` is a pure rotation so it is "ℂ-real" — meaning that it is a
-linear combination of only basis elements that do not have a factor of
-``𝐭`` — whereas ``u₊`` is just a combination of 1 and a "ℂ-imaginary"
-part.  Therefore, we can take the real part of this expression to find
+Note that ``𝔥 ∘ σ`` is the identity function on ``𝕊²``.  And we can
+calculate the fiber (preimage of ``𝔥``) over any ``n̂ ∈ 𝕊²`` as
 
 ```math
-ℂ\Re\{Λ u₊\} = \frac{e^{φₐ/2}}{2} Rₖ.
+𝔥⁻¹(n̂) = \left\{ σ(n̂)\, \exp\left[\frac{γ}{2} 𝐱𝐲 \right] \mathrel{\Big|} γ ∈ ℝ \right\}.
 ```
 
-This is just a strictly positive real number times ``Rₖ``, which we
-know must have unit magnitude, so we can find ``Rₖ`` by normalizing
-this real part:
+In this case, we could actually interpret the fiber ``𝕊¹`` as being
+``\mathrm{Spin}(2) ≃ U(1)``.  So along with the KAN decomposition, we have decomposed ``\mathrm{Spin}^+(3,1)`` into a product of the subspace ``𝕊²`` and a series of groups:
 
 ```math
-Rₖ = \mathrm{normalize}\left(ℂ\Re\{Λ u₊\}\right).
+\begin{gathered}
+\mathrm{Spin}^+(3,1)
+≅
+\bigg\{ n̂ \bigg\} ×
+\bigg\{ \exp\bigg[\frac{γ}{2} 𝐱𝐲 \bigg] \bigg\} ×
+\bigg\{ \exp\bigg[\frac{φₐ}{2} \, 𝐭𝐳 \bigg] \bigg\} ×
+\bigg\{ \exp\bigg[\frac{1}{2} \boldsymbol{ℓ ξ}\bigg] \bigg\} \\
+Λ = 𝐑_n\, 𝐑_γ\, 𝐑_{φₐ}\, 𝐑_{\boldsymbol{ξ}}.
+\end{gathered}
 ```
 
-For the purposes of this package, this factor is actually all we need
-to find.  But if desired, we can also separate the remaining factors
-``Rₐ`` and ``Rₙ``.  The above also shows us that
+We can also parametrize the ``𝕊²`` via a vector ``\boldsymbol{ζ}`` in
+the ``𝐱-𝐲`` plane.  Then ``R_{\boldsymbol{ζ}} =
+\exp{\boldsymbol{ζ}𝐳}`` will rotate ``𝐳`` onto a point on the
+sphere.  For example, if we write
 
 ```math
-φₐ = 2 \ln \left( 2\left| ℂ\Re\{Λ u₊\} \right| \right),
+\boldsymbol{ζ} = 𝐱\frac{θ}{2}\, \exp\left[𝐱𝐲ϕ\right]
 ```
 
-And we can immediately plug this into the expression for ``Rₐ`` to
-find that factor.  Finally, we can find the remaining factor by
-rearranging the original factorization:
+the rotor ``R = \exp{\boldsymbol{ζ}𝐳}`` carries ``𝐳`` to the point
+given by the spherical coordinates ``(θ, ϕ)``, and transports the
+standard dyad at the pole to the dyad at that point.  Note that this
+parameterization is similar to *but different from* the stereographic
+coordinates ``ζ`` used most commonly in the literature.  The most
+noticeable difference is that the stereographic coordinates map the
+sphere to the entire complex plane, while ``\boldsymbol{ζ}`` maps the
+sphere to a disk within a radius of ``π/2``.  Specifically, the factor
+of ``θ/2`` above becomes ``\tan(θ/2)`` for stereographic coordinates.
+Note that the entire bound of the disk at radius ``π/2`` corresponds
+to the single point ``-𝐳`` on the sphere, and the mapping then wraps
+back around the sphere, making this mapping fail to be globally
+homeomorphic.
+
+Then, the general element of ``\mathrm{Spin}^+(3,1)`` can be written
+(not always uniquely) as
 
 ```math
-Rₙ = Rₐ^{-1} Rₖ^{-1} Λ.
+Λ = 𝐑_{\boldsymbol{ζ}}\, 𝐑_γ\, 𝐑_{φₐ}\, 𝐑_{\boldsymbol{ξ}}.
 ```
+
+This decomposition is particularly nice because the latter three
+factors preserve the null direction, whereas ``𝐑_{\boldsymbol{ζ}}``
+just rotates the null direction.  In fact, we can commute the rotors
+so that ``𝐑_{\boldsymbol{ζ}}`` comes *first*, if we reinterpret each
+of the other rotors as picking out the null direction as the special
+direction, rather than the original ``𝐳`` direction.  In this case,
+the spin and boost terms describe rotating about the null direction
+and boosting along the null direction — exactly as the spin and boost
+weights are defined.
 
 ## Reinterpreting ``i``
 

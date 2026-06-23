@@ -111,7 +111,7 @@ end
     # Conjugating the spacetime translation by (δt, δx⃗) with a Lorentz transformation
     # must give the translation by the Lorentz-transformed 4-vector — computed here with
     # Quaternionic's 4-vector action, never with the composition law.  The composed
-    # integrand is *exactly* band-limited to ℓ ≤ 1 (the 1/K factor cancels the Möbius
+    # integrand is *exactly* band-limited to ℓ ≤ 1 (the 1/κ factor cancels the Möbius
     # denominator), so this is sharp: any error in signs, factors, or evaluation points
     # of `compose` shows up far above the eps-scale tolerance.
     rng = Random.Xoshiro(1515)
@@ -171,7 +171,7 @@ end
     end
 end
 
-@testitem "BMS: K-direction worked example from the docs" tags = [:validation, :fast] setup = [
+@testitem "BMS: κ-direction worked example from the docs" tags = [:validation, :fast] setup = [
     BMSTestSetup
 ] begin
     import Random
@@ -181,16 +181,16 @@ end
 
     # The "Which way around is 𝐾?" note in docs/src/80-details/30-bms_group.md works
     # through the conjugation Λ⁻¹ ∘ δt ∘ Λ for a pure boost with velocity v⃗, claiming
-    # the result is the pure supertranslation δt/K = γ δt (1 - v⃗⋅n̂) — equivalently the
+    # the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅n̂) — equivalently the
     # spacetime translation by the 4-vector Λ⁻¹δ = γ δt (1; v⃗).  Pin all three faces of
-    # that worked example, with K taken from the package's own `conformal_factor`.
+    # that worked example, with κ taken from the package's own `conformal_factor`.
     rng = Random.Xoshiro(2424)
     for _ ∈ 1:5
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         β = absvec(v⃗)
         γ = 1 / √(1 - β^2)
         δt = randn(rng)
-        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ: K = 1/(γ(1 - v⃗⋅n̂))
+        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ: κ = 1/(γ(1 - v⃗⋅n̂))
         T_δt = BMS{Float64}(; time_translation=δt)
         scale = max(1.0, γ * abs(δt))
 
@@ -203,7 +203,7 @@ end
         expected = BMS{Float64}(; time_translation=d′[1], space_translation=d′[2:4])
         @test c ≈ expected atol = tol(Float64, 3) * scale
 
-        # (2) Pointwise faces: the supertranslation is δt/K — with K the package's own
+        # (2) Pointwise faces: the supertranslation is δt/κ — with κ the package's own
         # conformal factor of the note's Λ — and equals γ δt (1 - v⃗⋅n̂).
         for _ ∈ 1:5
             n̂ = random_direction(rng, Float64)
@@ -308,7 +308,7 @@ end
     using Quaternionic: components
 
     # 𝒮 is a normal subgroup: conjugating a pure supertranslation by a Lorentz
-    # transformation gives a pure supertranslation, namely φ(Λ)(α) = α∘Λ⁻¹ / K_{Λ⁻¹} —
+    # transformation gives a pure supertranslation, namely φ(Λ)(α) = α∘Λ⁻¹ / κ_{Λ⁻¹} —
     # which we evaluate pointwise from raw geometry, not from the composition law.
     rng = Random.Xoshiro(1919)
     for _ ∈ 1:4
@@ -322,8 +322,8 @@ end
             maximum(abs, components(c.Λ - one(c.Λ))) < 1e-14
         for _ ∈ 1:5
             n̂ = random_direction(rng, Float64)
-            K⁻, n̂⁻ = ray_map(inv(Λ), n̂)
-            @test α_value(c.α, n̂) ≈ α_value(α, n̂⁻) / K⁻ atol = 3e-6
+            κ⁻, n̂⁻ = ray_map(inv(Λ), n̂)
+            @test α_value(c.α, n̂) ≈ α_value(α, n̂⁻) / κ⁻ atol = 3e-6
         end
     end
 
@@ -352,7 +352,7 @@ end
     using LinearAlgebra: norm
 
     # The complement of the normal-subgroup statement: conjugating a Lorentz
-    # transformation by a supertranslation, (1,α)(Λ,0)(1,−α) = (Λ, α∘Λ/K_Λ − α), leaves
+    # transformation by a supertranslation, (1,α)(Λ,0)(1,−α) = (Λ, α∘Λ/κ_Λ − α), leaves
     # the Lorentz part untouched but generically acquires a supertranslation part — so ℒ
     # is *not* a normal subgroup of BMS.
     rng = Random.Xoshiro(2323)
@@ -368,16 +368,16 @@ end
         # Lorentz part is preserved *exactly* (the ±1 factors short-circuit).
         @test c.Λ == Λ
 
-        # The supertranslation part matches α∘Λ/K_Λ − α, evaluated from raw geometry.
+        # The supertranslation part matches α∘Λ/κ_Λ − α, evaluated from raw geometry.
         for _ ∈ 1:5
             n̂ = random_direction(rng, Float64)
-            K, n̂′ = ray_map(Λ, n̂)
-            @test α_value(c.α, n̂) ≈ α_value(α, n̂′) / K - α_value(α, n̂) atol = 3e-6
+            κ, n̂′ = ray_map(Λ, n̂)
+            @test α_value(c.α, n̂) ≈ α_value(α, n̂′) / κ - α_value(α, n̂) atol = 3e-6
         end
     end
 
     # Sharp positive case: constant α = δt conjugating a pure z-boost.  Then
-    # α∘Λ/K_Λ − α = δt(1/K_Λ − 1) = δt(γ − 1) + δt γ β n̂ᶻ — an exact ℓ ≤ 1 closed form,
+    # α∘Λ/κ_Λ − α = δt(1/κ_Λ − 1) = δt(γ − 1) + δt γ β n̂ᶻ — an exact ℓ ≤ 1 closed form,
     # bounded well away from zero, so the conjugate is definitely not in ℒ.
     η = 0.6
     β = tanh(η)
@@ -395,7 +395,7 @@ end
     @test maximum(abs, c.α[5:end]) < tol(Float64, 9) * δt * γ  # exactly ℓ ≤ 1
 
     # Boundary case showing the claim is about *generic* elements: if α is invariant
-    # under Λ (here: constant α, pure rotation, so K ≡ 1 and α∘Λ = α), the conjugate
+    # under Λ (here: constant α, pure rotation, so κ ≡ 1 and α∘Λ = α), the conjugate
     # falls back into ℒ.
     R = BMSTestSetup.random_rotation(rng, Float64)
     gR = BMS(Lorentz(R), zeros(ComplexF64, 1))
@@ -483,8 +483,8 @@ end
         h = Scri.compose(g₂, g₁; ℓₘₐₓ=8, ℓʷ=9)
         for _ ∈ 1:5
             n̂ = random_direction(rng, T)
-            K₁, n̂′ = ray_map(g₁.Λ, n̂)
-            expected = α_value(g₁.α, n̂) + α_value(g₂.α, n̂′) / K₁
+            κ₁, n̂′ = ray_map(g₁.Λ, n̂)
+            expected = α_value(g₁.α, n̂) + α_value(g₂.α, n̂′) / κ₁
             @test abs(α_value(h.α, n̂) - expected) < 1e-5
         end
     end

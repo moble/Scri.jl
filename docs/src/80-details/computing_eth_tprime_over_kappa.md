@@ -1,6 +1,6 @@
-# [Computing ``ðt'/K``](@id computing_eth_tprime_over_K)
+# [Computing ``ðt'/κ``](@id computing_eth_tprime_over_kappa)
 
-The combination ``ðt'/K`` appears in the BMS transformation of the
+The combination ``ðt'/κ`` appears in the BMS transformation of the
 Weyl components.  Thus, efficiently computing it is a key part of the
 BMS pipeline.
 
@@ -8,9 +8,9 @@ We have the coordinate transformation
 
 ```math
 \begin{gather}
-t' = K(t - ε^α α),
+t' = κ(t - ε^α α),
 \\
-\frac{1}{K} = γ(1 - ε^ℐv⃗⋅n̂),
+\frac{1}{κ} = γ(1 - ε^ℐv⃗⋅n̂),
 \end{gather}
 ```
 
@@ -30,7 +30,7 @@ we're dealing with ``ℐ⁺`` (``ε^ℐ = +1``) or ``ℐ⁻`` (``ε^ℐ = -1``).
       *arrives*.  Since one looks *opposite* to a ray's propagation to
       see its source, this labeling is antipodal to the ``ℐ⁺``
       (outgoing-propagation) one, giving the section ``(1, -n̂)`` and the
-      sign ``ε^ℐ = -1`` in ``1/K = γ(1 + v⃗⋅n̂)``.  This is the
+      sign ``ε^ℐ = -1`` in ``1/κ = γ(1 + v⃗⋅n̂)``.  This is the
       antipodal matching that relates ``ℐ⁺`` and ``ℐ⁻`` in the
       asymptotic-symmetry/soft-theorem literature [Strominger_2014,
       Strominger_2017](@cite).  See also
@@ -38,28 +38,28 @@ we're dealing with ``ℐ⁺`` (``ε^ℐ = +1``) or ``ℐ⁻`` (``ε^ℐ = -1``).
 
     - **Consistent labeling (not used).**  One could instead label both
       ``ℐ⁺`` and ``ℐ⁻`` by the propagation direction, leaving
-      ``1/K = γ(1 - v⃗⋅n̂)`` unchanged and pushing *all* of the ``ε^ℐ``
+      ``1/κ = γ(1 - v⃗⋅n̂)`` unchanged and pushing *all* of the ``ε^ℐ``
       dependence into the handedness of ``ð`` and the
       component-mixing tower.  That convention is self-consistent only in
       isolation (it does not antipodally match ``ℐ⁺``), so we do not use
       it.
 
-    Because ``K`` is spin-0, ``ε^ℐ`` does not change its magnitude as a
+    Because ``κ`` is spin-0, ``ε^ℐ`` does not change its magnitude as a
     function of the *physical* arrival direction; what the antipodal
     choice fixes is the relation of that direction to the ``ℐ⁺``
     labeling, and correspondingly the orientation of the spin-weighted
     ``ð`` below.
 
-Note that ``1/K`` has a simple form — and specifically, it decomposes
+Note that ``1/κ`` has a simple form — and specifically, it decomposes
 into a pure ``ℓ = 0`` plus a pure ``ℓ = 1`` function on the
-sphere.  This allows us to compute ``ð(1/K)`` in closed form, without
+sphere.  This allows us to compute ``ð(1/κ)`` in closed form, without
 needing to evaluate the synthesis sum at all.  The ``ð`` operator is a
 derivation, meaning that it obeys the Leibniz rule, so as usual we
-have ``ð(K) = -ð(1/K) K^2``.
+have ``ð(κ) = -ð(1/κ) κ^2``.
 
 ```math
 \begin{align}
-\frac{ðt'}{K} &= -ð(1/K) K (t - ε^α α) - ε^α ðα \\
+\frac{ðt'}{κ} &= -ð(1/κ) κ (t - ε^α α) - ε^α ðα \\
 &= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα.
 \end{align}
 ```
@@ -248,7 +248,7 @@ as are found on Wikipedia, but we have also found their simple
 expressions in terms of the rotor components, which is what we will
 actually use.  We now express the full result
 
-## Expressing ``ðt'/K`` with rotor components
+## Expressing ``ðt'/κ`` with rotor components
 
 A significant simplification will come from the fact that the rotation
 of `v` by a rotor `R` is expressed as `R*v*conj(R) = R(v)` with this
@@ -307,7 +307,7 @@ have
 
 ```math
 \begin{align}
-\frac{ðt'}{K}
+\frac{ðt'}{κ}
 &= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα \\
 &= \frac{-ε^ℐ (λ_x + i λ_y)}{1 - ε^ℐ λ_z} (t - ε^α α) - ε^α ðα.
 \end{align}
@@ -317,15 +317,15 @@ The term proportional to ``t`` will vary between time steps, so we
 factor out a term constant in time and one proportional to time:
 
 ```math
-\frac{ðt'}{K}
-= \left(\frac{ðt'}{K}\right)_0 + \left(\frac{ðt'}{K}\right)_1 t,
+\frac{ðt'}{κ}
+= \left(\frac{ðt'}{κ}\right)_0 + \left(\frac{ðt'}{κ}\right)_1 t,
 ```
 
 where
 
 ```math
 \begin{aligned}
-\left(\frac{ðt'}{K}\right)_0 &= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ε^ℐ} α + ðα \right), \\
-\left(\frac{ðt'}{K}\right)_1 &= \frac{λ_x + i λ_y}{λ_z - ε^ℐ}.
+\left(\frac{ðt'}{κ}\right)_0 &= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ε^ℐ} α + ðα \right), \\
+\left(\frac{ðt'}{κ}\right)_1 &= \frac{λ_x + i λ_y}{λ_z - ε^ℐ}.
 \end{aligned}
 ```
