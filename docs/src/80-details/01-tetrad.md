@@ -41,7 +41,7 @@ so the tetrad is
 
 ```math
 \begin{aligned}
-lᵃ &= \frac{1}{\sqrt{2}} \left(-ω² \, ∂_ω\right)ᵃ, \\
+lᵃ &= \frac{ω²}{\sqrt{2}} \left(-∂_ω\right)ᵃ, \\
 mᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_ϕ\right)ᵃ, \\
 m̄ᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_ϕ\right)ᵃ, \\
 nᵃ &= \frac{1}{\sqrt{2}} \left(2∂ᵤ + ω² \, ∂_ω\right)ᵃ.
@@ -82,7 +82,7 @@ The tetrad is
 lᵃ &= \frac{1}{\sqrt{2}} \left(2∂ᵥ - ω² \, ∂_ω\right)ᵃ, \\
 mᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ + \frac{i}{\sin θ} ∂_ϕ\right)ᵃ, \\
 m̄ᵃ &= \frac{ω}{\sqrt{2}} \left(∂_θ - \frac{i}{\sin θ} ∂_ϕ\right)ᵃ, \\
-nᵃ &= \frac{1}{\sqrt{2}} \left(ω² \, ∂_ω\right)ᵃ.
+nᵃ &= \frac{ω²}{\sqrt{2}} \left(∂_ω\right)ᵃ.
 \end{aligned}
 ```
 
