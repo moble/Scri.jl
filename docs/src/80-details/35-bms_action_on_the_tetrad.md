@@ -60,13 +60,13 @@ scales that cut metric by ``κ²`` and the affine parameter ``u`` along
 the generators by ``κ`` — the same ``κ``, which largely defines the
 BMS group as opposed to an arbitrary conformal map of the sphere.)
 
-This uniform ``1/κ`` is *not* the differing powers ``ω⁻²``, ``ω⁻¹``,
-``ω⁰`` by which [the standard tetrad](@ref "The standard tetrad") was
-made regular.  Those are ``ω⁻⁽¹⁺ᵇ⁾`` with ``b`` the boost weight
-(``+1``, ``0``, ``-1`` for ``l̃``, ``m̃``, ``ñ``).  Under BMS each leg
-is regularized with ``ω' = κω`` in place of ``ω`` *and* carried by the
-Lorentz boost, and the two contributions combine to the same ``1/κ``
-for every leg:
+This uniform ``1/κ`` is *not* related to the differing powers ``ω⁻²``,
+``ω⁻¹``, ``ω⁰`` by which [the standard tetrad](@ref "The standard
+tetrad") was made regular.  Those are ``ω⁻⁽¹⁺ᵇ⁾`` with ``b`` the boost
+weight (``+1``, ``0``, ``-1`` for ``l̃``, ``m̃``, ``ñ``).  Under BMS
+each leg is regularized with ``ω' = κω`` in place of ``ω`` *and*
+transformed by the Lorentz boost, and the two contributions combine to
+the same ``1/κ`` for every leg:
 
 | leg | regularize | boost | net |
 |-----|:----------:|:-----:|:---:|
@@ -207,7 +207,7 @@ conformal factor as
 κ = e^{φₐ}.
 ```
 
-For the generator this boost is the whole story — ``ñ`` carries no
+For the generator this boost is the whole story — ``ñ`` involves no
 power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
 the boost acting alone.  The dyad is different: the boost leaves the
 spacetime multivector ``𝐦`` fixed, up to the reinterpretation of
@@ -242,8 +242,8 @@ Being transverse, it requires the full basis,
 l̃' = A\, l̃ + B\, ñ + C\, m̃ + D\, m̄̃,
 ```
 
-and the four coefficients are fixed by demanding that ``l̃'`` carry the
-standard inner products with the primed tetrad.  The orthogonality
+and the four coefficients are fixed by demanding that ``l̃'`` satisfy
+the standard inner products with the primed tetrad.  The orthogonality
 conditions are conformally invariant, but the normalizations hold in
 ``ĝ'`` — so in the unprimed metric they read ``-1/κ²`` and ``1/κ²``,
 since ``ĝ' = κ²ĝ``.  Using ``l̃ ⋅ ñ = -1``, ``m̃ ⋅ m̄̃ = 1``, and the
@@ -276,3 +276,55 @@ leg picks up a linear screen term and a quadratic ``ñ`` term — and, like
 every other leg, the uniform Weyl factor ``1/κ`` out front.
 
 ## Past null infinity
+
+The story at ``ℐ⁻`` is the mirror image, and almost everything carries
+over verbatim under the exchange ``l̃ ↔ ñ`` together with ``u → v``
+(advanced time).  The [regular tetrad](@ref "The standard tetrad")
+here is
+
+```math
+l̃ = \sqrt{2}\, ∂_v, \qquad
+m̃ = \frac{1}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ} ∂_ϕ\right), \qquad
+ñ = \frac{1}{\sqrt{2}}\, ∂_ω,
+```
+
+so now ``l̃`` is the generator tangent to ``ℐ⁻`` and ``ñ`` is
+transverse — the opposite of ``ℐ⁺``.  The BMS action keeps the same
+shape,
+
+```math
+v' = κ(θ, ϕ)\left[v - εᵅ α(θ, ϕ)\right],
+\qquad
+κ = \frac{1}{γ(1 + v⃗ ⋅ n̂)},
+```
+
+with two points of convention worth flagging:
+
+- **Antipodal labeling.**  Following [PenroseRindler_1984](@citet),
+  ``ℐ⁻`` is labeled by the observer's past light cone — the directions
+  radiation *arrives from* — so its section is ``𝐧 = (1, -n̂)``,
+  antipodal to ``ℐ⁺``.  This is the single sign ``εᴵ = -1``, and it is
+  why ``κ`` includes ``1 + v⃗⋅n̂`` rather than ``1 - v⃗⋅n̂`` (see
+  [Future and past null infinity](@ref scri_pm_conventions)).
+- **Same uniform weight.**  The conformal frames still satisfy ``ĝ' =
+  κ²ĝ``, so every leg again picks up ``1/κ``; nothing in the weight
+  argument changes.
+
+Repeating the ``ℐ⁺`` derivation under ``l̃ ↔ ñ`` then gives
+
+```math
+\begin{aligned}
+l̃' &= \frac{1}{κ}\, l̃, \\
+m̃' &= \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðv'}{2κ}\, l̃\right), \\
+ñ' &= \frac{1}{κ}\left( ñ + \frac{\overline{ðv'}}{2κ}\, m̃
+        + \frac{ðv'}{2κ}\, m̄̃ + \frac{|ðv'|²}{4κ²}\, l̃ \right).
+\end{aligned}
+```
+
+The only structural change is that the null rotation now fixes ``l̃``
+(the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it.  That
+same exchange reverses the peeling tower of the [field
+components](@ref "BMS action on fields"): the component left unmixed by
+the null rotation is the one assembled from the most factors of the
+generator — ``ψ₄`` at ``ℐ⁺`` (fixed by the rotation about ``ñ``), but
+``ψ₀`` at ``ℐ⁻`` (fixed by the rotation about ``l̃``).

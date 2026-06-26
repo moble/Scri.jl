@@ -22,7 +22,24 @@ nᵃ &= \frac{1}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
 
 The inner products are ``l \cdot n = -1`` and ``m \cdot m̄ = 1``, with
 all other combinations zero.  In particular, each of these vectors is
-null.  This simplicity is what make this tetrad so useful.
+null.  This simplicity is what make this tetrad so useful.[^boyle2015]
+
+[^boyle2015]:
+    The asymptotic-transformation paper [Boyle_2015](@citet) works
+    instead with the *co*-tetrad defined as ``l_a = (du)_a``, ``m_a =
+    -\frac{\sqrt{2}}{1+z\bar{z}}(d\bar{z})_a``, ``n_a = -(dω)_a``,
+    where ``z`` is the stereographic coordinate.  These are one-forms
+    rather than vectors, and differ from the tetrad here by index
+    placement, an overall sign on ``n``, and a sign and ``\sqrt{2}``
+    in ``m`` (the magnitude of the normalization ``m ⋅ m̄`` still
+    matches ours, up to the signature-dependent sign).  That paper is
+    unfortunately not explicit about its signature choice, but is most
+    consistent with the opposite signature ``{+}{-}{-}{-}``.  Together
+    with the Newman–Penrose-vs-GHP eth (see "[The eth
+    operator](@ref)"), these convention differences account for the
+    factor of ``\sqrt{2}`` and the sign between that paper's
+    component-mixing parameter and the one derived in "[BMS action on
+    fields](@ref)".
 
 Of course, ``t`` and ``r`` are poor choices for coordinates near null
 infinity, so we transform to systems using the inverse radial

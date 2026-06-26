@@ -156,7 +156,7 @@ function transform!(
     # Evaluate α on the boosted grid.  Make a copy because the 𝒯 act in place.
     task_αₚ = OhMyThreads.@spawn real.(𝒯[0] * copy(α))
 
-    # Compute ðα, which is needed for ðt′/κ in the Weyl transformation laws.
+    # Compute ðα, which is needed for ðt′/2κ in the Weyl transformation laws.
     # ð returns a full Nᵐ-element vector, but spin-1 modes start at ℓ=1, so skip the first
     # 1² = 1 leading zero entry before passing to 𝒯[1] (which expects Nᵐ − 1² modes).
     task_ðαₚ = OhMyThreads.@spawn 𝒯[1] * (ð(0, 0, ℓₘₐₓ, T5) * α)[2:end]
@@ -169,37 +169,9 @@ function transform!(
     αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
     task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗, Eᴵ)
 
-    # Compute ðt′/κ parts.  We split this into the term independent of t (ðt′╱κₚ[1, :]), and
-    # the term proportional to t (ðt′╱κₚ[2, :]).  Note that the latter term is just ðκ/κ,
-    # which we can compute efficiently in terms of v⃗⋅(R𝐞R̄), where 𝐞 are the spatial
-    # basis vectors.  These products are given by the components of λ=R̄v⃗R as computed
-    # below.
+    # Compute ðt′/2κ parts.
     ðαₚ = fetch(task_ðαₚ)
-    task_ðt′╱κₚ = OhMyThreads.@spawn @inbounds begin
-        # ðαₚ = fetch(task_ðαₚ)  # ðαₚ is only needed here, so fetch it inside the task
-        ðt′╱κ = Matrix{Complex{T1}}(undef, 2, Nᵖ)
-        @simd ivdep for i ∈ eachindex(Rₚ)
-            Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
-            λˣ = (
-                (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ +
-                (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ +
-                (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ
-            )
-            λʸ = (
-                (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ +
-                (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ +
-                (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ
-            )
-            λᶻ = (
-                (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ +
-                (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
-                (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
-            )
-            ðt′╱κ[2, i] = -(λˣ + im * λʸ) / (λᶻ - Eᴵ)
-            ðt′╱κ[1, i] = ðt′╱κ[2, i] * αₚ[i] + ðαₚ[i]
-        end
-        ðt′╱κ
-    end
+    task_ðt′╱2κₚ = OhMyThreads.@spawn compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, Eᴵ)
 
     ###
     ### Stage 1: Evaluate all input data on the distorted grid
@@ -237,7 +209,7 @@ function transform!(
 
     cubic_spline_cache = fetch(task_cubic_spline_cache)
     t′, tᵪ = fetch(task_t′_tᵪ)
-    ðt′╱κₚ = fetch(task_ðt′╱κₚ)
+    ðt′╱2κₚ = fetch(task_ðt′╱2κₚ)
     ð²αₚ = fetch(task_ð²αₚ)
 
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
@@ -257,8 +229,8 @@ function transform!(
             )
         end
         κ⁻¹ᵢ = γ * (1 - Eᴵ * v⃗dotn̂ᵢ)
-        ðt′╱κₚ₀ᵢ = ðt′╱κₚ[1, i]
-        ðt′╱κₚ₁ᵢ = ðt′╱κₚ[2, i]
+        ðt′╱2κₚ₀ᵢ = ðt′╱2κₚ[1, i]
+        ðt′╱2κₚ₁ᵢ = ðt′╱2κₚ[2, i]
         ð²αₚᵢ = ð²αₚ[i]
         αₚᵢ = αₚ[i]
 
@@ -330,8 +302,8 @@ function transform!(
                             )
                         end
                     end
-                    ðt′╱κᵢⱼ = ðt′╱κₚ₀ᵢ + tᵢⱼ′ * ðt′╱κₚ₁ᵢ
-                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱κᵢⱼ, ð²αₚᵢ, dc)
+                    ðt′╱2κᵢⱼ = ðt′╱2κₚ₀ᵢ + tᵢⱼ′ * ðt′╱2κₚ₁ᵢ
+                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱2κᵢⱼ, ð²αₚᵢ, dc)
                     j′ -= 1
                     if j′ ≥ 1
                         tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ

@@ -159,8 +159,8 @@ physical fields (finite-radius Weyl and Faraday spinors) would have a different 
 weight, but the asymptotic fields are the ones we are transforming.
 
 More specifically, the *asymptotic* Weyl spinor ``ψ`` and Faraday spinor ``φ`` are related
-to the finite-radius Weyl spinor ``Ψ`` by ``ψ = ωΨ`` and the finite-radius Faraday spinor
-``Φ`` by ``φ = ωΦ``.  The factor ``ω`` is the conformal factor that goes to zero (but has
+to the finite-radius Weyl spinor ``Ψ`` by ``Ψ = ωψ`` and the finite-radius Faraday spinor
+``Φ`` by ``Φ = ωφ``.  The factor ``ω`` is the conformal factor that goes to zero (but has
 nonzero derivative) at null infinity, which transforms as ``ω′=κω``, so we pick up a factor
 of ``κ⁻¹`` in the transformation laws for ``ψ`` and ``φ`` compared to ``Ψ`` and ``Φ``.
 Since ``Ψ`` and ``Φ`` are the physical quantities, they do not change under coordinate
@@ -187,12 +187,14 @@ conformal_weight(::Val{:φ₁}) = -2
 conformal_weight(::Val{:φ₂}) = -2
 
 """
-    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱κ, ð²α, dc)
+    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, ð²α, dc)
 
 Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the inverse conformal
-factor for this pixel, `ðt′╱κ` is the eth-derivative of the retarded time in the new frame
-divided by ``κ``, and `ð²α` is the sign-adjusted second anti-eth-derivative of the
-supertranslation (used for the strain/shear component).
+factor for this pixel, `ðt′╱2κ` is the eth-derivative of the retarded time in the new frame
+divided by ``2κ`` (the null-rotation parameter ``b = ðu'/2κ``), and `ð²α` is the second
+eth-derivative of the supertranslation.  The latter enters the strain/shear law with a factor
+of one half, as ``±½ð²α`` (the ½ has the same dyad/√2 origin as the ½ in ``b``); the sign is
+``+`` on ``ℐ⁺`` and ``−`` on ``ℐ⁻``.
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
 `dataᵢⱼ` for the various components are known at compile time, and the branches for which
@@ -203,7 +205,7 @@ with no branches and only the necessary components, making it very fast in pract
 components are being processed.
 """
 @inline function mix_components!(
-    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱κ, ð²α, dc::DataComponents{C,Eᴵ}
+    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱2κ, ð²α, dc::DataComponents{C,Eᴵ}
 ) where {T,C,Eᴵ}
     κ⁻² = κ⁻¹ * κ⁻¹
     κ⁻³ = κ⁻² * κ⁻¹
@@ -235,71 +237,81 @@ components are being processed.
         φ₂ = isnothing(iφ₂) ? 0 : dataᵢⱼ[iφ₂]
 
         if Eᴵ == +1
+            ðu′╱2κ = ðt′╱2κ
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
-                    κ⁻³ * (ψ₀ - ðt′╱κ * (4ψ₁ - ðt′╱κ * (6ψ₂ - ðt′╱κ * (4ψ₃ - ðt′╱κ * ψ₄))))
+                    κ⁻³ *
+                    (ψ₀ + ðu′╱2κ * (4ψ₁ + ðu′╱2κ * (6ψ₂ + ðu′╱2κ * (4ψ₃ + ðu′╱2κ * ψ₄))))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ - ðt′╱κ * (3ψ₂ - ðt′╱κ * (3ψ₃ - ðt′╱κ * ψ₄)))
+                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ + ðu′╱2κ * (3ψ₂ + ðu′╱2κ * (3ψ₃ + ðu′╱2κ * ψ₄)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ - ðt′╱κ * (2ψ₃ - ðt′╱κ * ψ₄))
+                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ + ðu′╱2κ * (2ψ₃ + ðu′╱2κ * ψ₄))
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ - ðt′╱κ * ψ₄)
+                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ + ðu′╱2κ * ψ₄)
             end
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] = κ⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ + ð²α)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ + ð²α / 2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h + ð̄²α)
+                dataᵢⱼ[ih] = κ⁻¹ * (h + ð̄²α / 2)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
             end
             if !isnothing(iφ₀)
-                dataᵢⱼ[iφ₀] = κ⁻² * (φ₀ - ðt′╱κ * (2φ₁ - ðt′╱κ * φ₂))
+                dataᵢⱼ[iφ₀] = κ⁻² * (φ₀ + ðu′╱2κ * (2φ₁ + ðu′╱2κ * φ₂))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ - ðt′╱κ * φ₂)
+                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ + ðu′╱2κ * φ₂)
             end
             if !isnothing(iφ₂)
                 dataᵢⱼ[iφ₂] = κ⁻² * (φ₂)
             end
         else  # Eᴵ == -1
+            # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation, whose
+            # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
+            # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
+            # down to ψ₄ (s=-2): e.g. ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).
+            ð̄v′╱2κ = conj(ðt′╱2κ)
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =
-                    κ⁻³ * (ψ₄ - ðt′╱κ * (4ψ₃ - ðt′╱κ * (6ψ₂ - ðt′╱κ * (4ψ₁ - ðt′╱κ * ψ₀))))
+                    κ⁻³ * (
+                        ψ₄ +
+                        ð̄v′╱2κ * (4ψ₃ + ð̄v′╱2κ * (6ψ₂ + ð̄v′╱2κ * (4ψ₁ + ð̄v′╱2κ * ψ₀)))
+                    )
             end
             if !isnothing(iψ₃)
-                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ - ðt′╱κ * (3ψ₂ - ðt′╱κ * (3ψ₁ - ðt′╱κ * ψ₀)))
+                dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ + ð̄v′╱2κ * (3ψ₂ + ð̄v′╱2κ * (3ψ₁ + ð̄v′╱2κ * ψ₀)))
             end
             if !isnothing(iψ₂)
-                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ - ðt′╱κ * (2ψ₁ - ðt′╱κ * ψ₀))
+                dataᵢⱼ[iψ₂] = κ⁻³ * (ψ₂ + ð̄v′╱2κ * (2ψ₁ + ð̄v′╱2κ * ψ₀))
             end
             if !isnothing(iψ₁)
-                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ - ðt′╱κ * ψ₀)
+                dataᵢⱼ[iψ₁] = κ⁻³ * (ψ₁ + ð̄v′╱2κ * ψ₀)
             end
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ - ð²α)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ - ð²α / 2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h - ð̄²α)
+                dataᵢⱼ[ih] = κ⁻¹ * (h - ð̄²α / 2)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
             end
             if !isnothing(iφ₂)
-                dataᵢⱼ[iφ₂] = κ⁻² * (φ₂ - ðt′╱κ * (2φ₁ - ðt′╱κ * φ₀))
+                dataᵢⱼ[iφ₂] = κ⁻² * (φ₂ + ð̄v′╱2κ * (2φ₁ + ð̄v′╱2κ * φ₀))
             end
             if !isnothing(iφ₁)
-                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ - ðt′╱κ * φ₀)
+                dataᵢⱼ[iφ₁] = κ⁻² * (φ₁ + ð̄v′╱2κ * φ₀)
             end
             if !isnothing(iφ₀)
                 dataᵢⱼ[iφ₀] = κ⁻² * (φ₀)

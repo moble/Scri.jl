@@ -44,6 +44,7 @@ const cachesize_L3 = Logging.with_logger(Logging.NullLogger()) do
 end
 
 include("cubic_spline.jl")
+include("conventions.jl")
 include("data_components.jl")
 include("utilities.jl")
 include("aberration.jl")

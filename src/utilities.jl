@@ -86,6 +86,54 @@ function compute_t′(t, αₚ, Rₚ, v⃗, εᴵ=1)
     return t′, tᵪ
 end
 
+@doc raw"""
+    compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, εᴵ=1)
+
+Compute the null-rotation parameter ``ðt'/2κ`` (where ``t`` can represent either ``u`` or
+``v``, depending on `εᴵ`) on the boosted grid `Rₚ`, returned as a `2 × length(Rₚ)` matrix
+split into a part independent of the time `t` (row 1) and the coefficient of `t` (row 2):
+
+    ðt′╱2κ(t)[i] = ðt′╱2κ[1, i] + t * ðt′╱2κ[2, i].
+
+The time-coefficient is just ``ðκ/2κ``, which has the closed form below in terms of
+``λ = R̃ᵢ v⃗ Rᵢ`` (the rest-frame components of the boost velocity at pixel `i`); the
+time-independent part folds in the ``εᵅ``-corrected supertranslation `αₚ` and its
+eth-derivative `ðαₚ`:
+
+    ðt′╱2κ[2, i] = (λˣ + im * λʸ) / 2(λᶻ - εᴵ),
+    ðt′╱2κ[1, i] = -(ðt′╱2κ[2, i] * αₚ[i] + ðαₚ[i] / 2).
+
+See the documentation page ["Computing ``ðt'/κ``"](@ref computing_eth_tprime_over_kappa) for
+the derivation.  Note in particular that the boost × supertranslation cross term ``ðt'╱2κ[2,
+i]·αₚ[i]`` enters with a **minus** sign.
+"""
+function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, εᴵ=1)
+    vˣ, vʸ, vᶻ = vec(v⃗)
+    T = promote_type(basetype(eltype(Rₚ)), eltype(αₚ), real(eltype(ðαₚ)), typeof(vˣ))
+    ðt′╱2κ = Matrix{Complex{T}}(undef, 2, length(Rₚ))
+    @inbounds @simd ivdep for i ∈ eachindex(Rₚ, αₚ, ðαₚ)
+        Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
+        λˣ = (
+            (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ +
+            (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ +
+            (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ
+        )
+        λʸ = (
+            (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ +
+            (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ +
+            (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ
+        )
+        λᶻ = (
+            (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ +
+            (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
+            (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
+        )
+        ðt′╱2κ[2, i] = (λˣ + im * λʸ) / 2(λᶻ - εᴵ)
+        ðt′╱2κ[1, i] = -(ðt′╱2κ[2, i] * αₚ[i] + ðαₚ[i] / 2)
+    end
+    return ðt′╱2κ
+end
+
 """
     diagnostics(data, data_components)
 

@@ -127,7 +127,7 @@ end
 
 # ── mix_components! ───────────────────────────────────────────────────────────
 
-@testitem "mix_components!: identity (κ⁻¹=1, ðt′╱κ=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: identity (κ⁻¹=1, ðt′╱2κ=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
@@ -141,12 +141,12 @@ end
     end
 end
 
-@testitem "mix_components!: pure conformal scaling (ðt′╱κ=0, ð²α=0)" tags = [:unit, :fast] begin
+@testitem "mix_components!: pure conformal scaling (ðt′╱2κ=0, ð²α=0)" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
-    # When ðt′╱κ = 0 (e.g., at u = 0 for a boost with no supertranslation, since
-    # ðt′╱κ = −(ðκ/κ)·u), each component scales by κ^(conformal_weight).
+    # When ðt′╱2κ = 0 (e.g., at u = 0 for a boost with no supertranslation, since
+    # ðt′╱2κ = −(ðκ/2κ)·u), each component scales by κ^(conformal_weight).
     # Weyl: κ⁻³; σ,h: κ⁻¹; News: κ⁻².
     rng = Random.Xoshiro(7)
     dc = DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News)
@@ -173,17 +173,17 @@ end
     import Scri: DataComponents
 
     # When only ψ₄ = z is non-zero and κ⁻¹=1, the lower Weyl components receive
-    # the values ψₙ' = (−ðt′╱κ)^(4−n) · z — purely from the nested polynomial.
+    # the values ψₙ' = (ðt′╱2κ)^(4−n) · z — purely from the nested polynomial.
     rng = Random.Xoshiro(11)
     dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     for _ ∈ 1:8
         z = randn(rng, ComplexF64)
-        f = randn(rng, ComplexF64)   # ðt′╱κ
+        f = randn(rng, ComplexF64)   # ðt′╱2κ
         data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
         Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
         for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
             i = Scri.component_index(dc, Val(s))
-            @test data[i] ≈ (-f)^exp * z atol = 4eps(Float64) * abs(f)^exp * abs(z)
+            @test data[i] ≈ f^exp * z atol = 4eps(Float64) * abs(f)^exp * abs(z)
         end
     end
 end
@@ -193,8 +193,8 @@ end
 ] begin
     import Scri: DataComponents
 
-    # When all five ψ inputs equal 1, each output is κ⁻³·(1−ðt′╱κ)^(4−n).
-    # This follows from the binomial expansion of (1 − ðt′╱κ * ∂_u)^4 acting on 1.
+    # When all five ψ inputs equal 1, each output is κ⁻³·(1+ðt′╱2κ)^(4−n).
+    # This follows from the binomial expansion of (1 + ðt′╱2κ * ∂_u)^4 acting on 1.
     dc = DataComponents(:ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)
     κ⁻¹ = 2.0
     f = 3.0 + 2.0im
@@ -202,7 +202,7 @@ end
     Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, dc)
     for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
         i = Scri.component_index(dc, Val(s))
-        @test data[i] ≈ κ⁻¹^3 * (1 - f)^exp
+        @test data[i] ≈ κ⁻¹^3 * (1 + f)^exp
     end
 end
 
@@ -210,7 +210,7 @@ end
     import Random
     import Scri: DataComponents
 
-    # σ' = κ⁻¹·(σ + ð²α),  h' = κ⁻¹·(h + conj(ð²α))
+    # σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
     rng = Random.Xoshiro(99)
     dc = DataComponents(:σ, :h)
     for _ ∈ 1:8
@@ -220,8 +220,8 @@ end
         ð²α = randn(rng, ComplexF64)
         data = ComplexF64[σ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc)
-        @test data[1] ≈ κ⁻¹ * (σ_v + ð²α)
-        @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α))
+        @test data[1] ≈ κ⁻¹ * (σ_v + ð²α / 2)
+        @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α) / 2)
     end
 end
 

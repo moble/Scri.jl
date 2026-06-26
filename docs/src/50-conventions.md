@@ -2,8 +2,11 @@
 
 An important source of these conventions is [BoyleEtAl_2019](@citet),
 which describes conventions used for SXS waveforms in Appendix C.  BMS
-conventions are described in [MitmanEtAl_2024](@citet).  The
-conventions for the geometric algebra are described in the
+conventions are described in [MitmanEtAl_2024](@citet).
+[Iozzo_2021](@citet) creates a framework for comparing conventions
+across the literature.
+
+The conventions for the geometric algebra are described in the
 documentation of `Quaternionic.jl`, [here for the
 fundamentals](https://moble.github.io/Quaternionic.jl/stable/geometric_algebra/)
 and [here specifically for the spacetime
@@ -73,6 +76,93 @@ Near *future* null infinity, we have the asymptotic relation
 ```
 
 where the dots indicate time derivatives.
+
+## The eth operator
+
+Throughout, ``ð`` is the **Newman–Penrose** eth (the spin-raising
+operator), *not* the Geroch–Held–Penrose (GHP) one.  The two differ by
+a factor of ``\sqrt{2}``,
+
+```math
+ð_{\mathrm{NP}} = \sqrt{2}\, ð_{\mathrm{GHP}}.
+```
+
+On a quantity ``{}_s f`` of spin weight ``s`` it acts as
+
+```math
+ð\, {}_s f = -(\sin θ)^{s}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)
+\left[(\sin θ)^{-s}\, {}_s f\right],
+```
+
+raising the spin weight by one; equivalently, on the spin-weighted
+spherical harmonics,
+
+```math
+ð\, {}_s Y_{ℓ,m} = \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
+```
+
+For a spin-0 function this is just ``ð f = -\left(∂_θ + \frac{i}{\sin
+θ}∂_ϕ\right) f``, which ties ``ð`` directly to the angular dyad ``m``
+of [the standard tetrad](@ref "The standard tetrad").  Since ``m̃ =
+\frac{1}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)``,
+
+```math
+ð f = -\sqrt{2}\, m̃(f),
+\qquad
+ð̄ f = -\sqrt{2}\, m̄̃(f)
+\qquad (s = 0).
+```
+
+Equivalently the GHP eth is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
+This relation and the tetrad normalizations are what fix the factors
+of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
+parameter](@ref "BMS action on fields") — whenever ``ð`` of a
+coordinate is re-expressed through the tetrad.
+
+## Convention parameters
+
+Every quantity above is defined in one specific convention — the
+**SpEC** convention together with the **Newman–Penrose** ``ð`` — which
+is what `Scri.jl` computes with natively.  Other codes and papers use
+different signs and scales; the differences are captured by a small set
+of ``c``-parameters (the `Scri.Conventions` struct), following the
+conventions appendix and [Iozzo_2021](@citet).  The defaults reproduce
+the package's native convention.
+
+| parameter | meaning | defining relation | default |
+|:--|:--|:--|:--:|
+| ``c_s`` | metric signature | ``c_s=+1`` ⟹ ``−+++``; ``h_{ab}=c_s(g_{ab}-η_{ab})`` | ``+1`` |
+| ``c_l`` | ``l``-leg scale | ``l_a = -(c_l/\sqrt2)(dt-dr)_a`` | ``1`` |
+| ``c_m`` | ``m`` spin phase | ``m_a = (e^{i c_m}/\sqrt2)(dθ+i\,dφ)_a`` | ``0`` |
+| ``c_R`` | Riemann sign | ``c_R R^a{}_{bcd} = ∂Γ-∂Γ+ΓΓ-ΓΓ`` | ``+1`` |
+| ``c_Ψ`` | Weyl sign | ``Ψ_4 = c_Ψ\,C_{abcd}n^a\bar m^b n^c\bar m^d`` | ``+1`` |
+| ``c_σ`` | shear sign | ``σ = -c_σ\,m^a m^b ∇_a l_b`` | ``+1`` |
+| ``c_h`` | strain scale | ``h = c_h^{-1}[\tfrac12(h_{θθ}-h_{φφ})-i h_{θφ}]`` | ``1`` |
+| ``c_φ`` | Faraday sign | sign of ``φ_0,φ_1,φ_2`` | ``+1`` |
+| ``c_ð`` | eth coefficient | ``ð = -c_ð(∂_θ+i\cscθ\,∂_φ)`` on spin 0 | ``1`` |
+
+Two defaults deserve emphasis.  ``c_s=+1`` is the ``−+++`` signature
+fixed [above](@ref "Metric, curvature, and perturbations"); note that
+the SpEC convention's ``c_s=+1`` already *implies* ``−+++``.  And
+``c_ð=1`` is the Newman–Penrose ``ð`` of [The eth operator](@ref), in
+which ``ð`` carries **no** ``\sqrt2`` — ``ð f = -(∂_θ + i\cscθ\,∂_φ)f``
+on a spin-0 ``f`` (a Geroch–Held–Penrose ``ð`` would be ``c_ð =
+1/\sqrt2``).
+
+Inter-convention conversion of the Weyl components and the strain (from
+the appendix) is
+
+```math
+ψ_n^{[X]} = c_s c_Ψ c_R\,(c_l e^{i c_m})^{2-n}\, ψ_n^{[\mathrm{SpEC}]},
+\qquad
+h^{[X]} = c_s c_h^{-1} e^{-2 i c_m}\, h^{[\mathrm{SpEC}]},
+```
+
+implemented as `Scri.weyl_factor` / `Scri.convert_weyl` and their
+strain analogues.  The named conventions of the appendix (`:SpEC`,
+`:MB`, `:NP`, `:ADLK`, `:BR`, `:C`) are available as presets, e.g.
+`Scri.Conventions(:NP)`.  (Conversions for the shear ``σ`` and the
+Faraday components are more involved and are not yet provided.)
 
 ## The Null Cone and Transformations
 
