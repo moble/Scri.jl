@@ -35,11 +35,12 @@ Construct with keywords (validated), or by name from the table of published conv
     Conventions()                 # SpEC + Newman–Penrose ð (the package default)
     Conventions(; c_s=-1, c_l=-√2) # a custom convention
     Conventions(:NP)              # Newman–Penrose (1968)
-    Conventions(:MB; T=Double64)  # Boyle/Lehner, at extended precision
+    Conventions(:MB; T=Double64)  # Moreschi/Boyle, at extended precision
 
 `c_φ` and `c_ð` are not fixed by the (gravitational-wave) appendix table, so the named
 presets leave them at the Newman–Penrose default `1`; set them explicitly for, e.g., a
-Geroch–Held–Penrose ``ð`` (`c_ð = 1/√2`, since ``ð_NP = √2 ð_GHP``).
+Geroch–Held–Penrose ``ð`` (`c_ð = 1/√2`, since ``ð_NP = √2 ð_GHP`` when restricted to a unit
+round 2-sphere).
 """
 struct Conventions{T<:Real}
     c_s::Int

@@ -21,14 +21,14 @@ astronomy.
 From the Julia REPL, press `]` to enter the package manager, then run:
 
 ```julia
-pkg> add https://github.com/moble/Scri.jl
+pkg> add Scri
 ```
 
 Or equivalently, from any Julia session:
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/moble/Scri.jl")
+Pkg.add("Scri")
 ```
 
 ## Example Usage
