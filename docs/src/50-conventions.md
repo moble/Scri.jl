@@ -1,5 +1,35 @@
 # Conventions
 
+As with all of GR, the literature on spacetime asymptotics is,
+unfortunately, full of subtly varying conventions for objects that are
+fundamentally the same.  The metric signature, the tetrad
+normalization, curvature quantities, and even the ``ð`` operator all
+differ between references.  These choices are not just internal; they
+actually affect the transformation laws of the fields.  For example,
+the Newman–Penrose Weyl components ``Ψ_n`` are defined as contractions
+of the Weyl tensor with various elements of the tetrad, ``(l, m,
+\bar{m}, n)``.  But these are null vectors, so the normalizations are
+not fixed and naturally (even accounting for different letters used to
+represent the elements) different authors choose different
+normalizations for the tetrad elements.  For example, two reasonable
+choices found in the literature require ``l ↔ l\sqrt{2}`` and ``n ↔
+n/\sqrt{2}``, which changes the transformation law for ``ψ₃`` in a
+nontrivial way:
+
+```math
+ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} ψ₄\right]
+\quad ↔ \quad
+ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} \frac{ψ₄}{\sqrt{2}}\right].
+```
+
+Assuming wrong conventions about the input data can lead to incorrect
+results, so it is important to know which conventions are being used.
+This package provides a `Conventions` type to specify the conventions
+of the input data, so that the correct transformation laws are
+applied.  The overhead of using non-default conventions is very small.
+
+---
+
 An important source of these conventions is [BoyleEtAl_2019](@citet),
 which describes conventions used for SXS waveforms in Appendix C.  BMS
 conventions are described in [MitmanEtAl_2024](@citet).
@@ -51,6 +81,33 @@ The Newman-Penrose Weyl components are defined as
 \end{aligned}
 ```
 
+The (Maxwell/Faraday) field-strength tensor ``F_{ab}`` is similarly
+decomposed into components as
+
+```math
+\begin{aligned}
+φ_0 &= F_{ab}\, ℓ^a m^b, \\
+φ_1 &= \tfrac{1}{2} F_{ab}\, (ℓ^a n^b + \bar{m}^a m^b), \\
+φ_2 &= F_{ab}\, \bar{m}^a n^b.
+\end{aligned}
+```
+
+These are consistent with the Weyl components above: each ``φ_n``
+carries spin weight ``1-n`` (just as ``Ψ_n`` carries ``2-n``), and
+stepping down the tower swaps an ``ℓ``-type dyad slot (``o``) for an
+``n``-type one (``ι``).  The overall sign is the ``c_φ`` of the
+[convention table](@ref "Convention parameters") below, and —
+paralleling the Weyl conversion ``∝ (c_l e^{i c_m})^{2-n}`` — the
+inter-convention factor is
+
+```math
+φ_n^{[X]} = c_φ\, (c_l e^{i c_m})^{1-n}\, φ_n^{[\mathrm{SpEC}]},
+```
+
+with the dyad scaling ``c_l e^{i c_m}`` raised to the spin weight
+``1-n`` and no Riemann-sign factor (the field strength does not see the
+curvature convention).
+
 The metric perturbation is defined as
 
 ```math
@@ -79,15 +136,21 @@ where the dots indicate time derivatives.
 
 ## The eth operator
 
-Throughout, ``ð`` is the **Newman–Penrose** eth (the spin-raising
-operator), *not* the Geroch–Held–Penrose (GHP) one.  The two differ by
-a factor of ``\sqrt{2}``,
+Throughout this package, ``ð`` is the **Newman–Penrose** eth (the
+spin-raising operator), *not* the Geroch–Held–Penrose (GHP) one.
+Restricted to the unit round sphere (with the boost weight dropping
+out), the two differ by a factor of ``\sqrt{2}``:
 
 ```math
 ð_{\mathrm{NP}} = \sqrt{2}\, ð_{\mathrm{GHP}}.
 ```
 
-On a quantity ``{}_s f`` of spin weight ``s`` it acts as
+While spin-weighted spherical functions [*cannot actually be
+defined*](@cite Boyle_2016) on the sphere ``𝕊²`` itself, we can often
+just about get away with writing them as functions on *coordinates
+over the sphere*.  This is the standard approach in the literature,
+and as such the Newman–Penrose eth is defined as acting on a quantity
+``{}_s f`` of spin weight ``s`` via
 
 ```math
 ð\, {}_s f = -(\sin θ)^{s}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)
@@ -129,17 +192,17 @@ of ``c``-parameters (the `Scri.Conventions` struct), following the
 conventions appendix and [Iozzo_2021](@citet).  The defaults reproduce
 the package's native convention.
 
-| parameter | meaning | defining relation | default |
-|:--|:--|:--|:--:|
-| ``c_s`` | metric signature | ``c_s=+1`` ⟹ ``−+++``; ``h_{ab}=c_s(g_{ab}-η_{ab})`` | ``+1`` |
-| ``c_l`` | ``l``-leg scale | ``l_a = -(c_l/\sqrt2)(dt-dr)_a`` | ``1`` |
-| ``c_m`` | ``m`` spin phase | ``m_a = (e^{i c_m}/\sqrt2)(dθ+i\,dφ)_a`` | ``0`` |
-| ``c_R`` | Riemann sign | ``c_R R^a{}_{bcd} = ∂Γ-∂Γ+ΓΓ-ΓΓ`` | ``+1`` |
-| ``c_Ψ`` | Weyl sign | ``Ψ_4 = c_Ψ\,C_{abcd}n^a\bar m^b n^c\bar m^d`` | ``+1`` |
-| ``c_σ`` | shear sign | ``σ = -c_σ\,m^a m^b ∇_a l_b`` | ``+1`` |
-| ``c_h`` | strain scale | ``h = c_h^{-1}[\tfrac12(h_{θθ}-h_{φφ})-i h_{θφ}]`` | ``1`` |
-| ``c_φ`` | Faraday sign | sign of ``φ_0,φ_1,φ_2`` | ``+1`` |
-| ``c_ð`` | eth coefficient | ``ð = -c_ð(∂_θ+i\cscθ\,∂_φ)`` on spin 0 | ``1`` |
+| parameter | meaning          | default |
+|:----------|:-----------------|:-------:|
+| ``c_s``   | metric signature | ``+1``  |
+| ``c_l``   | ``l``-leg scale  | ``1``   |
+| ``c_m``   | ``m`` spin phase | ``0``   |
+| ``c_R``   | Riemann sign     | ``+1``  |
+| ``c_Ψ``   | Weyl sign        | ``+1``  |
+| ``c_σ``   | shear sign       | ``+1``  |
+| ``c_h``   | strain scale     | ``1``   |
+| ``c_φ``   | Faraday sign     | ``+1``  |
+| ``c_ð``   | eth coefficient  | ``1``   |
 
 Two defaults deserve emphasis.  ``c_s=+1`` is the ``−+++`` signature
 fixed [above](@ref "Metric, curvature, and perturbations"); note that
@@ -163,6 +226,18 @@ strain analogues.  The named conventions of the appendix (`:SpEC`,
 `:MB`, `:NP`, `:ADLK`, `:BR`, `:C`) are available as presets, e.g.
 `Scri.Conventions(:NP)`.  (Conversions for the shear ``σ`` and the
 Faraday components are more involved and are not yet provided.)
+
+A *transformation* that stays within one convention is more economical
+than these inter-convention factors suggest: as worked out in ["BMS
+action on fields"](@ref convention_dependence_tetrad_future), the
+overall signs ``c_s, c_Ψ, c_R, c_φ`` cancel out of the (homogeneous)
+peeling towers, leaving only the **dyad scaling ``c_l e^{i c_m}``**,
+which rescales the mixing parameter ``b``; and the eth coefficient
+``c_ð`` does not enter a transform at all — it changes only how ``ð``
+and the (geometric) ``b`` and shear shift are *written*, never their
+values, which the code computes with the Newman–Penrose ``ð``
+natively.  Only the *inhomogeneous* shear/strain shifts carry a full
+conversion factor (``F_σ``, ``F_h``).
 
 ## The Null Cone and Transformations
 

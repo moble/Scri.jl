@@ -151,14 +151,80 @@ parameter ``b``: the shear contracts *two* dyad legs into the second
 derivative of the cut, ``σ - σ^0 = m̃^A m̃^B D_A D_B f``, and since
 ``m̃ = (∂_θ + i\cscθ\,∂_ϕ)/\sqrt2`` carries a ``1/\sqrt2`` on each leg,
 ``m̃^A m̃^B D_A D_B = \tfrac12 ð^2`` in the [Newman–Penrose
-normalization](@ref "The eth operator") of ``ð``.  A supertranslation
-slides the cut, ``u \mapsto u - εᵅ α``, shifting the shear by
-``\tfrac12 ð^2`` of the slide; with the boost weight (the shear carries
-``κ^{-1}``) the result at ``ℐ⁺`` is
+normalization](@ref "The eth operator") of ``ð``.
+
+This shift comes straight out of [the tetrad
+transformation](@ref "BMS action on the tetrad").  Feed the transformed
+legs
+
+```math
+m̃' = \frac{e^{iγ}}{κ}\left(m̃ + b\,ñ\right),
+\qquad
+l̃' = \frac{1}{κ}\left(l̃ + \bar b\,m̃ + b\,m̄̃ + |b|^2\,ñ\right),
+\qquad
+b = \frac{ðu'}{2κ},
+```
+
+into the definition, with ``∇'`` the covariant derivative compatible
+with the primed conformal metric ``ĝ' = κ²ĝ``:
+
+```math
+σ' = -c_σ\, m̃'^a m̃'^b ∇'_a l̃'_b.
+```
+
+The spin–boost prefactors of the three legs, together with ``∇'``,
+combine into the single boost weight the shear carries as a connection
+coefficient at ``ℐ`` — the uniform Weyl factor ``κ^{-1}`` of [the
+tetrad page](@ref "BMS action on the tetrad"), not the naïve
+three-leg ``κ^{-3}``, the difference being exactly the conformal
+rescaling absorbed by ``∇'`` — and the spin-weight-``+2`` phase
+``e^{2iγ}`` (carried, as for the [Weyl and Faraday
+components](@ref "Weyl components"), by the rotation of the angular
+grid).  Pulling those out, the rest is fixed almost entirely by the
+projector ``m̃'^a m̃'^b``.  Because ``m̃'`` is null and orthogonal to
+``ñ`` (``m̃·m̃ = ñ·m̃ = 0``), of the four pieces of ``l̃'`` it
+annihilates three:
+
+- ``\bar b\,m̃`` dies on ``m̃'^b m̃_b = 0``;
+- ``|b|^2\,ñ`` dies on ``m̃'^b ñ_b = 0``;
+- only ``b\,m̄̃`` survives, through ``m̃'^b m̄̃_b = e^{iγ}/κ``.
+
+The ``l̃`` term simply rebuilds the original ``σ``.  So, with the
+already-extracted weight and phase set aside,
+
+```math
+σ' = κ^{-1}\Big(σ \;-\; c_σ\, m̃^a m̃^b D_a\big(b\,m̄̃_b\big)\Big),
+```
+
+with ``D`` the covariant derivative on the cut.  This last term — a
+derivative of the *coefficient* ``b``, not of a tetrad leg — carries
+the entire inhomogeneity.  It is cleanest for a pure supertranslation
+(``κ = 1``, ``γ = 0``), where ``b = ðu'/2`` with ``u' = u - εᵅ α``.
+The ``u``-derivative of ``b`` then drops out (``∂_u u'`` is angle-only,
+so ``∂_u b = \tfrac12 ð(∂_u u') = 0``, leaving only the homogeneous
+transport in a general element), and the screen term ``b\,m̄̃_b`` is the
+dyad gradient of the cut displacement ``-εᵅ α``.  Contracting the
+remaining derivative twice into ``m̃`` turns it into the screen Hessian
+of that displacement,
+
+```math
+- c_σ\, m̃^a m̃^b D_a\big(b\,m̄̃_b\big)
+= - c_σ\, m̃^A m̃^B D_A D_B(-εᵅ α)
+= c_σ\,εᵅ\,\tfrac12 ð^2 α,
+```
+
+by the identity above.  A general element merely reinstates the boost
+and spin already pulled out front, so at the defaults ``c_σ = εᵅ = 1``
 
 ```math
 σ' = κ^{-1}\left(σ + \tfrac12 ð^2 α\right).
 ```
+
+The convention constant ``c_σ`` and the orientation sign ``εᵅ`` ride
+along untouched — the former through [``F_σ``](@ref "Convention
+dependence"), the latter through the [orientation of
+``ℐ``](@ref scri_pm_conventions), which is what flips the sign of the
+shift at ``ℐ⁻``.
 
 The inhomogeneous ``ð^2 α`` is the affine action that makes the shear
 the Goldstone field of supertranslations: there is no frame in which it
@@ -230,3 +296,98 @@ h' = κ^{-1}\left(h - \tfrac12 ð̄^2 α\right),
 ```
 
 again matching the code.  The news is unchanged, ``N' = κ^{-2}N``.
+
+## Convention dependence
+
+The laws above are written in the package's default ([SpEC +
+Newman–Penrose ``ð``](@ref "Convention parameters")) convention.  Data
+in another convention ``X`` relates to the SpEC data by the
+per-component factors of the [conventions page](@ref "Convention
+parameters"),
+
+```math
+ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},
+\quad F_n = c_s c_Ψ c_R\,(c_l e^{i c_m})^{2-n};
+\qquad
+h^{[X]} = F_h\, h^{[\mathrm{SpEC}]},
+\quad F_h = c_s c_h^{-1} e^{-2 i c_m},
+```
+
+and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l e^{i
+c_m})^{1-n}``, two legs instead of four) and ``σ`` (``F_σ``, below).  A
+transform that *stays in* convention ``X`` is the composition
+``\text{convert } X{→}\mathrm{SpEC}``, then the SpEC law above, then
+``\text{convert back}``.  Whether a parameter survives that round trip
+depends on whether the law is homogeneous or inhomogeneous.
+
+**Homogeneous laws — the peeling towers.**  For the Weyl tower,
+
+```math
+ψ_n'^{[X]} = F_n\, ψ_n'^{[\mathrm{SpEC}]}
+= κ^{-3}\sum_k \binom{4-n}{k}\, b^{\,k}\, \frac{F_n}{F_{n+k}}\, ψ_{n+k}^{[X]},
+\qquad
+\frac{F_n}{F_{n+k}} = (c_l e^{i c_m})^{k},
+```
+
+so the overall signs ``c_s c_Ψ c_R`` cancel between numerator and
+denominator and the tower keeps its exact shape with a **rescaled
+parameter**
+
+```math
+b^{[X]} = c_l\, e^{i c_m}\, b^{[\mathrm{SpEC}]}
+= c_l\, e^{i c_m}\, \frac{ðu'}{2κ},
+```
+
+precisely the dyad scaling found on the [tetrad page](@ref
+convention_dependence_tetrad_future).  The Faraday tower behaves
+identically: ``F_{φ,n}/F_{φ,n+k} = (c_l e^{i c_m})^k`` again, and the
+overall ``c_φ`` cancels.  So **none of ``c_s, c_Ψ, c_R, c_φ`` enters a
+same-convention mixing**; only ``c_l e^{i c_m}`` does, through ``b``.
+
+**Inhomogeneous laws — the shear and strain.**  Here the additive shift
+has nothing to cancel against, so it carries the *full* conversion
+factor:
+
+```math
+σ'^{[X]} = F_σ\, σ'^{[\mathrm{SpEC}]}
+= κ^{-1}\!\left(σ^{[X]} + F_σ\,\tfrac12 ð^2 α\right),
+\qquad
+h'^{[X]} = κ^{-1}\!\left(h^{[X]} + F_h\,\tfrac12 ð̄^2 α\right).
+```
+
+The homogeneous piece ``σ^{[X]}`` rides through untouched, but the
+inhomogeneous ``\tfrac12 ð^2 α`` is multiplied by ``F_σ`` (resp.
+``F_h``).  From ``σ = -c_σ\,m^a m^b ∇_a l_b``, rescaling the two ``m``
+legs (``e^{2 i c_m}``) and the ``ℓ`` leg (``c_l``) gives
+
+```math
+F_σ = c_σ\, c_l\, e^{2 i c_m}\quad(\times\, c_s?),
+```
+
+where the signature contribution is flagged because it depends on the
+index placement in ``∇_a l_b`` (this is one of the
+[open items](@ref "Convention parameters") to confirm against the
+appendix).  Note ``F_σ`` carries ``c_l`` (``σ`` is built from the ``ℓ``
+leg) while ``F_h`` does **not** (the strain comes from the metric
+perturbation, with no ``ℓ`` leg) — the two spin-weight-conjugate
+objects scale differently.  The news, being ``∂_u`` of the strain with
+its inhomogeneous part annihilated, transforms homogeneously and so is
+convention-independent up to its ``κ^{-2}`` weight.
+
+**The eth coefficient ``c_ð`` does not appear.**  The geometric ``b``
+and the geometric shift ``\tfrac12 ð^2 α = m̃^A m̃^B D_A D_B α`` are
+computed with the Newman–Penrose ``ð`` natively (and the supertranslation
+``α`` is just a function on the sphere); ``c_ð`` only changes how those
+*same* quantities would be *written* in another eth normalization.
+
+**What the code needs.**  Collecting the survivors, a same-convention
+transform requires exactly three convention insertions on top of the
+default computation — and nothing in `mix_components!`:
+
+1. rescale the peeling parameter, ``b → c_l e^{i c_m}\, b`` (drives both
+   the Weyl and Faraday towers);
+2. multiply the shear shift by ``F_σ`` and
+3. the strain shift by ``F_h``.
+
+At the defaults ``c_l = 1, c_m = 0, c_σ = c_s = 1, c_h = 1`` every
+factor is unity and the laws reduce to those above.

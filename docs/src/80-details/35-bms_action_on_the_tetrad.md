@@ -68,11 +68,11 @@ each leg is regularized with ``ω' = κω`` in place of ``ω`` *and*
 transformed by the Lorentz boost, and the two contributions combine to
 the same ``1/κ`` for every leg:
 
-| leg | regularize | boost | net |
-|-----|:----------:|:-----:|:---:|
-| ``l̃`` | ``κ⁻²`` | ``κ⁺¹`` | ``1/κ`` |
-| ``m̃`` | ``κ⁻¹`` | ``κ⁰`` | ``1/κ`` |
-| ``ñ`` | ``κ⁰`` | ``κ⁻¹`` | ``1/κ`` |
+| leg   | regularize | boost   | net     |
+|-------|:----------:|:-------:|:-------:|
+| ``l̃`` | ``κ⁻²``    | ``κ⁺¹`` | ``1/κ`` |
+| ``m̃`` | ``κ⁻¹``    | ``κ⁰``  | ``1/κ`` |
+| ``ñ`` | ``κ⁰``     | ``κ⁻¹`` | ``1/κ`` |
 
 The differing regularization powers ``κ⁻⁽¹⁺ᵇ⁾`` are exactly cancelled
 by the boost weights ``κᵇ``, leaving the uniform Weyl factor ``1/κ``.
@@ -274,6 +274,44 @@ screen vector ``\boldsymbol{ξ} = \tfrac{\overline{ðu'}}{2κ}m̃ +
 \tfrac{ðu'}{2κ}m̄̃`` (so that ``\tfrac12 ξ² = |ðu'|²/4κ²``), the transverse
 leg picks up a linear screen term and a quadratic ``ñ`` term — and, like
 every other leg, the uniform Weyl factor ``1/κ`` out front.
+
+### [Convention dependence](@id convention_dependence_tetrad_future)
+
+The whole derivation above used the default tetrad.  In a general
+[convention](@ref "Convention parameters") the legs are rescaled and
+rephased — ``ℓ → c_l ℓ``, ``n → n/c_l`` (so that ``ℓ ⋅ n`` is
+preserved), and ``m → e^{i c_m} m`` — and we can read off how the
+null-rotation parameter ``b = f/d`` responds without redoing the
+algebra.  It is fixed by
+
+```math
+m̃'(u') = 0 = d\, m̃(u') + f\, ñ(u'),
+\qquad
+b = \frac{f}{d} = -\frac{m̃(u')}{ñ(u')}.
+```
+
+Under the rescaling the numerator picks up the dyad phase, ``m̃(u') →
+e^{i c_m} m̃(u')``, while the denominator picks up the inverse ``ℓ``
+scale, ``ñ(u') → ñ(u')/c_l``.  The parameter therefore rescales by the
+*dyad scaling* ``c_l e^{i c_m}``,
+
+```math
+b = \frac{ðu'}{2κ}
+\;\longrightarrow\;
+b = c_l\, e^{i c_m}\, \frac{ðu'}{2κ},
+```
+
+with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
+``c_ð`` rescales how one *writes* ``b`` in terms of ``ð`` — ``b =
+ð_{\mathrm{GHP}}u'/κ`` in GHP, say — but not the geometric value of
+``b`` itself).  The signature ``c_s`` enters only the inner-product
+normalizations, which already gave the uniform Weyl factor ``1/κ``
+independent of ``c_s``, so it does not touch ``b``.  This single factor
+``c_l e^{i c_m}`` is the *only* convention dependence that survives into
+the [component-mixing law](@ref "BMS action on fields"); the
+curvature-sign parameters ``c_R, c_Ψ, c_σ, c_h, c_φ`` appear only when
+the field components are built, and (as shown there) cancel out of a
+same-convention transform.
 
 ## Past null infinity
 

@@ -33,13 +33,48 @@ null.  This simplicity is what make this tetrad so useful.[^boyle2015]
     placement, an overall sign on ``n``, and a sign and ``\sqrt{2}``
     in ``m`` (the magnitude of the normalization ``m ⋅ m̄`` still
     matches ours, up to the signature-dependent sign).  That paper is
-    unfortunately not explicit about its signature choice, but is most
+    unfortunately not explicit about its signature choice, but is
     consistent with the opposite signature ``{+}{-}{-}{-}``.  Together
     with the Newman–Penrose-vs-GHP eth (see "[The eth
     operator](@ref)"), these convention differences account for the
     factor of ``\sqrt{2}`` and the sign between that paper's
     component-mixing parameter and the one derived in "[BMS action on
     fields](@ref)".
+
+## Convention parameters on the tetrad
+
+The tetrad above is the package's *default*, but various sources in
+the literature use different scaling and phases for the legs.  Three
+of the [convention parameters](@ref "Convention parameters") act
+directly on the tetrad — ``c_l`` (the scale of the ``ℓ`` leg), ``c_m``
+(the spin phase ``Θ`` of ``m``), and ``c_s`` (the signature) — giving
+the general null tetrad
+
+```math
+\begin{aligned}
+ℓ^a &= \frac{c_l}{\sqrt{2}}\left(∂ₜ + ∂ᵣ\right)^a, &\qquad
+m^a &= \frac{e^{i c_m}}{r\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)^a, \\
+n^a &= \frac{1}{c_l\sqrt{2}}\left(∂ₜ - ∂ᵣ\right)^a, &
+\bar m^a &= \frac{e^{-i c_m}}{r\sqrt{2}}\left(∂_θ - \frac{i}{\sin θ}∂_ϕ\right)^a,
+\end{aligned}
+```
+
+with inner products ``ℓ ⋅ n = -c_s`` and ``m ⋅ \bar m = c_s`` (all
+others zero).  The ``n`` leg include ``1/c_l`` precisely so that ``ℓ ⋅
+n`` is preserved under the rescaling, and ``c_s = +1`` is the ``-+++``
+signature (the inner products take their familiar values ``-1`` and
+``+1``).  The defaults ``c_l = 1``, ``c_m = 0``, ``c_s = +1`` recover
+the standard tetrad above, which is what `Scri.jl` uses by default; we
+write the explicit forms with the defaults below, reinstating ``c_l,
+c_m, c_s`` only where they survive into a transformation law (see
+["BMS action on the tetrad"](@ref "BMS action on the tetrad") and
+["BMS action on fields"](@ref "BMS action on fields")).  These three,
+together with the eth coefficient ``c_ð``, are the only convention
+parameters that touch the tetrad and its derivatives; the
+curvature-sign parameters ``c_R, c_Ψ, c_σ, c_h, c_φ`` enter only when
+the field *components* are assembled.
+
+## Asymptotic coordinates
 
 Of course, ``t`` and ``r`` are poor choices for coordinates near null
 infinity, so we transform to systems using the inverse radial
