@@ -2,7 +2,6 @@ module Scri
 
 import Quaternionic
 import Quaternionic:
-    Quaternion,
     QuatVec,
     Rotor,
     Lorentz,

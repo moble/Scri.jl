@@ -370,6 +370,21 @@ function transform!(
     return transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
 end
 
+function transform!(
+    data::Array{Complex},
+    t::Vector{<:Real},
+    v⃗::Vector{<:Real},
+    R::Vector{<:Real},
+    αᵢₙ::Vector{Complex};
+    data_components=nothing,
+    εᵅ::Int=+1,
+    εᴵ::Int=+1,
+)
+    return transform!(
+        data, t, QuatVec(v⃗), Rotor(R), αᵢₙ; data_components=data_components, εᵅ=εᵅ, εᴵ=εᴵ
+    )
+end
+
 """
     transform!(data, t, g::BMS, dc::DataComponents)
 

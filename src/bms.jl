@@ -463,7 +463,7 @@ end
         𝐤,
         from_spherical_coordinates
     import SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors, D_matrices, WignerDindex
-    import Scri
+    using Scri: BMS, impose_reality
     using DoubleFloats: Double64
 
     const FloatTypes = (Float32, Float64, Double64, BigFloat)
@@ -489,11 +489,11 @@ end
     end
 
     function random_α(rng, ::Type{T}, ℓₘₐₓ) where {T}
-        return Scri.impose_reality(randn(rng, Complex{T}, (ℓₘₐₓ + 1)^2), ℓₘₐₓ, 1)
+        return impose_reality(randn(rng, Complex{T}, (ℓₘₐₓ + 1)^2), ℓₘₐₓ, 1)
     end
 
     function random_bms(rng, ::Type{T}; ℓₘₐₓ=2, βmax=1//2) where {T}
-        return Scri.BMS(random_lorentz(rng, T; βmax), random_α(rng, T, ℓₘₐₓ))
+        return BMS(random_lorentz(rng, T; βmax), random_α(rng, T, ℓₘₐₓ))
     end
 
     ###
@@ -555,6 +555,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_lorentz
     using Quaternionic: Lorentz, basetype
+    using Scri: impose_reality, ℓₘₐₓ, lorentz, supertranslation
 
     rng = Random.Xoshiro(314)
     for T ∈ FloatTypes
@@ -562,10 +563,10 @@ end
         αraw = randn(rng, Complex{T}, 9)
         g = BMS(Λ, αraw)
         # The constructor imposes the reality condition, exactly as impose_reality does.
-        @test g.α == Scri.impose_reality(αraw, 2, 1)
-        @test Scri.ℓₘₐₓ(g) == 2
-        @test Scri.lorentz(g) === g.Λ
-        @test Scri.supertranslation(g) === g.α
+        @test g.α == impose_reality(αraw, 2, 1)
+        @test ℓₘₐₓ(g) == 2
+        @test lorentz(g) === g.Λ
+        @test supertranslation(g) === g.α
         # Idempotence: re-wrapping the (already real) modes is exact.
         @test BMS(Λ, g.α).α == g.α
         # Real input modes are accepted.  Note that the reality condition averages the
@@ -591,7 +592,7 @@ end
         e = one(BMS{T})
         @test e isa BMS{T}
         @test isone(e)
-        @test Scri.ℓₘₐₓ(e) == 0
+        @test ℓₘₐₓ(e) == 0
         @test all(iszero, e.α)
     end
 end
@@ -642,6 +643,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_rotation, random_direction
     using Quaternionic: Quaternionic, QuatVec, Rotor, Lorentz, Boost, components
+    using Scri: boost_velocity, frame_rotation, impose_reality, ℓₘₐₓ, translation_modes
 
     rng = Random.Xoshiro(265)
     for T ∈ (Float32, Float64, BigFloat)
@@ -665,19 +667,19 @@ end
         @test g.Λ == inv(Boost(v⃗) * Lorentz(R))
 
         # Round-trip through the accessors.
-        v⃗′ = Scri.boost_velocity(g)
-        R′ = Scri.frame_rotation(g)
+        v⃗′ = boost_velocity(g)
+        R′ = frame_rotation(g)
         @test maximum(abs, components(v⃗′ - v⃗)) < 20eps(T)
         @test min(maximum(abs, components(R′ - R)), maximum(abs, components(R′ + R))) <
             20eps(T)
 
         # Supertranslation parts add exactly.
-        αin = Scri.impose_reality(randn(rng, Complex{T}, 9), 2, 1)
+        αin = impose_reality(randn(rng, Complex{T}, 9), 2, 1)
         g = BMS{T}(; supertranslation=αin, time_translation=T(2), ℓₘₐₓ=3)
-        @test Scri.ℓₘₐₓ(g) == 3
+        @test ℓₘₐₓ(g) == 3
         expected = zeros(Complex{T}, 16)
         expected[1:9] .= αin
-        expected .+= Scri.translation_modes(T, T(2), QuatVec{T}(0, 0, 0), 3)
+        expected .+= translation_modes(T, T(2), QuatVec{T}(0, 0, 0), 3)
         @test g.α == expected
     end
 
@@ -702,6 +704,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_direction, α_value, α_translation
     using Quaternionic: QuatVec, components, absvec
+    using Scri: translation, time_translation, proper_supertranslation
 
     rng = Random.Xoshiro(358)
     for T ∈ FloatTypes
@@ -712,11 +715,11 @@ end
             g = BMS{T}(; time_translation=δt, space_translation=δx⃗)
 
             # Round-trip through the accessors is exact up to roundoff.
-            δt′, δx⃗′ = Scri.translation(g)
+            δt′, δx⃗′ = translation(g)
             @test abs(δt′ - δt) < ϵ
             @test maximum(abs, components(δx⃗′ - δx⃗)) < ϵ
-            @test abs(Scri.time_translation(g) - δt) < ϵ
-            @test all(iszero, Scri.proper_supertranslation(g))
+            @test abs(time_translation(g) - δt) < ϵ
+            @test all(iszero, proper_supertranslation(g))
 
             # Pointwise: α(n̂) = δt - δx⃗⋅n̂.  This pins the spherical-harmonic
             # conventions of `translation_modes` once and for all.
@@ -828,33 +831,32 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_direction, random_rotation, random_lorentz
     using Quaternionic: QuatVec, Lorentz, Boost, 𝐤
+    using Scri: conformal_factor
 
     rng = Random.Xoshiro(979)
     for T ∈ FloatTypes
         n̂ = random_direction(rng, T)
         # Identity has κ ≡ 1, exactly.
-        @test Scri.conformal_factor(one(Lorentz{T}), n̂) == 1
+        @test conformal_factor(one(Lorentz{T}), n̂) == 1
         # Rotations have κ ≡ 1 up to roundoff.
         for _ ∈ 1:5
             R = random_rotation(rng, T)
-            @test abs(Scri.conformal_factor(Lorentz(R), random_direction(rng, T)) - 1) <
-                20eps(T)
+            @test abs(conformal_factor(Lorentz(R), random_direction(rng, T)) - 1) < 20eps(T)
         end
         # κ > 0 for any (orthochronous) Lorentz transformation.
         for _ ∈ 1:5
             Λ = random_lorentz(rng, T; βmax=9//10)
-            @test Scri.conformal_factor(Λ, random_direction(rng, T)) > 0
+            @test conformal_factor(Λ, random_direction(rng, T)) > 0
         end
         # Boost along +z: (Λk)⁰ = e^{±η} at n̂ = ±ẑ, so κ = e^{∓η}.
         η = T(7//10)
         B = Boost(η, QuatVec{T}(0, 0, 1))
-        @test abs(Scri.conformal_factor(B, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
-        @test abs(Scri.conformal_factor(B, QuatVec{T}(0, 0, -1)) - exp(η)) < 20eps(T)
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, -1)) - exp(η)) < 20eps(T)
         # And against the hand-rolled Doppler form 1/(γ(1 ∓ β)) for the active boost.
         β = tanh(η)
         γ = 1 / √(1 - β^2)
-        @test abs(Scri.conformal_factor(B, QuatVec{T}(0, 0, 1)) - 1 / (γ * (1 + β))) <
-            20eps(T)
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - 1 / (γ * (1 + β))) < 20eps(T)
     end
 end
 
@@ -865,6 +867,7 @@ end
     using .BMSTestSetup:
         FloatTypes, random_direction, random_rotation, random_bms, act_ref, tol
     using Quaternionic: QuatVec, Lorentz, Boost, components, 𝐤
+    using Scri: conformal_factor, transform_ray, aberration
 
     # εᴵ is *not* stored on a BMS element; it is supplied per call to the operations that
     # touch the sphere's geometry, defaulting to +1 (ℐ⁺).  The element type stays BMS{T}.
@@ -877,16 +880,14 @@ end
     for T ∈ FloatTypes
         η = T(7//10)
         g = BMS(Boost(η, QuatVec{T}(0, 0, 1)), zeros(Complex{T}, 1))
-        @test abs(Scri.conformal_factor(g, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
-        @test abs(Scri.conformal_factor(g, QuatVec{T}(0, 0, 1); εᴵ=+1) - exp(-η)) < 20eps(T)
-        @test abs(Scri.conformal_factor(g, QuatVec{T}(0, 0, 1); εᴵ=-1) - exp(η)) < 20eps(T)
-        @test abs(Scri.conformal_factor(g, QuatVec{T}(0, 0, -1); εᴵ=-1) - exp(-η)) <
-            20eps(T)
+        @test abs(conformal_factor(g, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
+        @test abs(conformal_factor(g, QuatVec{T}(0, 0, 1); εᴵ=+1) - exp(-η)) < 20eps(T)
+        @test abs(conformal_factor(g, QuatVec{T}(0, 0, 1); εᴵ=-1) - exp(η)) < 20eps(T)
+        @test abs(conformal_factor(g, QuatVec{T}(0, 0, -1); εᴵ=-1) - exp(-η)) < 20eps(T)
         for _ ∈ 1:5
             n̂ = random_direction(rng, T)
             # The BMS convenience method must agree with the raw transform_ray at the same εᴵ.
-            @test Scri.conformal_factor(g, n̂; εᴵ=-1) ≈
-                first(Scri.transform_ray(g.Λ, n̂; εᴵ=-1))
+            @test conformal_factor(g, n̂; εᴵ=-1) ≈ first(transform_ray(g.Λ, n̂; εᴵ=-1))
         end
     end
 
@@ -913,8 +914,8 @@ end
         R′ₚ = random_rotation(rng, Float64)
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         g = BMS{Float64}(; frame_rotation=R, boost_velocity=v⃗)
-        n̂ᵣₑₛₜ = Scri.aberration(R * R′ₚ, v⃗; emitted=false)(𝐤)
-        _, n̂′ = Scri.transform_ray(g.Λ, n̂ᵣₑₛₜ; εᴵ=-1)
+        n̂ᵣₑₛₜ = aberration(R * R′ₚ, v⃗; emitted=false)(𝐤)
+        _, n̂′ = transform_ray(g.Λ, n̂ᵣₑₛₜ; εᴵ=-1)
         @test maximum(abs, components(n̂′ - R′ₚ(𝐤))) < 1e-12
     end
 end
@@ -950,6 +951,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_direction, random_rotation
     using Quaternionic: QuatVec, Lorentz, absvec, components, 𝐤
+    using Scri: rotor_from_direction, transform_ray
 
     rng = Random.Xoshiro(213)
     for T ∈ FloatTypes
@@ -961,21 +963,21 @@ end
             QuatVec{T}(0, 0, -1),
             QuatVec{T}(1, 0, 0),
         )
-            R = Scri.rotor_from_direction(n̂)
+            R = rotor_from_direction(n̂)
             @test maximum(abs, components(R(𝐤) - n̂)) < 20eps(T)
         end
         # The direction map produces unit vectors.
         for _ ∈ 1:5
             Λ = BMSTestSetup.random_lorentz(rng, T; βmax=9//10)
             n̂ = random_direction(rng, T)
-            _, n̂′ = Scri.transform_ray(Λ, n̂)
+            _, n̂′ = transform_ray(Λ, n̂)
             @test abs(absvec(n̂′) - 1) < 40eps(T)
         end
         # For pure rotations, the direction map is just the rotation.
         for _ ∈ 1:5
             Q = random_rotation(rng, T)
             n̂ = random_direction(rng, T)
-            _, n̂′ = Scri.transform_ray(Lorentz(Q), n̂)
+            _, n̂′ = transform_ray(Lorentz(Q), n̂)
             @test maximum(abs, components(n̂′ - Q(n̂))) < 40eps(T)
         end
     end
@@ -988,6 +990,7 @@ end
     using .BMSTestSetup: FloatTypes, random_direction
     using LinearAlgebra: dot
     using Quaternionic: absvec
+    using Scri: conformal_factor
 
     # The `boost_velocity` keyword must mean exactly what `v⃗` means in `transform!` and
     # `compute_t′`: there, the time scaling is t′ = κ(t - α) with 1/κ = γ(1 - v⃗⋅n̂)
@@ -1001,7 +1004,7 @@ end
             γ = 1 / √(1 - β^2)
             g = BMS{T}(; boost_velocity=v⃗)
             n̂ = random_direction(rng, T)
-            κ = Scri.conformal_factor(g, n̂)
+            κ = conformal_factor(g, n̂)
             κ_expected = 1 / (γ * (1 - dot(vec(v⃗), vec(n̂))))
             @test abs(κ - κ_expected) < 40eps(T) * abs(κ_expected)
         end
@@ -1012,6 +1015,7 @@ end
     :unit, :fast, :validation, :integration
 ] setup = [BMSTestSetup] begin
     import Random
+    using Scri: aberration, transform_ray
     using .BMSTestSetup: random_direction, random_rotation
     using Quaternionic: QuatVec, Rotor, components, 𝐤
 
@@ -1026,8 +1030,8 @@ end
         R′ₚ = random_rotation(rng, Float64)
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         g = BMS{Float64}(; frame_rotation=R, boost_velocity=v⃗)
-        n̂ᵣₑₛₜ = Scri.aberration(R * R′ₚ, v⃗)(𝐤)
-        _, n̂′ = Scri.transform_ray(g.Λ, n̂ᵣₑₛₜ)
+        n̂ᵣₑₛₜ = aberration(R * R′ₚ, v⃗)(𝐤)
+        _, n̂′ = transform_ray(g.Λ, n̂ᵣₑₛₜ)
         @test maximum(abs, components(n̂′ - R′ₚ(𝐤))) < 1e-12
     end
 end
@@ -1036,6 +1040,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_direction, random_bms, act_ref, tol
     using Quaternionic: components
+    using Scri: εᵅ, conformal_factor
 
     rng = Random.Xoshiro(616)
     for T ∈ (Float32, Float64, BigFloat)
@@ -1050,10 +1055,10 @@ end
             # εᵅ is the element's type parameter: the εᵅ = -1 element flips only the
             # supertranslation term, leaving the direction (and conformal factor) alone.
             g₋ = BMS(g.Λ, g.α; εᵅ=-1)
-            @test Scri.εᵅ(g₋) == -1
+            @test εᵅ(g₋) == -1
             t′₋, n̂′₋ = g₋(t, n̂)
             @test n̂′₋ == n̂′
-            κ = Scri.conformal_factor(g, n̂)
+            κ = conformal_factor(g, n̂)
             @test abs((t′₋ + t′) - 2κ * t) < tol(T, 2) * max(abs(t), one(T))
         end
     end
@@ -1119,8 +1124,8 @@ function compose(
     g₂::BMS{T,Eᵅ},
     g₁::BMS{T,Eᵅ};
     εᴵ::Integer=1,
-    ℓₘₐₓ::Integer=max(Scri.ℓₘₐₓ(g₂), Scri.ℓₘₐₓ(g₁)),
-    ℓʷ::Integer=max(2ℓₘₐₓ + 1, Scri.ℓₘₐₓ(g₂), Scri.ℓₘₐₓ(g₁)),
+    ℓₘₐₓ::Integer=max(ℓₘₐₓ(g₂), ℓₘₐₓ(g₁)),
+    ℓʷ::Integer=max(2ℓₘₐₓ + 1, ℓₘₐₓ(g₂), ℓₘₐₓ(g₁)),
 ) where {T<:Real,Eᵅ}
     @assert ℓʷ ≥ ℓₘₐₓ "Working bandwidth ℓʷ=$ℓʷ must be at least ℓₘₐₓ=$ℓₘₐₓ"
     # Quaternionic's rotor products renormalize (by the spinor norm), which perturbs the
@@ -1141,7 +1146,7 @@ function compose(
         resize_modes(g₁.α, ℓₘₐₓ) .+ resize_modes(g₂.α, ℓₘₐₓ)
     else
         Rₚ = golden_ratio_spiral_rotors(0, ℓʷ, T)
-        α₁ₚ = real.(ₛ𝐘(0, Scri.ℓₘₐₓ(g₁), T, Rₚ) * g₁.α)
+        α₁ₚ = real.(ₛ𝐘(0, ℓₘₐₓ(g₁), T, Rₚ) * g₁.α)
         R′ₚ = similar(Rₚ)
         κ₁ₚ = Vector{T}(undef, length(Rₚ))
         for p ∈ eachindex(Rₚ)
@@ -1149,7 +1154,7 @@ function compose(
             κ₁ₚ[p] = κ₁
             R′ₚ[p] = rotor_from_direction(n̂′)
         end
-        α₂ₚ = real.(ₛ𝐘(0, Scri.ℓₘₐₓ(g₂), T, R′ₚ) * g₂.α)
+        α₂ₚ = real.(ₛ𝐘(0, ℓₘₐₓ(g₂), T, R′ₚ) * g₂.α)
         f = @. complex(α₁ₚ + α₂ₚ / κ₁ₚ)
         modes = lu(ₛ𝐘(0, ℓʷ, T, Rₚ)) \ f
         modes[1:((ℓₘₐₓ + 1) ^ 2)]
@@ -1196,10 +1201,7 @@ exact only in the limit of large `ℓʷ` and `ℓₘₐₓ`.  The Lorentz part `
 GA reverse.
 """
 function Base.inv(
-    g::BMS{T,Eᵅ};
-    εᴵ::Integer=1,
-    ℓₘₐₓ::Integer=Scri.ℓₘₐₓ(g),
-    ℓʷ::Integer=max(2ℓₘₐₓ + 1, Scri.ℓₘₐₓ(g)),
+    g::BMS{T,Eᵅ}; εᴵ::Integer=1, ℓₘₐₓ::Integer=ℓₘₐₓ(g), ℓʷ::Integer=max(2ℓₘₐₓ + 1, ℓₘₐₓ(g))
 ) where {T<:Real,Eᵅ}
     return compose(
         BMS{T,Eᵅ}(one(Lorentz{T}), -g.α),
@@ -1220,6 +1222,7 @@ end
     import Random
     using .BMSTestSetup: FloatTypes, random_bms, random_lorentz, random_α
     using Quaternionic: Lorentz
+    using Scri: is_identity_rotor, time_translation
 
     rng = Random.Xoshiro(717)
     for T ∈ FloatTypes
@@ -1250,13 +1253,13 @@ end
         s₂₁ = s₂ * s₁
         @test s₂₁ == s₁ * s₂
         @test s₂₁.α == [α₁; zeros(Complex{T}, 16 - 9)] .+ α₂
-        @test Scri.is_identity_rotor(s₂₁.Λ)
+        @test is_identity_rotor(s₂₁.Λ)
         # Pure time translations compose additively, with no other modes appearing.
         # (Mode addition is exact; the δt accessor only rounds in the final division.)
         t₁ = BMS{T}(; time_translation=T(3//2))
         t₂ = BMS{T}(; time_translation=T(7//4))
         @test (t₂ * t₁) == BMS(one(Lorentz{T}), t₁.α .+ t₂.α)
-        @test Scri.time_translation(t₂ * t₁) ≈ T(3//2) + T(7//4) atol = 8eps(T)
+        @test time_translation(t₂ * t₁) ≈ T(3//2) + T(7//4) atol = 8eps(T)
         @test all(iszero, (t₂ * t₁).α[2:end])
         # Inverses of the special subgroups are exact.
         @test inv(s₁) == BMS(one(Lorentz{T}), -α₁)
@@ -1291,6 +1294,7 @@ end
 ] begin
     import Random
     using .BMSTestSetup: random_bms, random_direction, ray_map, α_value
+    using Scri: compose
 
     # Evaluate the composed supertranslation at random (off-grid) directions and compare
     # with α₁(n̂) + α₂(n̂′)/κ₁(n̂) computed directly from raw geometry and the *input*
@@ -1299,7 +1303,7 @@ end
     for _ ∈ 1:5
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-        h = Scri.compose(g₂, g₁; ℓₘₐₓ=10)
+        h = compose(g₂, g₁; ℓₘₐₓ=10)
         for _ ∈ 1:5
             n̂ = random_direction(rng, Float64)
             κ₁, n̂′ = ray_map(g₁.Λ, n̂)
