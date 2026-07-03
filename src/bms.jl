@@ -269,6 +269,7 @@ end
 Largest `ℓ` of the spherical-harmonic modes stored in the supertranslation of `g`.
 """
 ℓₘₐₓ(g::BMS) = isqrt(length(g.α)) - 1
+ell_max(g::BMS) = ℓₘₐₓ(g)
 
 """
     εᵅ(g::BMS)
@@ -1124,8 +1125,8 @@ function compose(
     g₂::BMS{T,Eᵅ},
     g₁::BMS{T,Eᵅ};
     εᴵ::Integer=1,
-    ℓₘₐₓ::Integer=max(ℓₘₐₓ(g₂), ℓₘₐₓ(g₁)),
-    ℓʷ::Integer=max(2ℓₘₐₓ + 1, ℓₘₐₓ(g₂), ℓₘₐₓ(g₁)),
+    ℓₘₐₓ::Integer=max(ell_max(g₂), ell_max(g₁)),
+    ℓʷ::Integer=max(2ℓₘₐₓ + 1, ell_max(g₂), ell_max(g₁)),
 ) where {T<:Real,Eᵅ}
     @assert ℓʷ ≥ ℓₘₐₓ "Working bandwidth ℓʷ=$ℓʷ must be at least ℓₘₐₓ=$ℓₘₐₓ"
     # Quaternionic's rotor products renormalize (by the spinor norm), which perturbs the
@@ -1146,7 +1147,7 @@ function compose(
         resize_modes(g₁.α, ℓₘₐₓ) .+ resize_modes(g₂.α, ℓₘₐₓ)
     else
         Rₚ = golden_ratio_spiral_rotors(0, ℓʷ, T)
-        α₁ₚ = real.(ₛ𝐘(0, ℓₘₐₓ(g₁), T, Rₚ) * g₁.α)
+        α₁ₚ = real.(ₛ𝐘(0, ell_max(g₁), T, Rₚ) * g₁.α)
         R′ₚ = similar(Rₚ)
         κ₁ₚ = Vector{T}(undef, length(Rₚ))
         for p ∈ eachindex(Rₚ)
@@ -1154,7 +1155,7 @@ function compose(
             κ₁ₚ[p] = κ₁
             R′ₚ[p] = rotor_from_direction(n̂′)
         end
-        α₂ₚ = real.(ₛ𝐘(0, ℓₘₐₓ(g₂), T, R′ₚ) * g₂.α)
+        α₂ₚ = real.(ₛ𝐘(0, ell_max(g₂), T, R′ₚ) * g₂.α)
         f = @. complex(α₁ₚ + α₂ₚ / κ₁ₚ)
         modes = lu(ₛ𝐘(0, ℓʷ, T, Rₚ)) \ f
         modes[1:((ℓₘₐₓ + 1) ^ 2)]
@@ -1201,7 +1202,10 @@ exact only in the limit of large `ℓʷ` and `ℓₘₐₓ`.  The Lorentz part `
 GA reverse.
 """
 function Base.inv(
-    g::BMS{T,Eᵅ}; εᴵ::Integer=1, ℓₘₐₓ::Integer=ℓₘₐₓ(g), ℓʷ::Integer=max(2ℓₘₐₓ + 1, ℓₘₐₓ(g))
+    g::BMS{T,Eᵅ};
+    εᴵ::Integer=1,
+    ℓₘₐₓ::Integer=ell_max(g),
+    ℓʷ::Integer=max(2ℓₘₐₓ + 1, ell_max(g)),
 ) where {T<:Real,Eᵅ}
     return compose(
         BMS{T,Eᵅ}(one(Lorentz{T}), -g.α),
