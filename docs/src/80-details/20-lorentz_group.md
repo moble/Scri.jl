@@ -71,8 +71,13 @@ to understand how the Lorentz group shows up in Geometric Algebra.
 A null rotation is a very particular type of Lorentz transformation
 (sometimes called a [parabolic
 transformation](https://en.wikipedia.org/wiki/Lorentz_group#Parabolic))
-that leaves a chosen null vector invariant.  For simplicity, let us
-choose the null vector
+that leaves a chosen null vector invariant.  The basic idea is that
+the null rotation simultaneously boosts in a direction orthogonal to
+the null vector, and rotates in the plane defined by that direction
+and the null vector — with the rotation being exactly what is needed
+to leave the null direction unchanged.
+
+For simplicity, let us choose the null vector
 
 ```math
 \boldsymbol{ℓ} = \frac{𝐭+𝐳}{\sqrt{2}}
@@ -86,10 +91,20 @@ as the invariant null vector.  Its complementary null vector is
 
 which will be important.  Now, for any (not necessarily unit) vector
 ``\boldsymbol{ξ}`` in the ``𝐱``-``𝐲`` plane, the bivector
-``\boldsymbol{ℓ ξ} = -\boldsymbol{ξ ℓ}`` generates a null
-rotation.  More specifically, this bivector generates a boost in the
+``\boldsymbol{ℓ ξ} = -\boldsymbol{ξ ℓ}`` generates a null rotation.
+More specifically, this bivector generates a boost in the
 ``\boldsymbol{ξ}`` direction, and *simultaneously* a rotation in the
-``\boldsymbol{ξ}``-``𝐳`` plane.  Define the spinor
+``\boldsymbol{ξ}``-``𝐳`` plane.  Specifically, we expand the product
+
+```math
+\boldsymbol{ℓ ξ} = \frac{𝐭\boldsymbol{ξ} + 𝐳\boldsymbol{ξ}}{\sqrt{2}}.
+```
+
+The ``𝐭\boldsymbol{ξ}`` term generates a boost in the
+``\boldsymbol{ξ}`` direction, and the ``𝐳\boldsymbol{ξ}`` term
+generates a rotation in the ``\boldsymbol{ξ}``-``𝐳`` plane.
+
+Define the spinor
 
 ```math
 𝐑 = \exp\left[ \frac{1}{2} \boldsymbol{ℓ ξ} \right].
@@ -147,15 +162,16 @@ subgroups, though we assume the particular forms given:
   We take this direction to be the z-axis, so that we have ``A =
   \left\{ \exp\left[\tfrac{φₐ}{2} \, 𝐭𝐳 \right] \mid φₐ ∈ ℝ
   \right\}``.
-- **``N``** is the nilpotent subgroup of null rotations, which
-  consists of all Lorentz transformations that can be represented as
-  null rotations about a fixed null vector.  We take this vector to be
-  the null vector ``\boldsymbol{ℓ}``, so that we have ``N = \left\{
-  \exp\left[\tfrac{1}{2} \boldsymbol{ℓ ξ}\right] \mid \boldsymbol{ξ} =
-  ξˣ𝐱 + ξʸ𝐲 \right\}``.  Nilpotency means that the generator
-  ``\boldsymbol{ℓ ξ}`` raised to an integer power is zero — in this
-  case, ``(\boldsymbol{ℓ ξ})² = 0`` because ``\boldsymbol{ℓ}`` and
-  ``\boldsymbol{ξ}`` anticommute and ``\boldsymbol{ℓ}² = 0``.
+- **``N``** is the (nilpotent, hence the "N") subgroup of null
+  rotations, which consists of all Lorentz transformations that can be
+  represented as null rotations about a fixed null vector.  We take
+  this vector to be the null vector ``\boldsymbol{ℓ}``, so that we
+  have ``N = \left\{ \exp\left[\tfrac{1}{2} \boldsymbol{ℓ ξ}\right]
+  \mid \boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲 \right\}``.  Nilpotency means that
+  the generator ``\boldsymbol{ℓ ξ}`` raised to an integer power is
+  zero — in this case, ``(\boldsymbol{ℓ ξ})² = 0`` because
+  ``\boldsymbol{ℓ}`` and ``\boldsymbol{ξ}`` anticommute and
+  ``\boldsymbol{ℓ}² = 0``.
 
 Note that ``φₐ`` here is *not* the rapidity of the overall boost if we
 factor a transformation as a boost and a rotation.  Rather, it is the
@@ -173,7 +189,20 @@ implemented in [`Quaternionic.KAN`](@extref Quaternionic
 
 However, for our purposes, we do not actually need the full
 factorization; we just need the ``K`` factor, which is somewhat faster
-to compute.
+to compute.  This is implemented in the [`aberration`](@ref
+Scri.aberration) function, for reasons explained below.  An important
+fact is that
+
+```math
+𝐑_{AN} = 𝐑_{φₐ𝐳}\, 𝐑_{\boldsymbol{ξ}}
+```
+
+leaves the *direction* ``\boldsymbol{ℓ}`` invariant, but just rescales
+the vector as
+
+```math
+𝐑_{AN} \boldsymbol{ℓ} \bar{𝐑}_{AN} = e^{φₐ} \boldsymbol{ℓ}.
+```
 
 ## Iwasawa and Hopf
 
@@ -270,6 +299,81 @@ direction, rather than the original ``𝐳`` direction.  In this case,
 the spin and boost terms describe rotating about the null direction
 and boosting along the null direction — exactly as the spin and boost
 weights are defined.
+
+## Reversing the order
+
+The order of operations given above is not the only order that works.
+In fact, we can reverse the order of operations, and thereby come
+closer to how we actually think of the transformations relevant to an
+arbitrary point in the sky.  First, we just get a little more explicit
+about the decomposition and write
+
+```math
+Λ = 𝐑_{\boldsymbol{ζ}}\, 𝐑_{γ𝐳}\, 𝐑_{φₐ𝐳}\, 𝐑_{\boldsymbol{ξ}},
+```
+
+so that we can see the axes about which these transformations are
+applied.  Then we permute the order of operations to write
+
+```math
+Λ = 𝐑_{\boldsymbol{ξ}'''}\, 𝐑_{φₐ𝐳''}\, 𝐑_{γ𝐳'}\, 𝐑_{\boldsymbol{ζ}},
+```
+
+where this is *exactly the same transformation* as before, but written
+with different axes.  We *first* rotate the ``𝐳`` axis onto the
+direction in which the *final* null ray will appear, then we rotate
+about that null ray, followed by a boost along that null ray, and
+finally we apply a null rotation about that same null ray.  The
+``\boldsymbol{ζ}`` generator of the rotation is exactly the same as
+before, and the other three parameters ``\boldsymbol{ξ}``, ``φₐ``,
+``γ`` all have the same values as before (where ``\boldsymbol{ℓ ξ}``
+is thought of just in terms of components with respect to whichever
+basis is operative at the given stage of the transformation), but the
+*interpretations* of these parameters have now changed to being with
+respect to the final null direction, rather than the original ``𝐳``
+direction.
+
+That is, the factor ``𝐑_K = 𝐑_{\boldsymbol{ζ}}\, 𝐑_{γ𝐳}`` produces
+the same null direction as the full Lorentz transformation ``Λ``:
+
+```math
+𝐑_K \boldsymbol{ℓ} \bar{𝐑}_K ∝ Λ \boldsymbol{ℓ} \bar{Λ}.
+```
+
+(The proportionality factor is just ``e^{φₐ}``.)  That is, ``𝐑_K``
+produces exactly the same null direction for the unboosted observer as
+the full ``KAN`` produces for the boosted observer.
+
+So if we want to know the values of the fields along that null vector
+in the *boosted* frame, we need to know the values of the fields in
+the *unboosted* frame along the null vector produced by ``𝐑_K``.
+
+That's not quite the full story, however, because [spin-weighted
+fields *require*](@cite Boyle_2016) some information about a chosen
+tangent direction.  More generally, a function with spin weight ``s``
+and boost weight ``b`` is a function on ``\mathrm{Spin}^+(3,1)`` that
+satisfies the right-equivariance condition
+
+```math
+f\left(Λ\, 𝐑_{γ𝐳}\, 𝐑_{φₐ𝐳}\right)
+= e^{i s γ} e^{b φₐ} f(Λ).
+```
+
+The null rotation ``𝐑_{\boldsymbol{ξ}}`` cannot satisfy such a simple
+equivariance condition; it must be accounted for by considering mixing
+of the tetrad as shown above.  But the effect of ``𝐑_{φₐ𝐳}`` can be
+accounted for with a simple multiplication by ``e^{b φₐ}`` — which we
+will see is essentially the conformal factor ``κ`` to the appropriate
+power.  So information about the direction of propagation and tangent
+direction needed for a spin-weighted field is entirely contained in
+the ``𝐑_K`` factor.
+
+That is, to transform the fields, we first need to evaluate them on
+``𝐑_K``, then include the effects of the null rotation and boost.
+This is the reason why the [`aberration`](@ref Scri.aberration)
+function just computes the ``K`` factor, rather than the full ``KAN``
+decomposition produced by [`Quaternionic.KAN`](@extref Quaternionic
+:jl:function:`Quaternionic.KAN`).
 
 ## Reinterpreting ``i``
 
