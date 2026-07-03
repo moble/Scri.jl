@@ -53,16 +53,11 @@ end
     using Scri: Scri
     using Test: detect_ambiguities
 
-    # Only ambiguities involving our own sign singletons are this refactor's responsibility
-    # (the codebase may carry other, unrelated ambiguities).
-    involves_sign(m) = occursin(r"\b(One|MinusOne)\b", string(m.sig))
-    sign_ambig = filter(
-        a ->
-            (a[1].module === Scri || a[2].module === Scri) &&
-            (involves_sign(a[1]) || involves_sign(a[2])),
-        detect_ambiguities(Scri),
+    # No method defined in Scri should be ambiguous with any other (an Aqua-style guard).
+    internal = filter(
+        a -> a[1].module === Scri && a[2].module === Scri, detect_ambiguities(Scri)
     )
-    @test isempty(sign_ambig)
+    @test isempty(internal)
 end
 
 @testitem "Signs: mixed products are type-stable and allocation-free" tags = [:unit, :fast] begin

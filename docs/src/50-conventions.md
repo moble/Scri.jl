@@ -239,12 +239,6 @@ the appendix) is
 h^{[X]} = c_s c_h^{-1} c_m^{-2}\, h^{[\mathrm{SpEC}]},
 ```
 
-implemented as `Scri.weyl_factor` / `Scri.convert_weyl` and their
-strain analogues.  The named conventions of the appendix (`:SpEC`,
-`:MB`, `:NP`, `:ADLK`, `:BR`, `:C`) are available as presets, e.g.
-`Scri.Conventions(:NP)`.  (Conversions for the shear ``σ`` and the
-Faraday components are more involved and are not yet provided.)
-
 A *transformation* that stays within one convention is more economical
 than these inter-convention factors suggest: as worked out in ["BMS
 action on fields"](@ref convention_dependence_tetrad_future), the

@@ -74,12 +74,13 @@ Examples:
     DataComponents(:φ₀, :φ₁, :φ₂; εᴵ=-1)         # Faraday components on ℐ⁻
 """
 struct DataComponents{C,Eᴵ}
-    function DataComponents(cs::Symbol...; εᴵ=1)
-        validate_data_components(cs, εᴵ)
-        return new{cs,εᴵ}()
+    function DataComponents(c₁::Symbol, cs::Symbol...; εᴵ=1)
+        components = (c₁, cs...)
+        validate_data_components(components, εᴵ)
+        return new{components,εᴵ}()
     end
-    function DataComponents(cs::AbstractString...; εᴵ=1)
-        return DataComponents((parse_data_component.(cs))...; εᴵ)
+    function DataComponents(c₁::AbstractString, cs::AbstractString...; εᴵ=1)
+        return DataComponents(map(parse_data_component, (c₁, cs...))...; εᴵ)
     end
 end
 

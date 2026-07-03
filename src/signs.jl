@@ -62,7 +62,7 @@ Base.inv(x::SignSingleton) = x
 Base.:-(::One) = MinusOne()
 Base.:-(::MinusOne) = One()
 
-# Integer powers stay in the singletons too (used by `weyl_factor`'s ``(c_l c_m)^{2-n}``).
+# Integer powers stay in the singletons too.
 Base.:^(::One, ::Integer) = One()
 Base.:^(::MinusOne, p::Integer) = iseven(p) ? One() : MinusOne()
 
