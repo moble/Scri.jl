@@ -46,16 +46,16 @@ null.  This simplicity is what make this tetrad so useful.[^boyle2015]
 The tetrad above is the package's *default*, but various sources in
 the literature use different scaling and phases for the legs.  Three
 of the [convention parameters](@ref "Convention parameters") act
-directly on the tetrad — ``c_l`` (the scale of the ``ℓ`` leg), ``c_m``
-(the spin phase ``Θ`` of ``m``), and ``c_s`` (the signature) — giving
+directly on the tetrad — ``c_l`` (the scale of the ``l`` leg), ``c_m``
+(the scale of the ``m`` leg), and ``c_s`` (the signature) — giving
 the general null tetrad
 
 ```math
 \begin{aligned}
 ℓ^a &= \frac{c_l}{\sqrt{2}}\left(∂ₜ + ∂ᵣ\right)^a, &\qquad
-m^a &= \frac{e^{i c_m}}{r\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)^a, \\
+m^a &= \frac{c_m}{r\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)^a, \\
 n^a &= \frac{1}{c_l\sqrt{2}}\left(∂ₜ - ∂ᵣ\right)^a, &
-\bar m^a &= \frac{e^{-i c_m}}{r\sqrt{2}}\left(∂_θ - \frac{i}{\sin θ}∂_ϕ\right)^a,
+\bar m^a &= \frac{\bar{c_m}}{r\sqrt{2}}\left(∂_θ - \frac{i}{\sin θ}∂_ϕ\right)^a,
 \end{aligned}
 ```
 

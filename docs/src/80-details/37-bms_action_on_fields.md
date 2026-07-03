@@ -307,14 +307,14 @@ parameters"),
 
 ```math
 ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},
-\quad F_n = c_s c_Ψ c_R\,(c_l e^{i c_m})^{2-n};
+\quad F_n = c_s c_Ψ c_R\,(c_l c_m)^{2-n};
 \qquad
 h^{[X]} = F_h\, h^{[\mathrm{SpEC}]},
-\quad F_h = c_s c_h^{-1} e^{-2 i c_m},
+\quad F_h = c_s c_h^{-1} c_m^{-2},
 ```
 
-and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l e^{i
-c_m})^{1-n}``, two legs instead of four) and ``σ`` (``F_σ``, below).  A
+and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l
+c_m)^{1-n}``, two legs instead of four) and ``σ`` (``F_σ``, below).  A
 transform that *stays in* convention ``X`` is the composition
 ``\text{convert } X{→}\mathrm{SpEC}``, then the SpEC law above, then
 ``\text{convert back}``.  Whether a parameter survives that round trip
@@ -326,7 +326,7 @@ depends on whether the law is homogeneous or inhomogeneous.
 ψ_n'^{[X]} = F_n\, ψ_n'^{[\mathrm{SpEC}]}
 = κ^{-3}\sum_k \binom{4-n}{k}\, b^{\,k}\, \frac{F_n}{F_{n+k}}\, ψ_{n+k}^{[X]},
 \qquad
-\frac{F_n}{F_{n+k}} = (c_l e^{i c_m})^{k},
+\frac{F_n}{F_{n+k}} = (c_l c_m)^{k},
 ```
 
 so the overall signs ``c_s c_Ψ c_R`` cancel between numerator and
@@ -334,15 +334,15 @@ denominator and the tower keeps its exact shape with a **rescaled
 parameter**
 
 ```math
-b^{[X]} = c_l\, e^{i c_m}\, b^{[\mathrm{SpEC}]}
-= c_l\, e^{i c_m}\, \frac{ðu'}{2κ},
+b^{[X]} = c_l\, c_m\, b^{[\mathrm{SpEC}]}
+= c_l\, c_m\, \frac{ðu'}{2κ},
 ```
 
 precisely the dyad scaling found on the [tetrad page](@ref
 convention_dependence_tetrad_future).  The Faraday tower behaves
-identically: ``F_{φ,n}/F_{φ,n+k} = (c_l e^{i c_m})^k`` again, and the
+identically: ``F_{φ,n}/F_{φ,n+k} = (c_l c_m)^k`` again, and the
 overall ``c_φ`` cancels.  So **none of ``c_s, c_Ψ, c_R, c_φ`` enters a
-same-convention mixing**; only ``c_l e^{i c_m}`` does, through ``b``.
+same-convention mixing**; only ``c_l c_m`` does, through ``b``.
 
 **Inhomogeneous laws — the shear and strain.**  Here the additive shift
 has nothing to cancel against, so it carries the *full* conversion
@@ -384,7 +384,7 @@ computed with the Newman–Penrose ``ð`` natively (and the supertranslation
 transform requires exactly three convention insertions on top of the
 default computation — and nothing in `mix_components!`:
 
-1. rescale the peeling parameter, ``b → c_l e^{i c_m}\, b`` (drives both
+1. rescale the peeling parameter, ``b → c_l c_m\, b`` (drives both
    the Weyl and Faraday towers);
 2. multiply the shear shift by ``F_σ`` and
 3. the strain shift by ``F_h``.

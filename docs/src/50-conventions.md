@@ -12,13 +12,20 @@ of the Weyl tensor with various elements of the tetrad, ``(l, m,
 not fixed and naturally (even accounting for different letters used to
 represent the elements) different authors choose different
 normalizations for the tetrad elements.  For example, two reasonable
-choices found in the literature require ``l ↔ l\sqrt{2}`` and ``n ↔
-n/\sqrt{2}``, which changes the transformation law for ``ψ₃`` in a
-nontrivial way:
+choices found in the literature require
+
+```math
+\begin{aligned}
+l \qquad &↔ \qquad l\sqrt{2}, \\
+\hphantom{\sqrt{2}}n \qquad &↔ \qquad n/\sqrt{2},
+\end{aligned}
+```
+
+which changes the transformation law for ``ψ₃`` in a nontrivial way:
 
 ```math
 ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} ψ₄\right]
-\quad ↔ \quad
+\qquad ↔ \qquad
 ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} \frac{ψ₄}{\sqrt{2}}\right].
 ```
 
@@ -97,14 +104,14 @@ carries spin weight ``1-n`` (just as ``Ψ_n`` carries ``2-n``), and
 stepping down the tower swaps an ``ℓ``-type dyad slot (``o``) for an
 ``n``-type one (``ι``).  The overall sign is the ``c_φ`` of the
 [convention table](@ref "Convention parameters") below, and —
-paralleling the Weyl conversion ``∝ (c_l e^{i c_m})^{2-n}`` — the
+paralleling the Weyl conversion ``∝ (c_l c_m)^{2-n}`` — the
 inter-convention factor is
 
 ```math
-φ_n^{[X]} = c_φ\, (c_l e^{i c_m})^{1-n}\, φ_n^{[\mathrm{SpEC}]},
+φ_n^{[X]} = c_φ\, (c_l c_m)^{1-n}\, φ_n^{[\mathrm{SpEC}]},
 ```
 
-with the dyad scaling ``c_l e^{i c_m}`` raised to the spin weight
+with the dyad scaling ``c_l c_m`` raised to the spin weight
 ``1-n`` and no Riemann-sign factor (the field strength does not see the
 curvature convention).
 
@@ -192,17 +199,28 @@ of ``c``-parameters (the `Scri.Conventions` struct), following the
 conventions appendix and [Iozzo_2021](@citet).  The defaults reproduce
 the package's native convention.
 
-| parameter | meaning          | default |
-|:----------|:-----------------|:-------:|
-| ``c_s``   | metric signature | ``+1``  |
-| ``c_l``   | ``l``-leg scale  | ``1``   |
-| ``c_m``   | ``m`` spin phase | ``0``   |
-| ``c_R``   | Riemann sign     | ``+1``  |
-| ``c_Ψ``   | Weyl sign        | ``+1``  |
-| ``c_σ``   | shear sign       | ``+1``  |
-| ``c_h``   | strain scale     | ``1``   |
-| ``c_φ``   | Faraday sign     | ``+1``  |
-| ``c_ð``   | eth coefficient  | ``1``   |
+| parameter | meaning               | default |
+|:----------|:----------------------|:-------:|
+| ``c_s``   | metric signature      | ``1``   |
+| ``c_l``   | ``l``-leg scale       | ``1``   |
+| ``c_m``   | ``m``-leg scale       | ``1``   |
+| ``c_R``   | Riemann sign          | ``1``   |
+| ``c_Ψ``   | Weyl sign             | ``1``   |
+| ``c_σ``   | shear sign            | ``1``   |
+| ``c_h``   | strain scale          | ``1``   |
+| ``c_φ``   | Faraday sign          | ``1``   |
+| ``c_ð``   | eth coefficient       | ``1``   |
+| ``c_α``   | time-law sign         | ``1``   |
+
+Note that ``c_m`` is the spin-phase *factor* ``e^{iΘ}`` of the ``m``
+leg, not the angle ``Θ``: a phase of ``Θ = π`` is set with ``c_m =
+-1``.  This keeps the common conventions at exactly ``±1``, which
+`Scri.jl` stores as the type-level singletons `One`/`MinusOne` so that
+a convention factor of ``±1`` compiles away (to at most a negation)
+wherever a convention is used in a formula; ``c_m`` may still be any
+real or complex number for an exotic convention.  ``c_α`` is the sign
+in the time-transformation law ``t′ = κ(t − c_α α)`` (see [The BMS
+group](@ref bms_group)); it is a convention like the others.
 
 Two defaults deserve emphasis.  ``c_s=+1`` is the ``−+++`` signature
 fixed [above](@ref "Metric, curvature, and perturbations"); note that
@@ -216,9 +234,9 @@ Inter-convention conversion of the Weyl components and the strain (from
 the appendix) is
 
 ```math
-ψ_n^{[X]} = c_s c_Ψ c_R\,(c_l e^{i c_m})^{2-n}\, ψ_n^{[\mathrm{SpEC}]},
+ψ_n^{[X]} = c_s c_Ψ c_R\,(c_l c_m)^{2-n}\, ψ_n^{[\mathrm{SpEC}]},
 \qquad
-h^{[X]} = c_s c_h^{-1} e^{-2 i c_m}\, h^{[\mathrm{SpEC}]},
+h^{[X]} = c_s c_h^{-1} c_m^{-2}\, h^{[\mathrm{SpEC}]},
 ```
 
 implemented as `Scri.weyl_factor` / `Scri.convert_weyl` and their
@@ -231,7 +249,7 @@ A *transformation* that stays within one convention is more economical
 than these inter-convention factors suggest: as worked out in ["BMS
 action on fields"](@ref convention_dependence_tetrad_future), the
 overall signs ``c_s, c_Ψ, c_R, c_φ`` cancel out of the (homogeneous)
-peeling towers, leaving only the **dyad scaling ``c_l e^{i c_m}``**,
+peeling towers, leaving only the **dyad scaling ``c_l c_m``**,
 which rescales the mixing parameter ``b``; and the eth coefficient
 ``c_ð`` does not enter a transform at all — it changes only how ``ð``
 and the (geometric) ``b`` and shear shift are *written*, never their
