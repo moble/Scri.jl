@@ -101,11 +101,10 @@ function transform!(
     # This is the boosted or distorted grid.
     Tₚ = promote_type(Rotor{T4}, T3)
     Rₚ = similar(R′ₚ, Tₚ)
-    # `emitted = true` (ℐ⁺) vs `false` (ℐ⁻) selects the past-vs-future-cone direction map;
+    # `εᴵ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map;
     # see the `aberration` docstring and the "Future and past null infinity" conventions.
-    emitted = (Eᴵ == 1)
     Polyester.@batch for i ∈ eachindex(Rₚ)
-        Rₚ[i] = aberration(R * R′ₚ[i], v⃗; emitted)
+        Rₚ[i] = aberration(R * R′ₚ[i], v⃗, Eᴵ)
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
@@ -395,14 +394,17 @@ velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity
 Lorentz(R))`, these parts carry exactly the meaning the `v⃗` and `R` arguments have in the
 main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
 
-The supertranslation-sign convention `εᵅ` is taken from `g`'s own `Eᵅ` type parameter, and
-the null-infinity sign `εᴵ` from `dc` — a `BMS` element is null-infinity-agnostic, while the
-data live on a fixed null infinity.  Returns `(data, t′)`, as the main method does.
+The data live on the null infinity singled out by `dc`'s `εᴵ` type parameter, so `g` is
+first re-expressed in that representation — and with the default supertranslation sign —
+via the [`BMS`](@ref) conversion constructor, which accounts exactly for whatever
+conventions (`Eᵅ`, `Eᴵ`) `g` was constructed with.  Returns `(data, t′)`, as the main
+method does.
 """
 function transform!(
-    data::Array{<:Complex}, t::Vector{<:Real}, g::BMS{Tg,Eᵅ}, dc::DataComponents
-) where {Tg<:Real,Eᵅ}
+    data::Array{<:Complex}, t::Vector{<:Real}, g::BMS, dc::DataComponents{C,Eᴵ}
+) where {C,Eᴵ}
+    gᴵ = BMS(g; εᴵ=Eᴵ)
     return transform!(
-        data, t, boost_velocity(g), frame_rotation(g), supertranslation(g), dc, Eᵅ
+        data, t, boost_velocity(gᴵ), frame_rotation(gᴵ), supertranslation(gᴵ), dc, 1
     )
 end

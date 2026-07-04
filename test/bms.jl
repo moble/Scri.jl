@@ -62,16 +62,19 @@ end
 
     # The metamorphic composition test, repeated on ℐ⁻ (εᴵ = -1): acting with g₂∘g₁ must
     # equal acting with g₁ then g₂, where the reference action is computed from raw geometry
-    # with the antipodal section 𝐤 = (1, -n̂).  This validates that `compose(…; εᴵ=-1)`
-    # threads the ℐ⁻ conformal factor and direction map through correctly, independently of
-    # the derivation.  (The elements are ordinary BMS values; εᴵ is supplied per call.)
+    # with the antipodal section 𝐤 = (1, -n̂).  The elements carry the ℐ⁻ representation as
+    # their `εᴵ` type parameter (attached to the same raw modes the oracle reads), and plain
+    # `compose` must thread the ℐ⁻ conformal factor and direction map through correctly,
+    # independently of the derivation.
     rng = Random.Xoshiro(3141)
+    at_ℐ⁻(g) = Scri.BMS(g.Λ, g.α; εᴵ=-1)
 
     # Rotation-only Lorentz parts: `compose` is exact, so tolerances are tight.
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=3, βmax=0)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
-        h = Scri.compose(g₂, g₁; εᴵ=-1)
+        h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁))
+        @test Scri.εᴵ(h) == -1
         for εᵅ ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)
@@ -88,7 +91,7 @@ end
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-        h = Scri.compose(g₂, g₁; εᴵ=-1, ℓₘₐₓ=12)
+        h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁); ℓₘₐₓ=12)
         for εᵅ ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)

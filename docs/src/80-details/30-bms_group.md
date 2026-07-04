@@ -324,6 +324,106 @@ results in a general supertranslation.
     law, and is exactly the same as the result of the Poincaré
     transformation.
 
+## [Representations of the supertranslation](@id bms_representations)
+
+Strictly speaking, there are *two* BMS groups: ``\text{BMS}⁺`` acting
+on ``ℐ⁺`` and ``\text{BMS}⁻`` acting on ``ℐ⁻``.  They are isomorphic —
+canonically so, under the antipodal matching of [Future and past null
+infinity](@ref scri_pm_conventions) [Strominger_2014,
+Strominger_2017](@cite) — so nothing about the group structure
+distinguishes them; what differs is purely the *representation* of
+elements.  The supertranslation ``α`` is stored as mode weights of a
+function of the labels ``n̂`` on the celestial sphere, and the two
+ends of null infinity are labeled antipodally: at ``ℐ⁺`` a generator
+is labeled by its outgoing propagation direction, while at ``ℐ⁻`` it
+is labeled by the direction in which an observer *sees* it — opposite
+to the propagation.  The same abstract supertranslation therefore has
+two mode representations, related by composition with the antipodal
+map ``A: n̂ ↦ -n̂``:
+
+```math
+α ↦ α ∘ A,
+\qquad
+(α ∘ A)_{ℓ,m} = (-1)^ℓ\, α_{ℓ,m},
+```
+
+since ``Y_{ℓ,m}(-n̂) = (-1)^ℓ\, Y_{ℓ,m}(n̂)``.  The Lorentz part needs
+no such choice — a rotor is representation-neutral — but its
+*realization* as a map of labels does depend on the labeling: on the
+antipodal labels, ``Λ`` acts through the conjugated map ``A ∘ Λ ∘ A``,
+which flips the boost part (``v⃗ ↦ -v⃗``) while leaving rotations
+alone — exactly why the conformal factor and the direction map involve
+the ``ε^ℐ`` sign.
+
+The [`BMS`](@ref) type therefore retains that choice as data — the
+`Eᴵ` type parameter — declaring which labeling the stored modes refer
+to, alongside the analogous supertranslation-sign convention `Eᵅ` (the
+sign with which ``α`` enters the time law ``t' = κ(t - εᵅα)``).  Both
+default to `+1`: future null infinity, and the plus sign.  The
+conversion constructor `BMS(g; εᵅ, εᴵ)` (see [`BMS`](@ref)) converts
+an element between representations — exactly, since both conversions
+are pure sign flips.
+
+Because the twist in the twisted group law,
+
+```math
+α(𝐤) = α₁(𝐤) + α₂(Λ₁𝐤)/κ(Λ₁, 𝐤),
+```
+
+is built from the label map ``Λ₁𝐤`` and the conformal factor — both
+realized on the *labeled* sphere — the coordinates of a composite
+element depend on the representation even though the abstract group
+does not.  To make that precise, write ``∘⁺`` and ``∘⁻`` for the two
+composition laws: each is the formula above, with the label map and
+conformal factor computed from the corresponding section ``𝐤 = (1,
+±n̂)``.  Note that ``κ`` itself needs no such decoration: as defined
+[above](@ref "Lorentz transformations ``ℒ`` and the conformal factor
+``κ``"), it is a single function of ``Λ`` and a null vector — indeed,
+being scale-invariant in ``𝐤``, a function of the null *ray* — and
+the two labelings merely feed it antipodal rays, ``κ(Λ, (1, -n̂))`` on
+``ℐ⁻`` whereas it is ``κ(Λ, (1, +n̂))`` on ``ℐ⁺``.  The same is true
+of the label map.  Now promote the relabeling of ``α`` to a map on
+whole elements,
+
+```math
+\begin{aligned}
+P \colon \text{BMS}⁺ &→ \text{BMS}⁻, \\
+(Λ, α) &↦ (Λ, α ∘ A),
+\end{aligned}
+```
+
+which sends the coordinates of a ``\text{BMS}⁺`` element to the
+coordinates of the matched ``\text{BMS}⁻`` element — and, being an
+involution, back again.  Then the two composition laws are related by
+
+```math
+P(g₂) ∘⁻ P(g₁) = P(g₂ ∘⁺ g₁).
+```
+
+That is, composing the matched elements at ``ℐ⁻`` yields the matched
+composite — precisely the statement that ``P`` is a group isomorphism
+``\text{BMS}⁺ → \text{BMS}⁻``.  Pointwise, the matched element acts
+antipodally: if ``g`` maps ``(t, n̂) ↦ (t', n̂')`` on ``ℐ⁺``, then
+``P(g)`` maps ``(t, -n̂) ↦ (t', -n̂')`` on ``ℐ⁻``.
+
+In the code, all this bookkeeping is handled automatically.  Operations
+that combine two elements ([`compose`](@ref Scri.compose), `==`,
+`isapprox`) accept any mix of conventions, accounting for the
+differences exactly; each convention the two inputs share is kept for
+the result, and each convention on which they disagree is resolved to
+the default `+1`.  Single-element operations — the action functor,
+[`conformal_factor`](@ref Scri.conformal_factor), `inv` — use the
+element's own conventions, and the [`transform!`](@ref) bridge
+re-represents the element to match the null infinity declared by its
+[`DataComponents`](@ref Scri.DataComponents) argument.
+
+Note that the ``ε^ℐ`` relevant to `DataComponents` is conceptually
+distinct from the ``ε^ℐ`` relevant to the BMS element.  It may be
+quite reasonable, for example, to always consider the effect a BMS
+element has on future null infinity, but still be concerned with the
+transformations of data on past null infinity.  This is the reason why
+both `BMS` and `DataComponents` each have their own `εᴵ` parameter.
+
 ## Decomposition of BMS
 
 Essentially by our definition, we have already decomposed

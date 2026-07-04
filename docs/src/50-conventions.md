@@ -356,11 +356,12 @@ shifted by ``γ(1 + v⃗ ⋅ n̂)`` (blueshift toward the direction of
 motion), which is ``κ^{-1}`` at ``ε^ℐ = -1``.  This is the same sign
 difference Penrose and Rindler note at their Eq. (1.3.5), and it is
 the convention implemented throughout this package — in
-[`aberration`](@ref Scri.aberration) (its `emitted` keyword), in the
+[`aberration`](@ref Scri.aberration) (its `εᴵ` argument), in the
 conformal factor used by [`transform!`](@ref), in the ``ε^ℐ`` type
 parameter of [`DataComponents`](@ref Scri.DataComponents) (data live
-on a fixed null infinity), and in the ``ε^ℐ`` argument of the
-[`BMS`](@ref) operations.  Because ``κ`` itself is a spin-0
+on a fixed null infinity), and in the ``ε^ℐ`` representation
+parameter of [`BMS`](@ref) elements (see [Representations of the
+supertranslation](@ref bms_representations)).  Because ``κ`` itself is a spin-0
 (orientation-blind) quantity, the choice also governs the *handedness*
 of the spin-weighted ``ð`` operator that appears in the
 component-mixing law, which is why the Weyl/Faraday peeling tower runs

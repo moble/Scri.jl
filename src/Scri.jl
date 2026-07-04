@@ -8,7 +8,6 @@ import Quaternionic:
     Boost,
     absvec,
     𝐤,
-    value,
     components,
     basetype,
     from_spherical_coordinates,

@@ -12,7 +12,7 @@
     # the rest of its peeling tower set to zero, there is no component mixing, so the law is
     # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - εᴵ v⃗⋅n̂).  We reconstruct that pointwise from the
     # *output* modes and compare against an independent evaluation — pinning the conformal
-    # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `emitted`)
+    # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `εᴵ`)
     # at both null infinities.  At εᴵ = +1 this is also a regression guard for ℐ⁺.
     ℓ = 8
     N = (ℓ + 1)^2
@@ -35,8 +35,7 @@
         Scri.transform!(data, copy(t), v⃗, one(Rotor{Float64}), zeros(ComplexF64, 1), dc)
 
         # Replicate transform!'s rest-frame grid and the expected pixel values.
-        emitted = (εᴵ == 1)
-        Rₚ = [Scri.aberration(R′ₚ, v⃗; emitted) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
+        Rₚ = [Scri.aberration(R′ₚ, v⃗, εᴵ) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
         ψ₂_rest = ₛ𝐘(0, ℓ, Float64, Rₚ) * α0                    # input ψ₂ at rest directions
         κ⁻¹ = [γ * (1 - εᴵ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
         expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)
@@ -83,8 +82,9 @@ end
     )
     @test d_bridge == d_core
 
-    # ℐ⁻: the same element (BMS is null-infinity-agnostic) applied with ℐ⁻ data components,
-    # which carry εᴵ = -1 and the reversed peeling tower (ψ₂ requires ψ₁, ψ₀).
+    # ℐ⁻: the element applied with ℐ⁻ data components, which carry εᴵ = -1 and the
+    # reversed peeling tower (ψ₂ requires ψ₁, ψ₀).  This element has no supertranslation,
+    # so its re-representation to match dc is trivial and the raw parts agree.
     dc⁻ = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; εᴵ=-1)
     d_bridge⁻ = mkdata()
     Scri.transform!(d_bridge⁻, t, g⁺, dc⁻)
@@ -101,6 +101,57 @@ end
 
     # The same element transforms differently on the two null infinities (εᴵ comes from dc).
     @test d_bridge⁻ != d_bridge
+
+    # With a supertranslation carrying odd-ℓ content, the bridge must first re-represent
+    # the ℐ⁺ element in dc's ℐ⁻ labeling (the antipodal mode flip via the `BMS` conversion constructor), so it
+    # agrees with the core method called on the *converted* modes...  The data must be
+    # time-dependent here: a supertranslation only shifts retarded time, so it is invisible
+    # on constant-in-time data.
+    function mktdata()
+        d = zeros(ComplexF64, N, 4, 3)
+        for j ∈ 1:4
+            d[:, j, 1] .= (1 + t[j]) .* α0
+        end
+        return d
+    end
+    parts = (;
+        boost_velocity=v⃗,
+        frame_rotation=R,
+        time_translation=0.5,
+        space_translation=[0.3, -0.2, 0.1],
+    )
+    gˢ = Scri.BMS{Float64}(; parts...)
+    d_bridgeˢ = mktdata()
+    Scri.transform!(d_bridgeˢ, t, gˢ, dc⁻)
+    gᴵ = Scri.BMS(gˢ; εᴵ=-1)
+    d_coreˢ = mktdata()
+    Scri.transform!(
+        d_coreˢ,
+        t,
+        Scri.boost_velocity(gᴵ),
+        Scri.frame_rotation(gᴵ),
+        Scri.supertranslation(gᴵ),
+        dc⁻,
+    )
+    @test d_bridgeˢ == d_coreˢ
+
+    # ...whereas an element already in the ℐ⁻ representation passes its modes through
+    # unchanged — and the two genuinely differ, because the same raw modes mean different
+    # functions in the two labelings.
+    g⁻ = Scri.BMS{Float64}(; parts..., εᴵ=-1)
+    d_bridge⁻ˢ = mktdata()
+    Scri.transform!(d_bridge⁻ˢ, t, g⁻, dc⁻)
+    d_core⁻ˢ = mktdata()
+    Scri.transform!(
+        d_core⁻ˢ,
+        t,
+        Scri.boost_velocity(g⁻),
+        Scri.frame_rotation(g⁻),
+        Scri.supertranslation(g⁻),
+        dc⁻,
+    )
+    @test d_bridge⁻ˢ == d_core⁻ˢ
+    @test d_bridgeˢ != d_bridge⁻ˢ
 end
 
 @testitem "transform!: pure supertranslation pins mixing sign and shear ½" tags = [
