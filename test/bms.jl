@@ -24,12 +24,12 @@
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=3, βmax=0)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
         h = g₂ * g₁
-        for εᵅ ∈ (+1, -1), _ ∈ 1:4
+        for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; εᵅ)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; εᵅ)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; εᵅ)
+            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α)
+            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α)
+            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α)
             @test abs(tₕ - t₂) < 1e-10
             @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
         end
@@ -41,12 +41,12 @@
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         h = Scri.compose(g₂, g₁; ℓₘₐₓ=12)
-        for εᵅ ∈ (+1, -1), _ ∈ 1:4
+        for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; εᵅ)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; εᵅ)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; εᵅ)
+            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α)
+            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α)
+            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α)
             @test abs(tₕ - t₂) < 1e-7
             @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
         end
@@ -60,27 +60,27 @@ end
     using .BMSTestSetup: random_bms, random_direction, act_ref
     using Quaternionic: components
 
-    # The metamorphic composition test, repeated on ℐ⁻ (εᴵ = -1): acting with g₂∘g₁ must
+    # The metamorphic composition test, repeated on ℐ⁻ (ℐ = -1): acting with g₂∘g₁ must
     # equal acting with g₁ then g₂, where the reference action is computed from raw geometry
     # with the antipodal section 𝐤 = (1, -n̂).  The elements carry the ℐ⁻ representation as
-    # their `εᴵ` type parameter (attached to the same raw modes the oracle reads), and plain
+    # their `ℐ` type parameter (attached to the same raw modes the oracle reads), and plain
     # `compose` must thread the ℐ⁻ conformal factor and direction map through correctly,
     # independently of the derivation.
     rng = Random.Xoshiro(3141)
-    at_ℐ⁻(g) = Scri.BMS(g.Λ, g.α; εᴵ=-1)
+    at_ℐ⁻(g) = Scri.BMS(g.Λ, g.α; ℐ=-1)
 
     # Rotation-only Lorentz parts: `compose` is exact, so tolerances are tight.
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=3, βmax=0)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
         h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁))
-        @test Scri.εᴵ(h) == -1
-        for εᵅ ∈ (+1, -1), _ ∈ 1:4
+        @test Scri.ℐ(h) == -1
+        for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; εᵅ, εᴵ=-1)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; εᵅ, εᴵ=-1)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; εᵅ, εᴵ=-1)
+            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α, ℐ=-1)
+            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α, ℐ=-1)
+            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α, ℐ=-1)
             @test abs(tₕ - t₂) < 1e-10
             @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
         end
@@ -92,12 +92,12 @@ end
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁); ℓₘₐₓ=12)
-        for εᵅ ∈ (+1, -1), _ ∈ 1:4
+        for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; εᵅ, εᴵ=-1)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; εᵅ, εᴵ=-1)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; εᵅ, εᴵ=-1)
+            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α, ℐ=-1)
+            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α, ℐ=-1)
+            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α, ℐ=-1)
             @test abs(tₕ - t₂) < 1e-7
             @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
         end

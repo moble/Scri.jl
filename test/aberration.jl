@@ -11,8 +11,8 @@ end
     # and needs a Taylor branch where the angle formulas are ill-conditioned.  That
     # completely different structure is what makes it a genuinely independent check.
     #
-    # The `emitted` keyword corresponds to the primary implementation's `εᴵ` argument:
-    # `emitted = true` ⟺ `εᴵ = +1` (ℐ⁺), `emitted = false` ⟺ `εᴵ = -1` (ℐ⁻).
+    # The `emitted` keyword corresponds to the primary implementation's `ℐ` argument:
+    # `emitted = true` ⟺ `ℐ = +1` (ℐ⁺), `emitted = false` ⟺ `ℐ = -1` (ℐ⁻).
     using Quaternionic: Rotor, QuatVec, 𝐤, absvec, basetype, value
 
     function aberration(RRₚᵢ, v⃗; emitted::Bool=true)
@@ -104,7 +104,7 @@ end
     # the oracle works with explicit angles on the sphere.  The two derivations are
     # entirely independent, so agreement pins down both the direction map and — because
     # we compare full rotors, not just directions — the tangent-frame (spin-phase) part
-    # of the transformation, for both signs of εᴵ.  Both implementations are continuous
+    # of the transformation, for both signs of ℐ.  Both implementations are continuous
     # in β and agree exactly at β = 0, so there is no double-cover sign ambiguity: any
     # sign flip would be a real discrepancy, not test noise.
     rng = Xoshiro(42)
@@ -114,14 +114,14 @@ end
         return v / absvec(v)
     end
 
-    for T ∈ FloatTypes, εᴵ ∈ (-1, +1)
+    for T ∈ FloatTypes, ℐ ∈ (-1, +1)
         ϵ = eps(T)
-        emitted = (εᴵ == 1)
+        emitted = (ℐ == 1)
         rotors = [randrotor(T) for _ ∈ 1:5]
         for β ∈ T.([1e-8, 1e-3, 0.1, 0.5, 0.9, 0.99])
             v⃗ = β * randdirection(T)
             for R ∈ rotors
-                @test components(Scri.aberration(R, v⃗, εᴵ)) ≈
+                @test components(Scri.aberration(R, v⃗, ℐ)) ≈
                     components(AberrationOracle.aberration(R, v⃗; emitted)) atol = 50eps(T)
             end
         end
@@ -138,32 +138,32 @@ end
             oracle = AberrationOracle.aberration(
                 Rotor{BigFloat}(R), QuatVec{BigFloat}(v⃗); emitted
             )
-            @test components(Scri.aberration(R, v⃗, εᴵ)) ≈ T.(components(oracle)) atol = 50ϵ
+            @test components(Scri.aberration(R, v⃗, ℐ)) ≈ T.(components(oracle)) atol = 50ϵ
         end
     end
 end
 
-@testitem "aberration: geometric sign — equatorial pixel: cosΘ = εᴵβ" tags = [
+@testitem "aberration: geometric sign — equatorial pixel: cosΘ = ℐβ" tags = [
     :unit, :validation, :fast
 ] setup = [AberrationSetup] begin
     import Quaternionic: Rotor, QuatVec, 𝐤
     using .AberrationSetup: FloatTypes
 
     # R maps 𝐤 → 𝐢: rotation by π/2 about y.  This is an equatorial pixel (Θ̑ = π/2) for
-    # a z-axis boost.  Setting cosΘ′ = 0 in the aberration formula gives cosΘ = εᴵβ exactly:
-    # εᴵ = +1 (ℐ⁺): rest-frame direction is in the northern hemisphere (cosΘ = +β).
-    # εᴵ = -1 (ℐ⁻): rest-frame direction is in the southern hemisphere (cosΘ = -β).
-    for T ∈ FloatTypes, εᴵ ∈ (-1, +1)
+    # a z-axis boost.  Setting cosΘ′ = 0 in the aberration formula gives cosΘ = ℐβ exactly:
+    # ℐ = +1 (ℐ⁺): rest-frame direction is in the northern hemisphere (cosΘ = +β).
+    # ℐ = -1 (ℐ⁻): rest-frame direction is in the southern hemisphere (cosΘ = -β).
+    for T ∈ FloatTypes, ℐ ∈ (-1, +1)
         let π = T(π)
             R = Rotor(cos(π/4), 0, sin(π/4), 0)
             for β ∈ T.([0.1, 0.3, 0.5, 0.7, 0.9])
                 v⃗ = QuatVec(0, 0, β)
-                R_rest = Scri.aberration(R, v⃗, εᴵ)
+                R_rest = Scri.aberration(R, v⃗, ℐ)
                 n̂_rest = R_rest(𝐤)
                 # For pure vectors p, q: (p*q).w = −(p·q), so n̂_rest · ẑ = −(n̂_rest * 𝐤).w.
                 cos_Θ = -(n̂_rest * 𝐤).w
-                @test cos_Θ ≈ εᴵ * β atol = 4eps(T)
-                @test εᴵ * cos_Θ > 0  # εᴵ=+1: northern; εᴵ=-1: southern hemisphere
+                @test cos_Θ ≈ ℐ * β atol = 4eps(T)
+                @test ℐ * cos_Θ > 0  # ℐ=+1: northern; ℐ=-1: southern hemisphere
             end
         end
     end
@@ -175,7 +175,7 @@ end
     import Quaternionic: Rotor, QuatVec, 𝐤, absvec, components, ×̂
     using .AberrationSetup: FloatTypes
 
-    # boosted_rotor(v⃗, R) is an alternative implementation of the εᴵ = -1 direction:
+    # boosted_rotor(v⃗, R) is an alternative implementation of the ℐ = -1 direction:
     # it uses acos+exp(φ) explicitly, so it cross-validates the numerics of aberration
     # at a slightly looser tolerance.
     function boosted_rotor(v⃗, R)
@@ -207,9 +207,9 @@ end
                 # ℐ⁺ and ℐ⁻ are mutual inverses in both directions: the two differ only by
                 # v⃗ → -v⃗, and K(B(-v⃗) K(B(v⃗) R)) = R by uniqueness of the Iwasawa
                 # decomposition (B(-v⃗) cancels B(v⃗) and the leftover AN factor is absorbed).
-                for εᴵ ∈ (-1, +1)
-                    R_first = Scri.aberration(R, v⃗, εᴵ)
-                    @test components(Scri.aberration(R_first, v⃗, -εᴵ)) ≈ components(R) atol =
+                for ℐ ∈ (-1, +1)
+                    R_first = Scri.aberration(R, v⃗, ℐ)
+                    @test components(Scri.aberration(R_first, v⃗, -ℐ)) ≈ components(R) atol =
                         4eps(T)
                 end
             end
@@ -253,15 +253,15 @@ end
     # regime the old branch existed for — tiny β, and pixels at or near the poles.  All
     # inputs are exactly representable at Float64, so the BigFloat evaluation is the same
     # mathematical function at higher precision.
-    for εᴵ ∈ (-1, +1),
+    for ℐ ∈ (-1, +1),
         β64 ∈ [1e-18, sqrt(eps(Float64)), cbrt(eps(Float64)), 1e-3],
         θ64 ∈ [0.0, 1e-8, 1e-4, 0.5, π/2]  # pixel angle from the boost (z) axis
 
         θ = BigFloat(θ64)
         R_big = Rotor(cos(θ / 2), sin(θ / 2), 0, 0)
         v⃗_big = QuatVec(zero(BigFloat), 0, BigFloat(β64))
-        result_big = Scri.aberration(R_big, v⃗_big, εᴵ)
-        result_f64 = Scri.aberration(Rotor{Float64}(R_big), QuatVec{Float64}(v⃗_big), εᴵ)
+        result_big = Scri.aberration(R_big, v⃗_big, ℐ)
+        result_f64 = Scri.aberration(Rotor{Float64}(R_big), QuatVec{Float64}(v⃗_big), ℐ)
         @test components(Rotor{Float64}(result_big)) ≈ components(result_f64) atol = 4eps()
     end
 end

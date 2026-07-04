@@ -199,28 +199,28 @@ already-extracted weight and phase set aside,
 with ``D`` the covariant derivative on the cut.  This last term — a
 derivative of the *coefficient* ``b``, not of a tetrad leg — carries
 the entire inhomogeneity.  It is cleanest for a pure supertranslation
-(``κ = 1``, ``γ = 0``), where ``b = ðu'/2`` with ``u' = u - εᵅ α``.
+(``κ = 1``, ``γ = 0``), where ``b = ðu'/2`` with ``u' = u - c_α α``.
 The ``u``-derivative of ``b`` then drops out (``∂_u u'`` is angle-only,
 so ``∂_u b = \tfrac12 ð(∂_u u') = 0``, leaving only the homogeneous
 transport in a general element), and the screen term ``b\,m̄̃_b`` is the
-dyad gradient of the cut displacement ``-εᵅ α``.  Contracting the
+dyad gradient of the cut displacement ``-c_α α``.  Contracting the
 remaining derivative twice into ``m̃`` turns it into the screen Hessian
 of that displacement,
 
 ```math
 - c_σ\, m̃^a m̃^b D_a\big(b\,m̄̃_b\big)
-= - c_σ\, m̃^A m̃^B D_A D_B(-εᵅ α)
-= c_σ\,εᵅ\,\tfrac12 ð^2 α,
+= - c_σ\, m̃^A m̃^B D_A D_B(-c_α α)
+= c_σ\,c_α\,\tfrac12 ð^2 α,
 ```
 
 by the identity above.  A general element merely reinstates the boost
-and spin already pulled out front, so at the defaults ``c_σ = εᵅ = 1``
+and spin already pulled out front, so at the defaults ``c_σ = c_α = 1``
 
 ```math
 σ' = κ^{-1}\left(σ + \tfrac12 ð^2 α\right).
 ```
 
-The convention constant ``c_σ`` and the orientation sign ``εᵅ`` ride
+The convention constant ``c_σ`` and the orientation sign ``c_α`` ride
 along untouched — the former through [``F_σ``](@ref "Convention
 dependence"), the latter through the [orientation of
 ``ℐ``](@ref scri_pm_conventions), which is what flips the sign of the
@@ -281,7 +281,7 @@ only because ``\bar b`` *lowers* spin:
 so ``ψ_0' = κ^{-3}ψ_0`` and ``ψ_4' = κ^{-3}(ψ_4 + 4\bar b\,ψ_3 +
 6\bar b^2 ψ_2 + 4\bar b^3 ψ_1 + \bar b^4 ψ_0)``.  The Faraday tower
 reverses the same way (``φ_0`` unmixed, parameter ``\bar b``).  These
-reproduce the ``Eᴵ = -1`` branch of `Scri.mix_components!` — which
+reproduce the ``I = -1`` branch of `Scri.mix_components!` — which
 applies ``conj(ðt′╱2κ)`` — term for term.
 
 The shear and strain keep the ``½`` and flip the sign of the
@@ -297,13 +297,13 @@ h' = κ^{-1}\left(h - \tfrac12 ð̄^2 α\right),
 
 again matching the code.  The news is unchanged, ``N' = κ^{-2}N``.
 
-## Convention dependence
+## [Convention dependence](@id convention_dependence_fields)
 
 The laws above are written in the package's default ([SpEC +
 Newman–Penrose ``ð``](@ref "Convention parameters")) convention.  Data
 in another convention ``X`` relates to the SpEC data by the
 per-component factors of the [conventions page](@ref "Convention
-parameters"),
+parameters") — all in **export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
 
 ```math
 ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},
@@ -344,6 +344,19 @@ identically: ``F_{φ,n}/F_{φ,n+k} = (c_l c_m)^k`` again, and the
 overall ``c_φ`` cancels.  So **none of ``c_s, c_Ψ, c_R, c_φ`` enters a
 same-convention mixing**; only ``c_l c_m`` does, through ``b``.
 
+On ``ℐ⁻`` the tower mixes *downward* (the parameter is ``\bar b =
+ð̄v'/2κ``, multiplying ``ψ_{n-k}`` into ``ψ_n``), so the factor ratio
+inverts: ``F_n/F_{n-k} = (c_l c_m)^{-k}``, and
+
+```math
+\bar b^{[X]} = \frac{\bar b^{[\mathrm{SpEC}]}}{c_l\, c_m}.
+```
+
+Equivalently, from the tetrad: the ``ℐ⁻`` case mixes the ``l̃`` leg
+into ``m̄̃``, and ``c̄_m/c_l = 1/(c_l c_m)`` for real ``c_l`` and
+unit-modulus ``c_m``.  Note this is *not* the conjugate of the ``ℐ⁺``
+factor — conjugating ``c_l c_m`` would leave ``c_l`` upstairs.
+
 **Inhomogeneous laws — the shear and strain.**  Here the additive shift
 has nothing to cancel against, so it carries the *full* conversion
 factor:
@@ -357,22 +370,38 @@ h'^{[X]} = κ^{-1}\!\left(h^{[X]} + F_h\,\tfrac12 ð̄^2 α\right).
 
 The homogeneous piece ``σ^{[X]}`` rides through untouched, but the
 inhomogeneous ``\tfrac12 ð^2 α`` is multiplied by ``F_σ`` (resp.
-``F_h``).  From ``σ = -c_σ\,m^a m^b ∇_a l_b``, rescaling the two ``m``
-legs (``e^{2 i c_m}``) and the ``ℓ`` leg (``c_l``) gives
+``F_h``).  From ``σ = -c_σ\,m^a m^b ∇_a l_b``: the defining relations
+fix ``l_a`` and ``m_a`` as *one-forms* (``l_a^{[X]} = c_l l_a``,
+``m_a^{[X]} = c_m m_a``), so the two raised ``m`` indices each carry an
+inverse metric, ``m^{a\,[X]} = c_s c_m m^a``, and the ``c_s`` factors
+square away:
 
 ```math
-F_σ = c_σ\, c_l\, e^{2 i c_m}\quad(\times\, c_s?),
+F_σ = c_σ\,(c_s c_m)^2\, c_l = c_σ\, c_l\, c_m^2
+\quad\text{on } ℐ⁺.
 ```
 
-where the signature contribution is flagged because it depends on the
-index placement in ``∇_a l_b`` (this is one of the
-[open items](@ref "Convention parameters") to confirm against the
-appendix).  Note ``F_σ`` carries ``c_l`` (``σ`` is built from the ``ℓ``
+There is **no** ``c_s`` — this resolves the flag formerly noted here:
+any scalar built from an even number of metric contractions is
+signature-blind.  On ``ℐ⁻`` the radiative shear is built from the ``n``
+leg instead (the ``λ̄``-type coefficient ``m^a m^b ∇_a n_b``, still
+spin weight ``+2``), so the ``c_l`` inverts:
+
+```math
+F_σ = c_σ\, c_m^2 / c_l
+\quad\text{on } ℐ⁻.
+```
+
+Note ``F_σ`` carries ``c_l^{±1}`` (``σ`` is built from a real null
 leg) while ``F_h`` does **not** (the strain comes from the metric
-perturbation, with no ``ℓ`` leg) — the two spin-weight-conjugate
-objects scale differently.  The news, being ``∂_u`` of the strain with
-its inhomogeneous part annihilated, transforms homogeneously and so is
-convention-independent up to its ``κ^{-2}`` weight.
+perturbation, with no ``ℓ`` or ``n`` leg) — the two
+spin-weight-conjugate objects scale differently, which is why the code
+keeps their shifts as separate precomputed arguments.  The news, being
+``∂_u`` of the strain with its inhomogeneous part annihilated,
+transforms homogeneously and so is convention-independent up to its
+``κ^{-2}`` weight; its *conversion* factor is exactly the strain's,
+``F_N = F_h``, because ``N = ∂_u h`` and the coordinates (including
+``u``) are shared by every convention.
 
 **The eth coefficient ``c_ð`` does not appear.**  The geometric ``b``
 and the geometric shift ``\tfrac12 ð^2 α = m̃^A m̃^B D_A D_B α`` are
@@ -380,14 +409,29 @@ computed with the Newman–Penrose ``ð`` natively (and the supertranslation
 ``α`` is just a function on the sphere); ``c_ð`` only changes how those
 *same* quantities would be *written* in another eth normalization.
 
-**What the code needs.**  Collecting the survivors, a same-convention
+**What the code does.**  Collecting the survivors, a same-convention
 transform requires exactly three convention insertions on top of the
-default computation — and nothing in `mix_components!`:
+default computation — and nothing in `mix_components!`, which stays
+convention-free.  All three are applied in `transform!`'s precompute
+stage, reading the `Conventions` carried by the `DataComponents`
+descriptor:
 
-1. rescale the peeling parameter, ``b → c_l c_m\, b`` (drives both
-   the Weyl and Faraday towers);
-2. multiply the shear shift by ``F_σ`` and
-3. the strain shift by ``F_h``.
+1. the peeling parameter is rescaled by `Scri.dyad_factor` — ``b → c_l
+   c_m\, b`` on ``ℐ⁺``, ``\bar b → \bar b/(c_l c_m)`` on ``ℐ⁻`` (as a
+   code detail, `mix_components!` conjugates its argument internally
+   on ``ℐ⁻``, so the factor applied upstream is
+   ``\overline{1/(c_l c_m)}``) — driving both the Weyl and Faraday
+   towers;
+2. the shear shift passed to `mix_components!` is ``F_σ\,ð^2α/2`` with
+   ``F_σ`` from `Scri.shear_factor` (which takes ``ℐ`` for the
+   ``c_l^{±1}``); and
+3. the strain shift is ``F_h\,ð̄^2α/2`` with ``F_h`` from
+   `Scri.strain_factor`.
 
-At the defaults ``c_l = 1, c_m = 0, c_σ = c_s = 1, c_h = 1`` every
-factor is unity and the laws reduce to those above.
+The time-law sign is likewise read from the conventions: ``c_α`` is
+folded into ``α`` up front, exactly as the former `c_α` argument was.
+At the defaults ``c_l = 1, c_m = 1, c_σ = c_s = 1, c_h = 1, c_α = 1``
+every factor is the `One` singleton, and the insertions compile away
+to the laws above.  Conversion *between* conventions — the full
+``F``-factors, not just the transform survivors — is `Scri.represent!`,
+built on `Scri.conversion_factor`.

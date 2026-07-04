@@ -101,6 +101,9 @@ Base.convert(::Type{T}, ::One) where {T<:Number} = one(T)
 Base.convert(::Type{T}, ::MinusOne) where {T<:Number} = -one(T)
 Base.promote_rule(::Type{<:SignSingleton}, ::Type{T}) where {T<:Number} = T
 
+# Broadcast as a scalar (e.g. `A .*= f` where `f` may be a sign singleton).
+Base.broadcastable(x::SignSingleton) = Ref(x)
+
 Base.show(io::IO, ::One) = print(io, "One()")
 Base.show(io::IO, ::MinusOne) = print(io, "MinusOne()")
 

@@ -100,7 +100,7 @@ must be expressible as a linear combination of ``m̃``, ``m̄̃``, and
 transformations to determine the coefficients in this expansion:
 
 ```math
-u' = κ(θ, ϕ) \left[u - εᵅα(θ, ϕ)\right], \qquad
+u' = κ(θ, ϕ) \left[u - c_αα(θ, ϕ)\right], \qquad
 θ' = θ'(θ, ϕ), \qquad
 ϕ' = ϕ'(θ, ϕ).
 ```
@@ -124,7 +124,7 @@ ñ'(u) &= a ñ(u) + b m̃(u) + b̄ m̄̃(u) \\
 \end{aligned}
 ```
 
-But since ``u = u' / κ + εᵅα``, we know that ``ñ'(u) = \sqrt{2} /
+But since ``u = u' / κ + c_αα``, we know that ``ñ'(u) = \sqrt{2} /
 κ``, so we have ``a = 1/κ``.  We can similarly apply both sides to
 ``θ`` and ``ϕ`` to determine that ``b = b̄ = 0``, so that
 
@@ -331,7 +331,7 @@ transverse — the opposite of ``ℐ⁺``.  The BMS action keeps the same
 shape,
 
 ```math
-v' = κ(θ, ϕ)\left[v - εᵅ α(θ, ϕ)\right],
+v' = κ(θ, ϕ)\left[v - c_α α(θ, ϕ)\right],
 \qquad
 κ = \frac{1}{γ(1 + v⃗ ⋅ n̂)},
 ```
@@ -341,7 +341,7 @@ with two points of convention worth flagging:
 - **Antipodal labeling.**  Following [PenroseRindler_1984](@citet),
   ``ℐ⁻`` is labeled by the observer's past light cone — the directions
   radiation *arrives from* — so its section is ``𝐧 = (1, -n̂)``,
-  antipodal to ``ℐ⁺``.  This is the single sign ``εᴵ = -1``, and it is
+  antipodal to ``ℐ⁺``.  This is the single sign ``ℐ = -1``, and it is
   why ``κ`` includes ``1 + v⃗⋅n̂`` rather than ``1 - v⃗⋅n̂`` (see
   [Future and past null infinity](@ref scri_pm_conventions)).
 - **Same uniform weight.**  The conformal frames still satisfy ``ĝ' =

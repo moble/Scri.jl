@@ -27,6 +27,23 @@
     @test dc isa DataComponents{(:ψ₄, :σ)}
 end
 
+@testitem "DataComponents: carries its Conventions" tags = [:unit, :fast] begin
+    import Scri: DataComponents, Conventions
+
+    # Defaults to the package-native conventions, stored as compile-time singletons.
+    dc = DataComponents(:ψ₄, :σ)
+    @test dc.conventions === Conventions()
+
+    # A non-default convention travels with the descriptor (and its type).
+    X = Conventions(:MB)
+    dcX = DataComponents(:ψ₄, :σ; conventions=X)
+    @test dcX.conventions === X
+    @test dcX isa DataComponents{(:ψ₄, :σ),1,typeof(X)}
+
+    # The string-parsing constructor threads it through too.
+    @test DataComponents("psi4", "sigma"; conventions=X).conventions === X
+end
+
 @testitem "DataComponents: hierarchy violations are rejected" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
@@ -136,7 +153,7 @@ end
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
-        Scri.mix_components!(data, 1.0, 0.0 + 0im, 0.0 + 0im, dc)
+        Scri.mix_components!(data, 1.0, 0.0 + 0im, 0.0 + 0im, 0.0 + 0im, dc)
         @test data == orig
     end
 end
@@ -154,7 +171,7 @@ end
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
         κ⁻¹ = 0.4 + 0.3 * randn(rng)
-        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, 0.0 + 0im, 0.0 + 0im, dc)
         for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ κ⁻¹^3 * orig[i]
@@ -180,7 +197,7 @@ end
         z = randn(rng, ComplexF64)
         f = randn(rng, ComplexF64)   # ðt′╱2κ
         data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
-        Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
+        Scri.mix_components!(data, 1.0, f, 0.0 + 0im, 0.0 + 0im, dc)
         for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ f^exp * z atol = 4eps(Float64) * abs(f)^exp * abs(z)
@@ -199,18 +216,21 @@ end
     κ⁻¹ = 2.0
     f = 3.0 + 2.0im
     data = ones(ComplexF64, 5)
-    Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, dc)
+    Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, 0.0 + 0im, dc)
     for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
         i = Scri.component_index(dc, Val(s))
         @test data[i] ≈ κ⁻¹^3 * (1 + f)^exp
     end
 end
 
-@testitem "mix_components!: σ and h shift by ð²α and its conjugate" tags = [:unit, :fast] begin
+@testitem "mix_components!: σ and h shift by the precomputed σshift and hshift" tags = [
+    :unit, :fast
+] begin
     import Random
     import Scri: DataComponents
 
-    # σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
+    # σ' = κ⁻¹·(σ + σshift),  h' = κ⁻¹·(h + hshift), where the caller precomputes
+    # σshift = F_σ·ð²α/2 and hshift = F_h·conj(ð²α)/2 (with F_σ = F_h = 1 natively).
     rng = Random.Xoshiro(99)
     dc = DataComponents(:σ, :h)
     for _ ∈ 1:8
@@ -219,10 +239,49 @@ end
         κ⁻¹ = 0.5 + randn(rng)
         ð²α = randn(rng, ComplexF64)
         data = ComplexF64[σ_v, h_v]
-        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α / 2, conj(ð²α) / 2, dc)
         @test data[1] ≈ κ⁻¹ * (σ_v + ð²α / 2)
         @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α) / 2)
     end
+end
+
+# ── represent! ────────────────────────────────────────────────────────────────
+
+@testitem "represent!: identity, factors, and round trips" tags = [:unit, :fast] begin
+    import Random
+    import Scri: DataComponents, Conventions, One, conversion_factor, represent!
+
+    rng = Random.Xoshiro(3)
+    comps = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+    X = Conventions(; c_s=-1, c_Ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    Y = Conventions(:MB)
+
+    for ℐ ∈ (+1, -1)
+        dcS = DataComponents(comps...; ℐ)
+        data = randn(rng, ComplexF64, 9, 3, length(comps))
+        orig = copy(data)
+
+        # SXS → SXS is an exact no-op (every factor ratio is One()).
+        d, dc′ = represent!(copy(data), dcS, Conventions())
+        @test d == orig
+        @test dc′ === dcS
+
+        # SXS → X multiplies each component slice by its conversion factor.
+        d, dcX = represent!(copy(data), dcS, X)
+        @test dcX.conventions === X
+        for (k, S) ∈ enumerate(comps)
+            @test d[:, :, k] ≈ conversion_factor(X, Val(S), ℐ) .* orig[:, :, k]
+        end
+
+        # Round trip X → Y → X is the identity to roundoff.
+        dY, dcY = represent!(copy(d), dcX, Y)
+        dX, _ = represent!(dY, dcY, X)
+        @test dX ≈ d rtol = 4eps(Float64)
+    end
+
+    # Component-count mismatch is caught.
+    dc2 = DataComponents(:ψ₄, :h)
+    @test_throws AssertionError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
 end
 
 @testitem "mix_components!: News scales by κ⁻² with no mixing" tags = [:unit, :fast] begin
@@ -235,7 +294,14 @@ end
         news = randn(rng, ComplexF64)
         κ⁻¹ = 0.5 + randn(rng)
         data = ComplexF64[news]
-        Scri.mix_components!(data, κ⁻¹, randn(rng, ComplexF64), randn(rng, ComplexF64), dc)
+        Scri.mix_components!(
+            data,
+            κ⁻¹,
+            randn(rng, ComplexF64),
+            randn(rng, ComplexF64),
+            randn(rng, ComplexF64),
+            dc,
+        )
         @test data[1] ≈ κ⁻¹^2 * news
     end
 end

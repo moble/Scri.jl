@@ -63,7 +63,7 @@ with inner products ``ℓ ⋅ n = -c_s`` and ``m ⋅ \bar m = c_s`` (all
 others zero).  The ``n`` leg include ``1/c_l`` precisely so that ``ℓ ⋅
 n`` is preserved under the rescaling, and ``c_s = +1`` is the ``-+++``
 signature (the inner products take their familiar values ``-1`` and
-``+1``).  The defaults ``c_l = 1``, ``c_m = 0``, ``c_s = +1`` recover
+``+1``).  The defaults ``c_l = 1``, ``c_m = 1``, ``c_s = +1`` recover
 the standard tetrad above, which is what `Scri.jl` uses by default; we
 write the explicit forms with the defaults below, reinstating ``c_l,
 c_m, c_s`` only where they survive into a transformation law (see

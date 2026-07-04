@@ -49,16 +49,22 @@ function parse_data_component(s::AbstractString)
 end
 
 """
-    DataComponents{C, εᴵ}
+    DataComponents{C, ℐ, V}
 
 Encodes a fixed set of waveform data components at the type level.  `C` is an
 `NTuple{N,Symbol}` whose elements are drawn from `ValidDataComponents`:
 
     $ValidDataComponents
 
-The parameter `εᴵ` is the sign of the time direction for which these components are defined:
+The parameter `ℐ` is the sign of the time direction for which these components are defined:
 `+1` for ``ℐ⁺`` (outgoing) and `-1` for ``ℐ⁻`` (incoming).  The default value is `+1`, since
 most applications will be for ``ℐ⁺``.
+
+The `conventions` field (of type `V<:Conventions`) records which convention the component
+data are expressed in; it defaults to `Conventions()`, the package-native SXS conventions.
+The conventions travel with the data descriptor — [`transform!`](@ref) applies the
+transformation laws *native to that convention*, and [`represent!`](@ref) converts data
+between conventions.
 
 The inputs may alternatively be strings; any reasonable spelling will be parsed into the
 canonical symbol form.  For example, `DataComponents("Psi_3", "psi4", "sigma")` will be
@@ -71,39 +77,48 @@ Examples:
     DataComponents(:ψ₄, :ψ₃, :ψ₂)                # top three Weyl components
     DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)  # full Weyl set with strain
     DataComponents(:φ₀, :φ₁, :φ₂)                # Faraday components
-    DataComponents(:φ₀, :φ₁, :φ₂; εᴵ=-1)         # Faraday components on ℐ⁻
+    DataComponents(:φ₀, :φ₁, :φ₂; ℐ=-1)         # Faraday components on ℐ⁻
+    DataComponents(:ψ₄, :h; conventions=Conventions(:MB))  # data in the MB convention
 """
-struct DataComponents{C,Eᴵ}
-    function DataComponents(c₁::Symbol, cs::Symbol...; εᴵ=1)
+struct DataComponents{C,I,V<:Conventions}
+    conventions::V
+    function DataComponents(
+        c₁::Symbol, cs::Symbol...; ℐ=1, conventions::Conventions=Conventions()
+    )
         components = (c₁, cs...)
-        validate_data_components(components, εᴵ)
-        return new{components,εᴵ}()
+        validate_data_components(components, ℐ)
+        return new{components,ℐ,typeof(conventions)}(conventions)
     end
-    function DataComponents(c₁::AbstractString, cs::AbstractString...; εᴵ=1)
-        return DataComponents(map(parse_data_component, (c₁, cs...))...; εᴵ)
+    function DataComponents(
+        c₁::AbstractString,  # Keep one argument explicit to avoid ambiguities with 0 args
+        cs::AbstractString...;
+        ℐ=1,
+        conventions::Conventions=Conventions(),
+    )
+        return DataComponents(map(parse_data_component, (c₁, cs...))...; ℐ, conventions)
     end
 end
 
-function validate_data_components(cs, εᴵ)
+function validate_data_components(cs, ℐ)
     @assert all(c -> c ∈ ValidDataComponents, cs) "" *
         "Invalid component in $cs; allowed: $ValidDataComponents"
     @assert length(Set(cs)) == length(cs) "Duplicate components in $cs"
-    if εᴵ == 1
-        :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (εᴵ=+1)"
-        :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (εᴵ=+1)"
-        :ψ₂ ∈ cs && @assert :ψ₃ ∈ cs "ψ₂ requires ψ₃ on ℐ⁺ (εᴵ=+1)"
-        :ψ₃ ∈ cs && @assert :ψ₄ ∈ cs "ψ₃ requires ψ₄ on ℐ⁺ (εᴵ=+1)"
-        :φ₀ ∈ cs && @assert :φ₁ ∈ cs "φ₀ requires φ₁ on ℐ⁺ (εᴵ=+1)"
-        :φ₁ ∈ cs && @assert :φ₂ ∈ cs "φ₁ requires φ₂ on ℐ⁺ (εᴵ=+1)"
-    elseif εᴵ == -1
-        :ψ₄ ∈ cs && @assert :ψ₃ ∈ cs "ψ₄ requires ψ₃ on ℐ⁻ (εᴵ=-1)"
-        :ψ₃ ∈ cs && @assert :ψ₂ ∈ cs "ψ₃ requires ψ₂ on ℐ⁻ (εᴵ=-1)"
-        :ψ₂ ∈ cs && @assert :ψ₁ ∈ cs "ψ₂ requires ψ₁ on ℐ⁻ (εᴵ=-1)"
-        :ψ₁ ∈ cs && @assert :ψ₀ ∈ cs "ψ₁ requires ψ₀ on ℐ⁻ (εᴵ=-1)"
-        :φ₂ ∈ cs && @assert :φ₁ ∈ cs "φ₂ requires φ₁ on ℐ⁻ (εᴵ=-1)"
-        :φ₁ ∈ cs && @assert :φ₀ ∈ cs "φ₁ requires φ₀ on ℐ⁻ (εᴵ=-1)"
+    if ℐ == 1
+        :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (ℐ=+1)"
+        :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (ℐ=+1)"
+        :ψ₂ ∈ cs && @assert :ψ₃ ∈ cs "ψ₂ requires ψ₃ on ℐ⁺ (ℐ=+1)"
+        :ψ₃ ∈ cs && @assert :ψ₄ ∈ cs "ψ₃ requires ψ₄ on ℐ⁺ (ℐ=+1)"
+        :φ₀ ∈ cs && @assert :φ₁ ∈ cs "φ₀ requires φ₁ on ℐ⁺ (ℐ=+1)"
+        :φ₁ ∈ cs && @assert :φ₂ ∈ cs "φ₁ requires φ₂ on ℐ⁺ (ℐ=+1)"
+    elseif ℐ == -1
+        :ψ₄ ∈ cs && @assert :ψ₃ ∈ cs "ψ₄ requires ψ₃ on ℐ⁻ (ℐ=-1)"
+        :ψ₃ ∈ cs && @assert :ψ₂ ∈ cs "ψ₃ requires ψ₂ on ℐ⁻ (ℐ=-1)"
+        :ψ₂ ∈ cs && @assert :ψ₁ ∈ cs "ψ₂ requires ψ₁ on ℐ⁻ (ℐ=-1)"
+        :ψ₁ ∈ cs && @assert :ψ₀ ∈ cs "ψ₁ requires ψ₀ on ℐ⁻ (ℐ=-1)"
+        :φ₂ ∈ cs && @assert :φ₁ ∈ cs "φ₂ requires φ₁ on ℐ⁻ (ℐ=-1)"
+        :φ₁ ∈ cs && @assert :φ₀ ∈ cs "φ₁ requires φ₀ on ℐ⁻ (ℐ=-1)"
     else
-        throw(ArgumentError("Invalid εᴵ = $εᴵ; must be ±1"))
+        throw(ArgumentError("Invalid ℐ = $ℐ; must be ±1"))
     end
 end
 
@@ -188,14 +203,25 @@ conformal_weight(::Val{:φ₁}) = -2
 conformal_weight(::Val{:φ₂}) = -2
 
 """
-    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, ð²α, dc)
+    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, σshift, hshift, dc)
 
 Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the inverse conformal
-factor for this pixel, `ðt′╱2κ` is the eth-derivative of the retarded time in the new frame
-divided by ``2κ`` (the null-rotation parameter ``b = ðu'/2κ``), and `ð²α` is the second
-eth-derivative of the supertranslation.  The latter enters the strain/shear law with a factor
-of one half, as ``±½ð²α`` (the ½ has the same dyad/√2 origin as the ½ in ``b``); the sign is
-``+`` on ``ℐ⁺`` and ``−`` on ``ℐ⁻``.
+factor for this pixel, and `ðt′╱2κ` is the eth-derivative of the retarded time in the new
+frame divided by ``2κ``.  The latter is the null-rotation mixing parameter, except for
+scaling by conventions:
+
+— the null-rotation parameter ``b = ðu'/2κ``, *already rescaled* by
+the caller for the data's convention (``c_l c_m b`` on ``ℐ⁺``; ``b̄/(c_l c_m)`` after the
+internal conjugation on ``ℐ⁻``; both unity in the native SXS convention).
+
+`σshift` and `hshift` are the precomputed inhomogeneous supertranslation shifts ``F_σ ð²α/2``
+and ``F_h ð̄²α/2`` (again with ``F_σ = F_h = 1`` natively; the ½ has the same dyad/√2 origin
+as the ½ in ``b``).  They enter with sign ``+`` on ``ℐ⁺`` and ``−`` on ``ℐ⁻``.  They are
+separate arguments — rather than a single ``ð²α`` conjugated internally — because ``F_σ ≠
+F̄_h`` in a general convention.
+
+This function itself is convention-free: all convention factors are folded into its
+arguments by the caller ([`transform!`](@ref)'s precompute stage).
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
 `dataᵢⱼ` for the various components are known at compile time, and the branches for which
@@ -206,11 +232,10 @@ with no branches and only the necessary components, making it very fast in pract
 components are being processed.
 """
 @inline function mix_components!(
-    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱2κ, ð²α, dc::DataComponents{C,Eᴵ}
-) where {T,C,Eᴵ}
+    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱2κ, σshift, hshift, dc::DataComponents{C,I}
+) where {T,C,I}
     κ⁻² = κ⁻¹ * κ⁻¹
     κ⁻³ = κ⁻² * κ⁻¹
-    ð̄²α = conj(ð²α)
 
     iψ₄ = component_index(dc, Val(:ψ₄))
     iψ₃ = component_index(dc, Val(:ψ₃))
@@ -237,7 +262,7 @@ components are being processed.
         φ₁ = isnothing(iφ₁) ? 0 : dataᵢⱼ[iφ₁]
         φ₂ = isnothing(iφ₂) ? 0 : dataᵢⱼ[iφ₂]
 
-        if Eᴵ == +1
+        if I == +1
             ðu′╱2κ = ðt′╱2κ
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
@@ -257,10 +282,10 @@ components are being processed.
                 dataᵢⱼ[iψ₄] = κ⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ + ð²α / 2)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ + σshift)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h + ð̄²α / 2)
+                dataᵢⱼ[ih] = κ⁻¹ * (h + hshift)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
@@ -274,7 +299,7 @@ components are being processed.
             if !isnothing(iφ₂)
                 dataᵢⱼ[iφ₂] = κ⁻² * (φ₂)
             end
-        else  # Eᴵ == -1
+        else  # I == -1
             # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation, whose
             # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
             # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
@@ -300,10 +325,10 @@ components are being processed.
                 dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ - ð²α / 2)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ - σshift)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h - ð̄²α / 2)
+                dataᵢⱼ[ih] = κ⁻¹ * (h - hshift)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
@@ -319,4 +344,37 @@ components are being processed.
             end
         end
     end
+end
+
+"""
+    represent!(data, dc::DataComponents, conventions::Conventions)
+
+Re-express `data` — mode weights with dimensions `(Nᵐ, Nᵗ, Nᵈ)`, as for
+[`transform!`](@ref), described by `dc` — in the given `conventions`, in place.  Returns
+`(data, dc′)`, where `dc′` is a new `DataComponents` carrying the target conventions.
+
+Each component slice is multiplied by the ratio of its [`conversion_factor`](@ref)s,
+``F^{[\\text{to}]}/F^{[\\text{from}]}`` — a constant per component, so mode weights and pixel
+values convert identically.  This changes only the *description* of the data, not the
+physics: converting, transforming with the target-convention laws, and converting back is
+identical to transforming with the source-convention laws.
+
+Note that the supertranslation time-law sign `c_α` is *not* a property of the data, so it
+does not enter here; but it is part of the target `Conventions`, and `transform!` will read
+it from `dc′`.
+"""
+function represent!(
+    data::AbstractArray{<:Complex,3}, dc::DataComponents{C,I}, conventions::Conventions
+) where {C,I}
+    @assert size(data, 3) == length(C) "Input `data` has $(size(data, 3)) components, " *
+        "but `dc` has $(length(C))"
+    for (k, S) ∈ enumerate(C)
+        f =
+            conversion_factor(conventions, Val(S), I) /
+            conversion_factor(dc.conventions, Val(S), I)
+        if !(f isa One)  # One() would be a no-op; skip the memory traversal
+            view(data, :, :, k) .*= f
+        end
+    end
+    return data, DataComponents(C...; ℐ=I, conventions)
 end

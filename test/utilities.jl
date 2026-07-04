@@ -7,7 +7,7 @@ end
 
 @testitem "impose_reality: known analytic values (ℓ=0…3)" tags = [:unit, :fast] begin
     # N=16 modes ordered by increasing ℓ, then m ∈ {−ℓ,…,+ℓ}.
-    # Index formula: ℓ²+ℓ+m+1.  Input: αᵢₙ[k] = (2k−1) + 2k·i, εᵅ=1.
+    # Index formula: ℓ²+ℓ+m+1.  Input: αᵢₙ[k] = (2k−1) + 2k·i, c_α=1.
     #
     # output[i₊] = (αᵢₙ[i₊] + (−1)ᵐ conj(αᵢₙ[i₋])) / 2,  output[i₋] = (−1)ᵐ conj(output[i₊])
     #
@@ -111,7 +111,7 @@ end
     end
 end
 
-@testitem "impose_reality: output size, padding, and εᵅ scaling" tags = [:unit, :fast] setup = [
+@testitem "impose_reality: output size, padding, and c_α scaling" tags = [:unit, :fast] setup = [
     RealitySetup
 ] begin
     import Random
@@ -128,7 +128,7 @@ end
             @test length(α_padded) == (ℓₘₐₓ + 1)^2
             # Modes beyond the input ℓₘₐₓ are zero-padded.
             @test all(iszero, α_padded[(L ^ 2 + 1):end])
-            # εᵅ scales the output linearly (verified to be exact for real εᵅ).
+            # c_α scales the output linearly (verified to be exact for real c_α).
             c = T(3) / T(2)
             @test Scri.impose_reality(αᵢₙ, L - 1, c) ==
                 c .* Scri.impose_reality(αᵢₙ, L - 1, 1)
@@ -151,7 +151,7 @@ end
     αₚ = [1.0, -0.5, 2.0]   # min = -0.5, max = 2.0
     v⃗ = QuatVec(0.0, 0.0, 0.0)
     t = collect(range(-10.0, 10.0; length=101))
-    # εᵅ = -1:
+    # c_α = -1:
     #   t′ₘᵢₙ = max_p(tₘᵢₙ - αₚ[p]) = tₘᵢₙ - min(αₚ) = -10 - (-0.5) = -9.5
     #   t′ₘₐₓ = min_p(tₘₐₓ - αₚ[p]) = tₘₐₓ - max(αₚ) = 10 - 2 = 8
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)

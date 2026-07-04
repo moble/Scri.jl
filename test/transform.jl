@@ -1,4 +1,4 @@
-# Tests for `transform!` (src/transform.jl), including the ℐ⁻ (εᴵ = -1) conformal-factor
+# Tests for `transform!` (src/transform.jl), including the ℐ⁻ (ℐ = -1) conformal-factor
 # convention and the BMS-element bridge method.
 
 @testitem "transform!: pure-boost spin-0 conformal factor (ℐ⁺ and ℐ⁻)" tags = [
@@ -10,10 +10,10 @@
 
     # For a pure boost (no rotation, no supertranslation) acting on a spin-0 ψ₂ field with
     # the rest of its peeling tower set to zero, there is no component mixing, so the law is
-    # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - εᴵ v⃗⋅n̂).  We reconstruct that pointwise from the
+    # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - ℐ v⃗⋅n̂).  We reconstruct that pointwise from the
     # *output* modes and compare against an independent evaluation — pinning the conformal
-    # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `εᴵ`)
-    # at both null infinities.  At εᴵ = +1 this is also a regression guard for ℐ⁺.
+    # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `ℐ`)
+    # at both null infinities.  At ℐ = +1 this is also a regression guard for ℐ⁺.
     ℓ = 8
     N = (ℓ + 1)^2
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)   # the uniform B-frame grid transform! uses
@@ -26,8 +26,8 @@
     γ = 1 / √(1 - β^2)
     t = [0.0, 1.0, 2.0, 3.0]
 
-    for (εᴵ, comps) ∈ ((+1, (:ψ₂, :ψ₃, :ψ₄)), (-1, (:ψ₂, :ψ₁, :ψ₀)))
-        dc = Scri.DataComponents(comps...; εᴵ)
+    for (ℐ, comps) ∈ ((+1, (:ψ₂, :ψ₃, :ψ₄)), (-1, (:ψ₂, :ψ₁, :ψ₀)))
+        dc = Scri.DataComponents(comps...; ℐ)
         data = zeros(ComplexF64, N, 4, 3)
         for j ∈ 1:4
             data[:, j, 1] .= α0   # ψ₂ is the first component in both `comps`; the rest are 0
@@ -35,9 +35,9 @@
         Scri.transform!(data, copy(t), v⃗, one(Rotor{Float64}), zeros(ComplexF64, 1), dc)
 
         # Replicate transform!'s rest-frame grid and the expected pixel values.
-        Rₚ = [Scri.aberration(R′ₚ, v⃗, εᴵ) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
+        Rₚ = [Scri.aberration(R′ₚ, v⃗, ℐ) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
         ψ₂_rest = ₛ𝐘(0, ℓ, Float64, Rₚ) * α0                    # input ψ₂ at rest directions
-        κ⁻¹ = [γ * (1 - εᴵ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
+        κ⁻¹ = [γ * (1 - ℐ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
         expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)
 
         # The square s=0 analysis is exactly invertible, so synthesizing the output modes on
@@ -82,10 +82,10 @@ end
     )
     @test d_bridge == d_core
 
-    # ℐ⁻: the element applied with ℐ⁻ data components, which carry εᴵ = -1 and the
+    # ℐ⁻: the element applied with ℐ⁻ data components, which carry ℐ = -1 and the
     # reversed peeling tower (ψ₂ requires ψ₁, ψ₀).  This element has no supertranslation,
     # so its re-representation to match dc is trivial and the raw parts agree.
-    dc⁻ = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; εᴵ=-1)
+    dc⁻ = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; ℐ=-1)
     d_bridge⁻ = mkdata()
     Scri.transform!(d_bridge⁻, t, g⁺, dc⁻)
     d_core⁻ = mkdata()
@@ -99,7 +99,7 @@ end
     )
     @test d_bridge⁻ == d_core⁻
 
-    # The same element transforms differently on the two null infinities (εᴵ comes from dc).
+    # The same element transforms differently on the two null infinities (ℐ comes from dc).
     @test d_bridge⁻ != d_bridge
 
     # With a supertranslation carrying odd-ℓ content, the bridge must first re-represent
@@ -123,7 +123,7 @@ end
     gˢ = Scri.BMS{Float64}(; parts...)
     d_bridgeˢ = mktdata()
     Scri.transform!(d_bridgeˢ, t, gˢ, dc⁻)
-    gᴵ = Scri.BMS(gˢ; εᴵ=-1)
+    gᴵ = Scri.BMS(gˢ; ℐ=-1)
     d_coreˢ = mktdata()
     Scri.transform!(
         d_coreˢ,
@@ -138,7 +138,7 @@ end
     # ...whereas an element already in the ℐ⁻ representation passes its modes through
     # unchanged — and the two genuinely differ, because the same raw modes mean different
     # functions in the two labelings.
-    g⁻ = Scri.BMS{Float64}(; parts..., εᴵ=-1)
+    g⁻ = Scri.BMS{Float64}(; parts..., ℐ=-1)
     d_bridge⁻ˢ = mktdata()
     Scri.transform!(d_bridge⁻ˢ, t, g⁻, dc⁻)
     d_core⁻ˢ = mktdata()
@@ -223,7 +223,7 @@ end
 
     # The ℐ⁻ mirror of the previous test.  The generator is l̃, so the peeling tower must use
     # the *conjugate* parameter b̄ = ð̄v'/2κ (spin −1), running ψ₀(s=+2) → ψ₄(s=−2); the shear
-    # shift flips sign, σ' = σ − ½ð²α.  Pins the conjugation in the Eᴵ=−1 branch.
+    # shift flips sign, σ' = σ − ½ð²α.  Pins the conjugation in the I=−1 branch.
     ℓ = 8
     N = (ℓ + 1)^2
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
@@ -237,7 +237,7 @@ end
     b̄_g = conj.(-ðα_g ./ 2)   # b̄ = conj(b), b = −ðα/2
 
     # ℐ⁻ tower order: ψ₀ unmixed, builds ψ₁, ψ₂ from it.  ψ₀(s=2), ψ₁(s=1), ψ₂(s=0), σ(s=2).
-    dc = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀, :σ; εᴵ=-1)
+    dc = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀, :σ; ℐ=-1)
     spins = (0, 1, 2, 2)
     Nᵗ = 4
     modes = [randn(rng, ComplexF64, N) for _ ∈ 1:4]
@@ -287,17 +287,17 @@ end
     Nₚ = length(Rₚ)
     v⃗ = QuatVec(0.1, -0.2, 0.3)
 
-    for Eᴵ ∈ (1, -1)
-        # Independent `[2,i] = (λˣ+iλʸ)/2(λᶻ−εᴵ)`, with `λ = R̃ v⃗ R` formed by Quaternionic
+    for I ∈ (1, -1)
+        # Independent `[2,i] = (λˣ+iλʸ)/2(λᶻ−ℐ)`, with `λ = R̃ v⃗ R` formed by Quaternionic
         # rotor conjugation — a different code path than the hand-expanded polynomial inside
         # `compute_ðt′╱2κ`, so this checks that polynomial.
         b₁ = map(Rₚ) do R
             λ = vec(conj(R) * v⃗ * R)
-            return (λ[1] + im * λ[2]) / 2(λ[3] - Eᴵ)
+            return (λ[1] + im * λ[2]) / 2(λ[3] - I)
         end
 
         # Case A — pure boost (no supertranslation): row 2 = b₁, row 1 = 0.
-        M = compute_ðt′╱2κ(Rₚ, v⃗, zeros(Nₚ), zeros(ComplexF64, Nₚ), Eᴵ)
+        M = compute_ðt′╱2κ(Rₚ, v⃗, zeros(Nₚ), zeros(ComplexF64, Nₚ), I)
         @test M[2, :] ≈ b₁
         @test all(iszero, M[1, :])
 
@@ -305,7 +305,7 @@ end
         # `ðt′/2κ|₀ = ð(κ·δt)/2κ = δt·(ðκ/2κ) = δt·b₁`, so `[1,i] = −δt·b₁`.  This pins the
         # cross-term SIGN (minus) from a pure Leibniz identity, independent of the helper.
         δt = 0.7
-        Mc = compute_ðt′╱2κ(Rₚ, v⃗, fill(δt, Nₚ), zeros(ComplexF64, Nₚ), Eᴵ)
+        Mc = compute_ðt′╱2κ(Rₚ, v⃗, fill(δt, Nₚ), zeros(ComplexF64, Nₚ), I)
         @test Mc[1, :] ≈ -δt .* b₁
         @test !isapprox(Mc[1, :], +δt .* b₁; rtol=1e-6)   # the wrong (+) sign would fail here
 
@@ -313,7 +313,7 @@ end
         # independently-verified b₁ with the −½ ðα term (checks both signs at once).
         αₚ = randn(rng, Nₚ)
         ðαₚ = randn(rng, ComplexF64, Nₚ)
-        Mr = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, Eᴵ)
+        Mr = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
         @test Mr[1, :] ≈ -(b₁ .* αₚ .+ ðαₚ ./ 2)
     end
 end
@@ -336,7 +336,7 @@ end
     # verifies BOTH the closed form AND that SphericalFunctions' `ð` matches the convention the
     # closed form was derived in.
     #
-    # `κ = 1/(γ(1 − εᴵv⃗·n̂))` is not band-limited, so `t′` is not either — but a tiny boost
+    # `κ = 1/(γ(1 − ℐv⃗·n̂))` is not band-limited, so `t′` is not either — but a tiny boost
     # (β ≈ 1e-3) with a large `ℓₘₐₓ` shrinks the out-of-band tail to `~β^ℓₘₐₓ`, far below
     # roundoff, so the spin-0 analysis (square `ₛ𝐘`) and the `ð` are exact and there is no
     # aliasing.  The cross term `ðt′╱2κ[2,:]·αₚ` (the part that hid two sign errors) is `~1e-3`
@@ -347,7 +347,7 @@ end
     for (T, rtol) ∈ ((Float64, 1e-8), (Double64, 1e-18))
         v⃗ = QuatVec{T}(7e-4, -5e-4, 9e-4)        # β ≈ 1.2e-3
         γ = 1 / √(1 - sum(abs2, vec(v⃗)))
-        for ℓₘₐₓ ∈ (12, 16), Eᴵ ∈ (1, -1)
+        for ℓₘₐₓ ∈ (12, 16), I ∈ (1, -1)
             N = (ℓₘₐₓ + 1)^2
             Rₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)
 
@@ -364,9 +364,9 @@ end
 
             # κ on the grid from n̂ = R𝐤R̃ (Quaternionic rotor action; not the λ polynomial).
             n̂ = [vec(R * 𝐤 * conj(R)) for R ∈ Rₚ]
-            κ = [1 / (γ * (1 - Eᴵ * dot(vec(v⃗), n))) for n ∈ n̂]
+            κ = [1 / (γ * (1 - I * dot(vec(v⃗), n))) for n ∈ n̂]
 
-            M = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, Eᴵ)
+            M = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
             for t ∈ (T(0), T(1), T(10))
                 t′ = κ .* (t .- αₚ)                # the field whose ð we want
@@ -382,4 +382,124 @@ end
             @test maximum(abs, code_wrong .- oracle0) > 1e-6
         end
     end
+end
+
+@testitem "transform!: convention commuting square (represent! ∘ transform! commutes)" tags = [
+    :validation, :integration, :fast
+] begin
+    using Quaternionic: QuatVec, rotor
+    using Random
+
+    # THE load-bearing conventions test: for data in a generic convention X, transforming
+    # natively in X must equal converting to the native SXS convention, transforming there,
+    # and converting back.  Because the conversion factors Fₙ differ *between* components,
+    # this pins the convention-rescaled mixing parameter — b → (c_l c_m) b on ℐ⁺ and
+    # b̄ → b̄/(c_l c_m) on ℐ⁻ — against the factor ratios Fₙ/Fₙ₊ₖ, jointly across the Weyl
+    # and Faraday towers, and exercises the F_σ/F_h shift plumbing and t′ agreement.
+    rng = Xoshiro(37)
+    ℓ, Nᵗ = 6, 12
+    N = (ℓ + 1)^2
+    comps = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+    # A maximally generic convention: every sign flipped, dyad rescaled and rotated in
+    # phase, strain rescaled.  (c_ð is set too, but must not affect any transform.)
+    X = Scri.Conventions(;
+        c_s=-1, c_R=-1, c_Ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2, c_ð=1 / √2
+    )
+    v⃗ = QuatVec(0.02, -0.03, 0.05)
+    R = rotor(QuatVec(0.1, 0.2, -0.3))
+    α = 0.03 * randn(rng, ComplexF64, 9)
+    α[1] = 0.1
+    t = collect(range(-10.0, 10.0; length=Nᵗ))
+    mkdata() = begin
+        Random.seed!(rng, 4)
+        d = 1e-2 * randn(rng, ComplexF64, N, Nᵗ, length(comps))
+        for j ∈ 2:Nᵗ
+            d[:, j, :] .= d[:, 1, :] .* (1 + 0.01j)  # smooth in time
+        end
+        d
+    end
+
+    for ℐ ∈ (+1, -1)
+        dcS = Scri.DataComponents(comps...; ℐ)
+        dcX = Scri.DataComponents(comps...; ℐ, conventions=X)
+
+        # Path A: convert SXS → X, then transform natively in X.
+        dA = mkdata()
+        dA, _ = Scri.represent!(dA, dcS, X)
+        dA, t′A = Scri.transform!(dA, copy(t), v⃗, R, copy(α), dcX)
+
+        # Path B: transform natively in SXS, then convert → X.
+        dB = mkdata()
+        dB, t′B = Scri.transform!(dB, copy(t), v⃗, R, copy(α), dcS)
+        dB, _ = Scri.represent!(dB, dcS, X)
+
+        @test maximum(abs, dA .- dB) < 1e-12 * maximum(abs, dB)
+        @test t′A == t′B
+    end
+end
+
+@testitem "transform!: c_α is the time-law sign (and the BMS bridge honors it)" tags = [
+    :validation, :fast
+] begin
+    using Quaternionic: QuatVec, rotor
+    using Random
+
+    # The sign formerly passed as c_α now lives in Conventions.c_α: transforming with
+    # c_α = −1 must equal transforming with the default conventions and −α, exactly.
+    rng = Xoshiro(21)
+    ℓ, Nᵗ = 4, 10
+    N = (ℓ + 1)^2
+    comps = (:ψ₄, :ψ₃, :σ, :h)
+    v⃗ = QuatVec(0.01, 0.02, -0.03)
+    R = rotor(QuatVec(0.2, -0.1, 0.15))
+    α = 0.05 * randn(rng, ComplexF64, 4)
+    α[1] = 0.2
+    t = collect(range(-8.0, 8.0; length=Nᵗ))
+    mkdata() = begin
+        Random.seed!(rng, 5)
+        d = 1e-2 * randn(rng, ComplexF64, N, Nᵗ, length(comps))
+        for j ∈ 2:Nᵗ
+            d[:, j, :] .= d[:, 1, :] .* (1 + 0.02j)
+        end
+        d
+    end
+
+    dc₋ = Scri.DataComponents(comps...; conventions=Scri.Conventions(; c_α=-1))
+    dc₊ = Scri.DataComponents(comps...)
+    d1 = mkdata()
+    d1, t′1 = Scri.transform!(d1, copy(t), v⃗, R, copy(α), dc₋)
+    d2 = mkdata()
+    d2, t′2 = Scri.transform!(d2, copy(t), v⃗, R, -copy(α), dc₊)
+    @test d1 == d2
+    @test t′1 == t′2
+
+    # The keyword form threads conventions through to the DataComponents it builds.
+    d3 = mkdata()
+    d3, _ = Scri.transform!(
+        d3,
+        copy(t),
+        v⃗,
+        R,
+        copy(α);
+        data_components=comps,
+        conventions=Scri.Conventions(; c_α=-1),
+    )
+    @test d3 == d1
+
+    # The BMS bridge re-represents the element with the data conventions' supertranslation
+    # sign, so it must agree exactly with the manual unpacking at that sign.
+    g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R, supertranslation=copy(α))
+    d4 = mkdata()
+    Scri.transform!(d4, copy(t), g, dc₋)
+    gᴵ = Scri.BMS(g; c_α=-1, ℐ=+1)
+    d5 = mkdata()
+    Scri.transform!(
+        d5,
+        copy(t),
+        Scri.boost_velocity(gᴵ),
+        Scri.frame_rotation(gᴵ),
+        Scri.supertranslation(gᴵ),
+        dc₋,
+    )
+    @test d4 == d5
 end

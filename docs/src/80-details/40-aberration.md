@@ -34,8 +34,8 @@ We introduce a sign variable ``ε ∈ \{+1,-1\}`` to track the two cases:
 
 This single variable turns out to control the sign of every
 frame-dependent quantity in the transformation.  It is the same sign
-as the ``ε^ℐ`` of [Future and past null infinity](@ref
-scri_pm_conventions); in the code it is the `εᴵ` argument of
+as the ``ℐ`` of [Future and past null infinity](@ref
+scri_pm_conventions); in the code it is the `ℐ` argument of
 [`Scri.aberration`](@ref), and the `emitted` keyword of the test
 oracle (`emitted = true` ⟺ ``ε = +1``).
 
@@ -289,7 +289,7 @@ For ``ε = +1``: the rest-frame direction is in the *northern*
 hemisphere, ``\cos Θ = +β > 0``.  For ``ε = -1``: the rest-frame
 direction is in the *southern* hemisphere, ``\cos Θ = -β < 0``.
 
-*Test*: `"aberration: geometric sign — equatorial pixel: cosΘ = εᴵβ"`.
+*Test*: `"aberration: geometric sign — equatorial pixel: cosΘ = ℐβ"`.
 
 ### Azimuthal symmetry
 

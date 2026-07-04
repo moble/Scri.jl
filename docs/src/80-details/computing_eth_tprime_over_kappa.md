@@ -10,18 +10,18 @@ We have the coordinate transformation
 \begin{gather}
 t' = κ(t - ε^α α),
 \\
-\frac{1}{κ} = γ(1 - ε^ℐv⃗⋅n̂),
+\frac{1}{κ} = γ(1 - ℐv⃗⋅n̂),
 \end{gather}
 ```
 
 where ``ε^α`` accounts for differences in the definition of the
-supertranslation parameter ``α``, and ``ε^ℐ`` accounts for whether
-we're dealing with ``ℐ⁺`` (``ε^ℐ = +1``) or ``ℐ⁻`` (``ε^ℐ = -1``).
+supertranslation parameter ``α``, and ``ℐ`` accounts for whether
+we're dealing with ``ℐ⁺`` (``ℐ = +1``) or ``ℐ⁻`` (``ℐ = -1``).
 
-!!! note "The sign of $ε^ℐ$ and the choice of $ℐ⁻$ convention"
+!!! note "The sign of $ℐ$ and the choice of $ℐ⁻$ convention"
 
-    The conformal factor comes from the null section ``𝐧 = (1, ε^ℐ n̂)``,
-    which is why ``ε^ℐ`` multiplies ``v⃗⋅n̂`` above.  There are two natural
+    The conformal factor comes from the null section ``𝐧 = (1, ℐ n̂)``,
+    which is why ``ℐ`` multiplies ``v⃗⋅n̂`` above.  There are two natural
     ways to set up ``ℐ⁻``, and they differ precisely by this sign:
 
     - **Antipodal (used here).**  Following
@@ -30,7 +30,7 @@ we're dealing with ``ℐ⁺`` (``ε^ℐ = +1``) or ``ℐ⁻`` (``ε^ℐ = -1``).
       *arrives*.  Since one looks *opposite* to a ray's propagation to
       see its source, this labeling is antipodal to the ``ℐ⁺``
       (outgoing-propagation) one, giving the section ``(1, -n̂)`` and the
-      sign ``ε^ℐ = -1`` in ``1/κ = γ(1 + v⃗⋅n̂)``.  This is the
+      sign ``ℐ = -1`` in ``1/κ = γ(1 + v⃗⋅n̂)``.  This is the
       antipodal matching that relates ``ℐ⁺`` and ``ℐ⁻`` in the
       asymptotic-symmetry/soft-theorem literature [Strominger_2014,
       Strominger_2017](@cite).  See also
@@ -38,13 +38,13 @@ we're dealing with ``ℐ⁺`` (``ε^ℐ = +1``) or ``ℐ⁻`` (``ε^ℐ = -1``).
 
     - **Consistent labeling (not used).**  One could instead label both
       ``ℐ⁺`` and ``ℐ⁻`` by the propagation direction, leaving
-      ``1/κ = γ(1 - v⃗⋅n̂)`` unchanged and pushing *all* of the ``ε^ℐ``
+      ``1/κ = γ(1 - v⃗⋅n̂)`` unchanged and pushing *all* of the ``ℐ``
       dependence into the handedness of ``ð`` and the
       component-mixing tower.  That convention is self-consistent only in
       isolation (it does not antipodally match ``ℐ⁺``), so we do not use
       it.
 
-    Because ``κ`` is spin-0, ``ε^ℐ`` does not change its magnitude as a
+    Because ``κ`` is spin-0, ``ℐ`` does not change its magnitude as a
     function of the *physical* arrival direction; what the antipodal
     choice fixes is the relation of that direction to the ``ℐ⁺``
     labeling, and correspondingly the orientation of the spin-weighted
@@ -60,7 +60,7 @@ have ``ð(κ) = -ð(1/κ) κ^2``.
 ```math
 \begin{align}
 \frac{ðt'}{κ} &= -ð(1/κ) κ (t - ε^α α) - ε^α ðα \\
-&= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα.
+&= \frac{ℐ ð(v⃗⋅n̂)}{1 - ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα.
 \end{align}
 ```
 
@@ -308,8 +308,8 @@ have
 ```math
 \begin{align}
 \frac{ðt'}{κ}
-&= \frac{ε^ℐ ð(v⃗⋅n̂)}{1 - ε^ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα \\
-&= \frac{-ε^ℐ (λ_x + i λ_y)}{1 - ε^ℐ λ_z} (t - ε^α α) - ε^α ðα.
+&= \frac{ℐ ð(v⃗⋅n̂)}{1 - ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα \\
+&= \frac{-ℐ (λ_x + i λ_y)}{1 - ℐ λ_z} (t - ε^α α) - ε^α ðα.
 \end{align}
 ```
 
@@ -325,7 +325,7 @@ where
 
 ```math
 \begin{aligned}
-\left(\frac{ðt'}{κ}\right)_0 &= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ε^ℐ} α + ðα \right), \\
-\left(\frac{ðt'}{κ}\right)_1 &= \frac{λ_x + i λ_y}{λ_z - ε^ℐ}.
+\left(\frac{ðt'}{κ}\right)_0 &= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ℐ} α + ðα \right), \\
+\left(\frac{ðt'}{κ}\right)_1 &= \frac{λ_x + i λ_y}{λ_z - ℐ}.
 \end{aligned}
 ```

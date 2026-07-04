@@ -13,7 +13,7 @@ import Quaternionic:
     from_spherical_coordinates,
     ℂreal
 import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
-import LinearAlgebra: mul!, ldiv!, lu, I, qr
+import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
 import OffsetArrays: OffsetVector
 import Logging
 import Hwloc

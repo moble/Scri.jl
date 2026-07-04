@@ -133,11 +133,11 @@ the advanced time ``v``, so we will use the more neutral notation
 another frame as
 
 ```math
-t'(p) = t(p) - εᵅ α(p),
+t'(p) = t(p) - c_α α(p),
 ```
 
 where ``p`` refers to a point on ``ℐ``, and ``α`` is a real-valued
-function that is independent of ``t``.  The ``εᵅ`` is just a
+function that is independent of ``t``.  The ``c_α`` is just a
 bookkeeping device to keep track of the differing conventions for the
 sign in the formula above.
 
@@ -148,7 +148,7 @@ and the supertranslations ``𝒮``.  The supertranslation ``α ∈ 𝒮``
 acts solely on the time coordinate as
 
 ```math
-t'(t, 𝐤) = t - εᵅ α(𝐤).
+t'(t, 𝐤) = t - c_α α(𝐤).
 ```
 
 The Lorentz transformation ``Λ ∈ ℒ`` acts on the spatial coordinates
@@ -162,7 +162,7 @@ We can combine these two transformations, applying ``α`` first and
 then ``Λ``, to get the general transformation of the time coordinate:
 
 ```math
-t'(t, 𝐤) = κ(Λ, 𝐤) [t - εᵅ α(𝐤)].
+t'(t, 𝐤) = κ(Λ, 𝐤) [t - c_α α(𝐤)].
 ```
 
 Now, we can investigate how repeated transformations compose.  Take
@@ -191,9 +191,9 @@ These allow us to write
 ```math
 \begin{aligned}
 t''(t', 𝐤')
-&= κ(Λ₂, 𝐤') [t' - εᵅ α₂(𝐤')] \\
-&= κ(Λ₂, Λ₁𝐤) \left\{κ(Λ₁, 𝐤) [t - εᵅ α₁(𝐤)] - εᵅ α₂(Λ₁𝐤)\right\} \\
-&= κ(Λ₂Λ₁, 𝐤) \left\{t - εᵅ [α₁(𝐤) + α₂(Λ₁𝐤) / κ(Λ₁, 𝐤)]\right\} \\
+&= κ(Λ₂, 𝐤') [t' - c_α α₂(𝐤')] \\
+&= κ(Λ₂, Λ₁𝐤) \left\{κ(Λ₁, 𝐤) [t - c_α α₁(𝐤)] - c_α α₂(Λ₁𝐤)\right\} \\
+&= κ(Λ₂Λ₁, 𝐤) \left\{t - c_α [α₁(𝐤) + α₂(Λ₁𝐤) / κ(Λ₁, 𝐤)]\right\} \\
 \end{aligned}
 ```
 
@@ -201,7 +201,7 @@ That is, the result of a sequence of two transformations is another
 transformation of the same form:
 
 ```math
-t''(t, 𝐤) = κ(Λ, 𝐤) [t - εᵅ α(𝐤)],
+t''(t, 𝐤) = κ(Λ, 𝐤) [t - c_α α(𝐤)],
 ```
 
 where
@@ -353,14 +353,14 @@ no such choice — a rotor is representation-neutral — but its
 antipodal labels, ``Λ`` acts through the conjugated map ``A ∘ Λ ∘ A``,
 which flips the boost part (``v⃗ ↦ -v⃗``) while leaving rotations
 alone — exactly why the conformal factor and the direction map involve
-the ``ε^ℐ`` sign.
+the ``ℐ`` sign.
 
 The [`BMS`](@ref) type therefore retains that choice as data — the
-`Eᴵ` type parameter — declaring which labeling the stored modes refer
-to, alongside the analogous supertranslation-sign convention `Eᵅ` (the
-sign with which ``α`` enters the time law ``t' = κ(t - εᵅα)``).  Both
+`I` type parameter — declaring which labeling the stored modes refer
+to, alongside the analogous supertranslation-sign convention `A` (the
+sign with which ``α`` enters the time law ``t' = κ(t - c_αα)``).  Both
 default to `+1`: future null infinity, and the plus sign.  The
-conversion constructor `BMS(g; εᵅ, εᴵ)` (see [`BMS`](@ref)) converts
+conversion constructor `BMS(g; c_α, ℐ)` (see [`BMS`](@ref)) converts
 an element between representations — exactly, since both conversions
 are pure sign flips.
 
@@ -417,12 +417,12 @@ element's own conventions, and the [`transform!`](@ref) bridge
 re-represents the element to match the null infinity declared by its
 [`DataComponents`](@ref Scri.DataComponents) argument.
 
-Note that the ``ε^ℐ`` relevant to `DataComponents` is conceptually
-distinct from the ``ε^ℐ`` relevant to the BMS element.  It may be
+Note that the ``ℐ`` relevant to `DataComponents` is conceptually
+distinct from the ``ℐ`` relevant to the BMS element.  It may be
 quite reasonable, for example, to always consider the effect a BMS
 element has on future null infinity, but still be concerned with the
 transformations of data on past null infinity.  This is the reason why
-both `BMS` and `DataComponents` each have their own `εᴵ` parameter.
+both `BMS` and `DataComponents` each have their own `ℐ` parameter.
 
 ## Decomposition of BMS
 
