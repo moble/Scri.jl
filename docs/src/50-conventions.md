@@ -202,9 +202,9 @@ the package's native convention.
 | parameter | meaning               | default |
 |:----------|:----------------------|:-------:|
 | ``c_s``   | metric signature      | ``1``   |
+| ``c_R``   | Riemann sign          | ``1``   |
 | ``c_l``   | ``l``-leg scale       | ``1``   |
 | ``c_m``   | ``m``-leg scale       | ``1``   |
-| ``c_R``   | Riemann sign          | ``1``   |
 | ``c_Ψ``   | Weyl sign             | ``1``   |
 | ``c_σ``   | shear sign            | ``1``   |
 | ``c_h``   | strain scale          | ``1``   |

@@ -1,5 +1,5 @@
 """
-    Conventions{S,L,M,R,Ψ,Σ,H,Φ,Ð,A}
+    Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
 
 Sign and scale factors setting a choice of conventions for asymptotic field quantities,
 following the conventions appendix (sign/scale parameters ``s₀, s₁, s₂, s₃, λ, Θ, ζ`` there,
@@ -12,11 +12,11 @@ Construct with keywords (validated), or by name from the table of published conv
     Conventions(; c_s=-1, c_l=-√2)  # a custom convention
 
 """
-struct Conventions{S,L,M,R,Ψ,Σ,H,Φ,Ð,A}
+struct Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
     c_s::S
+    c_R::R
     c_l::L
     c_m::M
-    c_R::R
     c_Ψ::Ψ
     c_σ::Σ
     c_h::H
@@ -25,7 +25,7 @@ struct Conventions{S,L,M,R,Ψ,Σ,H,Φ,Ð,A}
     c_α::A
 end
 
-function Conventions(; c_s=1, c_l=1, c_m=1, c_R=1, c_Ψ=1, c_σ=1, c_h=1, c_φ=1, c_ð=1, c_α=1)
+function Conventions(; c_s=1, c_R=1, c_l=1, c_m=1, c_Ψ=1, c_σ=1, c_h=1, c_φ=1, c_ð=1, c_α=1)
     for (name, c) ∈
         (("c_s", c_s), ("c_R", c_R), ("c_Ψ", c_Ψ), ("c_σ", c_σ), ("c_φ", c_φ), ("c_α", c_α))
         c == 1 || c == -1 || throw(ArgumentError("$name is a sign and must be ±1; got $c"))
@@ -38,9 +38,9 @@ function Conventions(; c_s=1, c_l=1, c_m=1, c_R=1, c_Ψ=1, c_σ=1, c_h=1, c_φ=1
     # rather than `x * y^-1`, since an integer base to a negative power throws a `DomainError`).
     return Conventions(
         signify(c_s),
+        signify(c_R),
         signify(c_l),
         signify(c_m),
-        signify(c_R),
         signify(c_Ψ),
         signify(c_σ),
         signify(c_h),
