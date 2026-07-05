@@ -1,0 +1,22 @@
+ul.docs-menu ul.internal {
+    padding-left: 1.0em;
+}
+
+ul.docs-menu ul.internal > li > a {
+    display: block;
+    padding-left: 1em;
+    text-indent: -1em;
+}
+
+.admonition.is-category-important .admonition-header::before {
+    content: "";
+    display: inline-block;
+    width: 1.1rem;
+    height: 1.1rem;
+    vertical-align: middle;
+    background-repeat: no-repeat;
+    background-size: contain;
+    margin-right: 0.35rem;
+    flex-shrink: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-16 48 545 416'><path fill='none' stroke='rgb(125, 125, 125)' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' d='M 250,96 H 480 c 18,0 32,26 32,44 0,18 -14,45 -32,45 H 253 m 45,86 c 18,0 32,26 32,44 0,18 -14,43 -32,43 l -103,0 c -18,0 -32,-25 -32,-43 0,-18 14,-44 32,-44 z m -44,-86 74,0 c 18,0 32,26 32,44 0,18 -14,42 -32,42 l -127,0 m 73,88 c 18,0 32,27 32,45 0,18 -14,44 -32,44 l -83,0 c -18,0 -32,-26 -32,-44 0,-18 14,-45 32,-45 z M 160,448 C 72,448 0,376 0,288 V 226 C 0,184 17,143 47,113 L 58,102 C 82,78 115,64 149,64 h 27 c 35,0 75,29 75,64 v 103 c 0,22 -25,40 -47,40 -22,0 -44,-18 -44,-40 V 160 m 37,288 H 160'/></svg>");
+}
