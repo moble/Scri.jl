@@ -203,25 +203,23 @@ conformal_weight(::Val{:φ₁}) = -2
 conformal_weight(::Val{:φ₂}) = -2
 
 """
-    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, σshift, hshift, dc)
+    mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, ð²α, dc)
 
 Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the inverse conformal
-factor for this pixel, and `ðt′╱2κ` is the eth-derivative of the retarded time in the new
-frame divided by ``2κ``.  The latter is the null-rotation mixing parameter, except for
-scaling by conventions:
+factor for this pixel, `ðt′╱2κ` is the eth-derivative of the retarded time in the new frame
+divided by ``2κ`` (the *geometric* null-rotation parameter ``b = ðu'/2κ``, computed with the
+native Newman–Penrose ``ð``), and `ð²α` is the second eth-derivative of the
+supertranslation.  The latter enters the strain/shear law with a factor of one half, as
+``±½ð²α`` (the ½ has the same dyad/√2 origin as the ½ in ``b``); the sign is ``+`` on ``ℐ⁺``
+and ``−`` on ``ℐ⁻``.
 
-— the null-rotation parameter ``b = ðu'/2κ``, *already rescaled* by
-the caller for the data's convention (``c_l c_m b`` on ``ℐ⁺``; ``b̄/(c_l c_m)`` after the
-internal conjugation on ``ℐ⁻``; both unity in the native SXS convention).
-
-`σshift` and `hshift` are the precomputed inhomogeneous supertranslation shifts ``F_σ ð²α/2``
-and ``F_h ð̄²α/2`` (again with ``F_σ = F_h = 1`` natively; the ½ has the same dyad/√2 origin
-as the ½ in ``b``).  They enter with sign ``+`` on ``ℐ⁺`` and ``−`` on ``ℐ⁻``.  They are
-separate arguments — rather than a single ``ð²α`` conjugated internally — because ``F_σ ≠
-F̄_h`` in a general convention.
-
-This function itself is convention-free: all convention factors are folded into its
-arguments by the caller ([`transform!`](@ref)'s precompute stage).
+The convention factors come from the `Conventions` carried by `dc`, and appear in the laws
+exactly as in the ["Convention dependence" documentation](@ref
+convention_dependence_fields): the towers run on ``c_l c_m\\, ðu′/2κ`` (on ``ℐ⁺``; the
+parameter is ``ð̄v′/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the
+shear/strain shifts are ``F_σ\\, ð²α/2`` and ``F_h\\, ð̄²α/2``, with `F_σ` from
+[`shear_factor`](@ref) and `F_h` from [`strain_factor`](@ref).  At the default conventions
+every factor is a `One` singleton and compiles away.
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
 `dataᵢⱼ` for the various components are known at compile time, and the branches for which
@@ -232,10 +230,13 @@ with no branches and only the necessary components, making it very fast in pract
 components are being processed.
 """
 @inline function mix_components!(
-    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱2κ, σshift, hshift, dc::DataComponents{C,I}
+    dataᵢⱼ::AbstractVector{Complex{T}}, κ⁻¹, ðt′╱2κ, ð²α, dc::DataComponents{C,I}
 ) where {T,C,I}
     κ⁻² = κ⁻¹ * κ⁻¹
     κ⁻³ = κ⁻² * κ⁻¹
+    ð̄²α = conj(ð²α)
+    F_σ = shear_factor(dc.conventions, I)
+    F_h = strain_factor(dc.conventions)
 
     iψ₄ = component_index(dc, Val(:ψ₄))
     iψ₃ = component_index(dc, Val(:ψ₃))
@@ -263,7 +264,8 @@ components are being processed.
         φ₂ = isnothing(iφ₂) ? 0 : dataᵢⱼ[iφ₂]
 
         if I == +1
-            ðu′╱2κ = ðt′╱2κ
+            # In convention X the mixing parameter is the dyad-rescaled b = c_l c_m ðu′/2κ.
+            ðu′╱2κ = dyad_factor(dc.conventions) * ðt′╱2κ
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
                     κ⁻³ *
@@ -282,10 +284,10 @@ components are being processed.
                 dataᵢⱼ[iψ₄] = κ⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ + σshift)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ + F_σ * ð²α / 2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h + hshift)
+                dataᵢⱼ[ih] = κ⁻¹ * (h + F_h * ð̄²α / 2)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
@@ -303,8 +305,9 @@ components are being processed.
             # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation, whose
             # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
             # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
-            # down to ψ₄ (s=-2): e.g. ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).
-            ð̄v′╱2κ = conj(ðt′╱2κ)
+            # down to ψ₄ (s=-2): e.g. ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).  Because
+            # this tower mixes downward, the dyad factor divides: Fₙ/Fₙ₋ₖ = (c_l c_m)^{-k}.
+            ð̄v′╱2κ = conj(ðt′╱2κ) / dyad_factor(dc.conventions)
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =
                     κ⁻³ * (
@@ -325,10 +328,10 @@ components are being processed.
                 dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ - σshift)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ - F_σ * ð²α / 2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h - hshift)
+                dataᵢⱼ[ih] = κ⁻¹ * (h - F_h * ð̄²α / 2)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News

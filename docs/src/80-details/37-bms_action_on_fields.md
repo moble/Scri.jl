@@ -221,10 +221,10 @@ and spin already pulled out front, so at the defaults ``c_σ = c_α = 1``
 ```
 
 The convention constant ``c_σ`` and the orientation sign ``c_α`` ride
-along untouched — the former through [``F_σ``](@ref "Convention
-dependence"), the latter through the [orientation of
+along untouched — the former through [``F_σ``](@ref
+convention_dependence_fields), the latter through the [orientation of
 ``ℐ``](@ref scri_pm_conventions), which is what flips the sign of the
-shift at ``ℐ⁻``.
+inhomogeneous term at ``ℐ⁻``.
 
 The inhomogeneous ``ð^2 α`` is the affine action that makes the shear
 the Goldstone field of supertranslations: there is no frame in which it
@@ -411,27 +411,23 @@ computed with the Newman–Penrose ``ð`` natively (and the supertranslation
 
 **What the code does.**  Collecting the survivors, a same-convention
 transform requires exactly three convention insertions on top of the
-default computation — and nothing in `mix_components!`, which stays
-convention-free.  All three are applied in `transform!`'s precompute
-stage, reading the `Conventions` carried by the `DataComponents`
-descriptor:
+default computation.  All three live in `mix_components!`, written
+exactly as in the laws above, with the factors read from the
+`Conventions` carried by the `DataComponents` descriptor:
 
-1. the peeling parameter is rescaled by `Scri.dyad_factor` — ``b → c_l
-   c_m\, b`` on ``ℐ⁺``, ``\bar b → \bar b/(c_l c_m)`` on ``ℐ⁻`` (as a
-   code detail, `mix_components!` conjugates its argument internally
-   on ``ℐ⁻``, so the factor applied upstream is
-   ``\overline{1/(c_l c_m)}``) — driving both the Weyl and Faraday
-   towers;
-2. the shear shift passed to `mix_components!` is ``F_σ\,ð^2α/2`` with
-   ``F_σ`` from `Scri.shear_factor` (which takes ``ℐ`` for the
-   ``c_l^{±1}``); and
+1. the peeling parameter is rescaled by `Scri.dyad_factor` — the
+   towers run on ``c_l c_m\, ðu'/2κ`` on ``ℐ⁺`` and on
+   ``(ð̄v'/2κ)/(c_l c_m)`` on ``ℐ⁻`` — driving both the Weyl and
+   Faraday towers;
+2. the shear shift is ``F_σ\,ð^2α/2`` with ``F_σ`` from
+   `Scri.shear_factor` (which takes ``ℐ`` for the ``c_l^{±1}``); and
 3. the strain shift is ``F_h\,ð̄^2α/2`` with ``F_h`` from
    `Scri.strain_factor`.
 
-The time-law sign is likewise read from the conventions: ``c_α`` is
-folded into ``α`` up front, exactly as the former `c_α` argument was.
-At the defaults ``c_l = 1, c_m = 1, c_σ = c_s = 1, c_h = 1, c_α = 1``
-every factor is the `One` singleton, and the insertions compile away
-to the laws above.  Conversion *between* conventions — the full
-``F``-factors, not just the transform survivors — is `Scri.represent!`,
-built on `Scri.conversion_factor`.
+The time-law sign is read from the conventions in `transform!` itself:
+``c_α`` is folded into ``α`` up front, exactly as the former sign
+argument was.  At the defaults ``c_l = 1, c_m = 1, c_σ = c_s = 1, c_h
+= 1, c_α = 1`` every factor is the `One` singleton, and the insertions
+compile away to the laws above.  Conversion *between* conventions —
+the full ``F``-factors, not just the transform survivors — is
+`Scri.represent!`, built on `Scri.conversion_factor`.

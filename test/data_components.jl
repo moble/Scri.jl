@@ -153,7 +153,7 @@ end
     for _ ∈ 1:5
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
-        Scri.mix_components!(data, 1.0, 0.0 + 0im, 0.0 + 0im, 0.0 + 0im, dc)
+        Scri.mix_components!(data, 1.0, 0.0 + 0im, 0.0 + 0im, dc)
         @test data == orig
     end
 end
@@ -171,7 +171,7 @@ end
         data = randn(rng, ComplexF64, 8)
         orig = copy(data)
         κ⁻¹ = 0.4 + 0.3 * randn(rng)
-        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, 0.0 + 0im, 0.0 + 0im, dc)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, 0.0 + 0im, dc)
         for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ κ⁻¹^3 * orig[i]
@@ -197,7 +197,7 @@ end
         z = randn(rng, ComplexF64)
         f = randn(rng, ComplexF64)   # ðt′╱2κ
         data = ComplexF64[z, 0, 0, 0, 0]   # ψ₄=z, ψ₃=ψ₂=ψ₁=ψ₀=0
-        Scri.mix_components!(data, 1.0, f, 0.0 + 0im, 0.0 + 0im, dc)
+        Scri.mix_components!(data, 1.0, f, 0.0 + 0im, dc)
         for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
             i = Scri.component_index(dc, Val(s))
             @test data[i] ≈ f^exp * z atol = 4eps(Float64) * abs(f)^exp * abs(z)
@@ -216,21 +216,18 @@ end
     κ⁻¹ = 2.0
     f = 3.0 + 2.0im
     data = ones(ComplexF64, 5)
-    Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, 0.0 + 0im, dc)
+    Scri.mix_components!(data, κ⁻¹, f, 0.0 + 0im, dc)
     for (s, exp) ∈ ((:ψ₄, 0), (:ψ₃, 1), (:ψ₂, 2), (:ψ₁, 3), (:ψ₀, 4))
         i = Scri.component_index(dc, Val(s))
         @test data[i] ≈ κ⁻¹^3 * (1 + f)^exp
     end
 end
 
-@testitem "mix_components!: σ and h shift by the precomputed σshift and hshift" tags = [
-    :unit, :fast
-] begin
+@testitem "mix_components!: σ and h shift by ð²α and its conjugate" tags = [:unit, :fast] begin
     import Random
     import Scri: DataComponents
 
-    # σ' = κ⁻¹·(σ + σshift),  h' = κ⁻¹·(h + hshift), where the caller precomputes
-    # σshift = F_σ·ð²α/2 and hshift = F_h·conj(ð²α)/2 (with F_σ = F_h = 1 natively).
+    # σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
     rng = Random.Xoshiro(99)
     dc = DataComponents(:σ, :h)
     for _ ∈ 1:8
@@ -239,9 +236,46 @@ end
         κ⁻¹ = 0.5 + randn(rng)
         ð²α = randn(rng, ComplexF64)
         data = ComplexF64[σ_v, h_v]
-        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α / 2, conj(ð²α) / 2, dc)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc)
         @test data[1] ≈ κ⁻¹ * (σ_v + ð²α / 2)
         @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α) / 2)
+    end
+end
+
+@testitem "mix_components!: convention factors appear as in the formulas" tags = [
+    :unit, :fast, :validation
+] begin
+    import Random
+    import Scri: DataComponents, Conventions, dyad_factor, shear_factor, strain_factor
+
+    # With a generic convention carried by `dc`, the laws read (docs, "Convention
+    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
+    # shifts F_σ·ð²α/2 and F_h·ð̄²α/2.
+    rng = Random.Xoshiro(17)
+    X = Conventions(; c_s=-1, c_Ψ=-1, c_σ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    q = dyad_factor(X)
+    for _ ∈ 1:4
+        ψs = randn(rng, ComplexF64, 2)
+        σ_v, h_v = randn(rng, ComplexF64), randn(rng, ComplexF64)
+        κ⁻¹ = 0.5 + randn(rng)
+        f = randn(rng, ComplexF64)     # ðt′╱2κ
+        ð²α = randn(rng, ComplexF64)
+
+        # ℐ⁺: ψ₃′ = κ⁻³(ψ₃ + (c_l c_m)·ðu′/2κ·ψ₄), σ/h shifts by F_σ, F_h.
+        dc⁺ = DataComponents(:ψ₄, :ψ₃, :σ, :h; conventions=X)
+        data = ComplexF64[ψs[1], ψs[2], σ_v, h_v]
+        Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁺)
+        @test data[2] ≈ κ⁻¹^3 * (ψs[2] + q * f * ψs[1])
+        @test data[3] ≈ κ⁻¹ * (σ_v + shear_factor(X, +1) * ð²α / 2)
+        @test data[4] ≈ κ⁻¹ * (h_v + strain_factor(X) * conj(ð²α) / 2)
+
+        # ℐ⁻: the tower mixes downward on conj(ðt′/2κ)/(c_l c_m), and the shifts negate.
+        dc⁻ = DataComponents(:ψ₀, :ψ₁, :σ, :h; ℐ=-1, conventions=X)
+        data = ComplexF64[ψs[1], ψs[2], σ_v, h_v]
+        Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁻)
+        @test data[2] ≈ κ⁻¹^3 * (ψs[2] + (conj(f) / q) * ψs[1])
+        @test data[3] ≈ κ⁻¹ * (σ_v - shear_factor(X, -1) * ð²α / 2)
+        @test data[4] ≈ κ⁻¹ * (h_v - strain_factor(X) * conj(ð²α) / 2)
     end
 end
 
@@ -294,14 +328,7 @@ end
         news = randn(rng, ComplexF64)
         κ⁻¹ = 0.5 + randn(rng)
         data = ComplexF64[news]
-        Scri.mix_components!(
-            data,
-            κ⁻¹,
-            randn(rng, ComplexF64),
-            randn(rng, ComplexF64),
-            randn(rng, ComplexF64),
-            dc,
-        )
+        Scri.mix_components!(data, κ⁻¹, randn(rng, ComplexF64), randn(rng, ComplexF64), dc)
         @test data[1] ≈ κ⁻¹^2 * news
     end
 end

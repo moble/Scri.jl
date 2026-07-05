@@ -83,17 +83,10 @@ function transform!(
     Nᵖ = Nᵐ
     block_size = max(1, min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
 
-    # Convention insertions — the only places a same-convention transform differs from the
-    # native SXS computation (see the "Convention dependence" documentation section).
-    conventions = dc.conventions
-    c_α = conventions.c_α * 1  # time-law sign in t′ = κ(t − c_α*α)
-    # Mixing parameter: b → (c_l c_m) b on ℐ⁺.  On ℐ⁻ the physical rescaling is
-    # b̄ → b̄/(c_l c_m), but `mix_components!` conjugates its argument internally there, so
-    # the factor applied *before* that conjugation is the conjugate of the inverse.
-    b_factor = I == 1 ? dyad_factor(conventions) : conj(inv(dyad_factor(conventions)))
-    # Inhomogeneous shear/strain shift factors, F_σ and F_h.
-    F_σ = shear_factor(conventions, I)
-    F_h = strain_factor(conventions)
+    # The time-law sign in t′ = κ(t − c_α α) comes from the data conventions; the remaining
+    # convention factors (dyad rescaling of the mixing parameter and the F_σ/F_h shift
+    # factors) live in `mix_components!`, which reads them from `dc` itself.
+    c_α = dc.conventions.c_α
 
     ###
     ### Stage 0: Precompute various quantities needed for the transformation
@@ -244,10 +237,9 @@ function transform!(
             )
         end
         κ⁻¹ᵢ = γ * (1 - I * v⃗dotn̂ᵢ)
-        ðt′╱2κₚ₀ᵢ = b_factor * ðt′╱2κₚ[1, i]
-        ðt′╱2κₚ₁ᵢ = b_factor * ðt′╱2κₚ[2, i]
-        σshiftᵢ = F_σ * ð²αₚ[i] / 2
-        hshiftᵢ = F_h * conj(ð²αₚ[i]) / 2
+        ðt′╱2κₚ₀ᵢ = ðt′╱2κₚ[1, i]
+        ðt′╱2κₚ₁ᵢ = ðt′╱2κₚ[2, i]
+        ð²αₚᵢ = ð²αₚ[i]
         αₚᵢ = αₚ[i]
 
         # Copy pixel time series into the dᵢ buffer.  Note that tests comparing this
@@ -319,7 +311,7 @@ function transform!(
                         end
                     end
                     ðt′╱2κᵢⱼ = ðt′╱2κₚ₀ᵢ + tᵢⱼ′ * ðt′╱2κₚ₁ᵢ
-                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱2κᵢⱼ, σshiftᵢ, hshiftᵢ, dc)
+                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱2κᵢⱼ, ð²αₚᵢ, dc)
                     j′ -= 1
                     if j′ ≥ 1
                         tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ
