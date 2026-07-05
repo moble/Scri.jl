@@ -310,10 +310,8 @@ components are being processed.
             ð̄v′╱2κ = conj(ðt′╱2κ) / dyad_factor(dc.conventions)
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =
-                    κ⁻³ * (
-                        ψ₄ +
-                        ð̄v′╱2κ * (4ψ₃ + ð̄v′╱2κ * (6ψ₂ + ð̄v′╱2κ * (4ψ₁ + ð̄v′╱2κ * ψ₀)))
-                    )
+                    κ⁻³ *
+                    (ψ₄ + ð̄v′╱2κ * (4ψ₃ + ð̄v′╱2κ * (6ψ₂ + ð̄v′╱2κ * (4ψ₁ + ð̄v′╱2κ * ψ₀))))
             end
             if !isnothing(iψ₃)
                 dataᵢⱼ[iψ₃] = κ⁻³ * (ψ₃ + ð̄v′╱2κ * (3ψ₂ + ð̄v′╱2κ * (3ψ₁ + ð̄v′╱2κ * ψ₀)))

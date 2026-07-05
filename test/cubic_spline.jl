@@ -30,9 +30,7 @@
         # Locate interval and evaluate
         j = clamp(searchsortedlast(t, t_query), 1, N - 1)
         τ = t_query - t[j]
-        return Scri.spline_eval(
-            d[j], d[j + 1], d̈[j], d̈[j + 1], cache.h[j], cache.h⁻¹[j], τ
-        )
+        return Scri.spline_eval(d[j], d[j + 1], d̈[j], d̈[j + 1], cache.h[j], cache.h⁻¹[j], τ)
     end
 end
 
