@@ -264,7 +264,9 @@ components are being processed.
         φ₂ = isnothing(iφ₂) ? 0 : dataᵢⱼ[iφ₂]
 
         if I == +1
-            # In convention X the mixing parameter is the dyad-rescaled b = c_l c_m ðu′/2κ.
+            # The ℐ⁺ tower mixes upward, so the convention-X mixing parameter is the SXS
+            # input rescaled by the neighboring-factor ratio Fₙ/Fₙ₊₁ = c_l c_m:
+            # b^{[X]} = (c_l c_m)·(ðt′/2κ).
             ðu′╱2κ = dyad_factor(dc.conventions) * ðt′╱2κ
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
@@ -306,7 +308,9 @@ components are being processed.
             # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
             # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
             # down to ψ₄ (s=-2): e.g. ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).  Because
-            # this tower mixes downward, the dyad factor divides: Fₙ/Fₙ₋ₖ = (c_l c_m)^{-k}.
+            # this tower mixes downward, the dyad factor divides — Fₙ/Fₙ₋₁ = 1/(c_l c_m) —
+            # and the conjugation acts only on the SXS input, never on the factor:
+            # b̄^{[X]} = conj(ðt′/2κ)/(c_l c_m), which is NOT conj(b^{[X]}) unless c_l² = 1.
             ð̄v′╱2κ = conj(ðt′╱2κ) / dyad_factor(dc.conventions)
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =

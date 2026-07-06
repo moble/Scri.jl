@@ -1,7 +1,7 @@
 # [The Operator ``ð``](@id the-operator-eth)
 
-Throughout this package, ``ð`` is the **Newman–Penrose** eth (the
-spin-raising operator), *not* the Geroch–Held–Penrose (GHP) one.
+Throughout this package, the operator[^1] ``ð`` is the spin-raising
+**Newman–Penrose** operator, *not* the Geroch–Held–Penrose (GHP) one.
 Restricted to the unit round sphere (with the boost weight dropping
 out), the two differ by a factor of ``\sqrt{2}``:
 
@@ -12,8 +12,9 @@ out), the two differ by a factor of ``\sqrt{2}``:
 While spin-weighted spherical functions [*cannot actually be
 defined*](@cite Boyle_2016) on the sphere ``𝕊²`` itself, we can often
 just about get away with writing them as functions on *coordinates
-over the sphere*.  This is the standard approach in the literature,
-and as such the Newman–Penrose eth is defined as acting on a quantity
+over the sphere*.  (That approach becomes meaningless once we perform
+any transformation.)  This is the standard approach in the literature,
+and as such the Newman–Penrose ð is defined as acting on a quantity
 ``{}_s f`` of spin weight ``s`` via
 
 ```math
@@ -40,8 +41,15 @@ of [the standard tetrad](@ref "The standard tetrad").  Since ``m̃ =
 \qquad (s = 0).
 ```
 
-Equivalently the GHP eth is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
+Equivalently the GHP ð is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
 This relation and the tetrad normalizations are what fix the factors
 of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
 parameter](@ref "BMS action on fields") — whenever ``ð`` of a
 coordinate is re-expressed through the tetrad.
+
+[^1]: This character is the lowercase "eth", which looks like a
+    partial derivative with a diagonal slash (not a horizontal cross)
+    on its ascender.  It represents the *voiced* dental fricative — so
+    the "th" sounds like the one in "this" or "that", as opposed to
+    the one in "thin" or "thick".  You should feel your vocal cords
+    vibrate when you pronounce it.

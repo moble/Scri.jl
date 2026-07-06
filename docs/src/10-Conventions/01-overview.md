@@ -37,6 +37,13 @@ which conventions are being used.  This package provides a
 `Conventions` type to specify the conventions of the input data, so
 that the correct transformation laws are applied.
 
+Overall, this package's default conventions are designed to follow
+[BoyleEtAl_2019](@citet), which describes conventions used for SXS
+waveforms in Appendix C, and [Moxon_2020](@citet) (especially Sec. VI.
+A), which describes the CCE evolution implemented in the SpECTRE code.
+[Iozzo_2021](@citet) constructed a framework for comparing conventions
+across the literature, which is extended here.
+
 ## [The `Conventions` Type](@id conventions-type)
 
 To keep track of the conventions in effect, we provide a simple
@@ -70,6 +77,10 @@ The "Space" column indicates the set of values that each parameter can
 take.  The superscript ``×`` indicates the multiplicative group of
 nonzero elements of the field — meaning that the parameters cannot be
 zero.
+
+A user can make choices about these conventions, and implement them by
+creating a `Conventions` object with the desired values, then passing
+that object to the relevant functions.
 
 ```@docs; canonical=false
 Scri.Conventions
