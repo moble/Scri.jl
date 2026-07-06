@@ -34,7 +34,8 @@ const titles = Dict(
     "80-details" => "Details",
     "91-developer.md" => "Developer docs",
     "65-api.md" => "API",
-    "99-local_notes" => "Notes",
+    "99-local_notes" => "Local Notes",
+    "10-Conventions" => "Conventions",
 )
 
 function recursively_list_pages(folder; path_prefix="")

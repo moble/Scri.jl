@@ -42,7 +42,7 @@ b = \frac{ðu'}{2κ}
 ## Weyl components
 
 The Newman–Penrose Weyl components are the contractions
-([Conventions](@ref "Metric, curvature, and perturbations"))
+(see [Tensor Components](@ref))
 
 ```math
 \begin{aligned}
@@ -151,7 +151,7 @@ parameter ``b``: the shear contracts *two* dyad legs into the second
 derivative of the cut, ``σ - σ^0 = m̃^A m̃^B D_A D_B f``, and since
 ``m̃ = (∂_θ + i\cscθ\,∂_ϕ)/\sqrt2`` carries a ``1/\sqrt2`` on each leg,
 ``m̃^A m̃^B D_A D_B = \tfrac12 ð^2`` in the [Newman–Penrose
-normalization](@ref "The eth operator") of ``ð``.
+normalization](@ref the-operator-eth) of ``ð``.
 
 This shift comes straight out of [the tetrad
 transformation](@ref "BMS action on the tetrad").  Feed the transformed

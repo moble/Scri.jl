@@ -1,40 +1,5 @@
 # Conventions
 
-As with all of GR, the literature on spacetime asymptotics is,
-unfortunately, full of subtly varying conventions for objects that are
-fundamentally the same.  The metric signature, the tetrad
-normalization, curvature quantities, and even the ``ð`` operator all
-differ between references.  These choices are not just internal; they
-actually affect the transformation laws of the fields.  For example,
-the Newman–Penrose Weyl components ``Ψ_n`` are defined as contractions
-of the Weyl tensor with various elements of the tetrad, ``(l, m,
-\bar{m}, n)``.  But these are null vectors, so the normalizations are
-not fixed and naturally (even accounting for different letters used to
-represent the elements) different authors choose different
-normalizations for the tetrad elements.  For example, two reasonable
-choices found in the literature require
-
-```math
-\begin{aligned}
-l \qquad &↔ \qquad l\sqrt{2}, \\
-\hphantom{\sqrt{2}}n \qquad &↔ \qquad n/\sqrt{2},
-\end{aligned}
-```
-
-which changes the transformation law for ``ψ₃`` in a nontrivial way:
-
-```math
-ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} ψ₄\right]
-\qquad ↔ \qquad
-ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} \frac{ψ₄}{\sqrt{2}}\right].
-```
-
-Assuming wrong conventions about the input data can lead to incorrect
-results, so it is important to know which conventions are being used.
-This package provides a `Conventions` type to specify the conventions
-of the input data, so that the correct transformation laws are
-applied.  The overhead of using non-default conventions is very small.
-
 ---
 
 An important source of these conventions is [BoyleEtAl_2019](@citet),
@@ -57,137 +22,6 @@ Nominal values for solar and planetary quantities are given in
 [PršaEtAl_2016](@citet).  Other constants can be found in the
 [`lisaconstants` package](https://pypi.org/project/lisaconstants/),
 which otherwise integrates with [`astropy`](https://www.astropy.org/).
-
-## Metric, curvature, and perturbations
-
-The signature is ``{-}{+}{+}{+}``, and we use units where ``G=c=1``.
-
-The Christoffel symbols and the Riemann, Ricci, and Weyl tensors
-follow the Misner-Thorne-Wheeler conventions
-[MisnerThorneWheeler_1973](@cite) — Eqs. (14.36), (8.44), (8.47), and
-(13.50) of that reference, respectively:
-
-```math
-\begin{gathered}
-{\Gamma^a}_{bc} = \frac{1}{2} g^{ad} \bigl( \partial_b g_{cd} + \partial_c g_{bd} - \partial_d g_{bc} \bigr), \\
-{R^a}_{bcd} = \partial_c {\Gamma^a}_{bd} - \partial_d {\Gamma^a}_{bc} + {\Gamma^a}_{ce} {\Gamma^e}_{bd} - {\Gamma^a}_{de} {\Gamma^e}_{bc}, \\
-R_{ab} = {R^c}_{acb}, \\
-C_{abcd} = R_{abcd} - \frac{1}{2} (g_{ac} R_{bd} - g_{ad} R_{bc} + g_{bd} R_{ac} - g_{bc} R_{ad}) + \frac{1}{6} R (g_{ac} g_{bd} - g_{ad} g_{bc}).
-\end{gathered}
-```
-
-The Newman-Penrose Weyl components are defined as
-
-```math
-\begin{aligned}
-\Psi_0 &= C_{abcd} \ell^a m^b \ell^c m^d, \\
-\Psi_1 &= C_{abcd} \ell^a n^b \ell^c m^d, \\
-\Psi_2 &= C_{abcd} \ell^a m^b \bar{m}^c n^d, \\
-\Psi_3 &= C_{abcd} \ell^a n^b \bar{m}^c n^d, \\
-\Psi_4 &= C_{abcd} n^a \bar{m}^b n^c \bar{m}^d.
-\end{aligned}
-```
-
-The (Maxwell/Faraday) field-strength tensor ``F_{ab}`` is similarly
-decomposed into components as
-
-```math
-\begin{aligned}
-φ_0 &= F_{ab}\, ℓ^a m^b, \\
-φ_1 &= \tfrac{1}{2} F_{ab}\, (ℓ^a n^b + \bar{m}^a m^b), \\
-φ_2 &= F_{ab}\, \bar{m}^a n^b.
-\end{aligned}
-```
-
-These are consistent with the Weyl components above: each ``φ_n``
-carries spin weight ``1-n`` (just as ``Ψ_n`` carries ``2-n``), and
-stepping down the tower swaps an ``ℓ``-type dyad slot (``o``) for an
-``n``-type one (``ι``).  The overall sign is the ``c_φ`` of the
-[convention table](@ref "Convention parameters") below, and —
-paralleling the Weyl conversion ``∝ (c_l c_m)^{2-n}`` — the
-inter-convention factor is
-
-```math
-φ_n^{[X]} = c_φ\, (c_l c_m)^{1-n}\, φ_n^{[\mathrm{SpEC}]},
-```
-
-with the dyad scaling ``c_l c_m`` raised to the spin weight
-``1-n`` and no Riemann-sign factor (the field strength does not see the
-curvature convention).
-
-The metric perturbation is defined as
-
-```math
-h_{ab} = g_{ab} - \eta_{ab},
-```
-
-where ``\eta_{ab}`` is the Minkowski metric.  The strain components
-are defined as
-
-```math
-\begin{aligned}
-h_+ &= \frac{1}{2} (h_{\hat{\theta}\hat{\theta}} - h_{\hat{\phi}\hat{\phi}}), \\
-h_\times &= h_{\hat{\theta}\hat{\phi}}, \\
-h &= h_+ - i h_\times.
-\end{aligned}
-```
-
-where the hats indicate orthonormal components in the spherical basis.
-Near *future* null infinity, we have the asymptotic relation
-
-```math
-\Psi_4 \sim -\ddot{h},
-```
-
-where the dots indicate time derivatives.
-
-## The eth operator
-
-Throughout this package, ``ð`` is the **Newman–Penrose** eth (the
-spin-raising operator), *not* the Geroch–Held–Penrose (GHP) one.
-Restricted to the unit round sphere (with the boost weight dropping
-out), the two differ by a factor of ``\sqrt{2}``:
-
-```math
-ð_{\mathrm{NP}} = \sqrt{2}\, ð_{\mathrm{GHP}}.
-```
-
-While spin-weighted spherical functions [*cannot actually be
-defined*](@cite Boyle_2016) on the sphere ``𝕊²`` itself, we can often
-just about get away with writing them as functions on *coordinates
-over the sphere*.  This is the standard approach in the literature,
-and as such the Newman–Penrose eth is defined as acting on a quantity
-``{}_s f`` of spin weight ``s`` via
-
-```math
-ð\, {}_s f = -(\sin θ)^{s}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)
-\left[(\sin θ)^{-s}\, {}_s f\right],
-```
-
-raising the spin weight by one; equivalently, on the spin-weighted
-spherical harmonics,
-
-```math
-ð\, {}_s Y_{ℓ,m} = \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
-```
-
-For a spin-0 function this is just ``ð f = -\left(∂_θ + \frac{i}{\sin
-θ}∂_ϕ\right) f``, which ties ``ð`` directly to the angular dyad ``m``
-of [the standard tetrad](@ref "The standard tetrad").  Since ``m̃ =
-\frac{1}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)``,
-
-```math
-ð f = -\sqrt{2}\, m̃(f),
-\qquad
-ð̄ f = -\sqrt{2}\, m̄̃(f)
-\qquad (s = 0).
-```
-
-Equivalently the GHP eth is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
-This relation and the tetrad normalizations are what fix the factors
-of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
-parameter](@ref "BMS action on fields") — whenever ``ð`` of a
-coordinate is re-expressed through the tetrad.
 
 ## Convention parameters
 
@@ -234,12 +68,11 @@ must have unit modulus.  The `Conventions` constructor validates both.
 the ``c_m^{-2}`` below are unambiguous.)
 
 Two defaults deserve emphasis.  ``c_s=+1`` is the ``−+++`` signature
-fixed [above](@ref "Metric, curvature, and perturbations"); note that
-the SpEC convention's ``c_s=+1`` already *implies* ``−+++``.  And
-``c_ð=1`` is the Newman–Penrose ``ð`` of [The eth operator](@ref), in
-which ``ð`` carries **no** ``\sqrt2`` — ``ð f = -(∂_θ + i\cscθ\,∂_φ)f``
-on a spin-0 ``f`` (a Geroch–Held–Penrose ``ð`` would be ``c_ð =
-1/\sqrt2``).
+fixed above; note that the SpEC convention's ``c_s=+1`` already
+*implies* ``−+++``.  And ``c_ð=1`` is the Newman–Penrose ``ð`` of [The
+eth operator](@ref the-operator-eth), in which ``ð`` carries **no**
+``\sqrt2`` — ``ð f = -(∂_θ + i\cscθ\,∂_φ)f`` on a spin-0 ``f`` (a
+Geroch–Held–Penrose ``ð`` would be ``c_ð = 1/\sqrt2``).
 
 Inter-convention conversion of the Weyl and Faraday components (from
 the appendix) is
