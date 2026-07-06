@@ -403,7 +403,7 @@ end
     # A maximally generic convention: every sign flipped, dyad rescaled and rotated in
     # phase, strain rescaled.  (c_ð is set too, but must not affect any transform.)
     X = Scri.Conventions(;
-        c_s=-1, c_R=-1, c_Ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2, c_ð=1 / √2
+        c_s=-1, c_R=-1, c_ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2, c_ð=1 / √2
     )
     v⃗ = QuatVec(0.02, -0.03, 0.05)
     R = rotor(QuatVec(0.1, 0.2, -0.3))

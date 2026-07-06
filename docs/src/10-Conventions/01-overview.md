@@ -8,7 +8,7 @@ fundamentally the same.  The metric signature, the tetrad
 normalization, curvature quantities, and even the ``ð`` operator all
 differ between references.  These choices are not just internal; they
 actually affect the transformation laws of the fields.  For example,
-the Newman–Penrose Weyl components ``Ψ_n`` are defined as contractions
+the Newman–Penrose Weyl components ``ψ_n`` are defined as contractions
 of the Weyl tensor with various elements of the tetrad, ``(l, m,
 \bar{m}, n)``.  But these are null vectors, so the normalizations are
 not fixed and naturally (even accounting for different letters used to
@@ -56,10 +56,10 @@ within their own conventions, but might differ over the value of the
 | Parameter                              | Quantity                  | Default | Space         |
 |:---------------------------------------|:--------------------------|:-------:|:-------------:|
 | [``c_s``](@ref "Metric and Curvature") | Metric signature          | ``1``   | ``\{-1,+1\}`` |
-| [``c_R``](@ref "Metric and Curvature") | Riemann definition        | ``1``   | ``ℝ^×``       |
+| [``c_R``](@ref "Metric and Curvature") | Riemann definition        | ``1``   | ``\{-1,+1\}`` |
 | [``c_l``](@ref "Tetrad")               | Tetrad ``l`` scale        | ``1``   | ``ℝ^×``       |
 | [``c_m``](@ref "Tetrad")               | Tetrad ``m`` phase        | ``1``   | ``e^{iℝ}``    |
-| [``c_Ψ``](@ref "Tensor Components")    | Weyl component definition | ``1``   | ``ℂ^×``       |
+| [``c_ψ``](@ref "Tensor Components")    | Weyl component definition | ``1``   | ``ℂ^×``       |
 | [``c_σ``](@ref "Tensor Components")    | Shear definition          | ``1``   | ``ℂ^×``       |
 | [``c_h``](@ref "Tensor Components")    | Complex strain definition | ``1``   | ``ℂ^×``       |
 | [``c_φ``](@ref "Tensor Components")    | Faraday definition        | ``1``   | ``ℂ^×``       |

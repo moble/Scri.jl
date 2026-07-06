@@ -6,7 +6,7 @@
     c = Conventions()
     @test c.c_s == 1
     @test c.c_R == 1
-    @test c.c_Ψ == 1
+    @test c.c_ψ == 1
     @test c.c_σ == 1
     @test c.c_φ == 1
     @test c.c_α == 1
@@ -24,7 +24,7 @@ end
     import Scri: Conventions
 
     @test_throws ArgumentError Conventions(; c_s=2)        # sign must be ±1
-    @test_throws ArgumentError Conventions(; c_Ψ=0)
+    @test_throws ArgumentError Conventions(; c_ψ=0)
     @test_throws ArgumentError Conventions(; c_α=2)        # c_α is a sign too
     @test_throws ArgumentError Conventions(; c_l=0)        # factors must be nonzero
     @test_throws ArgumentError Conventions(; c_m=0)        # c_m is a (nonzero) factor now
@@ -53,11 +53,11 @@ end
     # :MB — Boyle/Lehner.
     c = Conventions(:MB)
     @test c.c_s === MinusOne() && c.c_l === -√2 && c.c_h === 2
-    @test c.c_R === One() && c.c_Ψ === One() && c.c_σ === One() && c.c_m === One()
+    @test c.c_R === One() && c.c_ψ === One() && c.c_σ === One() && c.c_m === One()
 
     # :NP — Newman–Penrose (1968); the old angle Θ = π is the factor c_m = −1.
     c = Conventions(:NP)
-    @test c.c_s === MinusOne() && c.c_Ψ === MinusOne()
+    @test c.c_s === MinusOne() && c.c_ψ === MinusOne()
     @test c.c_l === -√2 && c.c_m === MinusOne()
 
     # :ADLK — Ashtekar et al.
@@ -66,11 +66,11 @@ end
 
     # :BR — Bishop et al.
     c = Conventions(:BR)
-    @test c.c_Ψ === MinusOne() && c.c_l === One()
+    @test c.c_ψ === MinusOne() && c.c_l === One()
 
     # :C — Chandrasekhar.
     c = Conventions(:C)
-    @test c.c_s === MinusOne() && c.c_Ψ === MinusOne() && c.c_l === -√2
+    @test c.c_s === MinusOne() && c.c_ψ === MinusOne() && c.c_l === -√2
 
     # The precision keyword controls the type of inexact entries.
     using DoubleFloats: Double64
@@ -111,11 +111,11 @@ end
     # A generic convention: check every factor against its defining formula, written
     # in export form q^[X] = F q^[SXS].
     c_l, c_m, c_h = -√2, cis(π / 4), 3 + 4im
-    X = Conventions(; c_s=-1, c_R=-1, c_Ψ=-1, c_σ=-1, c_φ=-1, c_l, c_m, c_h)
+    X = Conventions(; c_s=-1, c_R=-1, c_ψ=-1, c_σ=-1, c_φ=-1, c_l, c_m, c_h)
     q = c_l * c_m
     @test dyad_factor(X) ≈ q
     for n ∈ 0:4
-        @test weyl_factor(X, n) ≈ (-1)^3 * q^(2 - n)  # c_s c_Ψ c_R = (−1)³
+        @test weyl_factor(X, n) ≈ (-1)^3 * q^(2 - n)  # c_s c_ψ c_R = (−1)³
     end
     for n ∈ 0:2
         @test faraday_factor(X, n) ≈ -q^(1 - n)       # c_φ = −1

@@ -39,7 +39,7 @@ the package's native convention.
 | ``c_R``   | Riemann sign          | ``1``   |
 | ``c_l``   | ``l``-leg scale       | ``1``   |
 | ``c_m``   | ``m``-leg scale       | ``1``   |
-| ``c_Ψ``   | Weyl sign             | ``1``   |
+| ``c_ψ``   | Weyl sign             | ``1``   |
 | ``c_σ``   | shear sign            | ``1``   |
 | ``c_h``   | strain scale          | ``1``   |
 | ``c_φ``   | Faraday sign          | ``1``   |
@@ -78,7 +78,7 @@ Inter-convention conversion of the Weyl and Faraday components (from
 the appendix) is
 
 ```math
-ψ_n^{[X]} = c_s c_Ψ c_R\,(c_l c_m)^{2-n}\, ψ_n^{[\mathrm{SpEC}]},
+ψ_n^{[X]} = c_s c_ψ c_R\,(c_l c_m)^{2-n}\, ψ_n^{[\mathrm{SpEC}]},
 \qquad
 φ_n^{[X]} = c_φ\,(c_l c_m)^{1-n}\, φ_n^{[\mathrm{SpEC}]},
 ```
@@ -111,7 +111,7 @@ appropriate ratio of factors.
 A *transformation* that stays within one convention is more economical
 than these inter-convention factors suggest: as worked out in ["BMS
 action on fields"](@ref convention_dependence_fields), the
-overall signs ``c_s, c_Ψ, c_R, c_φ`` cancel out of the (homogeneous)
+overall signs ``c_s, c_ψ, c_R, c_φ`` cancel out of the (homogeneous)
 peeling towers, leaving only the **dyad scaling ``c_l c_m``**,
 which rescales the mixing parameter ``b``; and the eth coefficient
 ``c_ð`` does not enter a transform at all — it changes only how ``ð``

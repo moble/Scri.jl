@@ -9,7 +9,7 @@ generated code.  Because the value lives in the type, multiplication is resolved
 `One() * x` returns `x` itself (the very same object) and `MinusOne() * x` returns `-x`, so a
 convention factor of ``±1`` costs nothing (at most a negation) rather than a runtime multiply.
 Products of these singletons stay singletons (`MinusOne() * MinusOne() === One()`), so a chain
-like ``c_s c_Ψ c_R`` collapses to a single `One`/`MinusOne` before it ever touches field data.
+like ``c_s c_ψ c_R`` collapses to a single `One`/`MinusOne` before it ever touches field data.
 
 They deliberately do **not** subtype `Number`.  A ``±1`` newtype that did would have to define
 `*(::One, ::Number)` and `convert(::Type{<:Number}, ::One)`, which then clash — irreconcilably,

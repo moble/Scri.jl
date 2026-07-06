@@ -24,7 +24,7 @@ decomposed into components as
 ```
 
 These are consistent with the Weyl components above: each ``φ_n``
-carries spin weight ``1-n`` (just as ``Ψ_n`` carries ``2-n``), and
+carries spin weight ``1-n`` (just as ``ψ_n`` carries ``2-n``), and
 stepping down the tower swaps an ``ℓ``-type dyad slot (``o``) for an
 ``n``-type one (``ι``).  The overall sign is the ``c_φ`` of the
 [convention table](@ref "Convention parameters") below, and —

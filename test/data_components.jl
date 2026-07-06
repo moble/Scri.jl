@@ -252,7 +252,7 @@ end
     # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
     # shifts F_σ·ð²α/2 and F_h·ð̄²α/2.
     rng = Random.Xoshiro(17)
-    X = Conventions(; c_s=-1, c_Ψ=-1, c_σ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
     q = dyad_factor(X)
     for _ ∈ 1:4
         ψs = randn(rng, ComplexF64, 2)
@@ -287,7 +287,7 @@ end
 
     rng = Random.Xoshiro(3)
     comps = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
-    X = Conventions(; c_s=-1, c_Ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
     Y = Conventions(:MB)
 
     for ℐ ∈ (+1, -1)

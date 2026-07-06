@@ -1,21 +1,41 @@
 """
     Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
 
-Sign and scale factors setting a choice of conventions for asymptotic field quantities,
-following the conventions appendix (sign/scale parameters ``s₀, s₁, s₂, s₃, λ, Θ, ζ`` there,
-renamed here to mnemonic ``c`` parameters).  Each field is a ``c``-parameter; the defaults
-reproduce the **SXS** conventions.
+Sign and scale factors setting conventions.  The parameters are
 
-Every parameter is defined in **export form**: it takes a quantity from the package-native
-SXS convention *to* the convention being described, as in ``q^{[X]} = c_q q^{[SXS]}`` (and
-per tetrad leg, ``ℓ^{[X]} = c_l ℓ^{[SXS]}``, ``m^{[X]} = c_m m^{[SXS]}``, with ``n^{[X]} =
-n^{[SXS]}/c_l`` forced by the ``ℓ·n`` normalization).  Because ``ℓ`` is a real null vector,
-`c_l` must be real; because ``m·m̄`` is fixed, `c_m` must be a unit-modulus phase.  Both are
-validated.
+  - `c_s` for the signature of the metric
+  - `c_R` for the Riemann tensor
+  - `c_l` for the tetrad vector `l`
+  - `c_m` for the tetrad vector `m`
+  - `c_ψ` for the Weyl components
+  - `c_σ` for the shear
+  - `c_h` for the complex strain
+  - `c_φ` for the Faraday components
+  - `c_ð` for the ð operator
+  - `c_α` for the supertranslation law
+
+For precise definitions of each of these factors, see the [documentation](@ref
+conventions-overview).  The default values are all 1, corresponding to the SXS conventions.
+
+We constrain the possible values of these factors.  The signature `c_s`, Riemann definition
+`c_R`, and supertranslation law `c_α` only ever differ by signs, so they must be ±1.  The
+tetrad vector `l` is real, so `c_l` must be real.  The tetrad vector `m` is complex, but
+must obey ``m ⋅ m̄ = c_s``, so `c_m` must have unit modulus (approximately).  And all of
+these factors must be nonzero, but there are so many bizarre conventions that we permit them
+to be complex if desired — though they will also usually just be signs.
+
+Note that we *do* assume various structural conventions, such as ``l`` being the outgoing
+null vector (so that ``ψ₄`` is the radiative field at future null infinity), ``m`` having a
+certain handedness, and ``h`` having spin weight ``-2``.  Any users wishing to use different
+structural conventions will have to handle the conversions themselves.
+
+The types of all of these factors are retained as the type parameters of `Conventions`
+listed above — `S,R,L,M,Ψ,Σ,H,Φ,Ð,A` — to allow for type stability and compile-time
+optimization.  Most common conventions will compile away entirely.
 
 Construct with keywords (validated), or by name from the table of published conventions:
 
-    Conventions()                   # SXS + Newman–Penrose ð (the package default)
+    Conventions()                   # SXS defaults
     Conventions(; c_s=-1, c_l=-√2)  # a custom convention
     Conventions(:NP)                # a named preset; see the symbol-argument docstring
 
@@ -25,7 +45,7 @@ struct Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
     c_R::R
     c_l::L
     c_m::M
-    c_Ψ::Ψ
+    c_ψ::Ψ
     c_σ::Σ
     c_h::H
     c_φ::Φ
@@ -33,22 +53,41 @@ struct Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
     c_α::A
 end
 
-function Conventions(; c_s=1, c_R=1, c_l=1, c_m=1, c_Ψ=1, c_σ=1, c_h=1, c_φ=1, c_ð=1, c_α=1)
-    for (name, c) ∈
-        (("c_s", c_s), ("c_R", c_R), ("c_Ψ", c_Ψ), ("c_σ", c_σ), ("c_φ", c_φ), ("c_α", c_α))
-        c == 1 || c == -1 || throw(ArgumentError("$name is a sign and must be ±1; got $c"))
+function Conventions(; c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_h=1, c_φ=1, c_ð=1, c_α=1)
+    for (name, c) ∈ (("c_s", c_s), ("c_R", c_R), ("c_α", c_α))
+        if c ≠ 1 && c ≠ -1
+            throw(ArgumentError("$name is a sign and must be ±1; got $c"))
+        end
     end
-    (iszero(c_l) || iszero(c_h) || iszero(c_ð)) &&
-        throw(ArgumentError("c_l, c_h, and c_ð must be nonzero"))
-    isreal(c_l) || throw(
-        ArgumentError("c_l scales the real null vector ℓ, so it must be real; got $c_l")
+    for (name, c) ∈ (("c_l", c_l),)
+        if !isreal(c)
+            throw(ArgumentError("$name must be real; got $c"))
+        end
+    end
+    if abs2(c_m) ≉ 1
+        throw(
+            ArgumentError(
+                "c_m is the spin-phase factor e^(iΘ) of the m leg, " *
+                "so it must have unit modulus; got $c_m",
+            ),
+        )
+    end
+    for (name, c) ∈ (
+        ("c_s", c_s),
+        ("c_R", c_R),
+        ("c_l", c_l),
+        ("c_m", c_m),
+        ("c_ψ", c_ψ),
+        ("c_σ", c_σ),
+        ("c_h", c_h),
+        ("c_φ", c_φ),
+        ("c_ð", c_ð),
+        ("c_α", c_α),
     )
-    abs2(c_m) ≈ 1 || throw(
-        ArgumentError(
-            "c_m is the spin-phase factor e^(iΘ) of the m leg, " *
-            "so it must have unit modulus; got $c_m",
-        ),
-    )
+        if iszero(c)
+            throw(ArgumentError("$name must be nonzero; got $c"))
+        end
+    end
     # Exact ±1 → singleton (so common conventions elide); every other value is kept in its input
     # type verbatim, with no float conversion — extended-precision inputs stay exact, and it is
     # the caller's job to combine them only through precision-preserving operations (e.g. `x / y`
@@ -58,7 +97,7 @@ function Conventions(; c_s=1, c_R=1, c_l=1, c_m=1, c_Ψ=1, c_σ=1, c_h=1, c_φ=1
         signify(c_R),
         signify(c_l),
         signify(c_m),
-        signify(c_Ψ),
+        signify(c_ψ),
         signify(c_σ),
         signify(c_h),
         signify(c_φ),
@@ -83,13 +122,13 @@ function Conventions(name::Symbol; T::Type{<:Real}=Float64)
     elseif name === :MB
         Conventions(; c_s=-1, c_l=(-s2), c_h=2)
     elseif name === :NP
-        Conventions(; c_s=-1, c_Ψ=-1, c_l=(-s2), c_m=-1)
+        Conventions(; c_s=-1, c_ψ=-1, c_l=(-s2), c_m=-1)
     elseif name === :ADLK
         Conventions(; c_σ=-1, c_l=(-s2))
     elseif name === :BR
-        Conventions(; c_Ψ=-1)
+        Conventions(; c_ψ=-1)
     elseif name === :C
-        Conventions(; c_s=-1, c_Ψ=-1, c_l=(-s2))
+        Conventions(; c_s=-1, c_ψ=-1, c_l=(-s2))
     else
         throw(
             ArgumentError(
@@ -116,12 +155,12 @@ dyad_factor(c::Conventions) = c.c_l * c.c_m
     weyl_factor(c::Conventions, n::Integer)
 
 Factor taking the Weyl component ``ψₙ`` from the SXS convention to convention `c`:
-``ψₙ^{[c]} = c_s c_Ψ c_R (c_l c_m)^{2-n} ψₙ^{[SXS]}``.
+``ψₙ^{[c]} = c_s c_ψ c_R (c_l c_m)^{2-n} ψₙ^{[SXS]}``.
 """
 function weyl_factor(c::Conventions, n::Integer)
     0 ≤ n ≤ 4 || throw(ArgumentError("Weyl component index n must be in 0:4; got $n"))
     q = dyad_factor(c)
-    F = c.c_s * c.c_Ψ * c.c_R
+    F = c.c_s * c.c_ψ * c.c_R
     # Written without negative integer powers, which would throw for exact integer scales.
     return if n == 0
         F * q^2

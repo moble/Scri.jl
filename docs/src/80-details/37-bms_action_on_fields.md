@@ -307,7 +307,7 @@ parameters") — all in **export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
 
 ```math
 ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},
-\quad F_n = c_s c_Ψ c_R\,(c_l c_m)^{2-n};
+\quad F_n = c_s c_ψ c_R\,(c_l c_m)^{2-n};
 \qquad
 h^{[X]} = F_h\, h^{[\mathrm{SpEC}]},
 \quad F_h = c_s c_h^{-1} c_m^{-2},
@@ -329,7 +329,7 @@ depends on whether the law is homogeneous or inhomogeneous.
 \frac{F_n}{F_{n+k}} = (c_l c_m)^{k},
 ```
 
-so the overall signs ``c_s c_Ψ c_R`` cancel between numerator and
+so the overall signs ``c_s c_ψ c_R`` cancel between numerator and
 denominator and the tower keeps its exact shape with a **rescaled
 parameter**
 
@@ -341,7 +341,7 @@ b^{[X]} = c_l\, c_m\, b^{[\mathrm{SpEC}]}
 precisely the dyad scaling found on the [tetrad page](@ref
 convention_dependence_tetrad_future).  The Faraday tower behaves
 identically: ``F_{φ,n}/F_{φ,n+k} = (c_l c_m)^k`` again, and the
-overall ``c_φ`` cancels.  So **none of ``c_s, c_Ψ, c_R, c_φ`` enters a
+overall ``c_φ`` cancels.  So **none of ``c_s, c_ψ, c_R, c_φ`` enters a
 same-convention mixing**; only ``c_l c_m`` does, through ``b``.
 
 On ``ℐ⁻`` the tower mixes *downward* (the parameter is ``\bar b =

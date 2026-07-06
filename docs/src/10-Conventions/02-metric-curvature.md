@@ -95,7 +95,7 @@ The Ricci scalar is then
 ```
 
 And the Weyl tensor is universally defined to track the sign of the
-Riemann tensor, as in Eq.  (13.50) of MTW:
+Riemann tensor, as in Eq. (13.50) of MTW:
 
 ```math
 C_{abcd} =

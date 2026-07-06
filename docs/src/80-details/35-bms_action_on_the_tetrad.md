@@ -309,7 +309,7 @@ normalizations, which already gave the uniform Weyl factor ``1/κ``
 independent of ``c_s``, so it does not touch ``b``.  This single factor
 ``c_l c_m`` is the *only* convention dependence that survives into
 the [component-mixing law](@ref "BMS action on fields"); the
-curvature-sign parameters ``c_R, c_Ψ, c_σ, c_h, c_φ`` appear only when
+curvature-sign parameters ``c_R, c_ψ, c_σ, c_h, c_φ`` appear only when
 the field components are built, and (as shown there) cancel out of a
 same-convention transform.
 
