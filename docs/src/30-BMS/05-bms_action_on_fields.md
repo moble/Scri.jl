@@ -1,7 +1,7 @@
-# BMS action on fields
+# BMS Action on Fields
 
-Having worked out how [the tetrad transforms](@ref "BMS action on the
-tetrad"), we can read off how the field components built from it
+Having worked out how [the tetrad transforms](@ref "BMS Action on the
+Tetrad"), we can read off how the field components built from it
 transform.  Every asymptotic component is a contraction of a curvature
 spinor (or tensor) with some number of tetrad legs, so its
 transformation is assembled from three ingredients, each of which we
@@ -19,7 +19,7 @@ already have:
 
 Throughout, ``b`` denotes that null-rotation parameter — the
 coefficient of the generator in the transformed dyad.[^b]  From [the
-dyad transformation](@ref "BMS action on the tetrad"),
+dyad transformation](@ref "BMS Action on the Tetrad"),
 
 ```math
 m̃' = \frac{e^{iγ}}{κ}\left(m̃ + b\, ñ\right),
@@ -28,16 +28,15 @@ b = \frac{ðu'}{2κ}
 \quad\text{at } ℐ⁺.
 ```
 
-[^b]:
-    Using [Newman and Penrose's](@cite NewmanPenrose_1966) definition
-    of ``ð`` and [the standard tetrad](@ref "The standard tetrad"), we
+[^b]: Using [Newman and Penrose's](@cite NewmanPenrose_1966)
+    definition of ``ð`` and [the standard tetrad](@ref "Tetrad"), we
     can derive the value of this parameter as ``b = ðu'/2κ``.
     [Boyle_2015](@citet) quotes it as ``-ðu'/κ``, but that uses the
     ``ð`` normalization of [GHP_1973](@citet) (whereby
     ``ð_{\mathrm{NP}} = \sqrt{2}\,ð_{\mathrm{GHP}}``) and a different
-    tetrad (see the footnote on "[The standard tetrad](@ref)").
-    Together, those differences in conventions account for the
-    difference in the mixing parameter.
+    tetrad (see the footnote on "[Tetrad](@ref)").  Together, those
+    differences in conventions account for the difference in the
+    mixing parameter.
 
 ## Weyl components
 
@@ -62,8 +61,8 @@ conformal weight ``κ^{-3}``.
 In spinor form ``ψ_n`` is the Weyl spinor ``ψ_{ABCD}`` contracted with
 four basis spinors (the spinor "square roots" of ``ℓ`` and ``n``).
 Because *every* tetrad leg carries the uniform Weyl weight ``1/κ`` (the
-result ``ĝ' = κ²ĝ`` from [the tetrad page](@ref "BMS action on the
-tetrad")), each basis spinor carries ``κ^{-1/2}``, and the four of them
+result ``ĝ' = κ²ĝ`` from [the tetrad page](@ref "BMS Action on the
+Tetrad")), each basis spinor carries ``κ^{-1/2}``, and the four of them
 contribute ``κ^{-2}``.  The asymptotic Weyl spinor itself is the
 rescaled, finite-at-``ℐ`` field ``ψ = Ψ/ω`` built from the physical
 ``Ψ``; since ``ω' = κω`` and ``Ψ`` is coordinate-independent, ``ψ``
@@ -102,7 +101,7 @@ Only ``ψ_4`` — the component assembled entirely from the fixed
 generator ``ñ`` and the screen — is left unmixed; the tower fills in
 the lower components by successive applications of ``b``.  Since ``b``
 grows linearly in ``u`` (the lever arm of the [null
-rotation](@ref "BMS action on the tetrad")), so does the mixing.
+rotation](@ref "BMS Action on the Tetrad")), so does the mixing.
 
 At ``ℐ⁻`` the generator is ``l̃`` instead of ``ñ``, so the null
 rotation fixes ``l̃`` and the tower runs the other way — ``ψ_0`` is the
@@ -154,7 +153,7 @@ derivative of the cut, ``σ - σ^0 = m̃^A m̃^B D_A D_B f``, and since
 normalization](@ref the-operator-eth) of ``ð``.
 
 This shift comes straight out of [the tetrad
-transformation](@ref "BMS action on the tetrad").  Feed the transformed
+transformation](@ref "BMS Action on the Tetrad").  Feed the transformed
 legs
 
 ```math
@@ -175,7 +174,7 @@ with the primed conformal metric ``ĝ' = κ²ĝ``:
 The spin–boost prefactors of the three legs, together with ``∇'``,
 combine into the single boost weight the shear carries as a connection
 coefficient at ``ℐ`` — the uniform Weyl factor ``κ^{-1}`` of [the
-tetrad page](@ref "BMS action on the tetrad"), not the naïve
+tetrad page](@ref "BMS Action on the Tetrad"), not the naïve
 three-leg ``κ^{-3}``, the difference being exactly the conformal
 rescaling absorbed by ``∇'`` — and the spin-weight-``+2`` phase
 ``e^{2iγ}`` (carried, as for the [Weyl and Faraday
@@ -256,8 +255,8 @@ the shear is not.
 
 ## [Past null infinity](@id fields_scri_minus)
 
-Every ``ℐ⁻`` law follows from the [``ℐ⁻`` tetrad](@ref "BMS action on
-the tetrad"), where ``l̃`` and ``ñ`` exchange roles: ``l̃`` is the
+Every ``ℐ⁻`` law follows from the [``ℐ⁻`` tetrad](@ref "BMS Action on
+the Tetrad"), where ``l̃`` and ``ñ`` exchange roles: ``l̃`` is the
 generator, ``ñ`` is transverse, and the advanced time ``v`` replaces
 ``u``.  The null rotation now fixes ``l̃``, shearing the dyad as ``m̃ ↦
 m̃ + b\,l̃`` with ``b = ðv'/2κ`` (spin weight ``+1``), exactly as at

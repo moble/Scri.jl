@@ -31,7 +31,7 @@ spherical harmonics,
 
 For a spin-0 function this is just ``ð f = -\left(∂_θ + \frac{i}{\sin
 θ}∂_ϕ\right) f``, which ties ``ð`` directly to the angular dyad ``m``
-of [the standard tetrad](@ref "The standard tetrad").  Since ``m̃ =
+of [the standard tetrad](@ref "Tetrad").  Since ``m̃ =
 \frac{1}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)``,
 
 ```math
@@ -44,7 +44,7 @@ of [the standard tetrad](@ref "The standard tetrad").  Since ``m̃ =
 Equivalently the GHP ð is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
 This relation and the tetrad normalizations are what fix the factors
 of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
-parameter](@ref "BMS action on fields") — whenever ``ð`` of a
+parameter](@ref "BMS Action on Fields") — whenever ``ð`` of a
 coordinate is re-expressed through the tetrad.
 
 [^1]: This character ``ð`` is the lowercase "eth", which looks like a

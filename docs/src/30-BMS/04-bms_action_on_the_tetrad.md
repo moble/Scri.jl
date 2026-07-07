@@ -1,8 +1,8 @@
-# BMS action on the tetrad
+# BMS Action on the Tetrad
 
-The next question is how [the standard tetrad](@ref "The standard
-tetrad") transforms under coordinate transformations — and
-specifically BMS transformations.
+The next question is how [the standard tetrad](@ref "Tetrad")
+transforms under coordinate transformations — and specifically BMS
+transformations.
 
 ## Future null infinity
 
@@ -61,12 +61,12 @@ the generators by ``κ`` — the same ``κ``, which largely defines the
 BMS group as opposed to an arbitrary conformal map of the sphere.)
 
 This uniform ``1/κ`` is *not* related to the differing powers ``ω⁻²``,
-``ω⁻¹``, ``ω⁰`` by which [the standard tetrad](@ref "The standard
-tetrad") was made regular.  Those are ``ω⁻⁽¹⁺ᵇ⁾`` with ``b`` the boost
-weight (``+1``, ``0``, ``-1`` for ``l̃``, ``m̃``, ``ñ``).  Under BMS
-each leg is regularized with ``ω' = κω`` in place of ``ω`` *and*
-transformed by the Lorentz boost, and the two contributions combine to
-the same ``1/κ`` for every leg:
+``ω⁻¹``, ``ω⁰`` by which [the standard tetrad](@ref "Tetrad") was made
+regular.  Those are ``ω⁻⁽¹⁺ᵇ⁾`` with ``b`` the boost weight (``+1``,
+``0``, ``-1`` for ``l̃``, ``m̃``, ``ñ``).  Under BMS each leg is
+regularized with ``ω' = κω`` in place of ``ω`` *and* transformed by
+the Lorentz boost, and the two contributions combine to the same
+``1/κ`` for every leg:
 
 | leg   | regularize | boost   | net     |
 |-------|:----------:|:-------:|:-------:|
@@ -307,7 +307,7 @@ with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
 normalizations, which already gave the uniform Weyl factor ``1/κ``
 independent of ``c_s``, so it does not touch ``b``.  This single
 factor ``c_l c_m`` is the *only* convention dependence that survives
-into the [component-mixing law](@ref "BMS action on fields"); the
+into the [component-mixing law](@ref "BMS Action on Fields"); the
 curvature-sign parameters ``c_R, c_ψ, c_σ, c_λ, c_h, c_φ`` appear only
 when the field components are built, and (as shown there) cancel out
 of a same-convention transform.
@@ -316,8 +316,7 @@ of a same-convention transform.
 
 The story at ``ℐ⁻`` is the mirror image, and almost everything carries
 over verbatim under the exchange ``l̃ ↔ ñ`` together with ``u → v``
-(advanced time).  The [regular tetrad](@ref "The standard tetrad")
-here is
+(advanced time).  The [regular tetrad](@ref "Tetrad") here is
 
 ```math
 l̃ = \sqrt{2}\, ∂_v, \qquad
@@ -361,7 +360,7 @@ m̃' &= \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðv'}{2κ}\, l̃\right), \\
 The only structural change is that the null rotation now fixes ``l̃``
 (the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it.  That
 same exchange reverses the peeling tower of the [field
-components](@ref "BMS action on fields"): the component left unmixed by
+components](@ref "BMS Action on Fields"): the component left unmixed by
 the null rotation is the one assembled from the most factors of the
 generator — ``ψ₄`` at ``ℐ⁺`` (fixed by the rotation about ``ñ``), but
 ``ψ₀`` at ``ℐ⁻`` (fixed by the rotation about ``l̃``).

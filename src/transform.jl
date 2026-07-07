@@ -39,9 +39,9 @@ transformation laws applied are the ones *native to that convention*: the time-l
 comes from `c_α` (``t′ = κ(t − c_α α)``), the peeling-tower mixing parameter is rescaled by
 the dyad factor ``c_l c_m``, and the inhomogeneous radiative-shear/strain shifts carry their
 full conversion factors ``F_σ`` (the shear ``σ`` on ``ℐ⁺``), ``F_λ`` (the shear ``λ`` on
-``ℐ⁻``), and ``F_h``.  See the "Convention dependence" section of the "BMS action on fields"
-documentation page.  With the default conventions (SXS) every factor is
-the identity and compiles away.
+``ℐ⁻``), and ``F_h``.  See the "Convention dependence" section of the "BMS Action on Fields"
+documentation page.  With the default conventions (SXS) every factor is the identity and
+compiles away.
 
 """
 function transform!(

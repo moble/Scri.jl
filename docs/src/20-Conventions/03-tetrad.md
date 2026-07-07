@@ -45,7 +45,7 @@ is what makes this tetrad so useful.
     together with the Newman–Penrose-vs-GHP eth (see "[The Operator
     ð](@ref the-operator-eth)"), accounts for the factor of
     ``\sqrt{2}`` and the sign between that paper's component-mixing
-    parameter and the one derived in "[BMS action on fields](@ref)".
+    parameter and the one derived in "[BMS Action on Fields](@ref)".
 
 The conventions found in the literature are more widely varied than we
 have accounted for here.  Beyond simple name differences[^2], some
