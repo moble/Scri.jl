@@ -62,8 +62,8 @@ structurally asymmetric (the minus sign on ``σ`` but not ``λ``),
 carries no ``c_m`` at all, because no tetrad leg enters ``h = c_h (h_+
 
 - i h_×)``; its``c_s`` is the signature flip of the metric
-perturbation itself.  See ["Tensor Components"](@ref) and ["BMS action
-on fields"](@ref convention_dependence_fields) for the derivations.  The News inherits the strain factor exactly,
+perturbation itself.  See ["Tensor Components"]() and ["BMS action
+on fields"]() for the derivations.  The News inherits the strain factor exactly,
 because ``N = ∂_u h`` and the coordinates — including ``u`` — are
 shared by all conventions; only the tetrad and field *definitions*
 differ.  In code, these factors are `Scri.weyl_factor`,

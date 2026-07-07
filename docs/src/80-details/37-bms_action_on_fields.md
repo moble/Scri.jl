@@ -300,10 +300,10 @@ again matching the code.  The news is unchanged, ``N' = κ^{-2}N``.
 ## [Convention dependence](@id convention_dependence_fields)
 
 The laws above are written in the package's default ([SpEC +
-Newman–Penrose ``ð``](@ref "Convention parameters")) convention.  Data
-in another convention ``X`` relates to the SpEC data by the
-per-component factors of the [conventions page](@ref "Convention
-parameters") — all in **export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
+Newman–Penrose ``ð``](@ref conventions-type)) convention.  Data in
+another convention ``X`` relates to the SpEC data by the per-component
+factors of the [conventions page](@ref conventions-type) — all in
+**export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
 
 ```math
 ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},

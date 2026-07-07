@@ -44,10 +44,10 @@ null.  This simplicity is what make this tetrad so useful.[^boyle2015]
 
 The tetrad above is the package's *default*, but various sources in
 the literature use different scaling and phases for the legs.  Three
-of the [convention parameters](@ref "Convention parameters") act
-directly on the tetrad — ``c_l`` (the scale of the ``l`` leg), ``c_m``
-(the scale of the ``m`` leg), and ``c_s`` (the signature) — giving
-the general null tetrad
+of the [convention parameters](@ref conventions-type) act directly on
+the tetrad — ``c_l`` (the scale of the ``l`` leg), ``c_m`` (the scale
+of the ``m`` leg), and ``c_s`` (the signature) — giving the general
+null tetrad
 
 ```math
 \begin{aligned}

@@ -278,11 +278,10 @@ every other leg, the uniform Weyl factor ``1/κ`` out front.
 ### [Convention dependence](@id convention_dependence_tetrad_future)
 
 The whole derivation above used the default tetrad.  In a general
-[convention](@ref "Convention parameters") the legs are rescaled and
-rephased — ``ℓ → c_l ℓ``, ``n → n/c_l`` (so that ``ℓ ⋅ n`` is
-preserved), and ``m → c_m m`` — and we can read off how the
-null-rotation parameter ``b = f/d`` responds without redoing the
-algebra.  It is fixed by
+[convention](@ref conventions-type) the legs are rescaled and rephased
+— ``ℓ → c_l ℓ``, ``n → n/c_l`` (so that ``ℓ ⋅ n`` is preserved), and
+``m → c_m m`` — and we can read off how the null-rotation parameter
+``b = f/d`` responds without redoing the algebra.  It is fixed by
 
 ```math
 m̃'(u') = 0 = d\, m̃(u') + f\, ñ(u'),
