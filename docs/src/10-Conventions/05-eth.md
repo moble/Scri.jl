@@ -47,11 +47,13 @@ of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
 parameter](@ref "BMS action on fields") — whenever ``ð`` of a
 coordinate is re-expressed through the tetrad.
 
-[^1]: This character is the lowercase "eth", which looks like a
+[^1]: This character ``ð`` is the lowercase "eth", which looks like a
     partial derivative with a diagonal slash (not a horizontal cross)
     on its ascender.  It represents the *voiced* dental fricative — so
     the "th" sounds like the one in "this" or "that".  You should feel
     your vocal cords vibrate when you pronounce it.  This is as
-    opposed to the "thorn" character ``þ``, which represents the
-    *unvoiced* dental fricative, as in "thin" or "thick", which should
-    feel almost the same, but your vocal cords should not vibrate.
+    opposed to the "thorn" character ``þ``, which is used to represent
+    a different derivative operator [GHP_1973](@cite) and represents
+    the *unvoiced* dental fricative, as in "thin" or "thick", which
+    should feel almost the same, but your vocal cords should not
+    vibrate.
