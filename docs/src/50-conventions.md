@@ -200,5 +200,5 @@ supertranslation](@ref bms_representations)).  Because ``κ`` itself is a spin-0
 of the spin-weighted ``ð`` operator that appears in the
 component-mixing law, which is why the Weyl/Faraday peeling tower runs
 in the opposite direction at ``ℐ⁻`` (see [Computing ``ðt'/κ``](@ref
-computing_eth_tprime_over_kappa) and [`DataComponents`](@ref
+computing_eth_tprime_over_2kappa) and [`DataComponents`](@ref
 Scri.DataComponents)).

@@ -103,7 +103,7 @@ eth-derivative `ðαₚ`:
     ðt′╱2κ[2, i] = (λˣ + im * λʸ) / 2(λᶻ - ℐ),
     ðt′╱2κ[1, i] = -(ðt′╱2κ[2, i] * αₚ[i] + ðαₚ[i] / 2).
 
-See the documentation page ["Computing ``ðt'/κ``"](@ref computing_eth_tprime_over_kappa) for
+See the documentation page ["Computing ``ðt'/κ``"](@ref computing_eth_tprime_over_2kappa) for
 the derivation.  Note in particular that the boost × supertranslation cross term ``ðt'╱2κ[2,
 i]·αₚ[i]`` enters with a **minus** sign.
 """
