@@ -30,12 +30,12 @@ links = InterLinks(
 
 # Add titles of sections and overrides page titles
 const titles = Dict(
-    # "10-tutorials" => "Tutorials", # example folder title
-    "80-details" => "Details",
+    "10-Usage" => "Usage",
+    "20-Conventions" => "Conventions",
+    "30-BMS" => "BMS Transformations",
+    "40-Details" => "Implementation Details",
     "91-developer.md" => "Developer docs",
-    "65-api.md" => "API",
     "99-local_notes" => "Local Notes",
-    "10-Conventions" => "Conventions",
 )
 
 function recursively_list_pages(folder; path_prefix="")
