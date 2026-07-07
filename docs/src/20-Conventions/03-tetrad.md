@@ -27,14 +27,6 @@ nᵃ &= \frac{c_l^{-1}}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
 zero.  In particular, each of these vectors is null.  This simplicity
 is what makes this tetrad so useful.
 
-The conventions found in the literature are more widely varied than we
-have accounted for here.  Beyond simple name differences[^2], some
-authors use different normalizations, so that ``l \cdot n = -2``, for
-example.  Here, we impose our simpler (and far more common)
-normalization to reduce the number of conventions; with this choice, a
-hypothetical ``c_n`` is restricted to equal ``1/c_l``, and
-``c_{\bar{m}}`` is restricted to equal ``\bar{c}_m``.
-
 [^1]: The asymptotic-transformation paper [Boyle_2015](@citet) works
     instead with the *co*-tetrad defined as ``l_a = (du)_a``, ``m_a =
     -\frac{\sqrt{2}}{1+zz̄}(dz̄)_a``, ``n_a = -(dω)_a``, where ``z =
@@ -54,6 +46,14 @@ hypothetical ``c_n`` is restricted to equal ``1/c_l``, and
     ð](@ref the-operator-eth)"), accounts for the factor of
     ``\sqrt{2}`` and the sign between that paper's component-mixing
     parameter and the one derived in "[BMS action on fields](@ref)".
+
+The conventions found in the literature are more widely varied than we
+have accounted for here.  Beyond simple name differences[^2], some
+authors use different normalizations, so that ``l \cdot n = -2``, for
+example.  Here, we impose our simpler (and far more common)
+normalization to reduce the number of conventions; with this choice, a
+hypothetical ``c_n`` is restricted to equal ``1/c_l``, and
+``c_{\bar{m}}`` is restricted to equal ``\bar{c}_m``.
 
 [^2]:  [Sachs_1962a](@Citet), for example, uses entirely different
     names ``(k, t, \bar{t}, m)`` for what we would call ``(l, m,
@@ -104,8 +104,9 @@ This form is the one we use at ``ℐ⁺`` in the conformally compactified
 spacetime.  (The ``n`` leg needed no rescaling; we have simply dropped
 its ``ω² ∂_ω`` term, which vanishes at ``ℐ⁺``.) Importantly, note that
 ``m̃ᵃ``, ``m̃̄ᵃ``, and ``ñᵃ`` are all in the tangent space of ``ℐ⁺``,
-while ``l̃ᵃ`` is transverse to it.  Still, with the conformal metric,
-the inner products of the tetrad at ``ℐ⁺`` retain their usual values.
+while ``l̃ᵃ`` is transverse to it.  Still, with the *conformal*
+metric, the inner products of the tetrad at ``ℐ⁺`` retain their usual,
+convenient values.
 
 In the ``v`` coordinate system relevant to ``ℐ⁻``, we have
 
@@ -128,7 +129,7 @@ nᵃ &= \frac{1}{c_l} \frac{ω²}{\sqrt{2}} \left(∂_ω\right)ᵃ.
 
 Again, we construct a regular tetrad at null infinity by rescaling —
 though this time the scaling is opposite for the ``l`` and ``n`` legs
-— and evaluate at ``ℐ⁻`` (``ω = 0``):
+— and evaluating at ``ℐ⁻`` (``ω = 0``):
 
 ```math
 \begin{aligned}
