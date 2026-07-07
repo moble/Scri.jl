@@ -22,6 +22,14 @@
     @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ) isa DataComponents
     @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News) isa DataComponents
 
+    # λ is the ℐ⁻ radiative shear (and the Weyl tower runs the other way there).
+    @test DataComponents(:λ; ℐ=-1) isa DataComponents
+    @test DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ; ℐ=-1) isa DataComponents
+
+    # String spellings parse to :λ.
+    @test DataComponents("lambda"; ℐ=-1) isa DataComponents{(:λ,),-1}
+    @test DataComponents("Lambda"; ℐ=-1) isa DataComponents{(:λ,),-1}
+
     # Type parameter encodes the exact tuple.
     dc = DataComponents(:ψ₄, :σ)
     @test dc isa DataComponents{(:ψ₄, :σ)}
@@ -56,6 +64,11 @@ end
     # Gaps in the chain.
     @test_throws AssertionError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
     @test_throws AssertionError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
+
+    # The radiative-shear slots are ℐ-locked: σ is ℐ⁺-only, λ is ℐ⁻-only.
+    @test_throws AssertionError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
+    @test_throws AssertionError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
+    @test_throws AssertionError DataComponents(:λ; ℐ=1)
 end
 
 @testitem "DataComponents: invalid symbols are rejected" tags = [:unit, :fast] begin
@@ -127,6 +140,7 @@ end
     @test Scri.spin_weight(Val(:ψ₃)) == -1
     @test Scri.spin_weight(Val(:ψ₄)) == -2
     @test Scri.spin_weight(Val(:σ)) == 2
+    @test Scri.spin_weight(Val(:λ)) == -2
     @test Scri.spin_weight(Val(:h)) == -2
     @test Scri.spin_weight(Val(:News)) == -2
 end
@@ -136,8 +150,9 @@ end
     for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
         @test Scri.conformal_weight(Val(s)) == -3
     end
-    # Shear and strain have conformal weight −1; News has −2.
+    # Shear (σ on ℐ⁺, λ on ℐ⁻) and strain have conformal weight −1; News has −2.
     @test Scri.conformal_weight(Val(:σ)) == -1
+    @test Scri.conformal_weight(Val(:λ)) == -1
     @test Scri.conformal_weight(Val(:h)) == -1
     @test Scri.conformal_weight(Val(:News)) == -2
 end
@@ -223,22 +238,34 @@ end
     end
 end
 
-@testitem "mix_components!: σ and h shift by ð²α and its conjugate" tags = [:unit, :fast] begin
+@testitem "mix_components!: shear and strain shift by ð²α and its conjugate" tags = [
+    :unit, :fast
+] begin
     import Random
     import Scri: DataComponents
 
-    # σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
+    # ℐ⁺: σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
+    # ℐ⁻: λ' = κ⁻¹·(λ + ½conj(ð²α)),  h' = κ⁻¹·(h − ½conj(ð²α))
+    # (λ is the ℐ⁻ radiative shear; its shift carries + conj(ð²α), opposite the strain.)
     rng = Random.Xoshiro(99)
-    dc = DataComponents(:σ, :h)
+    dc⁺ = DataComponents(:σ, :h)
+    dc⁻ = DataComponents(:λ, :h; ℐ=-1)
     for _ ∈ 1:8
         σ_v = randn(rng, ComplexF64)
+        λ_v = randn(rng, ComplexF64)
         h_v = randn(rng, ComplexF64)
         κ⁻¹ = 0.5 + randn(rng)
         ð²α = randn(rng, ComplexF64)
+
         data = ComplexF64[σ_v, h_v]
-        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc)
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc⁺)
         @test data[1] ≈ κ⁻¹ * (σ_v + ð²α / 2)
         @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α) / 2)
+
+        data = ComplexF64[λ_v, h_v]
+        Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc⁻)
+        @test data[1] ≈ κ⁻¹ * (λ_v + conj(ð²α) / 2)
+        @test data[2] ≈ κ⁻¹ * (h_v - conj(ð²α) / 2)
     end
 end
 
@@ -246,17 +273,21 @@ end
     :unit, :fast, :validation
 ] begin
     import Random
-    import Scri: DataComponents, Conventions, dyad_factor, shear_factor, strain_factor
+    import Scri:
+        DataComponents, Conventions, dyad_factor, shear_factor, lambda_factor, strain_factor
 
     # With a generic convention carried by `dc`, the laws read (docs, "Convention
     # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
-    # shifts F_σ·ð²α/2 and F_h·ð̄²α/2.
+    # ℐ⁺ shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
+    # −F_h·ð̄²α/2.
     rng = Random.Xoshiro(17)
-    X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
     q = dyad_factor(X)
     for _ ∈ 1:4
         ψs = randn(rng, ComplexF64, 2)
-        σ_v, h_v = randn(rng, ComplexF64), randn(rng, ComplexF64)
+        σ_v, λ_v, h_v = randn(rng, ComplexF64),
+        randn(rng, ComplexF64),
+        randn(rng, ComplexF64)
         κ⁻¹ = 0.5 + randn(rng)
         f = randn(rng, ComplexF64)     # ðt′╱2κ
         ð²α = randn(rng, ComplexF64)
@@ -266,15 +297,16 @@ end
         data = ComplexF64[ψs[1], ψs[2], σ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁺)
         @test data[2] ≈ κ⁻¹^3 * (ψs[2] + q * f * ψs[1])
-        @test data[3] ≈ κ⁻¹ * (σ_v + shear_factor(X, +1) * ð²α / 2)
+        @test data[3] ≈ κ⁻¹ * (σ_v + shear_factor(X) * ð²α / 2)
         @test data[4] ≈ κ⁻¹ * (h_v + strain_factor(X) * conj(ð²α) / 2)
 
-        # ℐ⁻: the tower mixes downward on conj(ðt′/2κ)/(c_l c_m), and the shifts negate.
-        dc⁻ = DataComponents(:ψ₀, :ψ₁, :σ, :h; ℐ=-1, conventions=X)
-        data = ComplexF64[ψs[1], ψs[2], σ_v, h_v]
+        # ℐ⁻: the tower mixes downward on conj(ðt′/2κ)/(c_l c_m); λ shifts by +F_λ·conj(ð²α),
+        # h by −F_h·conj(ð²α).
+        dc⁻ = DataComponents(:ψ₀, :ψ₁, :λ, :h; ℐ=-1, conventions=X)
+        data = ComplexF64[ψs[1], ψs[2], λ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁻)
         @test data[2] ≈ κ⁻¹^3 * (ψs[2] + (conj(f) / q) * ψs[1])
-        @test data[3] ≈ κ⁻¹ * (σ_v - shear_factor(X, -1) * ð²α / 2)
+        @test data[3] ≈ κ⁻¹ * (λ_v + lambda_factor(X) * conj(ð²α) / 2)
         @test data[4] ≈ κ⁻¹ * (h_v - strain_factor(X) * conj(ð²α) / 2)
     end
 end
@@ -286,11 +318,18 @@ end
     import Scri: DataComponents, Conventions, One, conversion_factor, represent!
 
     rng = Random.Xoshiro(3)
-    comps = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
-    X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
+    # The radiative-shear slot differs by null infinity: σ on ℐ⁺, λ on ℐ⁻.
+    X = Conventions(;
+        c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2
+    )
     Y = Conventions(:MB)
 
     for ℐ ∈ (+1, -1)
+        comps = if ℐ == 1
+            (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+        else
+            (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ, :h, :News, :φ₀, :φ₁, :φ₂)
+        end
         dcS = DataComponents(comps...; ℐ)
         data = randn(rng, ComplexF64, 9, 3, length(comps))
         orig = copy(data)
@@ -304,7 +343,7 @@ end
         d, dcX = represent!(copy(data), dcS, X)
         @test dcX.conventions === X
         for (k, S) ∈ enumerate(comps)
-            @test d[:, :, k] ≈ conversion_factor(X, Val(S), ℐ) .* orig[:, :, k]
+            @test d[:, :, k] ≈ conversion_factor(X, Val(S)) .* orig[:, :, k]
         end
 
         # Round trip X → Y → X is the identity to roundoff.

@@ -236,9 +236,10 @@ end
     ð²α_g = ₛ𝐘(2, ℓ, Float64, Rs) * (ð(1, 0, ℓ, Float64) * ð(0, 0, ℓ, Float64) * α)[5:end]
     b̄_g = conj.(-ðα_g ./ 2)   # b̄ = conj(b), b = −ðα/2
 
-    # ℐ⁻ tower order: ψ₀ unmixed, builds ψ₁, ψ₂ from it.  ψ₀(s=2), ψ₁(s=1), ψ₂(s=0), σ(s=2).
-    dc = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀, :σ; ℐ=-1)
-    spins = (0, 1, 2, 2)
+    # ℐ⁻ tower order: ψ₀ unmixed, builds ψ₁, ψ₂ from it.  ψ₀(s=2), ψ₁(s=1), ψ₂(s=0).
+    # The ℐ⁻ radiative shear is λ (NP's n-congruence shear), spin weight −2.
+    dc = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀, :λ; ℐ=-1)
+    spins = (0, 1, 2, -2)
     Nᵗ = 4
     modes = [randn(rng, ComplexF64, N) for _ ∈ 1:4]
     for k ∈ 1:4
@@ -258,13 +259,13 @@ end
         ₛ𝐘(spins[k], ℓ, Float64, Rs) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
     ]
 
-    ψ₂ᵢ, ψ₁ᵢ, ψ₀ᵢ, σᵢ = in_pix
-    ψ₂ₒ, ψ₁ₒ, ψ₀ₒ, σₒ = out_pix
+    ψ₂ᵢ, ψ₁ᵢ, ψ₀ᵢ, λᵢ = in_pix
+    ψ₂ₒ, ψ₁ₒ, ψ₀ₒ, λₒ = out_pix
     tol = 1e-9 * maximum(abs, vcat(in_pix...))
     @test maximum(abs, ψ₀ₒ .- ψ₀ᵢ) < tol                                    # ψ₀ unmixed
     @test maximum(abs, ψ₁ₒ .- (ψ₁ᵢ .+ b̄_g .* ψ₀ᵢ)) < tol                    # conjugate parameter
     @test maximum(abs, ψ₂ₒ .- (ψ₂ᵢ .+ 2 .* b̄_g .* ψ₁ᵢ .+ b̄_g .^ 2 .* ψ₀ᵢ)) < tol
-    @test maximum(abs, σₒ .- (σᵢ .- ð²α_g ./ 2)) < tol                      # −½ð²α at ℐ⁻
+    @test maximum(abs, λₒ .- (λᵢ .+ conj.(ð²α_g) ./ 2)) < tol               # +½ð̄²α at ℐ⁻
     # The un-conjugated parameter would be wrong (spin-weight mismatch); confirm it differs.
     @test maximum(abs, ψ₁ₒ .- (ψ₁ᵢ .+ (-ðα_g ./ 2) .* ψ₀ᵢ)) > tol
 end
@@ -399,11 +400,22 @@ end
     rng = Xoshiro(37)
     ℓ, Nᵗ = 6, 12
     N = (ℓ + 1)^2
-    comps = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+    # The radiative-shear slot is σ on ℐ⁺ and λ on ℐ⁻.
+    comps⁺ = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+    comps⁻ = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ, :h, :News, :φ₀, :φ₁, :φ₂)
     # A maximally generic convention: every sign flipped, dyad rescaled and rotated in
     # phase, strain rescaled.  (c_ð is set too, but must not affect any transform.)
     X = Scri.Conventions(;
-        c_s=-1, c_R=-1, c_ψ=-1, c_σ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2, c_ð=1 / √2
+        c_s=-1,
+        c_R=-1,
+        c_ψ=-1,
+        c_σ=-1,
+        c_λ=-1,
+        c_φ=-1,
+        c_l=(-√2),
+        c_m=cis(π / 4),
+        c_h=2,
+        c_ð=1 / √2,
     )
     v⃗ = QuatVec(0.02, -0.03, 0.05)
     R = rotor(QuatVec(0.1, 0.2, -0.3))
@@ -412,7 +424,7 @@ end
     t = collect(range(-10.0, 10.0; length=Nᵗ))
     mkdata() = begin
         Random.seed!(rng, 4)
-        d = 1e-2 * randn(rng, ComplexF64, N, Nᵗ, length(comps))
+        d = 1e-2 * randn(rng, ComplexF64, N, Nᵗ, length(comps⁺))
         for j ∈ 2:Nᵗ
             d[:, j, :] .= d[:, 1, :] .* (1 + 0.01j)  # smooth in time
         end
@@ -420,6 +432,7 @@ end
     end
 
     for ℐ ∈ (+1, -1)
+        comps = ℐ == 1 ? comps⁺ : comps⁻
         dcS = Scri.DataComponents(comps...; ℐ)
         dcX = Scri.DataComponents(comps...; ℐ, conventions=X)
 

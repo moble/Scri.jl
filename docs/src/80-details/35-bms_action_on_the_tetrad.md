@@ -306,12 +306,12 @@ with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
 ð_{\mathrm{GHP}}u'/κ`` in GHP, say — but not the geometric value of
 ``b`` itself).  The signature ``c_s`` enters only the inner-product
 normalizations, which already gave the uniform Weyl factor ``1/κ``
-independent of ``c_s``, so it does not touch ``b``.  This single factor
-``c_l c_m`` is the *only* convention dependence that survives into
-the [component-mixing law](@ref "BMS action on fields"); the
-curvature-sign parameters ``c_R, c_ψ, c_σ, c_h, c_φ`` appear only when
-the field components are built, and (as shown there) cancel out of a
-same-convention transform.
+independent of ``c_s``, so it does not touch ``b``.  This single
+factor ``c_l c_m`` is the *only* convention dependence that survives
+into the [component-mixing law](@ref "BMS action on fields"); the
+curvature-sign parameters ``c_R, c_ψ, c_σ, c_λ, c_h, c_φ`` appear only
+when the field components are built, and (as shown there) cancel out
+of a same-convention transform.
 
 ## Past null infinity
 

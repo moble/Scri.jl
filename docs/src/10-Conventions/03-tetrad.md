@@ -25,7 +25,7 @@ nᵃ &= \frac{c_l^{-1}}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
 (Note that we require ``|c_m| = 1``.)  The inner products are ``l
 \cdot n = -c_s`` and ``m \cdot m̄ = c_s``, with all other combinations
 zero.  In particular, each of these vectors is null.  This simplicity
-is what make this tetrad so useful.
+is what makes this tetrad so useful.
 
 The conventions found in the literature are more widely varied than we
 have accounted for here.  Beyond simple name differences[^2], some
@@ -37,19 +37,23 @@ hypothetical ``c_n`` is restricted to equal ``1/c_l``, and
 
 [^1]: The asymptotic-transformation paper [Boyle_2015](@citet) works
     instead with the *co*-tetrad defined as ``l_a = (du)_a``, ``m_a =
-    -\frac{\sqrt{2}}{1+z\bar{z}}(d\bar{z})_a``, ``n_a = -(dω)_a``,
-    where ``z`` is the stereographic coordinate.  These are one-forms
-    rather than vectors, and differ from the tetrad here by index
-    placement, an overall sign on ``n``, and a sign and ``\sqrt{2}``
-    in ``m`` (the magnitude of the normalization ``m ⋅ m̄`` still
-    matches ours, up to the signature-dependent sign).  That paper is
+    -\frac{\sqrt{2}}{1+zz̄}(dz̄)_a``, ``n_a = -(dω)_a``, where ``z =
+    e^{iϕ} \cot(θ/2)`` is the stereographic coordinate.  That paper is
     unfortunately not explicit about its signature choice, but is
-    consistent with the opposite signature ``{+}{-}{-}{-}``.  Together
-    with the Newman–Penrose-vs-GHP eth (see "[The eth operator](@ref
-    the-operator-eth)"), these convention differences account for the
-    factor of ``\sqrt{2}`` and the sign between that paper's
-    component-mixing parameter and the one derived in "[BMS action on
-    fields](@ref)".
+    consistent with the opposite signature ``{+}{-}{-}{-}``.  Lowering
+    the indices of the regular ``ℐ⁺`` tetrad below with the conformal
+    metric of that signature shows that this cotetrad is the member of
+    our family with ``c_s = -1`` and ``c_l = \sqrt{2}``: the ``l`` and
+    ``n`` normalizations then match exactly, with no residual sign.
+    (The extensions of ``n`` off ``ℐ⁺`` differ at ``O(ω²)``, which is
+    immaterial at ``ℐ⁺`` itself.)  The ``m`` legs agree up to the
+    standard phase relating the polar spin frame used here to the
+    stereographic one, together with an overall sign, which we book as
+    ``c_m = -1``.  The resulting dyad scaling ``c_l c_m = -\sqrt{2}``,
+    together with the Newman–Penrose-vs-GHP eth (see "[The Operator
+    ð](@ref the-operator-eth)"), accounts for the factor of
+    ``\sqrt{2}`` and the sign between that paper's component-mixing
+    parameter and the one derived in "[BMS action on fields](@ref)".
 
 [^2]:  [Sachs_1962a](@Citet), for example, uses entirely different
     names ``(k, t, \bar{t}, m)`` for what we would call ``(l, m,
@@ -84,7 +88,8 @@ nᵃ &= \frac{1}{c_l} \frac{1}{\sqrt{2}} \left(2∂ᵤ + ω² \, ∂_ω\right)�
 
 The inner products are the same as before, but the tetrad is still
 singular at ``r = ∞`` (``ω = 0``).  We can rescale to obtain a tetrad
-that remains regular at null infinity:
+that remains regular at null infinity; evaluating at ``ℐ⁺`` (``ω =
+0``), the result is
 
 ```math
 \begin{aligned}
@@ -95,11 +100,12 @@ nᵃ &\to ñᵃ = \frac{1}{c_l} \sqrt{2} \left(∂ᵤ\right)ᵃ.
 \end{aligned}
 ```
 
-This form is the one we use in a neighborhood of ``ℐ⁺`` in the
-conformally compactified spacetime.  Importantly, note that ``m̃ᵃ``,
-``m̃̄ᵃ``, and ``ñᵃ`` are all in the tangent space of ``ℐ⁺``, while
-``l̃ᵃ`` is transverse to it.  Still, with the conformal metric, the
-inner products of the tetrads retain their usual values.
+This form is the one we use at ``ℐ⁺`` in the conformally compactified
+spacetime.  (The ``n`` leg needed no rescaling; we have simply dropped
+its ``ω² ∂_ω`` term, which vanishes at ``ℐ⁺``.) Importantly, note that
+``m̃ᵃ``, ``m̃̄ᵃ``, and ``ñᵃ`` are all in the tangent space of ``ℐ⁺``,
+while ``l̃ᵃ`` is transverse to it.  Still, with the conformal metric,
+the inner products of the tetrad at ``ℐ⁺`` retain their usual values.
 
 In the ``v`` coordinate system relevant to ``ℐ⁻``, we have
 
@@ -121,7 +127,8 @@ nᵃ &= \frac{1}{c_l} \frac{ω²}{\sqrt{2}} \left(∂_ω\right)ᵃ.
 ```
 
 Again, we construct a regular tetrad at null infinity by rescaling —
-though this time the scaling is opposite for the ``l`` and ``n`` legs:
+though this time the scaling is opposite for the ``l`` and ``n`` legs
+— and evaluate at ``ℐ⁻`` (``ω = 0``):
 
 ```math
 \begin{aligned}
@@ -132,7 +139,8 @@ lᵃ &\to l̃ᵃ = c_l \sqrt{2} \left(∂ᵥ\right)ᵃ, \\
 \end{aligned}
 ```
 
-This form is the one we use in a neighborhood of ``ℐ⁻`` in the
-conformally compactified spacetime.  Importantly, note that ``l̃ᵃ``,
-``m̃ᵃ``, and ``m̃̄ᵃ`` are all in the tangent space of ``ℐ⁻``, while
-``ñᵃ`` is transverse to it.
+This form is the one we use at ``ℐ⁻`` in the conformally compactified
+spacetime.  (Here it is the ``l`` leg that needed no rescaling, and
+whose ``ω² ∂_ω`` term vanishes at ``ℐ⁻``.) Importantly, note that
+``l̃ᵃ``, ``m̃ᵃ``, and ``m̃̄ᵃ`` are all in the tangent space of ``ℐ⁻``,
+while ``ñᵃ`` is transverse to it.

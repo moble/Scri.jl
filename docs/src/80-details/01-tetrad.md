@@ -70,8 +70,8 @@ c_m, c_s`` only where they survive into a transformation law (see
 ["BMS action on fields"](@ref "BMS action on fields")).  These three,
 together with the eth coefficient ``c_ð``, are the only convention
 parameters that touch the tetrad and its derivatives; the
-curvature-sign parameters ``c_R, c_ψ, c_σ, c_h, c_φ`` enter only when
-the field *components* are assembled.
+curvature-sign parameters ``c_R, c_ψ, c_σ, c_λ, c_h, c_φ`` enter only
+when the field *components* are assembled.
 
 ## Asymptotic coordinates
 

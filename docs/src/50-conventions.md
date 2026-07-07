@@ -1,51 +1,5 @@
 # Conventions
 
----
-
-An important source of these conventions is [BoyleEtAl_2019](@citet),
-which describes conventions used for SXS waveforms in Appendix C.  BMS
-conventions are described in [MitmanEtAl_2024](@citet).
-[Iozzo_2021](@citet) creates a framework for comparing conventions
-across the literature.
-
-The conventions for the geometric algebra are described in the
-documentation of `Quaternionic.jl`, [here for the
-fundamentals](https://moble.github.io/Quaternionic.jl/stable/geometric_algebra/)
-and [here specifically for the spacetime
-algebra](https://moble.github.io/Quaternionic.jl/stable/spacetime_algebra/).
-
-!!! warn
-
-    Note LISA Rosetta Stone when it comes out.
-
-Nominal values for solar and planetary quantities are given in
-[PršaEtAl_2016](@citet).  Other constants can be found in the
-[`lisaconstants` package](https://pypi.org/project/lisaconstants/),
-which otherwise integrates with [`astropy`](https://www.astropy.org/).
-
-## Convention parameters
-
-Every quantity above is defined in one specific convention — the
-**SpEC** convention together with the **Newman–Penrose** ``ð`` — which
-is what `Scri.jl` computes with natively.  Other codes and papers use
-different signs and scales; the differences are captured by a small set
-of ``c``-parameters (the `Scri.Conventions` struct), following the
-conventions appendix and [Iozzo_2021](@citet).  The defaults reproduce
-the package's native convention.
-
-| parameter | meaning               | default |
-|:----------|:----------------------|:-------:|
-| ``c_s``   | metric signature      | ``1``   |
-| ``c_R``   | Riemann sign          | ``1``   |
-| ``c_l``   | ``l``-leg scale       | ``1``   |
-| ``c_m``   | ``m``-leg scale       | ``1``   |
-| ``c_ψ``   | Weyl sign             | ``1``   |
-| ``c_σ``   | shear sign            | ``1``   |
-| ``c_h``   | strain scale          | ``1``   |
-| ``c_φ``   | Faraday sign          | ``1``   |
-| ``c_ð``   | eth coefficient       | ``1``   |
-| ``c_α``   | time-law sign         | ``1``   |
-
 Note that ``c_m`` is the spin-phase *factor* ``e^{iΘ}`` of the ``m``
 leg, not the angle ``Θ``: a phase of ``Θ = π`` is set with ``c_m =
 -1``.  This keeps the common conventions at exactly ``±1``, which
@@ -86,19 +40,30 @@ the appendix) is
 while the radiative quantities convert as
 
 ```math
-σ^{[X]} = c_σ c_l^{\,ℐ} c_m^{2}\, σ^{[\mathrm{SpEC}]},
+σ^{[X]} = c_s c_σ c_l c_m^{2}\, σ^{[\mathrm{SpEC}]},
 \qquad
-h^{[X]} = c_s c_h^{-1} c_m^{-2}\, h^{[\mathrm{SpEC}]},
+λ^{[X]} = \frac{c_s c_λ}{c_l c_m^{2}}\, λ^{[\mathrm{SpEC}]},
 \qquad
-N^{[X]} = c_s c_h^{-1} c_m^{-2}\, N^{[\mathrm{SpEC}]}.
+h^{[X]} = c_s c_h\, h^{[\mathrm{SpEC}]},
+\qquad
+N^{[X]} = c_s c_h\, N^{[\mathrm{SpEC}]}.
 ```
 
-Note that there is no ``c_s`` in the shear factor (the two raised ``m``
-indices in ``σ = -c_σ mᵃmᵇ∇_a l_b`` contribute ``c_s^2 = 1``, and the
-defining relations fix the one-form ``l_b`` directly), and the ``c_l``
-inverts on ``ℐ⁻``, where the radiative shear is built from the ``n``
-leg; see ["BMS action on fields"](@ref convention_dependence_fields)
-for the derivations.  The News inherits the strain factor exactly,
+The radiative shear is ``σ`` (of the ``l`` congruence) on ``ℐ⁺`` and
+the distinct NP coefficient ``λ`` (of the ``n`` congruence) on
+``ℐ⁻`` — just as the radiative Weyl component switches from ``ψ_4`` to
+``ψ_0``.  Each shear factor carries one ``c_s`` from the single
+lowered leg (``l_b`` for ``σ``, ``n_b`` for ``λ``), with the ``m``
+legs contributing ``c_m^{±2}`` as vectors; the ``c_l`` sits upstairs
+for ``σ`` and downstairs for ``λ`` (since ``n`` scales as ``1/c_l``).
+Because ``σ = -c_σ mᵃmᵇ∇_a l_b`` and ``λ = c_λ m̄ᵃm̄ᵇ∇_a n_b`` are
+structurally asymmetric (the minus sign on ``σ`` but not ``λ``),
+``c_σ`` and ``c_λ`` are independent parameters.  The strain factor
+carries no ``c_m`` at all, because no tetrad leg enters ``h = c_h (h_+
+
+- i h_×)``; its``c_s`` is the signature flip of the metric
+perturbation itself.  See ["Tensor Components"](@ref) and ["BMS action
+on fields"](@ref convention_dependence_fields) for the derivations.  The News inherits the strain factor exactly,
 because ``N = ∂_u h`` and the coordinates — including ``u`` — are
 shared by all conventions; only the tetrad and field *definitions*
 differ.  In code, these factors are `Scri.weyl_factor`,

@@ -44,6 +44,14 @@ A), which describes the CCE evolution implemented in the SpECTRE code.
 [Iozzo_2021](@citet) constructed a framework for comparing conventions
 across the literature, which is extended here.
 
+Conventions for Geometric Algebra are described in the documentation
+of `Quaternionic.jl`, [here for the
+fundamentals](https://moble.github.io/Quaternionic.jl/stable/geometric_algebra/)
+and [here specifically for the spacetime
+algebra](https://moble.github.io/Quaternionic.jl/stable/spacetime_algebra/).
+However, these are essentially internal, and should not affect the
+interaction with user input.
+
 ## [The `Conventions` Type](@id conventions-type)
 
 To keep track of the conventions in effect, we provide a simple
@@ -67,7 +75,8 @@ within their own conventions, but might differ over the value of the
 | [``c_l``](@ref "Tetrad")               | Tetrad ``l`` scale        | ``1``   | ``ℝ^×``       |
 | [``c_m``](@ref "Tetrad")               | Tetrad ``m`` phase        | ``1``   | ``e^{iℝ}``    |
 | [``c_ψ``](@ref "Tensor Components")    | Weyl component definition | ``1``   | ``ℂ^×``       |
-| [``c_σ``](@ref "Tensor Components")    | Shear definition          | ``1``   | ``ℂ^×``       |
+| [``c_σ``](@ref "Tensor Components")    | Shear definition (``ℐ⁺``) | ``1``   | ``ℂ^×``       |
+| [``c_λ``](@ref "Tensor Components")    | Shear definition (``ℐ⁻``) | ``1``   | ``ℂ^×``       |
 | [``c_h``](@ref "Tensor Components")    | Complex strain definition | ``1``   | ``ℂ^×``       |
 | [``c_φ``](@ref "Tensor Components")    | Faraday definition        | ``1``   | ``ℂ^×``       |
 | [``c_ð``](@ref the-operator-eth)       | ``ð`` definition          | ``1``   | ``ℂ^×``       |

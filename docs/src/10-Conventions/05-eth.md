@@ -50,6 +50,8 @@ coordinate is re-expressed through the tetrad.
 [^1]: This character is the lowercase "eth", which looks like a
     partial derivative with a diagonal slash (not a horizontal cross)
     on its ascender.  It represents the *voiced* dental fricative — so
-    the "th" sounds like the one in "this" or "that", as opposed to
-    the one in "thin" or "thick".  You should feel your vocal cords
-    vibrate when you pronounce it.
+    the "th" sounds like the one in "this" or "that".  You should feel
+    your vocal cords vibrate when you pronounce it.  This is as
+    opposed to the "thorn" character ``þ``, which represents the
+    *unvoiced* dental fricative, as in "thin" or "thick", which should
+    feel almost the same, but your vocal cords should not vibrate.

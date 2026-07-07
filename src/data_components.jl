@@ -1,4 +1,4 @@
-const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
+const ValidDataComponents = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :λ, :h, :News, :φ₀, :φ₁, :φ₂)
 
 # This utility function just translates any reasonable string representation of a data
 # component's name into the canonical symbol.
@@ -19,6 +19,11 @@ function parse_data_component(s::AbstractString)
             "sigma" => "σ",
             "Sigma" => "σ",
             "SIGMA" => "σ",
+            "λ" => "λ",
+            "Λ" => "λ",
+            "lambda" => "λ",
+            "Lambda" => "λ",
+            "LAMBDA" => "λ",
             "h" => "h",
             "H" => "h",
             "strain" => "h",
@@ -75,7 +80,8 @@ Examples:
 
     DataComponents(:ψ₄)                          # gravitational waves only
     DataComponents(:ψ₄, :ψ₃, :ψ₂)                # top three Weyl components
-    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)  # full Weyl set with strain
+    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)  # full Weyl set with shear (ℐ⁺)
+    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ; ℐ=-1)  # full Weyl set with shear (ℐ⁻)
     DataComponents(:φ₀, :φ₁, :φ₂)                # Faraday components
     DataComponents(:φ₀, :φ₁, :φ₂; ℐ=-1)         # Faraday components on ℐ⁻
     DataComponents(:ψ₄, :h; conventions=Conventions(:MB))  # data in the MB convention
@@ -104,6 +110,7 @@ function validate_data_components(cs, ℐ)
         "Invalid component in $cs; allowed: $ValidDataComponents"
     @assert length(Set(cs)) == length(cs) "Duplicate components in $cs"
     if ℐ == 1
+        @assert :λ ∉ cs "λ is the ℐ⁻ radiative shear; use σ on ℐ⁺ (ℐ=+1)"
         :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (ℐ=+1)"
         :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (ℐ=+1)"
         :ψ₂ ∈ cs && @assert :ψ₃ ∈ cs "ψ₂ requires ψ₃ on ℐ⁺ (ℐ=+1)"
@@ -111,6 +118,7 @@ function validate_data_components(cs, ℐ)
         :φ₀ ∈ cs && @assert :φ₁ ∈ cs "φ₀ requires φ₁ on ℐ⁺ (ℐ=+1)"
         :φ₁ ∈ cs && @assert :φ₂ ∈ cs "φ₁ requires φ₂ on ℐ⁺ (ℐ=+1)"
     elseif ℐ == -1
+        @assert :σ ∉ cs "σ is the ℐ⁺ radiative shear; use λ on ℐ⁻ (ℐ=-1)"
         :ψ₄ ∈ cs && @assert :ψ₃ ∈ cs "ψ₄ requires ψ₃ on ℐ⁻ (ℐ=-1)"
         :ψ₃ ∈ cs && @assert :ψ₂ ∈ cs "ψ₃ requires ψ₂ on ℐ⁻ (ℐ=-1)"
         :ψ₂ ∈ cs && @assert :ψ₁ ∈ cs "ψ₂ requires ψ₁ on ℐ⁻ (ℐ=-1)"
@@ -155,6 +163,7 @@ spin_weight(::Val{:ψ₂}) = 0
 spin_weight(::Val{:ψ₃}) = -1
 spin_weight(::Val{:ψ₄}) = -2
 spin_weight(::Val{:σ}) = 2
+spin_weight(::Val{:λ}) = -2
 spin_weight(::Val{:h}) = -2
 spin_weight(::Val{:News}) = -2
 spin_weight(::Val{:φ₀}) = 1
@@ -196,6 +205,7 @@ conformal_weight(::Val{:ψ₂}) = -3
 conformal_weight(::Val{:ψ₃}) = -3
 conformal_weight(::Val{:ψ₄}) = -3
 conformal_weight(::Val{:σ}) = -1
+conformal_weight(::Val{:λ}) = -1
 conformal_weight(::Val{:h}) = -1
 conformal_weight(::Val{:News}) = -2
 conformal_weight(::Val{:φ₀}) = -2
@@ -209,17 +219,21 @@ Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the
 factor for this pixel, `ðt′╱2κ` is the eth-derivative of the retarded time in the new frame
 divided by ``2κ`` (the *geometric* null-rotation parameter ``b = ðu'/2κ``, computed with the
 native Newman–Penrose ``ð``), and `ð²α` is the second eth-derivative of the
-supertranslation.  The latter enters the strain/shear law with a factor of one half, as
-``±½ð²α`` (the ½ has the same dyad/√2 origin as the ½ in ``b``); the sign is ``+`` on ``ℐ⁺``
-and ``−`` on ``ℐ⁻``.
+supertranslation.  The latter enters the radiative-shear/strain law with a factor of one
+half (the ½ has the same dyad/√2 origin as the ½ in ``b``).  The radiative shear is a
+different quantity on each null infinity: the ``l``-congruence shear ``σ`` (spin weight
+``+2``) on ``ℐ⁺``, shifting by ``+F_σ\\, ð²α/2``; and the ``n``-congruence shear ``λ`` (NP's
+``λ``, spin weight ``-2``) on ``ℐ⁻``, shifting by ``+F_λ\\, ð̄²α/2``.  The strain ``h`` (spin
+weight ``-2``) is present on both, shifting by ``+F_h\\, ð̄²α/2`` on ``ℐ⁺`` and ``-F_h\\,
+ð̄²α/2`` on ``ℐ⁻``.
 
 The convention factors come from the `Conventions` carried by `dc`, and appear in the laws
 exactly as in the ["Convention dependence" documentation](@ref
 convention_dependence_fields): the towers run on ``c_l c_m\\, ðu′/2κ`` (on ``ℐ⁺``; the
 parameter is ``ð̄v′/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the
-shear/strain shifts are ``F_σ\\, ð²α/2`` and ``F_h\\, ð̄²α/2``, with `F_σ` from
-[`shear_factor`](@ref) and `F_h` from [`strain_factor`](@ref).  At the default conventions
-every factor is a `One` singleton and compiles away.
+shifts use ``F_σ`` from [`shear_factor`](@ref), ``F_λ`` from [`lambda_factor`](@ref), and
+``F_h`` from [`strain_factor`](@ref).  At the default conventions every factor is a `One`
+singleton and compiles away.
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
 `dataᵢⱼ` for the various components are known at compile time, and the branches for which
@@ -235,7 +249,8 @@ components are being processed.
     κ⁻² = κ⁻¹ * κ⁻¹
     κ⁻³ = κ⁻² * κ⁻¹
     ð̄²α = conj(ð²α)
-    F_σ = shear_factor(dc.conventions, I)
+    F_σ = shear_factor(dc.conventions)
+    F_λ = lambda_factor(dc.conventions)
     F_h = strain_factor(dc.conventions)
 
     iψ₄ = component_index(dc, Val(:ψ₄))
@@ -244,6 +259,7 @@ components are being processed.
     iψ₁ = component_index(dc, Val(:ψ₁))
     iψ₀ = component_index(dc, Val(:ψ₀))
     iσ = component_index(dc, Val(:σ))
+    iλ = component_index(dc, Val(:λ))
     ih = component_index(dc, Val(:h))
     iNews = component_index(dc, Val(:News))
     iφ₂ = component_index(dc, Val(:φ₂))
@@ -257,6 +273,7 @@ components are being processed.
         ψ₃ = isnothing(iψ₃) ? 0 : dataᵢⱼ[iψ₃]
         ψ₄ = isnothing(iψ₄) ? 0 : dataᵢⱼ[iψ₄]
         σ = isnothing(iσ) ? 0 : dataᵢⱼ[iσ]
+        λ = isnothing(iλ) ? 0 : dataᵢⱼ[iλ]
         h = isnothing(ih) ? 0 : dataᵢⱼ[ih]
         News = isnothing(iNews) ? 0 : dataᵢⱼ[iNews]
         φ₀ = isnothing(iφ₀) ? 0 : dataᵢⱼ[iφ₀]
@@ -329,8 +346,8 @@ components are being processed.
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
-            if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ - F_σ * ð²α / 2)
+            if !isnothing(iλ)
+                dataᵢⱼ[iλ] = κ⁻¹ * (λ + F_λ * ð̄²α / 2)
             end
             if !isnothing(ih)
                 dataᵢⱼ[ih] = κ⁻¹ * (h - F_h * ð̄²α / 2)
@@ -375,8 +392,8 @@ function represent!(
         "but `dc` has $(length(C))"
     for (k, S) ∈ enumerate(C)
         f =
-            conversion_factor(conventions, Val(S), I) /
-            conversion_factor(dc.conventions, Val(S), I)
+            conversion_factor(conventions, Val(S)) /
+            conversion_factor(dc.conventions, Val(S))
         if !(f isa One)  # One() would be a no-op; skip the memory traversal
             view(data, :, :, k) .*= f
         end

@@ -310,15 +310,16 @@ parameters") — all in **export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
 \quad F_n = c_s c_ψ c_R\,(c_l c_m)^{2-n};
 \qquad
 h^{[X]} = F_h\, h^{[\mathrm{SpEC}]},
-\quad F_h = c_s c_h^{-1} c_m^{-2},
+\quad F_h = c_s c_h,
 ```
 
 and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l
-c_m)^{1-n}``, two legs instead of four) and ``σ`` (``F_σ``, below).  A
-transform that *stays in* convention ``X`` is the composition
-``\text{convert } X{→}\mathrm{SpEC}``, then the SpEC law above, then
-``\text{convert back}``.  Whether a parameter survives that round trip
-depends on whether the law is homogeneous or inhomogeneous.
+c_m)^{1-n}``, two legs instead of four) and the radiative shear
+(``F_σ`` on ``ℐ⁺``, ``F_λ`` on ``ℐ⁻``; below).  A transform that
+*stays in* convention ``X`` is the composition ``\text{convert }
+X{→}\mathrm{SpEC}``, then the SpEC law above, then ``\text{convert
+back}``.  Whether a parameter survives that round trip depends on
+whether the law is homogeneous or inhomogeneous.
 
 **Homogeneous laws — the peeling towers.**  For the Weyl tower,
 
@@ -357,46 +358,52 @@ into ``m̄̃``, and ``c̄_m/c_l = 1/(c_l c_m)`` for real ``c_l`` and
 unit-modulus ``c_m``.  Note this is *not* the conjugate of the ``ℐ⁺``
 factor — conjugating ``c_l c_m`` would leave ``c_l`` upstairs.
 
-**Inhomogeneous laws — the shear and strain.**  Here the additive shift
-has nothing to cancel against, so it carries the *full* conversion
-factor:
+**Inhomogeneous laws — the radiative shear and strain.**  Here the
+additive shift has nothing to cancel against, so it carries the *full*
+conversion factor.  On ``ℐ⁺`` the radiative shear is ``σ`` (spin
+weight ``+2``); on ``ℐ⁻`` it is the distinct coefficient ``λ`` (spin
+weight ``-2``), exactly as the radiative Weyl component switches from
+``ψ_4`` to ``ψ_0``:
 
 ```math
-σ'^{[X]} = F_σ\, σ'^{[\mathrm{SpEC}]}
-= κ^{-1}\!\left(σ^{[X]} + F_σ\,\tfrac12 ð^2 α\right),
+σ'^{[X]} = κ^{-1}\!\left(σ^{[X]} + F_σ\,\tfrac12 ð^2 α\right)
+\quad\text{on } ℐ⁺,
 \qquad
-h'^{[X]} = κ^{-1}\!\left(h^{[X]} + F_h\,\tfrac12 ð̄^2 α\right).
+λ'^{[X]} = κ^{-1}\!\left(λ^{[X]} + F_λ\,\tfrac12 ð̄^2 α\right)
+\quad\text{on } ℐ⁻,
 ```
 
-The homogeneous piece ``σ^{[X]}`` rides through untouched, but the
-inhomogeneous ``\tfrac12 ð^2 α`` is multiplied by ``F_σ`` (resp.
-``F_h``).  From ``σ = -c_σ\,m^a m^b ∇_a l_b``: the defining relations
-fix ``l_a`` and ``m_a`` as *one-forms* (``l_a^{[X]} = c_l l_a``,
-``m_a^{[X]} = c_m m_a``), so the two raised ``m`` indices each carry an
-inverse metric, ``m^{a\,[X]} = c_s c_m m^a``, and the ``c_s`` factors
-square away:
+and the strain shift on either infinity is ``h'^{[X]} =
+κ^{-1}(h^{[X]} ± F_h\,\tfrac12 ð̄^2 α)`` (``+`` on ``ℐ⁺``, ``-`` on
+``ℐ⁻``).  The homogeneous pieces ride through untouched; only the
+inhomogeneous ``\tfrac12 ð^2 α`` (resp. ``\tfrac12 ð̄^2 α``) picks up a
+factor.
+
+From ``σ = -c_σ\,m^a m^b ∇_a l_b``: the tetrad legs are defined as
+*vectors* (``m^{a\,[X]} = c_m m^a``, ``l^{a\,[X]} = c_l l^a``; see the
+"Tetrad" conventions page), so the two ``m`` legs contribute ``c_m^2``
+with no metric contraction, the connection is convention-independent,
+and the lowered ``l_b = g_{bc} l^c`` contributes ``c_s c_l`` — exactly
+one power of the metric survives:
 
 ```math
-F_σ = c_σ\,(c_s c_m)^2\, c_l = c_σ\, c_l\, c_m^2
-\quad\text{on } ℐ⁺.
+F_σ = c_s\, c_σ\, c_l\, c_m^2.
 ```
 
-There is **no** ``c_s`` — this resolves the flag formerly noted here:
-any scalar built from an even number of metric contractions is
-signature-blind.  On ``ℐ⁻`` the radiative shear is built from the ``n``
-leg instead (the ``λ̄``-type coefficient ``m^a m^b ∇_a n_b``, still
-spin weight ``+2``), so the ``c_l`` inverts:
+On ``ℐ⁻``, ``λ = c_λ\,m̄^a m̄^b ∇_a n_b`` (Moxon/SXS, *no* minus
+sign, so ``c_λ`` is independent of ``c_σ``).  The two ``m̄`` legs give
+``c̄_m^2 = 1/c_m^2``, and the lowered ``n_b = g_{bc} n^c`` gives
+``c_s/c_l`` (the ``n`` leg scales as ``1/c_l``), so
 
 ```math
-F_σ = c_σ\, c_m^2 / c_l
-\quad\text{on } ℐ⁻.
+F_λ = \frac{c_s\, c_λ}{c_l\, c_m^2}.
 ```
 
-Note ``F_σ`` carries ``c_l^{±1}`` (``σ`` is built from a real null
-leg) while ``F_h`` does **not** (the strain comes from the metric
-perturbation, with no ``ℓ`` or ``n`` leg) — the two
-spin-weight-conjugate objects scale differently, which is why the code
-keeps their shifts as separate precomputed arguments.  The news, being
+Note ``F_σ`` and ``F_λ`` carry ``c_l^{±1}`` (the radiative shear is
+built from a real null leg) while ``F_h`` does **not** (the strain
+comes from the metric perturbation, with no ``l`` or ``n`` leg) — this
+is why the code keeps the shear and strain shifts as separate
+arguments.  The news, being
 ``∂_u`` of the strain with its inhomogeneous part annihilated,
 transforms homogeneously and so is convention-independent up to its
 ``κ^{-2}`` weight; its *conversion* factor is exactly the strain's,
@@ -419,15 +426,16 @@ exactly as in the laws above, with the factors read from the
    towers run on ``c_l c_m\, ðu'/2κ`` on ``ℐ⁺`` and on
    ``(ð̄v'/2κ)/(c_l c_m)`` on ``ℐ⁻`` — driving both the Weyl and
    Faraday towers;
-2. the shear shift is ``F_σ\,ð^2α/2`` with ``F_σ`` from
-   `Scri.shear_factor` (which takes ``ℐ`` for the ``c_l^{±1}``); and
-3. the strain shift is ``F_h\,ð̄^2α/2`` with ``F_h`` from
+2. the radiative-shear shift is ``F_σ\,ð^2α/2`` on ``ℐ⁺`` with ``F_σ``
+   from `Scri.shear_factor`, and ``F_λ\,ð̄^2α/2`` on ``ℐ⁻`` with
+   ``F_λ`` from `Scri.lambda_factor`; and
+3. the strain shift is ``±F_h\,ð̄^2α/2`` with ``F_h`` from
    `Scri.strain_factor`.
 
 The time-law sign is read from the conventions in `transform!` itself:
 ``c_α`` is folded into ``α`` up front, exactly as the former sign
-argument was.  At the defaults ``c_l = 1, c_m = 1, c_σ = c_s = 1, c_h
-= 1, c_α = 1`` every factor is the `One` singleton, and the insertions
+argument was.  At the defaults ``c_l = 1, c_m = 1, c_σ = c_λ = c_s =
+1, c_h = 1, c_α = 1`` every factor is the `One` singleton, and the insertions
 compile away to the laws above.  Conversion *between* conventions —
 the full ``F``-factors, not just the transform survivors — is
 `Scri.represent!`, built on `Scri.conversion_factor`.

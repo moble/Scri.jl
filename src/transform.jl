@@ -37,9 +37,10 @@ sign indicating whether `data` represents data on ``ℐ⁺`` if `ℐ` = +1 or ``
 The `dc` argument also contains the [`Conventions`](@ref) the data are expressed in, and the
 transformation laws applied are the ones *native to that convention*: the time-law sign
 comes from `c_α` (``t′ = κ(t − c_α α)``), the peeling-tower mixing parameter is rescaled by
-the dyad factor ``c_l c_m``, and the inhomogeneous shear/strain shifts carry their full
-conversion factors ``F_σ``, ``F_h``.  See the "Convention dependence" section of the "BMS
-action on fields" documentation page.  With the default conventions (SXS) every factor is
+the dyad factor ``c_l c_m``, and the inhomogeneous radiative-shear/strain shifts carry their
+full conversion factors ``F_σ`` (the shear ``σ`` on ``ℐ⁺``), ``F_λ`` (the shear ``λ`` on
+``ℐ⁻``), and ``F_h``.  See the "Convention dependence" section of the "BMS action on fields"
+documentation page.  With the default conventions (SXS) every factor is
 the identity and compiles away.
 
 """
@@ -351,7 +352,8 @@ The `data_components` argument may be a `DataComponents` value, a tuple of symbo
 `(:ψ₄, :ψ₃)`, or a sequence of strings that indicate those symbols.  The strings are parsed
 in a flexible way, so that, for example, `"psi4"`, `"Psi_4"`, and `"PSI₄"` all indicate the
 same component `:ψ₄`.  Alternatively, if the argument is `nothing` (the default), the first
-`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` will be chosen — though a warning will be issued.
+`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` on ``ℐ⁺`` (or `(:λ, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)` on
+``ℐ⁻``) will be chosen — though a warning will be issued.
 
 The `ℐ` and `conventions` keywords are used only when `data_components` is *not* already a
 `DataComponents` value (which carries its own).
@@ -370,7 +372,9 @@ function transform!(
     dc = if data_components isa DataComponents
         data_components
     elseif isnothing(data_components)
-        default_dc = (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]
+        # The ℐ⁺ and ℐ⁻ radiative-shear slots (σ vs λ) and Weyl tower orders differ.
+        full_dc = ℐ == 1 ? (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀) : (:λ, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
+        default_dc = full_dc[1:Nᵈ]
         @warn "Defaulting to data components $(default_dc).\n" *
             "Check that this is correct for your input data.\n" *
             "Consider passing a `DataComponents` value explicitly."
