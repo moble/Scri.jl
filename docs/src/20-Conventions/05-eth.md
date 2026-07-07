@@ -9,43 +9,66 @@ out), the two differ by a factor of ``\sqrt{2}``:
 ð_{\mathrm{NP}} = \sqrt{2}\, ð_{\mathrm{GHP}}.
 ```
 
-While spin-weighted spherical functions [*cannot actually be
-defined*](@cite Boyle_2016) on the sphere ``𝕊²`` itself, we can often
-just about get away with writing them as functions on *coordinates
-over the sphere*.  (That approach becomes meaningless once we perform
-any transformation.)  This is the standard approach in the literature,
-and as such the Newman–Penrose ð is defined as acting on a quantity
-``{}_s f`` of spin weight ``s`` via
+We choose the Newman–Penrose version as our default.  The distinction
+should not be visible to users, but anyone interested in derivations
+elsewhere in this documentation or in the implementation should be
+aware of it.
+
+Spin-weighted spherical functions [*cannot actually be defined*](@cite
+Boyle_2016) over the sphere ``𝕊²`` itself; they are more properly
+defined over the sphere ``𝕊³`` — or better yet ``\mathrm{Spin}(3) ≃
+\mathrm{SU}(2)``, the group of unit quaternions.  Then we can easily
+define ``\eth`` in those terms.  Start with the right-derivative
+operator with respect to the generator ``𝔤`` acting on a function
+``f`` and evaluated at ``Q``:
 
 ```math
-ð\, {}_s f = -(\sin θ)^{s}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)
+R_𝔤 f(Q) = -i \left.\frac{d}{dϵ}\right|_{ϵ=0} f\left(Q e^{-ϵ𝔤/2}\right).
+```
+
+The ``ð`` operator is defined as
+
+```math
+ð = c_ð \left(R_{x} + i R_{y}\right),
+```
+
+where ``x`` and ``y`` generate rotations about their corresponding
+axes.  This is the form we will use when [deriving ``ðt'/2κ.``](@ref
+computing_eth_tprime_over_2kappa)
+
+Of course, this may look unfamiliar.  The more common approach in the
+literature takes advantage of the fact that *sometimes* we can *just
+about* get away with writing spin-weighted spherical functions as
+functions on *coordinates over the sphere*.  (That approach becomes
+meaningless once we perform any transformation.)  In this way, Newman
+and Penrose originally defined ð as acting on a quantity ``{}_s f`` of
+spin weight ``s`` via
+
+```math
+ð\, {}_s f = -c_ð\, (\sin θ)^{s}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)
 \left[(\sin θ)^{-s}\, {}_s f\right],
 ```
 
-raising the spin weight by one; equivalently, on the spin-weighted
-spherical harmonics,
+raising the spin weight by one.  Equivalently, acting on the
+spin-weighted spherical harmonics,
 
 ```math
-ð\, {}_s Y_{ℓ,m} = \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
+ð\, {}_s Y_{ℓ,m} = c_ð\, \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
 ```
 
-For a spin-0 function this is just ``ð f = -\left(∂_θ + \frac{i}{\sin
-θ}∂_ϕ\right) f``, which ties ``ð`` directly to the angular dyad ``m``
-of [the standard tetrad](@ref "Tetrad").  Since ``m̃ =
-\frac{1}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)``,
+For a spin-0 function this is just ``ð f = -c_ð\left(∂_θ +
+\frac{i}{\sin θ}∂_ϕ\right) f``, which ties ``ð`` to the angular dyad
+``m`` of [the standard tetrad](@ref "Tetrad").  Since ``m̃ =
+\frac{c_m}{\sqrt{2}}\left(∂_θ + \frac{i}{\sin θ}∂_ϕ\right)``,
 
 ```math
-ð f = -\sqrt{2}\, m̃(f),
-\qquad
-ð̄ f = -\sqrt{2}\, m̄̃(f)
-\qquad (s = 0).
+ð f = -c_ð\frac{\sqrt{2}}{c_m}\, m̃(f) \qquad (s = 0).
 ```
 
-Equivalently the GHP ð is simply ``ð_{\mathrm{GHP}} f = -m̃(f)``.
 This relation and the tetrad normalizations are what fix the factors
 of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
-parameter](@ref "BMS Action on Fields") — whenever ``ð`` of a
-coordinate is re-expressed through the tetrad.
+parameter](@ref "BMS Action on Fields") — whenever ``ð`` acting on a
+coordinate function is re-expressed through the tetrad.
 
 [^1]: This character ``ð`` is the lowercase "eth", which looks like a
     partial derivative with a diagonal slash (not a horizontal cross)
