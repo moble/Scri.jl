@@ -49,12 +49,13 @@ spin weight ``s`` via
 \left[(\sin θ)^{-s}\, {}_s f\right],
 ```
 
-raising the spin weight by one.  Equivalently, acting on the
-spin-weighted spherical harmonics,
-
-```math
-ð\, {}_s Y_{ℓ,m} = c_ð\, \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
-```
+raising the spin weight by one.  This simpler definition is actually
+implied by the more general and precise definition above, if we
+parameterize the quaternions by spherical coordinates, which
+conventionally represent an initial rotation about the ``y`` axis by
+``θ`` followed by a rotation about the ``z`` axis by ``ϕ``.  Then, we
+can write ``Q = e^{ϕ 𝐤/2} e^{θ𝐣/2}``, and the right-derivative
+operator simplifies to precisely the Newman–Penrose form.
 
 For a spin-0 function this is just ``ð f = -c_ð\left(∂_θ +
 \frac{i}{\sin θ}∂_ϕ\right) f``, which ties ``ð`` to the angular dyad
@@ -69,6 +70,18 @@ This relation and the tetrad normalizations are what fix the factors
 of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
 parameter](@ref "BMS Action on Fields") — whenever ``ð`` acting on a
 coordinate function is re-expressed through the tetrad.
+
+It is helpful to note that, acting on the spin-weighted spherical
+harmonics,
+
+```math
+ð\, {}_s Y_{ℓ,m} = c_ð\, \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.
+```
+
+The spin-weighted spherical harmonics can be more precisely defined on
+``\mathrm{Spin}(3)`` [Boyle_2016](@cite), but again we obtain the
+standard spherical-coordinate form is we restrict to those coordinates
+as above.
 
 [^1]: This character ``ð`` is the lowercase "eth", which looks like a
     partial derivative with a diagonal slash (not a horizontal cross)
