@@ -1,54 +1,23 @@
-# [Computing ``ðt'/κ``](@id computing_eth_tprime_over_kappa)
+# [Computing ``ðt'/2κ``](@id computing_eth_tprime_over_2kappa)
 
-The combination ``ðt'/κ`` appears in the BMS transformation of the
-Weyl components.  Thus, efficiently computing it is a key part of the
-BMS pipeline.
+The combination ``ðt'/2κ`` (where ``t`` can represent either ``u`` or
+``v``) appears in the BMS transformation of the Weyl components.
+Thus, computing it accurately and efficiently is a key part of the BMS
+pipeline.
 
 We have the coordinate transformation
 
 ```math
 \begin{gather}
-t' = κ(t - ε^α α),
+t' = κ(t - c_α α),
 \\
 \frac{1}{κ} = γ(1 - ℐv⃗⋅n̂),
 \end{gather}
 ```
 
-where ``ε^α`` accounts for differences in the definition of the
+where ``c_α`` accounts for differences in the definition of the
 supertranslation parameter ``α``, and ``ℐ`` accounts for whether
 we're dealing with ``ℐ⁺`` (``ℐ = +1``) or ``ℐ⁻`` (``ℐ = -1``).
-
-!!! note "The sign of $ℐ$ and the choice of $ℐ⁻$ convention"
-
-    The conformal factor comes from the null section ``𝐧 = (1, ℐ n̂)``,
-    which is why ``ℐ`` multiplies ``v⃗⋅n̂`` above.  There are two natural
-    ways to set up ``ℐ⁻``, and they differ precisely by this sign:
-
-    - **Antipodal (used here).**  Following
-      [PenroseRindler_1984](@citet), we label ``ℐ⁻`` by the observer's
-      **past light cone** — the directions from which radiation
-      *arrives*.  Since one looks *opposite* to a ray's propagation to
-      see its source, this labeling is antipodal to the ``ℐ⁺``
-      (outgoing-propagation) one, giving the section ``(1, -n̂)`` and the
-      sign ``ℐ = -1`` in ``1/κ = γ(1 + v⃗⋅n̂)``.  This is the
-      antipodal matching that relates ``ℐ⁺`` and ``ℐ⁻`` in the
-      asymptotic-symmetry/soft-theorem literature [Strominger_2014,
-      Strominger_2017](@cite).  See also
-      [Future and past null infinity](@ref scri_pm_conventions).
-
-    - **Consistent labeling (not used).**  One could instead label both
-      ``ℐ⁺`` and ``ℐ⁻`` by the propagation direction, leaving
-      ``1/κ = γ(1 - v⃗⋅n̂)`` unchanged and pushing *all* of the ``ℐ``
-      dependence into the handedness of ``ð`` and the
-      component-mixing tower.  That convention is self-consistent only in
-      isolation (it does not antipodally match ``ℐ⁺``), so we do not use
-      it.
-
-    Because ``κ`` is spin-0, ``ℐ`` does not change its magnitude as a
-    function of the *physical* arrival direction; what the antipodal
-    choice fixes is the relation of that direction to the ``ℐ⁺``
-    labeling, and correspondingly the orientation of the spin-weighted
-    ``ð`` below.
 
 Note that ``1/κ`` has a simple form — and specifically, it decomposes
 into a pure ``ℓ = 0`` plus a pure ``ℓ = 1`` function on the
@@ -59,8 +28,11 @@ have ``ð(κ) = -ð(1/κ) κ^2``.
 
 ```math
 \begin{align}
-\frac{ðt'}{κ} &= -ð(1/κ) κ (t - ε^α α) - ε^α ðα \\
-&= \frac{ℐ ð(v⃗⋅n̂)}{1 - ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα.
+\frac{ðt'}{2κ}
+&= \frac{ð(κ)}{2κ} (t - c_α α) - \frac{c_α ðα}{2} \\
+&= \frac{-ð(1/κ)}{2}κ (t - c_α α) - \frac{c_α ðα}{2} \\
+&= \frac{ℐ ð(v⃗⋅n̂)}{2(1 - ℐv⃗⋅n̂)} (t - c_α α) - \frac{c_α ðα}{2} \\
+&= \frac{-ð(v⃗⋅n̂)}{2(v⃗⋅n̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2}.
 \end{align}
 ```
 
@@ -71,261 +43,78 @@ terms are simple enough that it will be more efficient to compute them
 directly in closed form, using rotor components.  That is the
 objective of what follows.
 
+## ``v⃗⋅n̂`` as a function on ``\mathrm{Spin}(3)``
+
+As mentioned when we [introduced the ``ð`` operator](@ref
+the-operator-eth), ``ð`` is best understood as a derivative operator
+on the group ``\mathrm{Spin}(3)``.  It is not immediately obvious that
+``v⃗⋅n̂`` needs to be expressed as a function on ``\mathrm{Spin}(3)``,
+but in order to obtain an expression for ``ðt'/2κ`` that is a function
+on ``\mathrm{Spin}(3)``, we need to express all of the terms in that
+form.  The solution is simple:
+
+```math
+v⃗⋅n̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̄) = (Q̄ v⃗ Q) ⋅ ẑ.
+```
+
+That is, ``Q`` is interpreted as a rotation that takes the ``ẑ``
+basis vector to the direction ``n̂``, and the inner product is taken
+with ``v⃗``.  Note the equivalent form in the final expression, which
+will be make the final result more efficient to calculate.  In fact,
+we will define
+
+```math
+\vec{λ} = Q̄ v⃗ Q,
+```
+
+which can be calculated once, very efficiently.  Then we just need to
+take the ``ẑ`` component of ``\vec{λ}`` to get ``v⃗⋅n̂ = λᶻ``, and we
+will see that its other components are exactly what we need to compute
+``ð(v⃗⋅n̂)``.
+
 ## Computing ``ð(v⃗⋅n̂)``
 
-So we have simplified the problem to computing ``ð(v⃗⋅n̂)``.  The
-product ``v⃗⋅n̂`` is an ``s=0``, ``ℓ = 1`` function.  The ``ð``
-operator has a very simple action in mode space, so one approach is to
-just evaluate the mode weights of ``v⃗⋅n̂`` and apply the known
-mode-space formula for ``ð``.
-
-Given the standard spherical-harmonic formulas
-
-```math
-\begin{aligned}
-Y_{1,0}(θ, φ) &= \sqrt{\frac{3}{4π}}\,\cos θ,
-\\
-Y_{1,\pm 1}(θ, φ) &= \mp\sqrt{\frac{3}{8π}}\,\sin θ\,e^{\pm iφ},
-\end{aligned}
-```
-
-we have
-
-```math
-\begin{aligned}
-\cos θ &= \sqrt{\frac{4π}{3}}\,Y_{1,0},
-\\
-\sin θ \cos φ &= -\frac{1}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} - Y_{1,-1}\right),
-\\
-\sin θ \sin φ &= \frac{i}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} + Y_{1,-1}\right).
-\end{aligned}
-```
-
-We can re-express the dot product as
-
-```math
-\begin{aligned}
-v⃗⋅n̂
-&= v_x\sin θ\cos φ + v_y\sin θ\sin φ + v_z\cos θ \\
-&= -v_x\frac{1}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} - Y_{1,-1}\right)
-   + v_y\frac{i}{2}\sqrt{\frac{8π}{3}}\,\left(Y_{1,1} + Y_{1,-1}\right)
-   + v_z \sqrt{\frac{4π}{3}} Y_{1,0} \\
-\end{aligned}
-```
-
-Now, we also know that the ``ð`` operator acts on spin-weighted spherical harmonics by
-
-```math
-ð {}_{s}Y_{ℓ,m} = \sqrt{(ℓ-s)(ℓ+s+1)}\, {}_{s+1}Y_{ℓ,m}.
-```
-
-Of course, with ``s=0`` and ``ℓ=1``, the factor is just ``\sqrt{2}``, so we have
+We can now immediately apply the definition of ``ð`` to compute
+``ð(v⃗⋅n̂)``.  We have
 
 ```math
 \begin{aligned}
 ð(v⃗⋅n̂)
-&= -v_x\sqrt{\frac{4π}{3}}\,\left({}_{1}Y_{1,1} - {}_{1}Y_{1,-1}\right)
-   + v_y i\sqrt{\frac{4π}{3}}\,\left({}_{1}Y_{1,1} + {}_{1}Y_{1,-1}\right)
-   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0} \\
-&= (-v_x+ v_y i)\sqrt{\frac{4π}{3}}\,{}_{1}Y_{1,1}
-   + (v_x+ v_y i)\sqrt{\frac{4π}{3}}\, {}_{1}Y_{1,-1}
-   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0}
+&= c_ð R_{x̂+iŷ} v⃗⋅n̂ \\
+&= -c_ð i \left.\frac{d}{dϵ}\right|_{ϵ=0} v⃗ ⋅ (Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̄) \\
+&= -c_ð i v⃗ ⋅ \left[Q \left( -(x̂+iŷ)/2 ẑ + ẑ (x̂+iŷ)/2 \right) Q̄\right] \\
+&= c_ð v⃗ ⋅ \left[Q \left( (ix̂-ŷ) ẑ \right) Q̄\right] \\
+&= c_ð v⃗ ⋅ \left[Q \left( -iŷ-x̂ \right) Q̄\right] \\
+&= c_ð \left( Q̄ v⃗ Q \right) ⋅ \left( -iŷ-x̂ \right) \\
+&= -c_ð \left( λˣ + i λʸ \right).
 \end{aligned}
 ```
 
-Another approach is to use the original form of ``ð`` in terms of
-partial derivatives with respect to spherical coordinates.  For
-``s=0``, it is just
+## Putting it together
 
-```math
-ð f = -\left(\partial_θ f + \frac{i}{\sin θ}\,\partial_φ f\right).
-```
-
-Applying this to the explicit formula for ``v⃗⋅n̂`` given above, we have
+The final result is simple to calculate:
 
 ```math
 \begin{aligned}
-ð(v⃗⋅n̂)
-&= -v_x\cos θ\cos φ - v_y\cos θ\sin φ + v_z\sin θ
- - \frac{i}{\sin θ} \left(-v_x\sin θ\sin φ + v_y\sin θ\cos φ\right) \\
-&= -v_x(\cos θ\cos φ - i\sin φ) - v_y(\cos θ\sin φ + i\cos φ) + v_z\sin θ
+\frac{ðt'}{2κ}
+&= \frac{-ð(v⃗⋅n̂)}{2(v⃗⋅n̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2} \\
+&= c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)} (t - c_α α) - \frac{c_α ðα}{2}.
 \end{aligned}
-```
-
-We have a pair of expressions for Wikipedia:
-
-```math
-\begin{aligned}
-{}_1 Y_{10}(\theta,\phi)     &=  \sqrt{\frac{3}{8\pi}}\,\sin\theta, \\
-{}_1 Y_{1\pm 1}(\theta,\phi) &= -\sqrt{\frac{3}{16\pi}}(1 \mp \cos\theta)\,e^{\pm i\phi}.
-\end{aligned}
-```
-
-Plugging these in, we can verify that the two approaches give the same
-result.
-
-However, it will be better to compute this directly in terms of the
-rotor components, which is more efficient and numerically well-behaved
-(no need to evaluate any trigonometric functions, and no spurious
-poles at the poles).  This is the objective of the next section.
-
-## SWSHs and quaternions
-
-The SWSH is related to Wigner's ``D`` matrix by
-
-```math
-{}_{s}Y_{\ell,m}(R) = (-1)^{s} \sqrt{ \frac{2\ell + 1} {4\pi}} \mathfrak{D}^{(\ell)}_{m, -s} (R),
-```
-
-and
-
-```math
-  \mathfrak{D}^{(\ell)}_{m',m}(R) = \sum_{\rho}
-  \binom{\ell+m'} {\rho}\, \binom{\ell-m'} {\ell-\rho-m}\,
-  (-1)^{\rho}\, R_s^{\ell+m'-\rho}\, \bar{R}_s^{\ell-\rho-m}\,
-  R_a^{\rho-m'+m}\, \bar{R}_a^{\rho}\, \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\, (\ell-m')! } },
-```
-
-where ``R_s = R_1 + i R_z`` and ``R_a = R_y + i R_x``.  This gives a
-direct way to evaluate the SWSHs in terms of the rotor components,
-without needing to compute any trigonometric functions.
-
-```math
-\begin{gather}
-R = \cos(θ/2) \cos(ϕ/2) - 𝐢 \sin(θ/2) \sin(ϕ/2) + 𝐣 \sin(θ/2) \cos(ϕ/2) + 𝐤 \cos(θ/2) \sin(ϕ/2),
-\\
-R_s = R_1 + i R_z = \cos(θ/2) \cos(ϕ/2) + i \cos(θ/2) \sin(ϕ/2) = \cos(θ/2) e^{iϕ/2},
-\\
-R_a = R_y + i R_x = \sin(θ/2) \cos(ϕ/2) + i (-\sin(θ/2) \sin(ϕ/2)) = \sin(θ/2) e^{-iϕ/2}.
-\end{gather}
-```
-
-```math
-\begin{aligned}
-{}_{1}Y_{1,m}(R) &= -\sqrt{\frac{3} {4\pi}} \mathfrak{D}^{(1)}_{m, -1} (R) \\
-&= -\sqrt{\frac{3} {4\pi}} \sum_{\rho}
-  \binom{1+m} {\rho}\, \binom{1-m} {2-\rho}\,
-  (-1)^{\rho}\, R_s^{1+m-\rho}\, \bar{R}_s^{2-\rho}\,
-  R_a^{\rho-m-1}\, \bar{R}_a^{\rho}\, \sqrt{ \frac{ 2 } { (1+m)!\, (1-m)! } }
-\end{aligned}
-```
-
-For ``m=0``, we must have ``\rho=1``:
-
-```math
-\begin{aligned}
-{}_{1}Y_{1,0}(R)
-&= \sqrt{\frac{3} {2\pi}} \bar{R}_s\, \bar{R}_a \\
-&= \sqrt{\frac{3} {2\pi}} \sin(θ/2) \cos(θ/2) \\
-&= \sqrt{\frac{3} {8\pi}} \sin(θ)
-\end{aligned}
-```
-
-For ``m=1`` we have ``\rho=2``:
-
-```math
-\begin{aligned}
-{}_{1}Y_{1,1}(R)
-&= -\sqrt{\frac{3} {4\pi}} \bar{R}_a^{2} \\
-&= -\sqrt{\frac{3} {4\pi}} \sin^2(θ/2) e^{iϕ} \\
-&= -\sqrt{\frac{3} {16\pi}} (1 - \cos θ) e^{iϕ}
-\end{aligned}
-```
-
-For ``m=-1``, we have ``\rho=0``:
-
-```math
-\begin{aligned}
-{}_{1}Y_{1,-1}(R)
-&= -\sqrt{\frac{3} {4\pi}} \bar{R}_s^{2} \\
-&= -\sqrt{\frac{3} {4\pi}} \cos^2(θ/2) e^{-iϕ} \\
-&= -\sqrt{\frac{3} {16\pi}} (1 + \cos θ) e^{-iϕ}
-\end{aligned}
-```
-
-We have derived the same expressions in terms of spherical coordinates
-as are found on Wikipedia, but we have also found their simple
-expressions in terms of the rotor components, which is what we will
-actually use.  We now express the full result
-
-## Expressing ``ðt'/κ`` with rotor components
-
-A significant simplification will come from the fact that the rotation
-of `v` by a rotor `R` is expressed as `R*v*conj(R) = R(v)` with this
-result:
-
-```julia
-function (R::Rotor)(v::QuatVec)
-    quatvec(SA[
-        false,
-        ((R[1]^2 + R[2]^2 - R[3]^2 - R[4]^2)*v[2]
-            + (R[1]*R[3] + R[2]*R[4])*2v[4] + (R[2]*R[3] - R[1]*R[4])*2v[3]),
-        ((R[1]^2 - R[2]^2 + R[3]^2 - R[4]^2)*v[3]
-            + (R[2]*R[3] + R[1]*R[4])*2v[2] + (R[3]*R[4] - R[1]*R[2])*2v[4]),
-        ((R[1]^2 + R[4]^2 - R[2]^2 - R[3]^2)*v[4]
-            + (R[1]*R[2] + R[3]*R[4])*2v[3] + (R[2]*R[4] - R[1]*R[3])*2v[2])
-    ])
-end
-```
-
-Now, we expand the SWHSs in rotor components and find
-
-```math
-\begin{aligned}
-ð(v⃗⋅n̂)
-&= (-v_x + v_y i)\sqrt{\frac{4π}{3}}\,{}_{1}Y_{1,1}
-   + (v_x + v_y i)\sqrt{\frac{4π}{3}}\, {}_{1}Y_{1,-1}
-   + v_z \sqrt{\frac{8π}{3}} {}_{1}Y_{1,0} \\
-&= (v_x - v_y i) \bar{R}_a^{2}
-   - (v_x + v_y i) \bar{R}_s^{2}
-   + 2v_z \bar{R}_s\, \bar{R}_a \\
-&= (v_x - v_y i) (R_y - i R_x)^{2}
-   - (v_x + v_y i) (R_1 - i R_z)^{2}
-   + 2v_z (R_1 - i R_z)\, (R_y - i R_x) \\
-&= (v_x - v_y i) (R_y^2 - R_x^2 - 2i R_x R_y) \\&\quad
-   - (v_x + v_y i) (R_1^2 - R_z^2 - 2i R_1 R_z) \\&\quad
-   + 2v_z (R_1 R_y - i R_y R_z - i R_1 R_x - R_x R_z) \\
-&= v_x (- R_1^2 - R_x^2 + R_y^2 + R_z^2 + 2i (R_1 R_z - R_x R_y)) \\&\quad
-   - i v_y (R_1^2 - R_x^2 + R_y^2 - R_z^2 - 2i (R_x R_y + R_1 R_z)) \\&\quad
-   + 2v_z (R_1 R_y - i R_y R_z - i R_1 R_x - R_x R_z) \\
-&= -\left( \tilde{R} \vec{v} R \right) \cdot \left( \hat{x} + i \hat{y} \right).
-\end{aligned}
-```
-
-Similarly, we have
-
-```math
-\begin{aligned}
-v⃗⋅n̂
-&= (R_1^2 + R_z^2 - R_x^2 - R_y^2)v_z + 2(-R_1 R_x + R_y R_z)v_y + 2(R_x R_z + R_1 R_y)v_x \\
-&= \left( \tilde{R} \vec{v} R \right) \cdot \hat{z}
-\end{aligned}
-```
-
-These are very easy to calculate.  If we define ``λ = R̃v⃗R`` then we
-have
-
-```math
-\begin{align}
-\frac{ðt'}{κ}
-&= \frac{ℐ ð(v⃗⋅n̂)}{1 - ℐv⃗⋅n̂} (t - ε^α α) - ε^α ðα \\
-&= \frac{-ℐ (λ_x + i λ_y)}{1 - ℐ λ_z} (t - ε^α α) - ε^α ðα.
-\end{align}
 ```
 
 The term proportional to ``t`` will vary between time steps, so we
 factor out a term constant in time and one proportional to time:
 
 ```math
-\frac{ðt'}{κ}
-= \left(\frac{ðt'}{κ}\right)_0 + \left(\frac{ðt'}{κ}\right)_1 t,
+\frac{ðt'}{2κ}
+= \left(\frac{ðt'}{2κ}\right)_0 + \left(\frac{ðt'}{2κ}\right)_1 t,
 ```
 
 where
 
 ```math
 \begin{aligned}
-\left(\frac{ðt'}{κ}\right)_0 &= -ε^α \left( \frac{λ_x + i λ_y}{λ_z - ℐ} α + ðα \right), \\
-\left(\frac{ðt'}{κ}\right)_1 &= \frac{λ_x + i λ_y}{λ_z - ℐ}.
+\left(\frac{ðt'}{2κ}\right)_0 &= -c_α \left( c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)} α + ðα \right), \\
+\left(\frac{ðt'}{2κ}\right)_1 &= c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)}.
 \end{aligned}
 ```
