@@ -70,6 +70,14 @@ Base.:^(::MinusOne, p::Integer) = iseven(p) ? One() : MinusOne()
 Base.:+(a::SignSingleton, b::SignSingleton) = signval(a) + signval(b)
 Base.:-(a::SignSingleton, b::SignSingleton) = signval(a) - signval(b)
 
+# Mixing a sign with a genuine number likewise falls back to ordinary arithmetic: the
+# singleton contributes its ``±1`` value.  (Unlike `*`/`/`, addition cannot elide the
+# operand, so there is nothing to gain by staying at the type level here.)
+Base.:+(a::SignSingleton, x::Number) = signval(a) + x
+Base.:+(x::Number, a::SignSingleton) = x + signval(a)
+Base.:-(a::SignSingleton, x::Number) = signval(a) - x
+Base.:-(x::Number, a::SignSingleton) = x - signval(a)
+
 # Enough of a numeric interface to be well-behaved in generic code, all by concrete dispatch.
 Base.one(::SignSingleton) = One()
 Base.one(::Type{<:SignSingleton}) = One()

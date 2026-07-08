@@ -49,6 +49,30 @@ end
     end
 end
 
+@testitem "Signs: addition and subtraction fall back to numbers" tags = [:unit, :fast] begin
+    import Scri: One, MinusOne
+
+    # Sums/differences of two signs give plain integers.
+    @test One() + One() === 2
+    @test One() + MinusOne() === 0
+    @test MinusOne() + MinusOne() === -2
+    @test One() - MinusOne() === 2
+    @test MinusOne() - One() === -2
+    @test One() - One() === 0
+
+    # Mixing a sign with a genuine number contributes its ±1 value, staying in the number's type.
+    for x ∈ (3, 3.0, 3.0 + 4.0im, 3 + 4im, -2.5)
+        @test One() + x === 1 + x
+        @test x + One() === x + 1
+        @test MinusOne() + x === -1 + x
+        @test x + MinusOne() === x + -1
+        @test One() - x === 1 - x
+        @test x - One() === x - 1
+        @test MinusOne() - x === -1 - x
+        @test x - MinusOne() === x - -1
+    end
+end
+
 @testitem "Signs: no method ambiguities across the numeric types" tags = [:unit, :fast] begin
     using Scri: Scri
     using Test: detect_ambiguities
