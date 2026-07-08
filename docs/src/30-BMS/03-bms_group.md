@@ -318,11 +318,11 @@ results in a general supertranslation.
     ```math
     (Λ₂, α₂) (Λ₁, α₁) = Λ⁻¹ ∘ δt ∘ Λ = (1, α ∘ Λ / κ) = (1, δt / κ).
     ```
-    The last equality is because ``α`` is constant, so evaluating
-    at ``Λ𝐤`` is the same as evaluating at ``𝐤``, and that value is
-    ``δt``.  That factor of  ``1/κ`` is given by our composition
-    law, and is exactly the same as the result of the Poincaré
-    transformation.
+    The last equality is because ``α`` is constant over the sphere,
+    so evaluating in the direction ``Λ𝐤`` is the same as evaluating
+    in the direction ``𝐤``, and that value is ``δt``.  That factor
+    of  ``1/κ`` is given by our composition law, and is exactly the
+    same as the result of the Poincaré transformation.
 
 ## [Representations of the supertranslation](@id bms_representations)
 

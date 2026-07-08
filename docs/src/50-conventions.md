@@ -152,7 +152,7 @@ combined Lorentz transformation ``Λ`` evaluated on the null ray, which
 is given in $A$'s coordinate frame as ``𝐧 = (1, ℐ n̂)`` up to
 normalization.
 
-## [Future and past null infinity](@id scri_pm_conventions)
+## Future and past null infinity
 
 Every transformation above lives on a chosen piece of ``ℐ``, and most
 expressions carry a sign ``ℐ`` that records *which* piece:
