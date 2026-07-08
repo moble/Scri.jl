@@ -53,7 +53,7 @@ fixed point of the t ↦ t′ map), which we can derive from the above formula a
 
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
 """
-function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=1)
+function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=One())
     β = absvec(v⃗)
     γ = 1 / √(1 - β^2)
     vˣ, vʸ, vᶻ = vec(v⃗)
@@ -107,7 +107,7 @@ See the documentation page ["Computing ``ðt'/κ``"](@ref computing_eth_tprime_o
 the derivation.  Note in particular that the boost × supertranslation cross term ``ðt'╱2κ[2,
 i]·αₚ[i]`` enters with a **minus** sign.
 """
-function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, ℐ=1)
+function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, ℐ=One())
     vˣ, vʸ, vᶻ = vec(v⃗)
     T = promote_type(basetype(eltype(Rₚ)), eltype(αₚ), real(eltype(ðαₚ)), typeof(vˣ))
     ðt′╱2κ = Matrix{Complex{T}}(undef, 2, length(Rₚ))
@@ -128,8 +128,9 @@ function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, ℐ=1)
             (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
             (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
         )
-        ðt′╱2κ[2, i] = (λˣ + im * λʸ) / 2(λᶻ - ℐ)
-        ðt′╱2κ[1, i] = -(ðt′╱2κ[2, i] * αₚ[i] + ðαₚ[i] / 2)
+        ðκ╱2κ = (λˣ + im * λʸ) / 2(λᶻ - ℐ)
+        ðt′╱2κ[2, i] = ðκ╱2κ
+        ðt′╱2κ[1, i] = -ðκ╱2κ * αₚ[i] - ðαₚ[i] / 2
     end
     return ðt′╱2κ
 end
