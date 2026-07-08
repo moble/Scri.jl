@@ -1,5 +1,5 @@
 """
-    transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ=+1)
+    transform!(data, t, v⃗, R, αᵢₙ, dc)
 
 Transform the mode weights in `data` — sampled at times `t` — from the rest frame to the
 BMS-transformed frame.  The BMS transformation is specified by the boost velocity `v⃗`, the
@@ -32,10 +32,16 @@ The `dc` argument is a [`DataComponents`](@ref) value specifying which field com
 stored in `data`, in the order they appear along its third dimension.  Because of the
 hierarchical nature of the BMS transformation, any Weyl component ``ψᵢ`` must be accompanied
 by all higher-index components ``ψⱼ`` for ``j > i``.  Note that `DataComponents` includes a
-sign indicating whether `data` represents data on ``ℐ⁺`` if εᴵ = +1 or ``ℐ⁻`` if εᴵ = -1.
+sign indicating whether `data` represents data on ``ℐ⁺`` if `ℐ` = +1 or ``ℐ⁻`` if `ℐ` = -1.
 
-The optional keyword `εᵅ` represents the sign in the time-transformation law ``t′ = t - εᵅ
-α``.
+The `dc` argument also contains the [`Conventions`](@ref) the data are expressed in, and the
+transformation laws applied are the ones *native to that convention*: the time-law sign
+comes from `c_α` (``t′ = κ(t − c_α α)``), the peeling-tower mixing parameter is rescaled by
+the dyad factor ``c_l c_m``, and the inhomogeneous radiative-shear/strain shifts carry their
+full conversion factors ``F_σ`` (the shear ``σ`` on ``ℐ⁺``), ``F_λ`` (the shear ``λ`` on
+``ℐ⁻``), and ``F_h``.  See the "Convention dependence" section of the "BMS Action on Fields"
+documentation page.  With the default conventions (SXS) every factor is the identity and
+compiles away.
 
 """
 function transform!(
@@ -44,9 +50,8 @@ function transform!(
     v⃗::QuatVec{T3},
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}},
-    dc::DataComponents{C,Eᴵ},
-    εᵅ=+1,
-) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,Eᴵ}
+    dc::DataComponents{C,I},
+) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I}
     # Use this `let` block to ensure that we don't accidentally use `T` below, because that
     # could lead to type instability.
     let T = promote_type(T1, T2, T3, T4, T5)
@@ -79,6 +84,11 @@ function transform!(
     Nᵖ = Nᵐ
     block_size = max(1, min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
 
+    # The time-law sign in t′ = κ(t − c_α α) comes from the data conventions; the remaining
+    # convention factors (dyad rescaling of the mixing parameter and the F_σ/F_h shift
+    # factors) live in `mix_components!`, which reads them from `dc` itself.
+    c_α = dc.conventions.c_α
+
     ###
     ### Stage 0: Precompute various quantities needed for the transformation
     ###
@@ -101,8 +111,10 @@ function transform!(
     # This is the boosted or distorted grid.
     Tₚ = promote_type(Rotor{T4}, T3)
     Rₚ = similar(R′ₚ, Tₚ)
+    # `ℐ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map;
+    # see the `aberration` docstring and the "Future and past null infinity" conventions.
     Polyester.@batch for i ∈ eachindex(Rₚ)
-        Rₚ[i] = aberration(R * R′ₚ[i], v⃗)
+        Rₚ[i] = aberration(R * R′ₚ[i], v⃗, I)
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
@@ -113,7 +125,7 @@ function transform!(
     # the real part of the result after evaluation, because we also need ðα and ð²α, which
     # need to be consistent with the reality condition.  This is done in a separate thread
     # to overlap with the computation of the SSHTs.
-    task_α = OhMyThreads.@spawn impose_reality(αᵢₙ, ℓₘₐₓ, εᵅ)
+    task_α = OhMyThreads.@spawn impose_reality(αᵢₙ, ℓₘₐₓ, c_α)
 
     # Construct the set of spin-spherical-harmonic transforms, for each spin weight.  Here
     # we use `OffsetVector` so that they can be indexed by their spin weight.
@@ -136,7 +148,7 @@ function transform!(
                     lu(ₛY)
                 else
                     F = qr(ₛY)
-                    Q = F.Q * Matrix{Bool}(I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
+                    Q = F.Q * Matrix{Bool}(LinearAlgebra.I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
                     Q⊥ = Q[:, (Nᵐ - s ^ 2 + 1):end]  # Nᵐ × s² null-space columns
                     lu([Q⊥ ₛY])  # Nᵐ × Nᵐ, square
                 end
@@ -146,14 +158,14 @@ function transform!(
     end
 
     # NOTE: From this point on, `α` will represent the corrected version that accounts for
-    # `εᵅ`.  That is, we can now interpret `α` as being involved in the time translation as
-    # t' = k(t - α), rather than trying to keep that factor of εᵅ around.
+    # `c_α`.  That is, we can now interpret `α` as being involved in the time translation as
+    # t' = κ(t - α), rather than trying to keep that factor of c_α around.
     α = fetch(task_α)
 
     # Evaluate α on the boosted grid.  Make a copy because the 𝒯 act in place.
     task_αₚ = OhMyThreads.@spawn real.(𝒯[0] * copy(α))
 
-    # Compute ðα, which is needed for ðt′/k in the Weyl transformation laws.
+    # Compute ðα, which is needed for ðt′/2κ in the Weyl transformation laws.
     # ð returns a full Nᵐ-element vector, but spin-1 modes start at ℓ=1, so skip the first
     # 1² = 1 leading zero entry before passing to 𝒯[1] (which expects Nᵐ − 1² modes).
     task_ðαₚ = OhMyThreads.@spawn 𝒯[1] * (ð(0, 0, ℓₘₐₓ, T5) * α)[2:end]
@@ -164,39 +176,11 @@ function transform!(
 
     # Compute t′
     αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
-    task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗)
+    task_t′_tᵪ = OhMyThreads.@spawn compute_t′(t, αₚ, Rₚ, v⃗, I)
 
-    # Compute ðt′/k parts.  We split this into the term independent of t (ðt′╱kₚ[1, :]), and
-    # the term proportional to t (ðt′╱kₚ[2, :]).  Note that the latter term is just ðk/k,
-    # which we can compute efficiently in terms of v⃗⋅(R𝐞R̄), where 𝐞 are the spatial
-    # basis vectors.  These products are given by the components of λ=R̄v⃗R as computed
-    # below.
+    # Compute ðt′/2κ parts.
     ðαₚ = fetch(task_ðαₚ)
-    task_ðt′╱kₚ = OhMyThreads.@spawn @inbounds begin
-        # ðαₚ = fetch(task_ðαₚ)  # ðαₚ is only needed here, so fetch it inside the task
-        ðt′╱k = Matrix{Complex{T1}}(undef, 2, Nᵖ)
-        @simd ivdep for i ∈ eachindex(Rₚ)
-            Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
-            λˣ = (
-                (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ +
-                (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ +
-                (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ
-            )
-            λʸ = (
-                (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ +
-                (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ +
-                (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ
-            )
-            λᶻ = (
-                (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ +
-                (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
-                (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
-            )
-            ðt′╱k[2, i] = -(λˣ + im * λʸ) / (λᶻ - Eᴵ)
-            ðt′╱k[1, i] = ðt′╱k[2, i] * αₚ[i] + ðαₚ[i]
-        end
-        ðt′╱k
-    end
+    task_ðt′╱2κₚ = OhMyThreads.@spawn compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
     ###
     ### Stage 1: Evaluate all input data on the distorted grid
@@ -234,7 +218,7 @@ function transform!(
 
     cubic_spline_cache = fetch(task_cubic_spline_cache)
     t′, tᵪ = fetch(task_t′_tᵪ)
-    ðt′╱kₚ = fetch(task_ðt′╱kₚ)
+    ðt′╱2κₚ = fetch(task_ðt′╱2κₚ)
     ð²αₚ = fetch(task_ð²αₚ)
 
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
@@ -253,9 +237,9 @@ function transform!(
                 vᶻ * (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)
             )
         end
-        k⁻¹ᵢ = γ * (1 - v⃗dotn̂ᵢ)
-        ðt′╱kₚ₀ᵢ = ðt′╱kₚ[1, i]
-        ðt′╱kₚ₁ᵢ = ðt′╱kₚ[2, i]
+        κ⁻¹ᵢ = γ * (1 - I * v⃗dotn̂ᵢ)
+        ðt′╱2κₚ₀ᵢ = ðt′╱2κₚ[1, i]
+        ðt′╱2κₚ₁ᵢ = ðt′╱2κₚ[2, i]
         ð²αₚᵢ = ð²αₚ[i]
         αₚᵢ = αₚ[i]
 
@@ -299,7 +283,7 @@ function transform!(
         # transformation laws
         @inbounds let
             j′ = Nᵗ
-            tᵢⱼ′ = t′[j′] * k⁻¹ᵢ + αₚᵢ  # original-frame time for output index j′
+            tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ  # original-frame time for output index j′
             for j ∈ (Nᵗ - 1):-1:1
                 # Backward sweep step: d̈ᵢ[j] = z[j] − l[j-1]·d̈ᵢ[j+1]
                 # (j=Nᵗ-1 and j=1 are natural-BC endpoints; no update needed)
@@ -327,11 +311,11 @@ function transform!(
                             )
                         end
                     end
-                    ðt′╱kᵢⱼ = ðt′╱kₚ₀ᵢ + tᵢⱼ′ * ðt′╱kₚ₁ᵢ
-                    @views mix_components!(d′ᵢ[:, j′], k⁻¹ᵢ, ðt′╱kᵢⱼ, ð²αₚᵢ, dc)
+                    ðt′╱2κᵢⱼ = ðt′╱2κₚ₀ᵢ + tᵢⱼ′ * ðt′╱2κₚ₁ᵢ
+                    @views mix_components!(d′ᵢ[:, j′], κ⁻¹ᵢ, ðt′╱2κᵢⱼ, ð²αₚᵢ, dc)
                     j′ -= 1
                     if j′ ≥ 1
-                        tᵢⱼ′ = t′[j′] * k⁻¹ᵢ + αₚᵢ
+                        tᵢⱼ′ = t′[j′] * κ⁻¹ᵢ + αₚᵢ
                     end
                 end
             end
@@ -360,15 +344,19 @@ function transform!(
 end
 
 """
-    transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, εᵅ=+1, εᴵ=+1)
+    transform!(data, t, v⃗, R, αᵢₙ; data_components=nothing, ℐ=+1, conventions=Conventions())
 
-Backward-compatible keyword-argument form.  See the main docstring for details.
+Keyword-argument convenience form.  See the main docstring for details.
 
 The `data_components` argument may be a `DataComponents` value, a tuple of symbols such as
 `(:ψ₄, :ψ₃)`, or a sequence of strings that indicate those symbols.  The strings are parsed
 in a flexible way, so that, for example, `"psi4"`, `"Psi_4"`, and `"PSI₄"` all indicate the
 same component `:ψ₄`.  Alternatively, if the argument is `nothing` (the default), the first
-`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` will be chosen — though a warning will be issued.
+`Nᵈ` of `(:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)` on ``ℐ⁺`` (or `(:λ, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)` on
+``ℐ⁻``) will be chosen — though a warning will be issued.
+
+The `ℐ` and `conventions` keywords are used only when `data_components` is *not* already a
+`DataComponents` value (which carries its own).
 """
 function transform!(
     data::Array{Complex{T1}},
@@ -377,20 +365,62 @@ function transform!(
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}};
     data_components=nothing,
-    εᵅ::Int=+1,
-    εᴵ::Int=+1,
+    ℐ::Int=+1,
+    conventions::Conventions=Conventions(),
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}
     Nᵈ = size(data, 3)
     dc = if data_components isa DataComponents
         data_components
     elseif isnothing(data_components)
-        default_dc = (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀)[1:Nᵈ]
+        # The ℐ⁺ and ℐ⁻ radiative-shear slots (σ vs λ) and Weyl tower orders differ.
+        full_dc = ℐ == 1 ? (:σ, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀) : (:λ, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
+        default_dc = full_dc[1:Nᵈ]
         @warn "Defaulting to data components $(default_dc).\n" *
             "Check that this is correct for your input data.\n" *
             "Consider passing a `DataComponents` value explicitly."
-        DataComponents(default_dc...; εᴵ)
+        DataComponents(default_dc...; ℐ, conventions)
     else
-        DataComponents(data_components...; εᴵ)
+        DataComponents(data_components...; ℐ, conventions)
     end
-    return transform!(data, t, v⃗, R, αᵢₙ, dc, εᵅ)
+    return transform!(data, t, v⃗, R, αᵢₙ, dc)
+end
+
+function transform!(
+    data::Array{Complex},
+    t::Vector{<:Real},
+    v⃗::Vector{<:Real},
+    R::Vector{<:Real},
+    αᵢₙ::Vector{Complex};
+    data_components=nothing,
+    ℐ::Int=+1,
+    conventions::Conventions=Conventions(),
+)
+    return transform!(data, t, QuatVec(v⃗), Rotor(R), αᵢₙ; data_components, ℐ, conventions)
+end
+
+"""
+    transform!(data, t, g::BMS, dc::DataComponents)
+
+Apply the BMS element `g` to `data` in place.  This convenience wrapper unpacks the boost
+velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity`](@ref),
+[`frame_rotation`](@ref), and [`supertranslation`](@ref) — and forwards to the main
+[`transform!`](@ref) method.  Because the accessors define `lorentz(g) = inv(Boost(v⃗) *
+Lorentz(R))`, these parts carry exactly the meaning the `v⃗` and `R` arguments have in the
+main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
+
+The data live on the null infinity singled out by `dc`'s `ℐ` type parameter, so `g` is
+first re-expressed in that representation — and with the supertranslation sign given by the
+data conventions' `c_α` — via the [`BMS`](@ref) conversion constructor, which accounts
+exactly for whatever conventions (`A`, `I`) `g` was constructed with.  Returns `(data,
+t′)`, as the main method does.
+"""
+function transform!(
+    data::Array{<:Complex}, t::Vector{<:Real}, g::BMS, dc::DataComponents{C,I}
+) where {C,I}
+    # Re-express `g` with the supertranslation sign matching the data conventions' `c_α`,
+    # since the main method will interpret α through that sign.
+    gᴵ = BMS(g; c_α=dc.conventions.c_α * 1, ℐ=I)
+    return transform!(
+        data, t, boost_velocity(gᴵ), frame_rotation(gᴵ), supertranslation(gᴵ), dc
+    )
 end

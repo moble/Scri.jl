@@ -139,9 +139,7 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     return (; data, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊)
 end
 
-function plot_example(
-    data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊, β
-) where {T}
+function plot_example(data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊, β) where {T}
     ℓₘₐₓ = isqrt(size(data, 1)) - 1
     beta = Float64(round(β; sigdigits=3))
     dc = Scri.DataComponents(:σ)

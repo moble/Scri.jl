@@ -5,9 +5,11 @@ JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PythonPlot = "274fc56d-3b97-40fa-a1cd-1b4a50311bf9"
 Quaternionic = "0756cd96-85bf-4b6f-a009-b5012ea7a443"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Scri = "ccc3add2-6548-56f5-a99b-c07b0a26ef59"
+SphericalFunctions = "af6d55de-b1f7-4743-b797-0829a72cf84e"
 
 [sources]
 Scri = {path = ".."}

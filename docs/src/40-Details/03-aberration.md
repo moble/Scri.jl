@@ -1,5 +1,17 @@
 # Aberration of Gravitational Waves
 
+The approach on this page is *not* the primary method used in this
+package; it is retained as an independent second line of reasoning.
+The primary method — extracting the ``K`` factor of the Iwasawa
+``KAN`` decomposition, which requires no angles, no branches, and no
+transcendental functions — is described on [The Lorentz Group](@ref)
+page, and is what [`Scri.aberration`](@ref) implements.  The
+derivation below works instead with explicit angles on the sphere,
+which is more laborious and numerically more delicate, but entirely
+independent; it survives as the oracle implementation
+(`AberrationOracle.aberration` in `test/aberration.jl`) against which
+the primary implementation is validated.
+
 ## Setup
 
 Consider two inertial observers, A and B, both of whom pass through
@@ -21,8 +33,11 @@ We introduce a sign variable ``ε ∈ \{+1,-1\}`` to track the two cases:
 ```
 
 This single variable turns out to control the sign of every
-frame-dependent quantity in the transformation.  In the code, it is
-exposed as the `emitted` keyword argument of [`Scri.aberration`](@ref).
+frame-dependent quantity in the transformation.  It is the same sign
+as the ``ℐ`` of [Future and past null infinity](@ref
+scri_pm_conventions); in the code it is the `ℐ` argument of
+[`Scri.aberration`](@ref), and the `emitted` keyword of the test
+oracle (`emitted = true` ⟺ ``ε = +1``).
 
 ## Waves and null wavevectors
 
@@ -59,18 +74,20 @@ spatial wavevector ``\vec{k} = (k^x, k^y, k^z)`` to satisfy
 k^μ = ω(1,\, ε\hat{n}),
 ```
 
-where ``\hat{n}`` is a unit 3-vector and ``ε = \pm 1``:
+where ``\hat{n}`` is a unit 3-vector and ``ε = \pm 1``, as defined
+above:
 
-- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{n}`` points **away** from A — it is the
-  propagation direction of the wave.  (Think of gravitational waves emitted by A; each
-  frequency component travels outward in direction ``\hat{n}``.)
-- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{n}`` points **toward** A — it is the
-  direction from which the wave arrives.  (Think of a plane wave whose source is far
-  away in the direction ``\hat{n}``.)
+- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{n}`` points **away from**
+  A — it is the propagation direction of the wave.  (Think of
+  gravitational waves emitted by A; the chosen portion of the field
+  travels outward in direction ``\hat{n}``.)
+- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{n}`` points **toward** A
+  — still the propagation direction of the wave.  (Think of a plane
+  wave whose source is far away in the direction ``-\hat{n}``.)
 
 This is identical to the null section ``σ_ε: \hat{n} \mapsto (1,
 ε\hat{n})`` introduced in the [BMS group page](@ref "Lorentz
-transformations ``ℒ`` and the conformal factor ``K``") in its
+transformations ``ℒ`` and the conformal factor ``κ``") in its
 discussion of the celestial sphere.  The same rotor language connects
 naturally to the [Spacetime Algebra](@extref Quaternionic :doc:`spacetime_algebra`) developed in Quaternionic.jl, where null vectors arise from
 combinations of boost and rotation generators in the even subalgebra
@@ -106,12 +123,12 @@ the source.
 The ratio
 
 ```math
-K = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{n})}
+κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{n})}
 ```
 
 is exactly the conformal factor introduced in the BMS page: for ``ε =
-+1`` it reduces to ``K = 1/[γ(1-\vec{v}\cdot\hat{n})]`` while for ``ε
-= -1`` it becomes ``K = 1/[γ(1+\vec{v}\cdot\hat{n})]``.
++1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{n})]`` while for ``ε
+= -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{n})]``.
 
 ## The aberration formula
 
@@ -200,17 +217,39 @@ sphere, producing the spin-weight phase factor that enters the mode
 transformation of spin-weighted functions.  This is why we work with
 full rotors rather than unit 3-vectors.
 
-The function [`Scri.aberration`](@ref) implements this for the product ``R' = B'
-R_{\mathrm{pix}}``, where ``R_{\mathrm{pix}}`` is the pixel rotor
-encoding both the direction and the tangent frame orientation at a
-grid point.  The derivation of ``B'`` is given in Appendix C of
-[Boyle_2015](@cite), Eqs. (C6)–(C8).
+The oracle (`AberrationOracle.aberration` in `test/aberration.jl`)
+implements this for the product ``R' = B' R_{\mathrm{pix}}``, where
+``R_{\mathrm{pix}}`` is the pixel rotor encoding both the direction
+and the tangent frame orientation at a grid point.  The derivation of
+``B'`` is given in Appendix C of [Boyle_2015](@cite), Eqs. (C6)–(C8).
+The primary implementation, [`Scri.aberration`](@ref), obtains the
+same rotor as the ``K`` factor of the ``KAN`` decomposition; the
+testitem `"aberration: KAN K factor matches Boyle (2015) oracle"`
+verifies that the two agree — as full rotors, so that the
+tangent-frame part is pinned down along with the direction — across
+random rotors, velocities, and both signs of ``ε``.
+
+!!! warning "The oracle's Taylor branch is inaccurate for large β near the poles"
+
+    To remain well-conditioned where ``\hat{n}' × \vec{v} → 0``, this
+    implementation switches to a Taylor expansion when ``β\sin Θ' <
+    ϵ^{1/3}``.  That expansion is a series in ``β`` alone, so while it
+    is excellent for small ``β``, it is *wrong* when ``β`` is large
+    and only ``\sin Θ'`` is small — e.g., at ``Θ' = 10^{-7}``, ``β =
+    0.99``, it returns a rotor component of ``9.25 × 10^{-10}`` where
+    the correct value is ``e^{-εφ} Θ'/2 ≈ 3.54 × 10^{-9}``.  The
+    ``K``-factor implementation is purely algebraic, has no branches,
+    and gets this regime right (verified against `BigFloat`
+    evaluations, which keep the oracle in its exact branch).  This
+    defect — discovered only when the two independent implementations
+    were compared — is one more reason this page's approach was
+    demoted to oracle duty.
 
 ## Geometric observations and tests
 
 Each of the following observations is a direct consequence of the
 formula above.  They are precise enough to serve as tests, and each
-maps to a `@testitem` in `test/test_aberration.jl`.
+maps to a `@testitem` in `test/aberration.jl` or `src/aberration.jl`.
 
 ### ``β = 0``: no boost, no aberration
 
@@ -219,8 +258,8 @@ aberration rotor is the identity, so ``R' = R_{\mathrm{pix}}``
 regardless of the boost direction.  This holds for all input rotors
 and all choices of ``\hat{v}``.
 
-*Tests*: `"aberration: identity at β=0"` and `"aberration: emitted=false — identity at
-β=0"`.
+*Test*: `"aberration: identity at β=0"` (in `src/aberration.jl`; both
+signs of ``ε``).
 
 ### Pole invariance: no tangent rotation along the boost axis
 
@@ -233,8 +272,8 @@ south pole (``\hat{n}' = -\hat{v}``), and holds for both ``ε = +1``
 and ``ε = -1`` since the cross product is independent of the sign
 convention.
 
-*Tests*: `"aberration: pole invariance"` and `"aberration: emitted=false — pole
-invariance"`.
+*Test*: `"aberration: pole invariance — no tangent rotation along
+boost axis"` (in `src/aberration.jl`; both signs of ``ε``).
 
 ### Equatorial formula: ``\cos Θ = εβ``
 
@@ -250,9 +289,7 @@ For ``ε = +1``: the rest-frame direction is in the *northern*
 hemisphere, ``\cos Θ = +β > 0``.  For ``ε = -1``: the rest-frame
 direction is in the *southern* hemisphere, ``\cos Θ = -β < 0``.
 
-*Tests*: `"aberration: geometric sign — equatorial pixel maps closer to boost
-axis (future ℐ⁺)"` and `"aberration: emitted=false — equatorial pixel maps
-farther from boost axis (past ℐ⁻)"`.
+*Test*: `"aberration: geometric sign — equatorial pixel: cosΘ = ℐβ"`.
 
 ### Azimuthal symmetry
 
@@ -276,16 +313,18 @@ Applying the ``ε = +1`` aberration and then the ``ε = -1`` aberration
 with the same ``\vec{v}`` recovers the identity:
 
 ```math
-R'(R'(R, \vec{v};\, \text{emitted}=\mathtt{true}),\, \vec{v};\, \text{emitted}=\mathtt{false}) = R.
+R'(R'(R, \vec{v};\, ε=+1),\, \vec{v};\, ε=-1) = R.
 ```
 
 This is immediate from the half-angle formula: ``e^{-εφ}`` with ``ε =
 +1`` followed by ``e^{-εφ}`` with ``ε = -1`` gives ``e^{-φ} e^{+φ} =
-1``.
+1``.  (For the ``K``-factor implementation the same identity follows
+from uniqueness of the Iwasawa decomposition: the second boost cancels
+the first, and the leftover ``AN`` factor is absorbed.)
 
-*Tests*: `"aberration: round-trip with inverse gives identity"` (using the old
-`boosted_rotor` helper) and `"aberration: emitted=false round-trip gives
-identity"` (using both keyword values).
+*Test*: `"aberration: round-trip with inverse gives identity"` (both
+orders of the signs, plus a cross-check against the independent
+`boosted_rotor` helper).
 
 ### Wigner rotation: composition of non-collinear boosts
 

@@ -7,7 +7,7 @@ end
 
 @testitem "impose_reality: known analytic values (ℓ=0…3)" tags = [:unit, :fast] begin
     # N=16 modes ordered by increasing ℓ, then m ∈ {−ℓ,…,+ℓ}.
-    # Index formula: ℓ²+ℓ+m+1.  Input: αᵢₙ[k] = (2k−1) + 2k·i, εᵅ=1.
+    # Index formula: ℓ²+ℓ+m+1.  Input: αᵢₙ[k] = (2k−1) + 2k·i, c_α=1.
     #
     # output[i₊] = (αᵢₙ[i₊] + (−1)ᵐ conj(αᵢₙ[i₋])) / 2,  output[i₋] = (−1)ᵐ conj(output[i₊])
     #
@@ -111,7 +111,7 @@ end
     end
 end
 
-@testitem "impose_reality: output size, padding, and εᵅ scaling" tags = [:unit, :fast] setup = [
+@testitem "impose_reality: output size, padding, and c_α scaling" tags = [:unit, :fast] setup = [
     RealitySetup
 ] begin
     import Random
@@ -128,7 +128,7 @@ end
             @test length(α_padded) == (ℓₘₐₓ + 1)^2
             # Modes beyond the input ℓₘₐₓ are zero-padded.
             @test all(iszero, α_padded[(L ^ 2 + 1):end])
-            # εᵅ scales the output linearly (verified to be exact for real εᵅ).
+            # c_α scales the output linearly (verified to be exact for real c_α).
             c = T(3) / T(2)
             @test Scri.impose_reality(αᵢₙ, L - 1, c) ==
                 c .* Scri.impose_reality(αᵢₙ, L - 1, 1)
@@ -146,12 +146,12 @@ end
 
 @testitem "compute_t′: β=0, only supertranslation shifts valid range" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
-    # With β=0 the rotors are irrelevant; γ=1 and k⁻¹=1 for every pixel.
+    # With β=0 the rotors are irrelevant; γ=1 and κ⁻¹=1 for every pixel.
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0), Rotor(1.0, 0.0, 0.0, 0.0)]
     αₚ = [1.0, -0.5, 2.0]   # min = -0.5, max = 2.0
     v⃗ = QuatVec(0.0, 0.0, 0.0)
     t = collect(range(-10.0, 10.0; length=101))
-    # εᵅ = -1:
+    # c_α = -1:
     #   t′ₘᵢₙ = max_p(tₘᵢₙ - αₚ[p]) = tₘᵢₙ - min(αₚ) = -10 - (-0.5) = -9.5
     #   t′ₘₐₓ = min_p(tₘₐₓ - αₚ[p]) = tₘₐₓ - max(αₚ) = 10 - 2 = 8
     (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
@@ -166,8 +166,8 @@ end
     import Quaternionic: Rotor, QuatVec
     β = 0.5
     γ = 1 / √(1 - β^2)
-    # Pixel at +z (identity rotor): k⁻¹ = γ(1-β)  — blue-shifted, weak constraint
-    # Pixel at -z (Rotor(0,1,0,0)): k⁻¹ = γ(1+β)  — red-shifted, binding constraint
+    # Pixel at +z (identity rotor): κ⁻¹ = γ(1-β)  — blue-shifted, weak constraint
+    # Pixel at -z (Rotor(0,1,0,0)): κ⁻¹ = γ(1+β)  — red-shifted, binding constraint
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(0.0, 1.0, 0.0, 0.0)]
     αₚ = [0.0, 0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
@@ -235,7 +235,7 @@ end
         v⃗ = QuatVec(0.0, 0.0, 0.0)
         t = collect(range(-5.0, 5.0; length=51))
         (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
-        # With β=0 and α=0, k⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
+        # With β=0 and α=0, κ⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
         # t′ₘₐₓ=tₘₐₓ, scale=1, and t′ = t exactly.
         @test t′ ≈ t atol = 4eps(maximum(abs, t))
     end
@@ -323,7 +323,7 @@ end
 @testitem "compute_t′: collapsed range throws an error" tags = [:unit, :fast] begin
     import Quaternionic: Rotor, QuatVec
 
-    # With β=0, k⁻¹=1 for all pixels, so:
+    # With β=0, κ⁻¹=1 for all pixels, so:
     #   t′ₘᵢₙ = tₘᵢₙ − min(αₚ)
     #   t′ₘₐₓ = tₘₐₓ − max(αₚ)
     # Range collapses when max(αₚ)−min(αₚ) > tₘₐₓ−tₘᵢₙ.
