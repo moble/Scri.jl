@@ -56,27 +56,27 @@ end
     import Scri: DataComponents
 
     # ψₙ (n < 4) without its required upper neighbours.
-    @test_throws AssertionError DataComponents(:ψ₃)           # missing ψ₄
-    @test_throws AssertionError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
-    @test_throws AssertionError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
-    @test_throws AssertionError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₃)           # missing ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
 
     # Gaps in the chain.
-    @test_throws AssertionError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
-    @test_throws AssertionError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
 
     # The radiative-shear slots are ℐ-locked: σ is ℐ⁺-only, λ is ℐ⁻-only.
-    @test_throws AssertionError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
-    @test_throws AssertionError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
-    @test_throws AssertionError DataComponents(:λ; ℐ=1)
+    @test_throws ArgumentError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
+    @test_throws ArgumentError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
+    @test_throws ArgumentError DataComponents(:λ; ℐ=1)
 end
 
 @testitem "DataComponents: invalid symbols are rejected" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    @test_throws AssertionError DataComponents(:foo)
-    @test_throws AssertionError DataComponents(:Weyl₀)
-    @test_throws AssertionError DataComponents(:ψ₄, :bad_component)
+    @test_throws ArgumentError DataComponents(:foo)
+    @test_throws ArgumentError DataComponents(:Weyl₀)
+    @test_throws ArgumentError DataComponents(:ψ₄, :bad_component)
 end
 
 # ── Accessors ─────────────────────────────────────────────────────────────────
@@ -354,7 +354,7 @@ end
 
     # Component-count mismatch is caught.
     dc2 = DataComponents(:ψ₄, :h)
-    @test_throws AssertionError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
+    @test_throws ArgumentError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
 end
 
 @testitem "mix_components!: News scales by κ⁻² with no mixing" tags = [:unit, :fast] begin

@@ -331,16 +331,16 @@ shape,
 ```math
 v' = κ(θ, ϕ)\left[v - c_α α(θ, ϕ)\right],
 \qquad
-κ = \frac{1}{γ(1 + v⃗ ⋅ n̂)},
+κ = \frac{1}{γ(1 + v⃗ ⋅ k̂)},
 ```
 
 with two points of convention worth flagging:
 
 - **Antipodal labeling.**  Following [PenroseRindler_1984](@citet),
   ``ℐ⁻`` is labeled by the observer's past light cone — the directions
-  radiation *arrives from* — so its section is ``𝐧 = (1, -n̂)``,
+  radiation *arrives from* — so its section is ``𝐧 = (1, -k̂)``,
   antipodal to ``ℐ⁺``.  This is the single sign ``ℐ = -1``, and it is
-  why ``κ`` includes ``1 + v⃗⋅n̂`` rather than ``1 - v⃗⋅n̂`` (see
+  why ``κ`` includes ``1 + v⃗⋅k̂`` rather than ``1 - v⃗⋅k̂`` (see
   [Future and past null infinity](@ref scri_pm_conventions)).
 - **Same uniform weight.**  The conformal frames still satisfy ``ĝ' =
   κ²ĝ``, so every leg again picks up ``1/κ``; nothing in the weight

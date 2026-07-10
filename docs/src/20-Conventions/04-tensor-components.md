@@ -132,7 +132,9 @@ Finally, we also define the shear on ``ℐ⁺`` as
 σ = -c_σ m^a m^b ∇_a l_b,
 ```
 
-which has spin weight ``+2``.  The conversion factor follows the same
+which has spin weight ``+2``.  At the default ``c_σ = 1`` this is Eq.
+(85c) of [Moxon_2020](@citet), the definition used by the SpECTRE CCE
+code that produces SXS shear data.  The conversion factor follows the same
 reasoning as above: the two ``m`` legs are vectors, contributing
 ``c_m^2``; the covariant derivative is convention-independent (the
 Christoffel symbols do not change, as shown under "[Metric and

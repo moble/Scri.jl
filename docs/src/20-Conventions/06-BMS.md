@@ -72,17 +72,17 @@ that is also important.
 The subtlety is how the celestial sphere ``𝕊²`` is *labeled* in each
 case.  At ``ℐ⁺`` we label a point by the direction in which outgoing
 radiation *propagates*, so we use the future-pointing null ray ``𝐤 =
-(1, n̂)``.  At ``ℐ⁻`` we work on the observer's past light cone — the
+(1, k̂)``.  At ``ℐ⁻`` we work on the observer's past light cone — the
 sphere of directions from which light *arrives* (the astronomer's
 sky).  To see a source you look *opposite* to the light's direction of
-travel, so the ``ℐ⁻`` ray is ``𝐤 = (1, -n̂)``.  That is, the labeling
+travel, so the ``ℐ⁻`` ray is ``𝐤 = (1, -k̂)``.  That is, the labeling
 of ``ℐ⁻`` is __antipodal__ to the ``ℐ⁺`` labeling.  Equivalently, a
-single free null geodesic of Minkowski space joins a point ``n̂`` of
-``ℐ⁺`` to the antipodal point ``-n̂`` of ``ℐ⁻``.  Identifying the two
+single free null geodesic of Minkowski space joins a point ``k̂`` of
+``ℐ⁺`` to the antipodal point ``-k̂`` of ``ℐ⁻``.  Identifying the two
 spheres this way is the *antipodal matching* used, e.g., in the
 analysis of gravitational scattering and soft theorems
 [Strominger_2014, Strominger_2017](@cite).  Both choices are captured
-by writing the null ray as ``𝐤 = (1, ℐ n̂)``.
+by writing the null ray as ``𝐤 = (1, ℐ k̂)``.
 
 A supertranslation must be represented as a function on the sphere, so
 it is important to know which sphere is being used.  For example, it

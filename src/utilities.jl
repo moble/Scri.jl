@@ -6,11 +6,18 @@ that satisfy the reality condition ``α_{ℓ,-m} = (-1)^m ᾱ_{ℓ,m}``.  Simul
 output array with zeros up to `ℓₘₐₓ`.  The input `αᵢₙ` is expected to be ordered by
 increasing `ℓ`, starting from 0, then by increasing `m` within each `ℓ`.  The output array
 is ordered in the same way, and has length `(ℓₘₐₓ + 1)^2`.
+
+The final argument `c_α` multiplies the symmetrized modes, folding the [supertranslation
+sign convention](@ref conventions-overview) into the output so that downstream code can
+uniformly interpret the result through ``t′ = κ(t - α)``.  Pass `1` when no sign
+adjustment is wanted.
 """
 function impose_reality(αᵢₙ, ℓₘₐₓ, c_α)
     Nᵢₙ = length(αᵢₙ)
     Lᵢₙ = isqrt(Nᵢₙ)
-    @assert Lᵢₙ^2 == Nᵢₙ "Input `αᵢₙ` has $Nᵢₙ elements, which is not a perfect square"
+    if Lᵢₙ^2 != Nᵢₙ
+        throw(ArgumentError("Input `αᵢₙ` has $Nᵢₙ elements, which is not a perfect square"))
+    end
     if ℓₘₐₓ < Lᵢₙ - 1
         throw(ArgumentError("Input `ℓₘₐₓ` is too small to accommodate input `αᵢₙ`"))
     end
@@ -35,7 +42,7 @@ end
 Compute the new time samples `t′` corresponding to the input time samples `t` after a BMS
 transformation with supertranslation `αₚ` and boost velocity `v⃗`.  The `Rₚ` describe the
 locations of the pixels.  The null-infinity sign `ℐ = ±1` enters the conformal factor as
-`1/κ = γ(1 - ℐ v⃗⋅n̂)` (`+1` for ``ℐ⁺``, `-1` for ``ℐ⁻``).
+`1/κ = γ(1 - ℐ v⃗⋅k̂)` (`+1` for ``ℐ⁺``, `-1` for ``ℐ⁻``).
 
 The objective is to create a new time grid that has the same number of samples as `t` and
 has roughly the same spacing, while accounting for the fact that some parts of the cylinder
@@ -54,27 +61,12 @@ fixed point of the t ↦ t′ map), which we can derive from the above formula a
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
 """
 function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=One())
-    β = absvec(v⃗)
-    γ = 1 / √(1 - β^2)
-    vˣ, vʸ, vᶻ = vec(v⃗)
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
-    T = promote_type(eltype(t), eltype(αₚ), typeof(γ))
-    t′ₘᵢₙ, t′ₘₐₓ = typemin(T), typemax(T)
-    @inbounds @simd for p ∈ eachindex(αₚ, Rₚ)
-        (Rʷ, Rˣ, Rʸ, Rᶻ) = components(Rₚ[p])
-        v⃗dotn̂ = (
-            2vˣ * (Rʷ * Rʸ + Rˣ * Rᶻ) +
-            2vʸ * (Rʸ * Rᶻ - Rʷ * Rˣ) +
-            vᶻ * (Rʷ^2 + Rᶻ^2 - Rˣ^2 - Rʸ^2)
-        )
-        κ⁻¹ = γ * (1 - ℐ * v⃗dotn̂)
-        t′ₘᵢₙ = max(t′ₘᵢₙ, (tₘᵢₙ - αₚ[p]) / κ⁻¹)
-        t′ₘₐₓ = min(t′ₘₐₓ, (tₘₐₓ - αₚ[p]) / κ⁻¹)
-    end
+    t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)
     if t′ₘₐₓ ≤ t′ₘᵢₙ
         error(
             "\n\tThere are no complete slices in the t′ coordinate system " *
-            "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)], β = $β and α as given." *
+            "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)], β = $(absvec(v⃗)) and α as given." *
             "\n\tYou may wish to decrease β or move the origin (zero) of " *
             "the time coordinate closer to the average value of t.",
         )
@@ -84,6 +76,80 @@ function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=One())
     t′[end] = t′ₘₐₓ  # ensure exact endpoint to avoid extrapolation
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
     return t′, tᵪ
+end
+
+"""
+    compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=1)
+
+Return the extreme values `(t′ₘᵢₙ, t′ₘₐₓ)` that a transformed time grid may take while every
+pixel of the sphere still maps into the span of the input time samples `t` — that is, such
+that `t′ κ⁻¹(k̂) + α(k̂) ∈ [t[begin], t[end]]` for every pixel direction.  The inputs are as
+for [`compute_t′`](@ref), which uses these bounds to build its default grid; the same bounds
+validate a user-supplied grid in [`transform!`](@ref).  A returned pair with `t′ₘₐₓ ≤ t′ₘᵢₙ`
+means no complete slice exists.
+"""
+function compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=One())
+    β = absvec(v⃗)
+    γ = 1 / √(1 - β^2)
+    vˣ, vʸ, vᶻ = vec(v⃗)
+    tₘᵢₙ, tₘₐₓ = t[begin], t[end]
+    T = promote_type(eltype(t), eltype(αₚ), typeof(γ))
+    t′ₘᵢₙ, t′ₘₐₓ = typemin(T), typemax(T)
+    @inbounds @simd for p ∈ eachindex(αₚ, Rₚ)
+        (Rʷ, Rˣ, Rʸ, Rᶻ) = components(Rₚ[p])
+        v⃗dotk̂ = (
+            2vˣ * (Rʷ * Rʸ + Rˣ * Rᶻ) +
+            2vʸ * (Rʸ * Rᶻ - Rʷ * Rˣ) +
+            vᶻ * (Rʷ^2 + Rᶻ^2 - Rˣ^2 - Rʸ^2)
+        )
+        κ⁻¹ = γ * (1 - ℐ * v⃗dotk̂)
+        t′ₘᵢₙ = max(t′ₘᵢₙ, (tₘᵢₙ - αₚ[p]) / κ⁻¹)
+        t′ₘₐₓ = min(t′ₘₐₓ, (tₘₐₓ - αₚ[p]) / κ⁻¹)
+    end
+    return t′ₘᵢₙ, t′ₘₐₓ
+end
+
+"""
+    validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=1)
+
+Check that a user-supplied output time grid `t′` is usable by [`transform!`](@ref): it must
+have the same length as `t`, be strictly increasing, and lie within the pixel-wise bounds
+of [`compute_t′_bounds`](@ref) (up to a small roundoff allowance), so that no pixel ever
+requires extrapolation beyond the input time span.  Throws an `ArgumentError` otherwise;
+returns `t′` for convenience.
+"""
+function validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=One())
+    if length(t′) != length(t)
+        throw(
+            ArgumentError(
+                "Supplied `t′` has $(length(t′)) samples, but `t` has $(length(t))"
+            ),
+        )
+    end
+    issorted(t′; lt=(≤)) ||
+        throw(ArgumentError("Supplied `t′` must be strictly increasing"))
+    t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)
+    if t′ₘₐₓ ≤ t′ₘᵢₙ
+        throw(
+            ArgumentError(
+                "There are no complete slices in the t′ coordinate system for the given " *
+                "inputs; no `t′` grid can be valid.  You may wish to decrease β or move " *
+                "the origin (zero) of the time coordinate closer to the average value of t.",
+            ),
+        )
+    end
+    # Allow a tiny roundoff excursion past the exact bounds; the spline evaluation handles
+    # a distance-O(ϵ) extrapolation gracefully (error O(τ³)).
+    tol = 8 * eps(typeof(t′ₘₐₓ)) * max(abs(t′ₘᵢₙ), abs(t′ₘₐₓ), t′ₘₐₓ - t′ₘᵢₙ)
+    if t′[begin] < t′ₘᵢₙ - tol || t′[end] > t′ₘₐₓ + tol
+        throw(
+            ArgumentError(
+                "Supplied `t′` ∈ [$(t′[begin]), ..., $(t′[end])] exceeds the valid range " *
+                "[$t′ₘᵢₙ, ..., $t′ₘₐₓ] for which every pixel maps into the input time span",
+            ),
+        )
+    end
+    return t′
 end
 
 @doc raw"""
@@ -138,12 +204,30 @@ end
 """
     diagnostics(data, data_components)
 
-Compute power monitors for the input data.
+Compute the per-``ℓ`` power monitors ``E(ℓ) = Σₘ |f_{ℓ,m}|²`` for each component of the
+input data, as functions of time.
+
+`data` is a complex mode-weight array with dimensions `(Nᵐ, Nᵗ, Nᵈ)`, exactly as for
+[`transform!`](@ref), and `data_components` is the corresponding [`DataComponents`](@ref)
+descriptor.  Returns a `Dict{Symbol,Matrix}` mapping each component symbol (e.g. `:h` or
+`:ψ₄`) to a real `Nᵗ × (ℓₘₐₓ+1)` matrix whose `[j, ℓ+1]` entry is ``E(ℓ)`` at time index
+`j`.
+
+For a component of spin weight `s`, the `ℓ < |s|` rows of `data` hold the null-space
+diagnostic `ξ` of the [augmented SSHT](@ref "Augmented Direct SSHT") after a transform, so
+the corresponding `E(ℓ)` values measure power that no band-limited field can represent;
+together with `E(ℓₘₐₓ)`, these indicate whether a transformation was adequately resolved.
+See [Choosing ``ℓ_\\mathrm{max}``](@ref) for how to interpret them.
+
+Loading `Plots` activates an extension providing `diagnostics(t, data, data_components)`,
+which returns a corresponding `Dict` of plots of these powers against time.
 """
 function diagnostics(data, data_components::DataComponents{C,ℐ}) where {C,ℐ}
     Nᵐ, Nᵗ, Nᵈ = size(data)
     L = isqrt(Nᵐ)
-    @assert L^2 == Nᵐ "Input `data` has $Nᵐ modes, which is not a perfect square"
+    if L^2 != Nᵐ
+        throw(ArgumentError("Input `data` has $Nᵐ modes, which is not a perfect square"))
+    end
     ℓₘₐₓ = L - 1
     diag = Dict{Symbol,Matrix{real(eltype(data))}}()
     for (d, comp) ∈ enumerate(C)
@@ -153,11 +237,47 @@ function diagnostics(data, data_components::DataComponents{C,ℐ}) where {C,ℐ}
             power[:, ℓ + 1] = sum(abs2, (@view data[mode_indices, :, d]); dims=1)[1, :]
         end
         diag[comp] = power
-        # for ℓ ∈ 0:ℓₘₐₓ
-        #     mode_indices = ℓ^2+1:(ℓ+1)^2
-        #     power = sum(abs2, (@view data[mode_indices, :, d]), dims=1)[1, :]
-        #     diag[comp] = power
-        # end
     end
     return diag
 end
+
+@doc raw"""
+    rotate_modes(α, Q, ℓₘₐₓ)
+
+Rigidly rotate the spin-weight-0 mode weights `α` by the rotor `Q`: if the input modes
+represent the function ``f``, the output modes represent ``f′(k̂) = f(Q⁻¹ k̂)`` — that is,
+the function actively rotated by `Q`.  In terms of Wigner's ``𝔇`` matrices,
+
+```math
+f′_{ℓ,m′} = \sum_m \overline{𝔇^ℓ_{m′,m}(Q)}\, f_{ℓ,m}.
+```
+
+A rigid rotation preserves the band limit, so this is exact (up to roundoff) at the input
+resolution; `ℓₘₐₓ` sets the output resolution, zero-padding above the input's band limit.
+The mode ordering is as in [`BMS`](@ref).
+"""
+function rotate_modes(α::Vector{Complex{T}}, Q::Rotor, ℓₘₐₓ::Int) where {T}
+    ℓᵅ = isqrt(length(α)) - 1
+    D = D_matrices(Q, min(ℓᵅ, ℓₘₐₓ))
+    out = zeros(Complex{T}, (ℓₘₐₓ + 1)^2)
+    for ℓ ∈ 0:min(ℓᵅ, ℓₘₐₓ), m′ ∈ (-ℓ):ℓ
+        s = zero(Complex{T})
+        for m ∈ (-ℓ):ℓ
+            s += conj(D[WignerDindex(ℓ, m′, m)]) * α[ℓ ^ 2 + ℓ + m + 1]
+        end
+        out[ℓ ^ 2 + ℓ + m′ + 1] = s
+    end
+    return out
+end
+
+"""
+    primal_float(T)
+
+The floating-point type underlying `T`, used to build *parameter-independent* objects —
+the output pixel grid and its analysis factorizations in [`transform!`](@ref).  For
+ordinary real types this is `T` itself.  The ForwardDiff package extension peels
+dual-number types down to their value type, so that automatic differentiation does not
+propagate (identically zero) perturbations into `qr`/`lu` factorizations of constant
+matrices — which would poison every derivative with NaNs.
+"""
+primal_float(::Type{T}) where {T<:Real} = T

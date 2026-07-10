@@ -21,16 +21,16 @@ end
         φ = atanh(β)
         ε = emitted ? 1 : -1  # +1 for ℐ⁺ (outgoing), -1 for ℐ⁻ (incoming)
         εβ = ε * β            # signed β; ε = -1 flips the rapidity φ → -φ
-        n̂′ = RRₚᵢ(𝐤)  # direction in the boosted frame corresponding to this pixel
+        k̂′ = RRₚᵢ(𝐤)  # direction in the boosted frame corresponding to this pixel
 
         # The quaternion product of two pure vectors p, q satisfies pq = -(p⋅q) + p×q,
         # giving the dot product in the scalar part and the cross product in the vector part.
-        n̂′v⃗ = n̂′ * v⃗
-        n̂′xv⃗ = QuatVec(n̂′v⃗)  # extracts the vector (cross-product) part; zeros the scalar part
+        k̂′v⃗ = k̂′ * v⃗
+        k̂′xv⃗ = QuatVec(k̂′v⃗)  # extracts the vector (cross-product) part; zeros the scalar part
 
-        μ = absvec(n̂′xv⃗)        # |n̂′ × v⃗| = β sinΘ̑; vanishes when n̂′ ∥ ±v⃗
+        μ = absvec(k̂′xv⃗)        # |k̂′ × v⃗| = β sinΘ̑; vanishes when k̂′ ∥ ±v⃗
         # atan(β sinΘ̑, β cosΘ̑) = Θ̑; the β factors cancel so this is independent of |v⃗|
-        Θ̑ = atan(μ, -n̂′v⃗.w)    # Eq. (C6): n̂′v⃗.w = -(n̂′⋅v⃗) = -β cosΘ̑
+        Θ̑ = atan(μ, -k̂′v⃗.w)    # Eq. (C6): k̂′v⃗.w = -(k̂′⋅v⃗) = -β cosΘ̑
         sinΘ̑, cosΘ̑ = sincos(Θ̑)
         T = typeof(sinΘ̑)  # float type, which may be a Dual for AD
         ϵ = value(eps(T))
@@ -61,8 +61,8 @@ end
             # Taylor expansion of sin((Θ̑−Θ)/2) / (β sinΘ̑) about β=0.
             # For ε = -1 the ratio is negative (leading term -1/2); factoring out ε and using
             # εβ inside restores a uniform +1/2 leading term in the series body.
-            # Multiplying by n̂′xv⃗ (which carries the explicit factor of β sinΘ̑) gives the
-            # full vector term sin((Θ̑−Θ)/2) * (n̂′×v⃗)/|n̂′×v⃗| without any division by μ.
+            # Multiplying by k̂′xv⃗ (which carries the explicit factor of β sinΘ̑) gives the
+            # full vector term sin((Θ̑−Θ)/2) * (k̂′×v⃗)/|k̂′×v⃗| without any division by μ.
             sinΔΘ╱2╱βsinΘ̑ =
                 ε * (
                     1 +
@@ -81,12 +81,12 @@ end
                     )
                 ) / 2
 
-            # exp[n̂′×v⃗/|n̂′×v⃗| * (Θ̑−Θ)/2] to fifth order in |n̂′xv⃗|
-            Q = cosΔΘ╱2 + n̂′xv⃗ * sinΔΘ╱2╱βsinΘ̑
+            # exp[k̂′×v⃗/|k̂′×v⃗| * (Θ̑−Θ)/2] to fifth order in |k̂′xv⃗|
+            Q = cosΔΘ╱2 + k̂′xv⃗ * sinΔΘ╱2╱βsinΘ̑
             Rotor{basetype(Q)}(Q)
         else
             Θ = 2atan(exp(-ε * φ) * tan(Θ̑ / 2))  # Eq. (C7): rest-frame polar angle; ε flips sign
-            exp((n̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) carries ε
+            exp((k̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) carries ε
         end
 
         return B′ * RRₚᵢ
@@ -125,7 +125,7 @@ end
                     components(AberrationOracle.aberration(R, v⃗; emitted)) atol = 50eps(T)
             end
         end
-        # Near-pole configurations (n̂′ nearly parallel to ±v⃗).  Here the oracle takes
+        # Near-pole configurations (k̂′ nearly parallel to ±v⃗).  Here the oracle takes
         # its Taylor branch (β·sinΘ̑ < ∛ϵ), which is a series in β alone — accurate for
         # small β, but genuinely wrong when β is large and only sinΘ̑ is small (e.g. at
         # δ = 1e-7, β = 0.99, ℐ⁺, the rotor x-component should be e⁻ᵠ·δ/2 ≈ 3.544e-9;
@@ -159,9 +159,9 @@ end
             for β ∈ T.([0.1, 0.3, 0.5, 0.7, 0.9])
                 v⃗ = QuatVec(0, 0, β)
                 R_rest = Scri.aberration(R, v⃗, ℐ)
-                n̂_rest = R_rest(𝐤)
-                # For pure vectors p, q: (p*q).w = −(p·q), so n̂_rest · ẑ = −(n̂_rest * 𝐤).w.
-                cos_Θ = -(n̂_rest * 𝐤).w
+                k̂_rest = R_rest(𝐤)
+                # For pure vectors p, q: (p*q).w = −(p·q), so k̂_rest · ẑ = −(k̂_rest * 𝐤).w.
+                cos_Θ = -(k̂_rest * 𝐤).w
                 @test cos_Θ ≈ ℐ * β atol = 4eps(T)
                 @test ℐ * cos_Θ > 0  # ℐ=+1: northern; ℐ=-1: southern hemisphere
             end
@@ -182,12 +182,12 @@ end
         β = absvec(v⃗)
         β < 4eps(typeof(β)) && return R
         v̂ = v⃗ / β
-        n̂ = R(𝐤)
+        k̂ = R(𝐤)
         φ = atanh(β)
-        cos_Θ = clamp(-(n̂ * v̂).w, -one(β), one(β))
+        cos_Θ = clamp(-(k̂ * v̂).w, -one(β), one(β))
         Θ = acos(cos_Θ)
         Θ′ = 2atan(exp(φ) * tan(Θ / 2))
-        return exp(((Θ - Θ′) / 2) * (n̂×̂v̂)) * R
+        return exp(((Θ - Θ′) / 2) * (k̂×̂v̂)) * R
     end
 
     for T ∈ FloatTypes
@@ -292,18 +292,177 @@ end
                 Rotor(cos(π/4), 0, sin(π/4), 0),
                 Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
             ]
-            for (η₁, n̂₁, η₂, n̂₂) ∈ boost_pairs
-                L₁ = Boost(η₁, n̂₁);
-                L₂ = Boost(η₂, n̂₂)
+            for (η₁, k̂₁, η₂, k̂₂) ∈ boost_pairs
+                L₁ = Boost(η₁, k̂₁);
+                L₂ = Boost(η₂, k̂₂)
                 v⃗_eff, R_Wigner = Quaternionic.vR(L₂ * L₁)
-                v⃗₁ = tanh(η₁) * QuatVec(n̂₁[1], n̂₁[2], n̂₁[3])
-                v⃗₂ = tanh(η₂) * QuatVec(n̂₂[1], n̂₂[2], n̂₂[3])
+                v⃗₁ = tanh(η₁) * QuatVec(k̂₁[1], k̂₁[2], k̂₁[3])
+                v⃗₂ = tanh(η₂) * QuatVec(k̂₂[1], k̂₂[2], k̂₂[3])
                 for R ∈ rotors
                     lhs = Scri.aberration(Scri.aberration(R, v⃗₁), v⃗₂)
                     rhs = Scri.aberration(R_Wigner * R, v⃗_eff)
                     @test components(lhs) ≈ components(rhs) atol = 10eps(T)
                 end
             end
+        end
+    end
+end
+
+@testitem "aberration: unit-norm preservation at extreme β" tags = [:unit, :fast] setup = [
+    AberrationSetup
+] begin
+    using Scri: aberration
+    import Random
+    using Quaternionic: Rotor, QuatVec, components, normalize, randn
+    using .AberrationSetup: FloatTypes
+
+    # The K factor is a unit rotor by construction (ℂℜ(Λu₊) normalized), but the
+    # normalization passes through floating-point arithmetic; check it survives extreme
+    # boosts and arbitrary pixel directions, including near-pole pixels where the
+    # numerically vulnerable small-β·sinΘ̑ structure appears.
+    rng = Random.Xoshiro(4242)
+    for T ∈ (Float32, Float64), ℐ ∈ (-1, +1)
+        for β ∈ T.([1e-8, 1e-3, 0.5, 0.99, 1 - 64eps(T)])
+            for R ∈ (
+                randn(rng, Rotor{T}),
+                one(Rotor{T}),                             # pixel at the pole
+                Rotor{T}(1, 1e-7, 0, 0),                   # pixel barely off the pole
+            )
+                v⃗ = β * normalize(randn(rng, QuatVec{T}))
+                K = aberration(R, v⃗, ℐ)
+                @test abs(sum(abs2, components(K)) - 1) ≤ 8eps(T)
+            end
+        end
+    end
+end
+
+@testitem "aberration: robustness as β → 1" tags = [:unit, :fast] setup = [AberrationSetup] begin
+    using Scri: aberration
+    using Quaternionic: Rotor, QuatVec, components
+    using .AberrationSetup: FloatTypes
+
+    # The fragile paths of angle-based implementations (atanh(β) → ∞; exp(-φ)tan(Θ̑/2) → 0
+    # near the pole) must remain finite here.  Test extreme speeds at equatorial,
+    # near-pole, and mid-latitude pixels for both ℐ signs.
+    pixels = [
+        Rotor{Float64}(1, 0, 0, 0),                  # pole
+        Rotor{Float64}(1, 1e-10, 0, 0),              # essentially at the pole
+        Rotor{Float64}(cos(π/8), sin(π/8), 0, 0),    # mid-latitude
+        Rotor{Float64}(cos(π/4), 0, sin(π/4), 0),    # equator
+    ]
+    for β ∈ (0.9, 0.99, 0.999, 0.9999), ℐ ∈ (-1, +1)
+        v⃗ = QuatVec(0.0, 0.0, β)
+        for R ∈ pixels
+            K = aberration(R, v⃗, ℐ)
+            c = components(K)
+            @test all(isfinite, c)
+            @test abs(sum(abs2, c) - 1) ≤ 16eps()
+        end
+    end
+end
+
+@testitem "aberration: general spatial-rotation covariance" tags = [
+    :unit, :validation, :fast
+] setup = [AberrationSetup] begin
+    using Scri: aberration
+    import Random
+    using Quaternionic: Rotor, QuatVec, components, normalize, randn
+    using .AberrationSetup: FloatTypes
+
+    # For ANY rotation Rf (not just about the boost axis),
+    #     aberration(Rf·R, Rf(v⃗), ℐ) = Rf · aberration(R, v⃗, ℐ).
+    # The azimuthal-symmetry test is the special case Rf = Rz; this stronger version
+    # catches sign errors in the rotation axis that azimuthal symmetry misses.
+    rng = Random.Xoshiro(4343)
+    for T ∈ (Float32, Float64, BigFloat), ℐ ∈ (-1, +1)
+        for _ ∈ 1:5
+            R = randn(rng, Rotor{T})
+            Rf = randn(rng, Rotor{T})
+            β = T(9//10) * rand(rng, T)
+            v⃗ = β * normalize(randn(rng, QuatVec{T}))
+            lhs = aberration(Rf * R, Rf(v⃗), ℐ)
+            rhs = Rf * aberration(R, v⃗, ℐ)
+            err = min(
+                maximum(abs, components(lhs - rhs)), maximum(abs, components(lhs + rhs))
+            )
+            @test err < 60eps(T)
+        end
+    end
+end
+
+@testitem "aberration: general aberration-angle formula" tags = [:unit, :validation, :fast] setup = [
+    AberrationSetup
+] begin
+    using Scri: aberration
+    using Quaternionic: Rotor, QuatVec, components, 𝐤
+    using LinearAlgebra: dot
+
+    # The full formula cosΘ = (cosΘ̑ + ℐβ)/(1 + ℐβ cosΘ̑) on a grid of pixel angles Θ̑
+    # (measured from the boost axis in the boosted frame) and several speeds — extending
+    # the equatorial (Θ̑ = π/2) special case tested elsewhere.  Boost along z, pixels in
+    # the xz-plane; the rest-frame direction is K(𝐤).
+    for β ∈ (0.1, 0.5, 0.9), ℐ ∈ (-1, +1)
+        v⃗ = QuatVec(0.0, 0.0, β)
+        for Θ̑ ∈ (π/6, π/4, π/3, π/2, 2π/3, 3π/4)
+            R = Rotor{Float64}(cos(Θ̑ / 2), 0, sin(Θ̑ / 2), 0)  # rotate 𝐤 by Θ̑ about y
+            K = aberration(R, v⃗, ℐ)
+            k̂_rest = K(𝐤)
+            cosΘ = dot([k̂_rest.x, k̂_rest.y, k̂_rest.z], [0, 0, 1.0])
+            expected = (cos(Θ̑) + ℐ * β) / (1 + ℐ * β * cos(Θ̑))
+            @test abs(cosΘ - expected) < 1e-13
+        end
+    end
+end
+
+@testitem "aberration: collinear boost composition" tags = [:unit, :validation] setup = [
+    AberrationSetup
+] begin
+    using Scri: aberration
+    import Random
+    using Quaternionic: Rotor, QuatVec, components, randn
+    using .AberrationSetup: FloatTypes
+
+    # Two successive parallel boosts equal one boost at the relativistically composed
+    # speed: β = (β₁ + β₂)/(1 + β₁β₂).  (For non-collinear boosts a Wigner rotation
+    # appears; that case is tested separately.)
+    rng = Random.Xoshiro(4444)
+    v̂ = QuatVec(0.0, 0.0, 1.0)
+    for (β₁, β₂) ∈ ((0.1, 0.2), (0.5, 0.3), (0.9, 0.09), (0.99, -0.5)), ℐ ∈ (-1, +1)
+        β = (β₁ + β₂) / (1 + β₁ * β₂)
+        for _ ∈ 1:4
+            R = randn(rng, Rotor{Float64})
+            lhs = aberration(aberration(R, β₁ * v̂, ℐ), β₂ * v̂, ℐ)
+            rhs = aberration(R, β * v̂, ℐ)
+            err = min(
+                maximum(abs, components(lhs - rhs)), maximum(abs, components(lhs + rhs))
+            )
+            @test err < 1e-13
+        end
+    end
+end
+
+@testitem "aberration: ForwardDiff derivatives are finite and continuous" tags = [
+    :unit, :fast
+] setup = [AberrationSetup] begin
+    using Scri: aberration
+    import ForwardDiff
+    import Random
+    using Quaternionic: Rotor, QuatVec, components, randn
+
+    # `aberration` is purely algebraic with no branches, so it should differentiate
+    # cleanly — including at small β, where angle-based implementations switch to Taylor
+    # branches.  Check every rotor component's derivative with respect to β against
+    # central finite differences.
+    rng = Random.Xoshiro(4545)
+    R = randn(rng, Rotor{Float64})
+    for ℐ ∈ (-1, +1), i ∈ 1:4
+        f(β) = components(aberration(R, QuatVec(zero(β), zero(β), β), ℐ))[i]
+        for β₀ ∈ (0.5, 1e-5, 0.0)
+            d = ForwardDiff.derivative(f, β₀)
+            @test isfinite(d)
+            h = 1e-6
+            fd = (f(β₀ + h) - f(β₀ - h)) / 2h
+            @test abs(d - fd) < 1e-8 * max(1, abs(d))
         end
     end
 end

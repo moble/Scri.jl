@@ -18,17 +18,17 @@ the idempotent ``u₊ = (1+𝐭𝐳)/2`` gives ``ℂℜ(Λu₊) = ½e^{φₐ/2}�
 :std:label:`iwasawa-kan`) for the extraction.
 
 The sign `ℐ` enters only through the boost velocity.  The ``u₊`` extraction is tied to the
-null vector ``ℓ ∝ (1, +n̂)`` after the pixel rotor carries ``𝐳 → n̂``, which matches the ℐ⁺
-labeling directly.  At ℐ⁻ the labeling is antipodal — pixel ``n̂`` labels the null vector
-``(1, −n̂)`` — and conjugating by spatial parity turns ``B(v⃗)`` acting on ``(1, −n̂)`` into
-``B(−v⃗)`` acting on the label ``(1, +n̂)``, while leaving the parity-invariant rotation
+null vector ``ℓ ∝ (1, +k̂)`` after the pixel rotor carries ``𝐳 → k̂``, which matches the ℐ⁺
+labeling directly.  At ℐ⁻ the labeling is antipodal — pixel ``k̂`` labels the null vector
+``(1, −k̂)`` — and conjugating by spatial parity turns ``B(v⃗)`` acting on ``(1, −k̂)`` into
+``B(−v⃗)`` acting on the label ``(1, +k̂)``, while leaving the parity-invariant rotation
 factor ``K`` unchanged.  Thus both cases reduce to `Boost(ℐ*v⃗)` with the same extraction.
 
 This computation is purely algebraic — no angles, branches, or transcendental functions
 beyond those in `Boost` — and globally nonsingular, since ``ℂℜ(Λu₊)`` has norm
 ``½e^{φₐ/2} > 0`` everywhere.  An independent derivation via explicit angles on the
-sphere, used as the test oracle, is described in the "Aberration of Gravitational Waves"
-page of the documentation.
+sphere, used as the test oracle, is described on the [Aberration of Gravitational
+Waves](@ref "Aberration of Gravitational Waves") documentation page.
 """
 function aberration(RRₚᵢ::Rotor{T}, v⃗, ℐ::Int=+1) where {T}
     u₊ = (1 + im * 𝐤) / T(2)

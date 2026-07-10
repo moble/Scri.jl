@@ -10,7 +10,7 @@
 
     # For a pure boost (no rotation, no supertranslation) acting on a spin-0 ψ₂ field with
     # the rest of its peeling tower set to zero, there is no component mixing, so the law is
-    # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - ℐ v⃗⋅n̂).  We reconstruct that pointwise from the
+    # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - ℐ v⃗⋅k̂).  We reconstruct that pointwise from the
     # *output* modes and compare against an independent evaluation — pinning the conformal
     # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `ℐ`)
     # at both null infinities.  At ℐ = +1 this is also a regression guard for ℐ⁺.
@@ -330,14 +330,14 @@ end
     import Random
 
     # Fully independent, end-to-end numerical check of `compute_ðt′╱2κ`.  We build the actual
-    # field `t′(n̂) = κ(n̂)·(t − α(n̂))` on the sphere, take its `ð` with SphericalFunctions,
+    # field `t′(k̂) = κ(k̂)·(t − α(k̂))` on the sphere, take its `ð` with SphericalFunctions,
     # divide by `2κ`, and compare to `ðt′╱2κ[1,:] + t·ðt′╱2κ[2,:]`.  Nothing here touches the
-    # hand-expanded `λ = R̃v⃗R` polynomial or the derived `−(b·αₚ + ðα/2)` form: `n̂ = R𝐤R̃` comes
+    # hand-expanded `λ = R̃v⃗R` polynomial or the derived `−(b·αₚ + ðα/2)` form: `k̂ = R𝐤R̃` comes
     # from Quaternionic rotor action and `ð` from SphericalFunctions, so this independently
     # verifies BOTH the closed form AND that SphericalFunctions' `ð` matches the convention the
     # closed form was derived in.
     #
-    # `κ = 1/(γ(1 − ℐv⃗·n̂))` is not band-limited, so `t′` is not either — but a tiny boost
+    # `κ = 1/(γ(1 − ℐv⃗·k̂))` is not band-limited, so `t′` is not either — but a tiny boost
     # (β ≈ 1e-3) with a large `ℓₘₐₓ` shrinks the out-of-band tail to `~β^ℓₘₐₓ`, far below
     # roundoff, so the spin-0 analysis (square `ₛ𝐘`) and the `ð` are exact and there is no
     # aliasing.  The cross term `ðt′╱2κ[2,:]·αₚ` (the part that hid two sign errors) is `~1e-3`
@@ -363,9 +363,9 @@ end
             αₚ = real.(Y0 * α)                    # α on the grid
             ðαₚ = Y1 * (ð0 * α)[2:end]            # ðα on the grid (drops the ℓ=0 zero)
 
-            # κ on the grid from n̂ = R𝐤R̃ (Quaternionic rotor action; not the λ polynomial).
-            n̂ = [vec(R * 𝐤 * conj(R)) for R ∈ Rₚ]
-            κ = [1 / (γ * (1 - I * dot(vec(v⃗), n))) for n ∈ n̂]
+            # κ on the grid from k̂ = R𝐤R̃ (Quaternionic rotor action; not the λ polynomial).
+            k̂ = [vec(R * 𝐤 * conj(R)) for R ∈ Rₚ]
+            κ = [1 / (γ * (1 - I * dot(vec(v⃗), n))) for n ∈ k̂]
 
             M = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
@@ -515,4 +515,459 @@ end
         dc₋,
     )
     @test d4 == d5
+end
+
+@testitem "transform!: plain-vector convenience method dispatches" tags = [:unit, :fast] begin
+    using Quaternionic: QuatVec, Rotor
+
+    # Regression test: this method's signature was previously written with abstract
+    # element types (`Array{Complex}`, `Vector{Complex}`), which no concrete user data
+    # could ever match, so the method was dead code.  It must accept plain `Vector`
+    # inputs for `v⃗` and `R` and agree exactly with the `QuatVec`/`Rotor` form.
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 8
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    data = randn(ComplexF64, N, Nᵗ, 2)
+    α = randn(ComplexF64, N)
+    v⃗ = [0.0, 1e-3, 2e-3]
+    R = [1.0, 0.0, 0.0, 0.0]
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    d1 = copy(data)
+    d1, t′1 = Scri.transform!(d1, copy(t), v⃗, R, copy(α); data_components=(:h, :ψ₄))
+    d2 = copy(data)
+    d2, t′2 = Scri.transform!(d2, copy(t), QuatVec(v⃗), Rotor(R), copy(α), dc)
+    @test d1 == d2
+    @test t′1 == t′2
+end
+
+@testitem "transform!: user-input validation throws ArgumentError" tags = [:unit, :fast] begin
+    using Quaternionic: QuatVec, Rotor
+
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 8
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    data = randn(ComplexF64, N, Nᵗ, 2)
+    α = zeros(ComplexF64, N)
+    v⃗ = QuatVec(0.0, 0.0, 1e-3)
+    R = one(Rotor{Float64})
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    # Explicit `ArgumentError`s (not `@assert`s) so validation survives disabled asserts.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, QuatVec(0.0, 0.0, 1.5), R, copy(α), dc
+    )  # |v⃗| ≥ 1
+    @test_throws ArgumentError Scri.transform!(copy(data), t[1:3], v⃗, R, copy(α), dc)  # too few time samples
+    @test_throws ArgumentError Scri.transform!(
+        copy(data)[1:(N - 1), :, :], t, v⃗, R, copy(α), dc
+    )  # non-square mode count
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, v⃗, R, copy(α), Scri.DataComponents(:h)
+    )  # component-count mismatch
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, v⃗, R, zeros(ComplexF64, N + 11), dc
+    )  # α too long
+    # Mixed precision: data must be at least as wide as the other inputs.
+    @test_throws ArgumentError Scri.transform!(
+        randn(ComplexF32, N, Nᵗ, 2), t, v⃗, R, copy(α), dc
+    )
+end
+
+@testitem "transform!: pure rotation rotates modes and preserves the time grid" tags = [
+    :validation, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    import Random
+
+    # For a pure rotation (no boost, no supertranslation) κ ≡ 1 and the mixing parameter
+    # vanishes, so the transformation is a rigid rotation of each component on the sphere
+    # (including the spin phase) with the time array unchanged.  The output pixel R′ₚ
+    # samples the input field at the rotor R·R′ₚ — for β = 0 the aberration K factor *is*
+    # R·R′ₚ — so we can check the output against a direct rotation of the input, pointwise,
+    # including nonzero spin weights.
+    rng = Random.Xoshiro(6262)
+    ℓ = 6
+    N = (ℓ + 1)^2
+    Nᵗ = 5
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    R = randn(rng, Rotor{Float64})
+    v⃗ = QuatVec(0.0, 0.0, 0.0)
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 2)
+    for k ∈ 1:2
+        modes = Random.randn(rng, ComplexF64, N)
+        modes[1:4] .= 0  # ℓ < |s| modes must be zero for s = ∓2 fields
+        for j ∈ 1:Nᵗ
+            data[:, j, k] .= modes
+        end
+    end
+    data₀ = copy(data)
+
+    data′, t′ = Scri.transform!(data, copy(t), v⃗, R, zeros(ComplexF64, 1), dc)
+
+    # The time array is unchanged (up to roundoff in the affine regrid).
+    @test maximum(abs, t′ .- t) ≤ 4 * eps() * maximum(abs, t)
+
+    # Pointwise check on the golden-ratio grid, per component and spin weight.
+    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    Rs_rot = [R * R′ₚ for R′ₚ ∈ Rs]
+    for (k, s) ∈ ((1, -2), (2, -2))
+        Y = ₛ𝐘(s, ℓ, Float64, Rs)
+        Y_rot = ₛ𝐘(s, ℓ, Float64, Rs_rot)
+        valid = (s ^ 2 + 1):N
+        out = Y * data′[valid, 3, k]
+        expected = Y_rot * data₀[valid, 3, k]
+        @test maximum(abs, out .- expected) < 1e-11
+    end
+end
+
+@testitem "transform!: pure time translation is exact at the shifted knots" tags = [
+    :validation, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    import Random
+
+    # A pure time translation δt has κ ≡ 1, ðα ≡ 0, and ð²α ≡ 0: no conformal scaling and
+    # no mixing.  The output grid is t′ = t − δt, and the data at t′[j] are the input data
+    # at t′[j] + δt = t[j] — exactly a knot, where the spline is exact.  So the output mode
+    # array equals the input, to roundoff.
+    rng = Random.Xoshiro(6363)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 30
+    t = collect(LinRange(-30.0, 30.0, Nᵗ))
+    δt = 3.75
+    α = zeros(ComplexF64, 1)
+    α[1] = 2 * √π * δt  # ℓ=0 mode of the constant function δt
+    dc = Scri.DataComponents(:ψ₄)
+
+    data = randn(rng, ComplexF64, N, Nᵗ, 1)
+    data[1:4, :, :] .= 0  # ℓ < |s| modes must be zero on input for the s = -2 field
+    data₀ = copy(data)
+    data′, t′ = Scri.transform!(
+        data, copy(t), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
+    )
+
+    @test maximum(abs, (t .- δt) .- t′) ≤ 32 * eps() * (abs(δt) + maximum(abs, t))
+    @test maximum(abs, data′ .- data₀) < 1e-11 * maximum(abs, data₀)
+end
+
+@testitem "transform!: pure time translation off the knots matches direct interpolation" tags = [
+    :validation, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    import Random
+
+    # Shift by δt and request an output grid t′ that does NOT land on the input knots
+    # (via the t′ keyword).  Each output sample is then the natural cubic spline of the
+    # input mode series evaluated at t′[j] + δt, which we replicate directly from the
+    # analytic time dependence of the constructed data — smooth and slowly varying, so
+    # the spline error is far below the test tolerance.
+    rng = Random.Xoshiro(6464)
+    ℓ = 2
+    N = (ℓ + 1)^2
+    Nᵗ = 201
+    T = 500.0
+    t = collect(LinRange(-T, T, Nᵗ))
+    f(m, t) = exp(-(t / 300)^2) * (1 + m / 10) * cis(t / 150 + m)
+    δt = 2.6  # incommensurate with the grid spacing of 5
+    α = zeros(ComplexF64, 1)
+    α[1] = 2 * √π * δt
+    dc = Scri.DataComponents(:ψ₂, :ψ₃, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 3)
+    for k ∈ 1:3, (i, m) ∈ enumerate((-ℓ):ℓ), j ∈ 1:Nᵗ
+        data[ℓ ^ 2 + i, j, k] = f(m + k, t[j])
+    end
+    # Stay ≳10 knots away from the ends: the natural-spline boundary condition (d̈ = 0)
+    # creates an O(f″δt²) error layer at the endpoints that decays geometrically inward.
+    t′ = collect(LinRange(-T + 60, T - 60, Nᵗ))
+    data′, _ = Scri.transform!(
+        data, copy(t), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc; t′
+    )
+    maxerr = maximum(
+        abs(data′[ℓ ^ 2 + i, j, k] - f(m + k, t′[j] + δt)) for
+        k ∈ 1:3, (i, m) ∈ enumerate((-ℓ):ℓ), j ∈ 1:Nᵗ
+    )
+    # The measured interior spline floor for this waveform and spacing is ≈ 2e-8.
+    @test maxerr < 1e-7
+end
+
+@testitem "transform!: round trip through a BMS element and its inverse" tags = [
+    :validation, :integration
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # Transform by g, then by inv(g), and compare against the *analytic* original data.
+    # Each transformation shrinks the span of times with full-sphere coverage, so the
+    # round-trip output lives on a smaller grid; comparing against the closed-form time
+    # dependence of the input evaluates the original exactly at those final times, with
+    # no interpolation oracle needed.  The tolerance is set by the spline floor and the
+    # band-limit truncation of the mild boost.
+    rng = Random.Xoshiro(6565)
+    ℓ_data = 2   # band limit of the physical content
+    ℓ = 8        # padded band limit, with headroom for the transformation
+    N = (ℓ + 1)^2
+    Nᵗ = 201
+    T = 500.0
+    t = collect(LinRange(-T, T, Nᵗ))
+    f(m, k, t) = exp(-(t / 300)^2) * (1 + m / 10 + k / 7) * cis(t / 150 + m)
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 2)
+    for k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
+        data[ℓ_data ^ 2 + i, j, k] = f(m, k, t[j])
+    end
+
+    v⃗ = QuatVec(1e-4, -2e-4, 3e-4)
+    R = randn(rng, Rotor{Float64})
+    α = Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1)
+    g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R, supertranslation=α)
+    g⁻¹ = inv(g; ℓₘₐₓ=6, ℓʷ=16)
+
+    d1, t1 = Scri.transform!(copy(data), copy(t), g, dc)
+    d2, t2 = Scri.transform!(d1, t1, g⁻¹, dc)
+
+    scale = maximum(abs, data)
+    maxerr = maximum(
+        abs(d2[ℓ_data ^ 2 + i, j, k] - f(m, k, t2[j])) for
+        k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
+    )
+    # The floor here is the band-limit truncation of the *inverse element's*
+    # supertranslation sector (its α is exact only up to the ℓₘₐₓ/ℓʷ cutoffs of `inv`),
+    # measured at ≈ 5e-6 of the data scale for these parameters.
+    @test maxerr / scale < 2e-5
+    # The modes above the physical band limit must return to (near) zero.
+    @test maximum(abs, d2[((ℓ_data + 1) ^ 2 + 5):end, :, :]) / scale < 2e-5
+end
+
+@testitem "transform!: sequential transforms match the composed element" tags = [
+    :validation, :integration
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # Applying g₁ then g₂ must agree with applying h = g₂∘g₁ once.  The two pipelines
+    # construct different default time grids, so we force the sequential pipeline's final
+    # step onto the composed run's grid via the t′ keyword, making the outputs directly
+    # comparable.  Tolerances are set by the spline floor and band-limit truncation.
+    rng = Random.Xoshiro(6666)
+    ℓ_data = 2
+    ℓ = 8
+    N = (ℓ + 1)^2
+    Nᵗ = 201
+    T = 500.0
+    t = collect(LinRange(-T, T, Nᵗ))
+    f(m, k, t) = exp(-(t / 300)^2) * (1 + m / 10 + k / 7) * cis(t / 150 + m)
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 2)
+    for k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
+        data[ℓ_data ^ 2 + i, j, k] = f(m, k, t[j])
+    end
+
+    g₁ = Scri.BMS{Float64}(;
+        boost_velocity=QuatVec(1e-4, 0.0, -2e-4),
+        frame_rotation=randn(rng, Rotor{Float64}),
+        supertranslation=Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1),
+    )
+    g₂ = Scri.BMS{Float64}(;
+        boost_velocity=QuatVec(0.0, 2e-4, 1e-4),
+        frame_rotation=randn(rng, Rotor{Float64}),
+        supertranslation=Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1),
+    )
+    h = Scri.compose(g₂, g₁; ℓₘₐₓ=6, ℓʷ=16)
+
+    # The two pipelines have slightly different valid t′ ranges, so shrink the composed
+    # run's default grid a little and force BOTH runs onto that common grid.
+    _, th_default = Scri.transform!(copy(data), copy(t), h, dc)
+    tc = (th_default[begin] + th_default[end]) / 2
+    t_common = tc .+ 0.98 .* (th_default .- tc)
+
+    dh, th = Scri.transform!(copy(data), copy(t), h, dc; t′=copy(t_common))
+
+    d1, t1 = Scri.transform!(copy(data), copy(t), g₁, dc)
+    d2, t2 = Scri.transform!(d1, t1, g₂, dc; t′=copy(t_common))
+    @test t2 == th == t_common
+    # As in the round-trip test, the floor is the band-limit truncation of the composed
+    # element's supertranslation sector, plus the doubled spline/regrid floor of the
+    # sequential pipeline.
+    @test maximum(abs, d2 .- dh) / maximum(abs, data) < 2e-5
+end
+
+@testitem "transform!: supplied t′ grid reproduces the default and validates its input" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    import Random
+
+    rng = Random.Xoshiro(6767)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 50
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(0.0, 0.0, 1e-2)
+    R = one(Rotor{Float64})
+    α = zeros(ComplexF64, N)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = randn(rng, ComplexF64, N, Nᵗ, 2)
+
+    d1, t′1 = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    d2, t′2 = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc; t′=copy(t′1))
+    @test d1 == d2
+    @test t′1 == t′2
+
+    # Out-of-range, wrong-length, and non-monotone grids are rejected.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; t′=collect(LinRange(-100.0, 100.0, Nᵗ))
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; t′=t′1[1:(Nᵗ - 1)]
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; t′=reverse(t′1)
+    )
+end
+
+@testitem "transform!: keyword form defaults to h-first components with a warning" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    import Random
+
+    rng = Random.Xoshiro(6868)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 8
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    v⃗ = QuatVec(0.0, 0.0, 1e-3)
+    R = one(Rotor{Float64})
+    α = zeros(ComplexF64, N)
+    data = randn(rng, ComplexF64, N, Nᵗ, 2)
+
+    d_default = copy(data)
+    @test_logs (:warn, r"Defaulting to data components \(:h, :ψ₄\)") Scri.transform!(
+        d_default, copy(t), v⃗, R, copy(α)
+    )
+    d_explicit, _ = Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), Scri.DataComponents(:h, :ψ₄)
+    )
+    @test d_default == d_explicit
+end
+
+@testitem "transform!: declared input band limit ℓₘₐₓ₀ is exact and validated" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # Band-limited data zero-padded to a larger array must transform identically whether
+    # or not the input band limit is declared — the declaration only skips provably-zero
+    # work in the synthesis stage.  A false declaration must throw.
+    rng = Random.Xoshiro(6969)
+    ℓ₀ = 2
+    ℓ = 6
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(1e-3, -2e-3, 0.0)
+    R = randn(rng, Rotor{Float64})
+    α = Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 4), 1, 1)
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 2)
+    data[5:((ℓ₀ + 1) ^ 2), :, :] .= Random.randn(rng, ComplexF64, (ℓ₀ + 1)^2 - 4, Nᵗ, 2)
+
+    d1, t1 = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    d2, t2 = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc; ℓₘₐₓ₀=ℓ₀)
+    @test d1 == d2
+    @test t1 == t2
+
+    # Out-of-range and violated declarations throw.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; ℓₘₐₓ₀=ℓ + 1
+    )
+    bad = copy(data)
+    bad[(ℓ₀ + 1) ^ 2 + 3, 1, 1] = 1.0
+    @test_throws ArgumentError Scri.transform!(bad, copy(t), v⃗, R, copy(α), dc; ℓₘₐₓ₀=ℓ₀)
+end
+
+@testitem "transform!: ForwardDiff derivatives with respect to BMS parameters" tags = [
+    :unit, :validation
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import ForwardDiff
+    import Random
+
+    # `transform!` is differentiable end-to-end with ForwardDiff, provided (a) the output
+    # grid is held fixed via the `t′` keyword (otherwise the default grid moves with the
+    # parameters, and the derivative mixes in grid motion), and (b) ForwardDiff is loaded,
+    # which activates the ScriForwardDiffExt extension: it peels dual types off the
+    # parameter-independent pixel grid and analysis factorizations (`primal_float`), whose
+    # `qr` would otherwise turn identically-zero perturbations into NaN partials.
+    rng = Random.Xoshiro(7070)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    R₀ = randn(rng, Rotor{Float64})
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    data₀[1:4, :, :] .= 0
+
+    # A fixed output grid, safely inside the valid range for all parameter values tested.
+    _, t′₀ = Scri.transform!(
+        copy(data₀), copy(t), QuatVec(0.0, 0.0, 1e-3), R₀, zeros(ComplexF64, 4), dc
+    )
+    tc = (t′₀[begin] + t′₀[end]) / 2
+    t′fix = tc .+ 0.9 .* (t′₀ .- tc)
+
+    # Boost speed, time translation, and rotation angle, each as a scalar objective.
+    function by_boost(β::T) where {T}
+        data = Complex{T}.(copy(data₀))
+        d, _ = Scri.transform!(
+            data,
+            copy(t),
+            QuatVec(zero(β), zero(β), β),
+            R₀,
+            zeros(Complex{T}, 4),
+            dc;
+            t′=t′fix,
+        )
+        return sum(abs2, d)
+    end
+    function by_δt(δt::T) where {T}
+        data = Complex{T}.(copy(data₀))
+        α = zeros(Complex{T}, 4)
+        α[1] = 2 * √T(π) * δt
+        d, _ = Scri.transform!(data, copy(t), QuatVec(0.0, 0.0, 1e-3), R₀, α, dc; t′=t′fix)
+        return sum(abs2, d)
+    end
+    function by_rotation(θ::T) where {T}
+        data = Complex{T}.(copy(data₀))
+        Rθ = Rotor{T}(R₀) * Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ))
+        d, _ = Scri.transform!(
+            data,
+            copy(t),
+            QuatVec(zero(θ), zero(θ), zero(θ) + 1e-3),
+            Rθ,
+            zeros(Complex{T}, 4),
+            dc;
+            t′=t′fix,
+        )
+        return sum(abs2, d)
+    end
+
+    h = 1e-6
+    for (f, x₀) ∈ ((by_boost, 1e-3), (by_δt, 0.5), (by_rotation, 0.1))
+        d = ForwardDiff.derivative(f, x₀)
+        fd = (f(x₀ + h) - f(x₀ - h)) / 2h
+        @test isfinite(d)
+        @test abs(d - fd) < 1e-6 * max(1.0, abs(fd))
+    end
 end

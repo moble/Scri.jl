@@ -1,5 +1,5 @@
 """
-    Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
+    Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
 
 Sign and scale factors setting conventions.  The parameters are
 
@@ -15,20 +15,12 @@ Sign and scale factors setting conventions.  The parameters are
   - `c_ð` for the ð operator
   - `c_α` for the supertranslation law
 
-For precise definitions of each of these factors, see the [documentation](@ref
-conventions-overview).  The default values are all 1, corresponding to the SXS conventions.
-
-We constrain the possible values of these factors.  The signature `c_s`, Riemann definition
-`c_R`, and supertranslation law `c_α` only ever differ by signs, so they must be ±1.  The
-tetrad vector `l` is real, so `c_l` must be real.  The tetrad vector `m` is complex, but
-must obey ``m ⋅ m̄ = c_s``, so `c_m` must have unit modulus (approximately).  And all of
-these factors must be nonzero, but there are so many bizarre conventions that we permit them
-to be complex if desired — though they will also usually just be signs.
-
-Note that we *do* assume various structural conventions, such as ``l`` being the outgoing
-null vector (so that ``ψ₄`` is the radiative field at future null infinity), ``m`` having a
-certain handedness, and ``h`` having spin weight ``-2``.  Any users wishing to use different
-structural conventions will have to handle the conversions themselves.
+For precise definitions of each of these factors, their allowed values, and the structural
+conventions this package fixes once and for all (e.g. ``l`` outgoing, ``m``'s handedness,
+``h`` of spin weight ``-2``), see the [documentation](@ref conventions-overview).  The
+default values are all 1, corresponding to the SXS conventions.  The constructor validates
+the values: `c_s`, `c_R`, and `c_α` must be ``±1``; `c_l` must be real; `c_m` must have
+unit modulus; and every factor must be nonzero.
 
 The types of all of these factors are retained as the type parameters of `Conventions`
 listed above — `S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A` — to allow for type stability and compile-time

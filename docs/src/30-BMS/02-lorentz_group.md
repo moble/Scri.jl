@@ -64,7 +64,49 @@ Lorentz transformation *specifically with respect to* either
 ## The Lorentz group
 
 Before we decompose the (proper orthochronous) Lorentz group, we need
-to understand how the Lorentz group shows up in Geometric Algebra.
+to understand how the Lorentz group shows up in Geometric Algebra.  The
+answer is already implicit in [the primer](@ref "A Primer on Geometric
+Algebra"): every proper orthochronous Lorentz transformation is a rotor
+``R ∈ \mathrm{Spin}⁺(3,1)`` — an even, unit-norm product of vectors —
+acting on a vector by conjugation,
+
+```math
+𝐯' = R\, 𝐯\, R̃,
+```
+
+with composition of transformations given by multiplication of rotors.
+Each rotor is the exponential of a bivector, and the *type* of
+transformation is fixed by the sign of that bivector's square — exactly
+the three cases met in the primer.
+
+A **rotation** comes from a *spatial* bivector, which squares to
+``-1``.  Writing ``𝐢 = 𝐳𝐲``, ``𝐣 = 𝐱𝐳``, ``𝐤 = 𝐲𝐱`` for the three
+spatial bivectors, a rotation by angle ``θ`` in the plane of a unit
+bivector ``𝐁`` is
+
+```math
+R = \exp\left[\frac{θ}{2} 𝐁\right] = \cos\frac{θ}{2} + 𝐁 \sin\frac{θ}{2}.
+```
+
+These involve no factor of ``𝐭`` and generate the maximal compact
+subgroup ``\mathrm{Spin}(3)``.
+
+A **boost** comes from a *timelike* bivector, which squares to ``+1``.
+A boost along ``𝐳`` with rapidity ``φ`` is
+
+```math
+R = \exp\left[\frac{φ}{2} 𝐭𝐳\right] = \cosh\frac{φ}{2} + 𝐭𝐳 \sinh\frac{φ}{2},
+```
+
+the trigonometric functions turned hyperbolic by ``(𝐭𝐳)² = +1``.  The
+speed is ``β = \tanh φ`` and the Lorentz factor is ``γ = \cosh φ``.
+
+Rotations and boosts together already generate the whole proper
+orthochronous group, but there is a third, degenerate case that will
+organize everything below: the **null rotation**, whose generating
+bivector squares to *zero*.  We take that up next, then use all three
+to decompose a general transformation in two complementary ways — one
+adapted to a time axis, one adapted to a null direction.
 
 ## Null rotations
 
@@ -132,6 +174,55 @@ the ``(\boldsymbol{ℓ}, 𝐧, 𝐦, 𝐦̄)`` basis are very interesting:
 
 This is just the usual conformal transformation of the tetrad, though
 exhibited in a simpler and more geometric form.
+
+## Cartan (polar) decomposition
+
+There are two natural ways to factor a general rotor ``Λ ∈
+\mathrm{Spin}⁺(3,1)``, and we will use both.  The first is the one
+closest to physical intuition: every proper orthochronous Lorentz
+transformation is a boost followed by a rotation,
+
+```math
+Λ = B(v⃗)\, R,
+```
+
+with ``B(v⃗) = \exp\left[\tfrac{φ}{2} 𝐭v̂\right]`` a pure boost of
+velocity ``v⃗ = (\tanh φ)\, v̂`` and ``R ∈ \mathrm{Spin}(3)`` a pure
+rotation.  This is the *polar decomposition* of the rotor — the
+group-theoretic *Cartan decomposition* ``G = \exp(𝔭)\, K``, with the
+boosts the noncompact part ``𝔭`` and the rotations the compact part
+``K`` — and it is unique.  It is the sense in which two boosts in
+different directions compose to "a boost plus a Wigner rotation":
+multiplying two pure boosts yields a rotor whose polar decomposition has
+a nontrivial ``R`` (see the [aberration page](@ref "Wigner rotation:
+composition of non-collinear boosts")).
+
+The factorization is cheap, with no transcendental functions and no
+square roots of the transformation.  `Quaternionic.jl` represents a
+Lorentz rotor as a quaternion whose four components are themselves
+complex; in that representation a pure boost has real scalar part and
+imaginary vector part, while a pure rotation is entirely real.  The
+rotation is therefore fixed by the real parts alone,
+
+```math
+R = \frac{\mathrm{Re}\, Λ}{\lVert \mathrm{Re}\, Λ \rVert},
+\qquad
+B = Λ\, R̃,
+```
+
+with ``\mathrm{Re}`` taken component-by-component and the norm the
+ordinary Euclidean one (the normalization works because
+``\mathrm{Re}\, Λ = \cosh\tfrac{φ}{2}\, R``).  This is implemented as
+`Quaternionic.vR`, which returns the pair ``(v⃗, R)`` in exactly the
+``Λ = B(v⃗)\, R`` convention used here and by the [aberration
+tests](@ref "Aberration of Gravitational Waves").
+
+The polar decomposition is adapted to a choice of *time* axis: it splits
+a transformation into the boost an observer feels and the rotation they
+see.  For radiation we instead want a decomposition adapted to a *null*
+direction, so that the factors line up with the spin and boost weights
+of the fields.  That is the Iwasawa ``KAN`` decomposition, to which we
+now turn.
 
 ## Iwasawa's ``KAN`` decomposition
 
@@ -218,7 +309,7 @@ Specifically, given the choice of ``𝐳``, we have the Hopf map
 ```math
 \begin{aligned}
 𝔥 &: \mathrm{Spin}(3) \to 𝕊² \\
-𝔥 &: 𝐑 \mapsto n̂ = 𝐑 𝐳 𝐑̄.
+𝔥 &: 𝐑 \mapsto k̂ = 𝐑 𝐳 𝐑̄.
 \end{aligned}
 ```
 
@@ -231,18 +322,18 @@ not, at ``-𝐳``:
 ```math
 \begin{aligned}
 σ &: 𝕊² \to \mathrm{Spin}(3) \\
-σ &: n̂ \mapsto \begin{cases}
-\frac{1 - n̂𝐳}{\sqrt{2 + 2 n̂⋅𝐳}} & \text{if } n̂ \neq -𝐳, \\
-\exp\left[\frac{π}{2} 𝐲𝐳 \right] & \text{if } n̂ = -𝐳.
+σ &: k̂ \mapsto \begin{cases}
+\frac{1 - k̂𝐳}{\sqrt{2 + 2 k̂⋅𝐳}} & \text{if } k̂ \neq -𝐳, \\
+\exp\left[\frac{π}{2} 𝐲𝐳 \right] & \text{if } k̂ = -𝐳.
 \end{cases}
 \end{aligned}
 ```
 
 Note that ``𝔥 ∘ σ`` is the identity function on ``𝕊²``.  And we can
-calculate the fiber (preimage of ``𝔥``) over any ``n̂ ∈ 𝕊²`` as
+calculate the fiber (preimage of ``𝔥``) over any ``k̂ ∈ 𝕊²`` as
 
 ```math
-𝔥⁻¹(n̂) = \left\{ σ(n̂)\, \exp\left[\frac{γ}{2} 𝐱𝐲 \right] \mathrel{\Big|} γ ∈ ℝ \right\}.
+𝔥⁻¹(k̂) = \left\{ σ(k̂)\, \exp\left[\frac{γ}{2} 𝐱𝐲 \right] \mathrel{\Big|} γ ∈ ℝ \right\}.
 ```
 
 In this case, we could actually interpret the fiber ``𝕊¹`` as being
@@ -252,7 +343,7 @@ In this case, we could actually interpret the fiber ``𝕊¹`` as being
 \begin{gathered}
 \mathrm{Spin}^+(3,1)
 ≅
-\bigg\{ n̂ \bigg\} ×
+\bigg\{ k̂ \bigg\} ×
 \bigg\{ \exp\bigg[\frac{γ}{2} 𝐱𝐲 \bigg] \bigg\} ×
 \bigg\{ \exp\bigg[\frac{φₐ}{2} \, 𝐭𝐳 \bigg] \bigg\} ×
 \bigg\{ \exp\bigg[\frac{1}{2} \boldsymbol{ℓ ξ}\bigg] \bigg\} \\
@@ -374,6 +465,66 @@ This is the reason why the [`aberration`](@ref Scri.aberration)
 function just computes the ``K`` factor, rather than the full ``KAN``
 decomposition produced by [`Quaternionic.KAN`](@extref Quaternionic
 :jl:function:`Quaternionic.KAN`).
+
+## Flagpoles and flagplanes
+
+Penrose's picture of a spinor gives the preceding discussion a
+concrete geometric vocabulary.  A spinor determines a *flagpole* — a
+null vector, here ``\boldsymbol{ℓ} = (𝐭+𝐳)/\sqrt{2}`` at the pole —
+and a *flagplane*, a null half-plane containing the flagpole, here
+``\boldsymbol{ℓ} ∧ 𝐱``.  A spin-weighted field is really a function
+of both: the flagpole is the direction of propagation, and the
+flagplane picks out the tangent orientation whose rotation the spin
+weight measures.  In the language of the equivariance condition
+above, the flagpole is what ``𝐑_{φₐ𝐳}`` rescales (boost weight) and
+the flagplane is what ``𝐑_{γ𝐳}`` rotates (spin weight).
+
+The ``AN`` factors preserve both the flagpole's direction and the
+flagplane, so all the *positional* information — which flagpole, and
+which flagplane through it — is carried by the ``K`` factor alone.
+That is the geometric content of the statement above that ``𝐑_K``
+contains everything a spin-weighted field needs: it is the (unique,
+up to the equivariance already accounted for) rotation carrying the
+reference flagpole and flagplane at the pole onto those produced by
+the full transformation ``Λ``.
+
+### Working in the unprimed frame
+
+One further subtlety arises in the implementation.  The grid rotors
+``𝐑'_p`` describing the output pixels are *constructed* with
+components relative to the primed (transformed) frame, but every
+computation in [`transform!`](@ref) is carried out with components
+relative to the unprimed frame.  In effect, the code deliberately
+"misinterprets" the components of ``𝐑'_p`` as unprimed-frame
+components.  What we *want* is the rotor whose generating bivectors
+are the primed basis planes — e.g. ``𝐑'_p{}^x\, 𝐳'𝐲'`` — but
+building it from those components with the *unprimed* planes
+``𝐳𝐲``, etc., yields a different rotor; the two are related by
+conjugation with the frame transformation ``Λ = B\,R`` itself,
+
+```math
+𝐑_p = Λ\, 𝐑'_p\, Λ̃.
+```
+
+Now, the flagpole this conjugated rotor should act on is the *primed*
+one, ``\boldsymbol{ℓ}' = Λ\boldsymbol{ℓ}Λ̃``, and conjugation
+telescopes:
+
+```math
+𝐑_p\, \boldsymbol{ℓ}'\, 𝐑̃_p
+= Λ\, 𝐑'_p\, Λ̃\; Λ\boldsymbol{ℓ}Λ̃\; Λ\, 𝐑̃'_p\, Λ̃
+= (Λ\, 𝐑'_p)\, \boldsymbol{ℓ}\, \widetilde{(Λ\, 𝐑'_p)}
+```
+
+— and the same holds for the flagplane.  So the flagpole and
+flagplane we need are simply those produced by the *product*
+``Λ\,𝐑'_p`` acting on the reference pair at the pole, and the
+pure-rotation factor carrying the reference pair onto them is the
+``K`` factor of that product.  This is exactly what
+[`aberration`](@ref Scri.aberration)`(R * R′ₚ, v⃗)` computes.  The
+``A`` and ``N`` factors that the extraction discards are exactly the
+ones accounted for elsewhere — the conformal factor ``κ`` and the
+component mixing.
 
 ## Reinterpreting ``i``
 

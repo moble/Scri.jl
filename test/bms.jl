@@ -26,12 +26,12 @@
         h = g₂ * g₁
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
-            n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α)
+            k̂ = random_direction(rng, Float64)
+            t₁, k̂₁ = act_ref(g₁.Λ, g₁.α, t, k̂; c_α)
+            t₂, k̂₂ = act_ref(g₂.Λ, g₂.α, t₁, k̂₁; c_α)
+            tₕ, k̂ₕ = act_ref(h.Λ, h.α, t, k̂; c_α)
             @test abs(tₕ - t₂) < 1e-10
-            @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
+            @test maximum(abs, components(k̂ₕ - k̂₂)) < 1e-12
         end
     end
 
@@ -43,12 +43,12 @@
         h = Scri.compose(g₂, g₁; ℓₘₐₓ=12)
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
-            n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α)
+            k̂ = random_direction(rng, Float64)
+            t₁, k̂₁ = act_ref(g₁.Λ, g₁.α, t, k̂; c_α)
+            t₂, k̂₂ = act_ref(g₂.Λ, g₂.α, t₁, k̂₁; c_α)
+            tₕ, k̂ₕ = act_ref(h.Λ, h.α, t, k̂; c_α)
             @test abs(tₕ - t₂) < 1e-7
-            @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
+            @test maximum(abs, components(k̂ₕ - k̂₂)) < 1e-12
         end
     end
 end
@@ -62,7 +62,7 @@ end
 
     # The metamorphic composition test, repeated on ℐ⁻ (ℐ = -1): acting with g₂∘g₁ must
     # equal acting with g₁ then g₂, where the reference action is computed from raw geometry
-    # with the antipodal section 𝐤 = (1, -n̂).  The elements carry the ℐ⁻ representation as
+    # with the antipodal section 𝐤 = (1, -k̂).  The elements carry the ℐ⁻ representation as
     # their `ℐ` type parameter (attached to the same raw modes the oracle reads), and plain
     # `compose` must thread the ℐ⁻ conformal factor and direction map through correctly,
     # independently of the derivation.
@@ -77,12 +77,12 @@ end
         @test Scri.ℐ(h) == -1
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
-            n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α, ℐ=-1)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α, ℐ=-1)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α, ℐ=-1)
+            k̂ = random_direction(rng, Float64)
+            t₁, k̂₁ = act_ref(g₁.Λ, g₁.α, t, k̂; c_α, ℐ=-1)
+            t₂, k̂₂ = act_ref(g₂.Λ, g₂.α, t₁, k̂₁; c_α, ℐ=-1)
+            tₕ, k̂ₕ = act_ref(h.Λ, h.α, t, k̂; c_α, ℐ=-1)
             @test abs(tₕ - t₂) < 1e-10
-            @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
+            @test maximum(abs, components(k̂ₕ - k̂₂)) < 1e-12
         end
     end
 
@@ -94,12 +94,12 @@ end
         h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁); ℓₘₐₓ=12)
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
-            n̂ = random_direction(rng, Float64)
-            t₁, n̂₁ = act_ref(g₁.Λ, g₁.α, t, n̂; c_α, ℐ=-1)
-            t₂, n̂₂ = act_ref(g₂.Λ, g₂.α, t₁, n̂₁; c_α, ℐ=-1)
-            tₕ, n̂ₕ = act_ref(h.Λ, h.α, t, n̂; c_α, ℐ=-1)
+            k̂ = random_direction(rng, Float64)
+            t₁, k̂₁ = act_ref(g₁.Λ, g₁.α, t, k̂; c_α, ℐ=-1)
+            t₂, k̂₂ = act_ref(g₂.Λ, g₂.α, t₁, k̂₁; c_α, ℐ=-1)
+            tₕ, k̂ₕ = act_ref(h.Λ, h.α, t, k̂; c_α, ℐ=-1)
             @test abs(tₕ - t₂) < 1e-7
-            @test maximum(abs, components(n̂ₕ - n̂₂)) < 1e-12
+            @test maximum(abs, components(k̂ₕ - k̂₂)) < 1e-12
         end
     end
 end
@@ -184,7 +184,7 @@ end
 
     # The "Which way around is 𝐾?" note in docs/src/80-details/30-bms_group.md works
     # through the conjugation Λ⁻¹ ∘ δt ∘ Λ for a pure boost with velocity v⃗, claiming
-    # the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅n̂) — equivalently the
+    # the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅k̂) — equivalently the
     # spacetime translation by the 4-vector Λ⁻¹δ = γ δt (1; v⃗).  Pin all three faces of
     # that worked example, with κ taken from the package's own `conformal_factor`.
     rng = Random.Xoshiro(2424)
@@ -193,7 +193,7 @@ end
         β = absvec(v⃗)
         γ = 1 / √(1 - β^2)
         δt = randn(rng)
-        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ: κ = 1/(γ(1 - v⃗⋅n̂))
+        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ: κ = 1/(γ(1 - v⃗⋅k̂))
         T_δt = BMS{Float64}(; time_translation=δt)
         scale = max(1.0, γ * abs(δt))
 
@@ -207,12 +207,12 @@ end
         @test c ≈ expected atol = tol(Float64, 3) * scale
 
         # (2) Pointwise faces: the supertranslation is δt/κ — with κ the package's own
-        # conformal factor of the note's Λ — and equals γ δt (1 - v⃗⋅n̂).
+        # conformal factor of the note's Λ — and equals γ δt (1 - v⃗⋅k̂).
         for _ ∈ 1:5
-            n̂ = random_direction(rng, Float64)
-            αc = α_value(c.α, n̂)
-            @test αc ≈ δt / Scri.conformal_factor(g, n̂) atol = 1e-12 * scale
-            @test αc ≈ γ * δt * (1 - dot(vec(v⃗), vec(n̂))) atol = 1e-12 * scale
+            k̂ = random_direction(rng, Float64)
+            αc = α_value(c.α, k̂)
+            @test αc ≈ δt / Scri.conformal_factor(g, k̂) atol = 1e-12 * scale
+            @test αc ≈ γ * δt * (1 - dot(vec(v⃗), vec(k̂))) atol = 1e-12 * scale
         end
     end
 end
@@ -246,15 +246,18 @@ end
         s = BMS{Float64}(; supertranslation=α)
 
         c = gQ * s * inv(gQ)
+        # `compose`'s default output resolution is one ℓ higher than its inputs' (to make
+        # room for the ℓ≤1 factor 1/κ₁), so pad the oracle's modes with zeros to match.
         α_D = rotate_modes(α, Q, ℓ)
+        α_D = [α_D; zeros(ComplexF64, length(c.α) - length(α_D))]
         @test maximum(abs, c.α - α_D) < tol(Float64, 2ℓ + 1)
         @test Scri.is_identity_rotor(c.Λ) ||
             maximum(abs, components(c.Λ - one(c.Λ))) < 1e-14
 
-        # Pointwise pin of the `rotate_modes` convention itself: f′(n̂) = f(Q⁻¹ n̂).
+        # Pointwise pin of the `rotate_modes` convention itself: f′(k̂) = f(Q⁻¹ k̂).
         for _ ∈ 1:3
-            n̂ = random_direction(rng, Float64)
-            @test α_value(α_D, n̂) ≈ α_value(α, conj(Q)(n̂)) atol = 1e-11
+            k̂ = random_direction(rng, Float64)
+            @test α_value(α_D, k̂) ≈ α_value(α, conj(Q)(k̂)) atol = 1e-11
         end
 
         # Rotations cannot mix ℓ: the per-ℓ power spectrum is invariant, and the ℓ=0
@@ -324,9 +327,9 @@ end
         @test Scri.is_identity_rotor(c.Λ) ||
             maximum(abs, components(c.Λ - one(c.Λ))) < 1e-14
         for _ ∈ 1:5
-            n̂ = random_direction(rng, Float64)
-            κ⁻, n̂⁻ = ray_map(inv(Λ), n̂)
-            @test α_value(c.α, n̂) ≈ α_value(α, n̂⁻) / κ⁻ atol = 3e-6
+            k̂ = random_direction(rng, Float64)
+            κ⁻, k̂⁻ = ray_map(inv(Λ), k̂)
+            @test α_value(c.α, k̂) ≈ α_value(α, k̂⁻) / κ⁻ atol = 3e-6
         end
     end
 
@@ -373,14 +376,14 @@ end
 
         # The supertranslation part matches α∘Λ/κ_Λ − α, evaluated from raw geometry.
         for _ ∈ 1:5
-            n̂ = random_direction(rng, Float64)
-            κ, n̂′ = ray_map(Λ, n̂)
-            @test α_value(c.α, n̂) ≈ α_value(α, n̂′) / κ - α_value(α, n̂) atol = 3e-6
+            k̂ = random_direction(rng, Float64)
+            κ, k̂′ = ray_map(Λ, k̂)
+            @test α_value(c.α, k̂) ≈ α_value(α, k̂′) / κ - α_value(α, k̂) atol = 3e-6
         end
     end
 
     # Sharp positive case: constant α = δt conjugating a pure z-boost.  Then
-    # α∘Λ/κ_Λ − α = δt(1/κ_Λ − 1) = δt(γ − 1) + δt γ β n̂ᶻ — an exact ℓ ≤ 1 closed form,
+    # α∘Λ/κ_Λ − α = δt(1/κ_Λ − 1) = δt(γ − 1) + δt γ β k̂ᶻ — an exact ℓ ≤ 1 closed form,
     # bounded well away from zero, so the conjugate is definitely not in ℒ.
     η = 0.6
     β = tanh(η)
@@ -465,7 +468,9 @@ end
         gQ = Scri.BMS(Lorentz(Q), zeros(Complex{T}, 1))
         s = Scri.BMS{T}(; supertranslation=α)
         c = gQ * s * inv(gQ)
-        err[T] = Float64(maximum(abs, ComplexF64.(c.α .- α_D_ref)))
+        # Pad the oracle to `compose`'s (one-ℓ-higher) default output resolution.
+        α_D = [α_D_ref; zeros(Complex{BigFloat}, length(c.α) - length(α_D_ref))]
+        err[T] = Float64(maximum(abs, ComplexF64.(c.α .- α_D)))
         @test err[T] < tol(T, 5)
     end
     @test err[Double64] < err[Float64] / 1e8
@@ -485,10 +490,10 @@ end
         g₂ = Scri.BMS{T}(; frame_rotation=one(Rotor{T}), supertranslation=Complex{T}.(α₂64))
         h = Scri.compose(g₂, g₁; ℓₘₐₓ=8, ℓʷ=9)
         for _ ∈ 1:5
-            n̂ = random_direction(rng, T)
-            κ₁, n̂′ = ray_map(g₁.Λ, n̂)
-            expected = α_value(g₁.α, n̂) + α_value(g₂.α, n̂′) / κ₁
-            @test abs(α_value(h.α, n̂) - expected) < 1e-5
+            k̂ = random_direction(rng, T)
+            κ₁, k̂′ = ray_map(g₁.Λ, k̂)
+            expected = α_value(g₁.α, k̂) + α_value(g₂.α, k̂′) / κ₁
+            @test abs(α_value(h.α, k̂) - expected) < 1e-5
         end
     end
 end

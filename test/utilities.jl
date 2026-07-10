@@ -138,7 +138,7 @@ end
 
 @testitem "impose_reality: rejects non-square-length input" tags = [:unit, :fast] begin
     for N ∈ [2, 3, 5, 6, 7, 10]
-        @test_throws AssertionError Scri.impose_reality(zeros(ComplexF64, N), 10, 1)
+        @test_throws ArgumentError Scri.impose_reality(zeros(ComplexF64, N), 10, 1)
     end
 end
 
@@ -195,8 +195,8 @@ end
         vdotn =
             2v_x * (w * y + x * z) + 2v_y * (y * z - w * x) + v_z * (w^2 + z^2 - x^2 - y^2)
         # Reference: apply rotor to 𝐤, then take dot product component-wise
-        n̂ = R(𝐤)
-        vdotn_ref = v⃗[2] * n̂[2] + v⃗[3] * n̂[3] + v⃗[4] * n̂[4]
+        k̂ = R(𝐤)
+        vdotn_ref = v⃗[2] * k̂[2] + v⃗[3] * k̂[3] + v⃗[4] * k̂[4]
         @test vdotn ≈ vdotn_ref atol = 4eps(Float64)
     end
 end

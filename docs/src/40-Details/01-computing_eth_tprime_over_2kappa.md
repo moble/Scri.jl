@@ -11,7 +11,7 @@ We have the coordinate transformation
 \begin{gather}
 t' = κ(t - c_α α),
 \\
-\frac{1}{κ} = γ(1 - ℐv⃗⋅n̂),
+\frac{1}{κ} = γ(1 - ℐv⃗⋅k̂),
 \end{gather}
 ```
 
@@ -31,34 +31,34 @@ have ``ð(κ) = -ð(1/κ) κ^2``.
 \frac{ðt'}{2κ}
 &= \frac{ð(κ)}{2κ} (t - c_α α) - \frac{c_α ðα}{2} \\
 &= \frac{-ð(1/κ)}{2}κ (t - c_α α) - \frac{c_α ðα}{2} \\
-&= \frac{ℐ ð(v⃗⋅n̂)}{2(1 - ℐv⃗⋅n̂)} (t - c_α α) - \frac{c_α ðα}{2} \\
-&= \frac{-ð(v⃗⋅n̂)}{2(v⃗⋅n̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2}.
+&= \frac{ℐ ð(v⃗⋅k̂)}{2(1 - ℐv⃗⋅k̂)} (t - c_α α) - \frac{c_α ðα}{2} \\
+&= \frac{-ð(v⃗⋅k̂)}{2(v⃗⋅k̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2}.
 \end{align}
 ```
 
 Since ``α`` and ``ðα`` may contain — in principle — arbitrarily high
 ``ℓ`` modes, it will be best to compute them via
-`SphericalFunctions.jl`.  However, the ``v⃗⋅n̂`` and ``ð(v⃗⋅n̂)``
+`SphericalFunctions.jl`.  However, the ``v⃗⋅k̂`` and ``ð(v⃗⋅k̂)``
 terms are simple enough that it will be more efficient to compute them
 directly in closed form, using rotor components.  That is the
 objective of what follows.
 
-## ``v⃗⋅n̂`` as a function on ``\mathrm{Spin}(3)``
+## ``v⃗⋅k̂`` as a function on ``\mathrm{Spin}(3)``
 
 As mentioned when we [introduced the ``ð`` operator](@ref
 the-operator-eth), ``ð`` is best understood as a derivative operator
 on the group ``\mathrm{Spin}(3)``.  It is not immediately obvious that
-``v⃗⋅n̂`` needs to be expressed as a function on ``\mathrm{Spin}(3)``,
+``v⃗⋅k̂`` needs to be expressed as a function on ``\mathrm{Spin}(3)``,
 but in order to obtain an expression for ``ðt'/2κ`` that is a function
 on ``\mathrm{Spin}(3)``, we need to express all of the terms in that
 form.  The solution is simple:
 
 ```math
-v⃗⋅n̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̄) = (Q̄ v⃗ Q) ⋅ ẑ.
+v⃗⋅k̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̄) = (Q̄ v⃗ Q) ⋅ ẑ.
 ```
 
 That is, ``Q`` is interpreted as a rotation that takes the ``ẑ``
-basis vector to the direction ``n̂``, and the inner product is taken
+basis vector to the direction ``k̂``, and the inner product is taken
 with ``v⃗``.  Note the equivalent form in the final expression, which
 will be make the final result more efficient to calculate.  In fact,
 we will define
@@ -68,19 +68,19 @@ we will define
 ```
 
 which can be calculated once, very efficiently.  Then we just need to
-take the ``ẑ`` component of ``\vec{λ}`` to get ``v⃗⋅n̂ = λᶻ``, and we
+take the ``ẑ`` component of ``\vec{λ}`` to get ``v⃗⋅k̂ = λᶻ``, and we
 will see that its other components are exactly what we need to compute
-``ð(v⃗⋅n̂)``.
+``ð(v⃗⋅k̂)``.
 
-## Computing ``ð(v⃗⋅n̂)``
+## Computing ``ð(v⃗⋅k̂)``
 
 We can now immediately apply the definition of ``ð`` to compute
-``ð(v⃗⋅n̂)``.  We have
+``ð(v⃗⋅k̂)``.  We have
 
 ```math
 \begin{aligned}
-ð(v⃗⋅n̂)
-&= c_ð R_{x̂+iŷ} v⃗⋅n̂ \\
+ð(v⃗⋅k̂)
+&= c_ð R_{x̂+iŷ} v⃗⋅k̂ \\
 &= -c_ð i \left.\frac{d}{dϵ}\right|_{ϵ=0} v⃗ ⋅ (Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̄) \\
 &= -c_ð i v⃗ ⋅ \left[Q \left( -(x̂+iŷ)/2 ẑ + ẑ (x̂+iŷ)/2 \right) Q̄\right] \\
 &= c_ð v⃗ ⋅ \left[Q \left( (ix̂-ŷ) ẑ \right) Q̄\right] \\
@@ -97,7 +97,7 @@ The final result is simple to calculate:
 ```math
 \begin{aligned}
 \frac{ðt'}{2κ}
-&= \frac{-ð(v⃗⋅n̂)}{2(v⃗⋅n̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2} \\
+&= \frac{-ð(v⃗⋅k̂)}{2(v⃗⋅k̂-ℐ)} (t - c_α α) - \frac{c_α ðα}{2} \\
 &= c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)} (t - c_α α) - \frac{c_α ðα}{2}.
 \end{aligned}
 ```
@@ -114,7 +114,7 @@ where
 
 ```math
 \begin{aligned}
-\left(\frac{ðt'}{2κ}\right)_0 &= -c_α \left( c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)} α + ðα \right), \\
+\left(\frac{ðt'}{2κ}\right)_0 &= -c_α \left( c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)} α + \frac{ðα}{2} \right), \\
 \left(\frac{ðt'}{2κ}\right)_1 &= c_ð \frac{λˣ + i λʸ}{2(λᶻ-ℐ)}.
 \end{aligned}
 ```

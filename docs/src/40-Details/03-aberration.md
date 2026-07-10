@@ -71,22 +71,22 @@ spatial wavevector ``\vec{k} = (k^x, k^y, k^z)`` to satisfy
 ``|\vec{k}| = ω``.  We write
 
 ```math
-k^μ = ω(1,\, ε\hat{n}),
+k^μ = ω(1,\, ε\hat{k}),
 ```
 
-where ``\hat{n}`` is a unit 3-vector and ``ε = \pm 1``, as defined
+where ``\hat{k}`` is a unit 3-vector and ``ε = \pm 1``, as defined
 above:
 
-- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{n}`` points **away from**
+- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{k}`` points **away from**
   A — it is the propagation direction of the wave.  (Think of
   gravitational waves emitted by A; the chosen portion of the field
-  travels outward in direction ``\hat{n}``.)
-- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{n}`` points **toward** A
+  travels outward in direction ``\hat{k}``.)
+- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{k}`` points **toward** A
   — still the propagation direction of the wave.  (Think of a plane
-  wave whose source is far away in the direction ``-\hat{n}``.)
+  wave whose source is far away in the direction ``-\hat{k}``.)
 
-This is identical to the null section ``σ_ε: \hat{n} \mapsto (1,
-ε\hat{n})`` introduced in the [BMS group page](@ref "Lorentz
+This is identical to the null section ``σ_ε: \hat{k} \mapsto (1,
+ε\hat{k})`` introduced in the [BMS group page](@ref "Lorentz
 transformations ``ℒ`` and the conformal factor ``κ``") in its
 discussion of the celestial sphere.  The same rotor language connects
 naturally to the [Spacetime Algebra](@extref Quaternionic :doc:`spacetime_algebra`) developed in Quaternionic.jl, where null vectors arise from
@@ -102,7 +102,7 @@ B's four-velocity in A's frame is ``(t_B)^μ = (γ, γ\vec{v})``, where
 ω' = -k_μ (t_B)^μ.
 ```
 
-Expanding with ``k^μ = ω(1, ε\hat{n})`` and writing ``\cos Θ = \hat{n}
+Expanding with ``k^μ = ω(1, ε\hat{k})`` and writing ``\cos Θ = \hat{k}
 \cdot \hat{v}`` (where ``\hat{v} = \vec{v}/β`` is the unit boost
 direction):
 
@@ -113,9 +113,9 @@ direction):
 The angle ``Θ`` is *not* an independent definition: it is the inner
 product of the spatial wavevector with the boost direction, ``\cos Θ =
 (k^i \hat{v}_i)/ω``, read off directly from the contraction ``k_μ
-(t_B)^μ``.  When ``ε = +1``, this is ``\cos Θ = \hat{n}\cdot\hat{v}``
-with ``\hat{n}`` the propagation direction; when ``ε = -1`` it is
-``\cos Θ = \hat{n}\cdot\hat{v}`` with ``\hat{n}`` the direction toward
+(t_B)^μ``.  When ``ε = +1``, this is ``\cos Θ = \hat{k}\cdot\hat{v}``
+with ``\hat{k}`` the propagation direction; when ``ε = -1`` it is
+``\cos Θ = \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the direction toward
 the source.
 
 ### The conformal factor
@@ -123,12 +123,12 @@ the source.
 The ratio
 
 ```math
-κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{n})}
+κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{k})}
 ```
 
 is exactly the conformal factor introduced in the BMS page: for ``ε =
-+1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{n})]`` while for ``ε
-= -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{n})]``.
++1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{k})]`` while for ``ε
+= -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{k})]``.
 
 ## The aberration formula
 
@@ -141,10 +141,9 @@ satisfies
 \cos Θ' = \frac{\cos Θ - εβ}{1 - εβ\cos Θ}.
 ```
 
-[⚠️ *Verify*: MTW §22.5 (or a nearby exercise) for the standard form
-of this formula; the ``ε = +1`` case is the standard result.]  [⚠️
-*Verify*: Schutz §2.7–2.8 derives ``ω' = γω(1-β\cos Θ)`` for ``ε =
-+1``; check whether the aberration formula itself also appears there.]
+The ``ε = +1`` case is the standard relativistic aberration formula
+[MisnerThorneWheeler_1973](@cite), and the sign of ``ε`` extends it to
+incoming radiation.
 
 This is derived by applying the Lorentz boost directly to the spatial
 wavevector components: with ``k^μ = ω(1, ε\sinΘ, 0, ε\cos Θ)``
@@ -185,15 +184,14 @@ The direction of the shift depends on ``ε``:
   motion — the classical stellar-aberration effect.  This is the
   convention used in Penrose-Rindler Vol. 1 around Eq. (1.3.5)
   [PenroseRindler_1984](@cite), which works on the past celestial
-  sphere.  [⚠️ *Verify*: confirm Eq. (1.3.5) is for incoming null
-  vectors, giving opposite sign to the ``ε = +1`` case.]
+  sphere.
 
 ## General boost: the rotor formulation
 
 For a boost in an arbitrary direction ``\vec{v}``, the aberration is a
-rotation of ``\hat{n}`` in the plane spanned by ``\hat{n}`` and
+rotation of ``\hat{k}`` in the plane spanned by ``\hat{k}`` and
 ``\vec{v}``.  Let ``Θ'`` denote the boosted-frame angle between
-``\hat{n}'`` and the boost axis (this is the angle *B* observes), and
+``\hat{k}'`` and the boost axis (this is the angle *B* observes), and
 let ``Θ`` denote the corresponding rest-frame angle (the angle *A*
 uses).  They are related by the half-angle formula
 
@@ -201,18 +199,18 @@ uses).  They are related by the half-angle formula
 \tan\!\frac{Θ}{2} = e^{-εφ}\,\tan\!\frac{Θ'}{2}.
 ```
 
-The rotation that maps ``\hat{n}'`` to the correct rest-frame
+The rotation that maps ``\hat{k}'`` to the correct rest-frame
 direction is generated by the **aberration rotor**
 
 ```math
-B' = \exp\!\left(\frac{\hat{n}' \times \vec{v}}{|\hat{n}' \times \vec{v}|}\,\frac{Θ'-Θ}{2}\right).
+B' = \exp\!\left(\frac{\hat{k}' \times \vec{v}}{|\hat{k}' \times \vec{v}|}\,\frac{Θ'-Θ}{2}\right).
 ```
 
 For ``ε = +1``, ``Θ' > Θ`` so the exponent is positive; for ``ε =
 -1``, ``Θ' < Θ`` and the exponent is negative, reversing the rotation.
 
-Crucially, ``B'`` does not merely map the *direction* ``\hat{n}' \to
-\hat{n}``:  it also rotates the **tangent frame** at each point on the
+Crucially, ``B'`` does not merely map the *direction* ``\hat{k}' \to
+\hat{k}``:  it also rotates the **tangent frame** at each point on the
 sphere, producing the spin-weight phase factor that enters the mode
 transformation of spin-weighted functions.  This is why we work with
 full rotors rather than unit 3-vectors.
@@ -231,7 +229,7 @@ random rotors, velocities, and both signs of ``ε``.
 
 !!! warning "The oracle's Taylor branch is inaccurate for large β near the poles"
 
-    To remain well-conditioned where ``\hat{n}' × \vec{v} → 0``, this
+    To remain well-conditioned where ``\hat{k}' × \vec{v} → 0``, this
     implementation switches to a Taylor expansion when ``β\sin Θ' <
     ϵ^{1/3}``.  That expansion is a series in ``β`` alone, so while it
     is excellent for small ``β``, it is *wrong* when ``β`` is large
@@ -263,12 +261,12 @@ signs of ``ε``).
 
 ### Pole invariance: no tangent rotation along the boost axis
 
-When ``\hat{n}' \parallel \pm\hat{v}``, the cross product ``\hat{n}'
+When ``\hat{k}' \parallel \pm\hat{v}``, the cross product ``\hat{k}'
 \times \vec{v} = 0`` and the rotation axis in ``B'`` vanishes.
 Consequently ``B' = 1`` and the rotor is unchanged.
 
-This covers both the north pole (``\hat{n}' = +\hat{v}``) and the
-south pole (``\hat{n}' = -\hat{v}``), and holds for both ``ε = +1``
+This covers both the north pole (``\hat{k}' = +\hat{v}``) and the
+south pole (``\hat{k}' = -\hat{v}``), and holds for both ``ε = +1``
 and ``ε = -1`` since the cross product is independent of the sign
 convention.
 
@@ -278,7 +276,7 @@ boost axis"` (in `src/aberration.jl`; both signs of ``ε``).
 ### Equatorial formula: ``\cos Θ = εβ``
 
 Take the boost along ``\hat{z}`` and consider an equatorial direction
-``\hat{n}'`` (``Θ' = π/2``).  Setting ``\cos Θ' = 0`` in the aberration
+``\hat{k}'`` (``Θ' = π/2``).  Setting ``\cos Θ' = 0`` in the aberration
 formula gives
 
 ```math
@@ -300,10 +298,10 @@ commutes with the aberration correction:
 R'(R_z R_{\mathrm{pix}},\, \vec{v}) = R_z\, R'(R_{\mathrm{pix}},\, \vec{v}).
 ```
 
-This follows because ``R_z`` acts on ``\hat{n}'`` by rotating it about
+This follows because ``R_z`` acts on ``\hat{k}'`` by rotating it about
 the boost axis, which leaves the angle ``Θ'`` — and therefore the
 magnitude of the aberration — unchanged, while rotating the axis
-``\hat{n}' \times \vec{v}`` by the same ``R_z``.
+``\hat{k}' \times \vec{v}`` by the same ``R_z``.
 
 *Test*: `"aberration: azimuthal symmetry — z-rotation commutes with z-boost"`.
 

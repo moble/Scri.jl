@@ -78,12 +78,12 @@ input components are invalid.
 
 Examples:
 
-    DataComponents(:ψ₄)                          # gravitational waves only
-    DataComponents(:ψ₄, :ψ₃, :ψ₂)                # top three Weyl components
-    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)  # full Weyl set with shear (ℐ⁺)
-    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ; ℐ=-1)  # full Weyl set with shear (ℐ⁻)
-    DataComponents(:φ₀, :φ₁, :φ₂)                # Faraday components
-    DataComponents(:φ₀, :φ₁, :φ₂; ℐ=-1)         # Faraday components on ℐ⁻
+    DataComponents(:ψ₄)                                    # gravitational waves only
+    DataComponents(:ψ₄, :ψ₃, :ψ₂)                          # top three Weyl components
+    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ)            # full Weyl set with shear (ℐ⁺)
+    DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ; ℐ=-1)      # full Weyl set with shear (ℐ⁻)
+    DataComponents(:φ₀, :φ₁, :φ₂)                          # Faraday components
+    DataComponents(:φ₀, :φ₁, :φ₂; ℐ=-1)                    # Faraday components on ℐ⁻
     DataComponents(:ψ₄, :h; conventions=Conventions(:MB))  # data in the MB convention
 """
 struct DataComponents{C,I,V<:Conventions}
@@ -105,29 +105,35 @@ struct DataComponents{C,I,V<:Conventions}
     end
 end
 
+# User-input validation; explicit throws (not `@assert`) so the checks survive even when
+# asserts are disabled.
 function validate_data_components(cs, ℐ)
-    @assert all(c -> c ∈ ValidDataComponents, cs) "" *
-        "Invalid component in $cs; allowed: $ValidDataComponents"
-    @assert length(Set(cs)) == length(cs) "Duplicate components in $cs"
+    check(cond, msg) = cond || throw(ArgumentError(msg))
+    check(
+        all(c -> c ∈ ValidDataComponents, cs),
+        "Invalid component in $cs; allowed: $ValidDataComponents",
+    )
+    check(length(Set(cs)) == length(cs), "Duplicate components in $cs")
     if ℐ == 1
-        @assert :λ ∉ cs "λ is the ℐ⁻ radiative shear; use σ on ℐ⁺ (ℐ=+1)"
-        :ψ₀ ∈ cs && @assert :ψ₁ ∈ cs "ψ₀ requires ψ₁ on ℐ⁺ (ℐ=+1)"
-        :ψ₁ ∈ cs && @assert :ψ₂ ∈ cs "ψ₁ requires ψ₂ on ℐ⁺ (ℐ=+1)"
-        :ψ₂ ∈ cs && @assert :ψ₃ ∈ cs "ψ₂ requires ψ₃ on ℐ⁺ (ℐ=+1)"
-        :ψ₃ ∈ cs && @assert :ψ₄ ∈ cs "ψ₃ requires ψ₄ on ℐ⁺ (ℐ=+1)"
-        :φ₀ ∈ cs && @assert :φ₁ ∈ cs "φ₀ requires φ₁ on ℐ⁺ (ℐ=+1)"
-        :φ₁ ∈ cs && @assert :φ₂ ∈ cs "φ₁ requires φ₂ on ℐ⁺ (ℐ=+1)"
+        check(:λ ∉ cs, "λ is the ℐ⁻ radiative shear; use σ on ℐ⁺ (ℐ=+1)")
+        :ψ₀ ∈ cs && check(:ψ₁ ∈ cs, "ψ₀ requires ψ₁ on ℐ⁺ (ℐ=+1)")
+        :ψ₁ ∈ cs && check(:ψ₂ ∈ cs, "ψ₁ requires ψ₂ on ℐ⁺ (ℐ=+1)")
+        :ψ₂ ∈ cs && check(:ψ₃ ∈ cs, "ψ₂ requires ψ₃ on ℐ⁺ (ℐ=+1)")
+        :ψ₃ ∈ cs && check(:ψ₄ ∈ cs, "ψ₃ requires ψ₄ on ℐ⁺ (ℐ=+1)")
+        :φ₀ ∈ cs && check(:φ₁ ∈ cs, "φ₀ requires φ₁ on ℐ⁺ (ℐ=+1)")
+        :φ₁ ∈ cs && check(:φ₂ ∈ cs, "φ₁ requires φ₂ on ℐ⁺ (ℐ=+1)")
     elseif ℐ == -1
-        @assert :σ ∉ cs "σ is the ℐ⁺ radiative shear; use λ on ℐ⁻ (ℐ=-1)"
-        :ψ₄ ∈ cs && @assert :ψ₃ ∈ cs "ψ₄ requires ψ₃ on ℐ⁻ (ℐ=-1)"
-        :ψ₃ ∈ cs && @assert :ψ₂ ∈ cs "ψ₃ requires ψ₂ on ℐ⁻ (ℐ=-1)"
-        :ψ₂ ∈ cs && @assert :ψ₁ ∈ cs "ψ₂ requires ψ₁ on ℐ⁻ (ℐ=-1)"
-        :ψ₁ ∈ cs && @assert :ψ₀ ∈ cs "ψ₁ requires ψ₀ on ℐ⁻ (ℐ=-1)"
-        :φ₂ ∈ cs && @assert :φ₁ ∈ cs "φ₂ requires φ₁ on ℐ⁻ (ℐ=-1)"
-        :φ₁ ∈ cs && @assert :φ₀ ∈ cs "φ₁ requires φ₀ on ℐ⁻ (ℐ=-1)"
+        check(:σ ∉ cs, "σ is the ℐ⁺ radiative shear; use λ on ℐ⁻ (ℐ=-1)")
+        :ψ₄ ∈ cs && check(:ψ₃ ∈ cs, "ψ₄ requires ψ₃ on ℐ⁻ (ℐ=-1)")
+        :ψ₃ ∈ cs && check(:ψ₂ ∈ cs, "ψ₃ requires ψ₂ on ℐ⁻ (ℐ=-1)")
+        :ψ₂ ∈ cs && check(:ψ₁ ∈ cs, "ψ₂ requires ψ₁ on ℐ⁻ (ℐ=-1)")
+        :ψ₁ ∈ cs && check(:ψ₀ ∈ cs, "ψ₁ requires ψ₀ on ℐ⁻ (ℐ=-1)")
+        :φ₂ ∈ cs && check(:φ₁ ∈ cs, "φ₂ requires φ₁ on ℐ⁻ (ℐ=-1)")
+        :φ₁ ∈ cs && check(:φ₀ ∈ cs, "φ₁ requires φ₀ on ℐ⁻ (ℐ=-1)")
     else
         throw(ArgumentError("Invalid ℐ = $ℐ; must be ±1"))
     end
+    return nothing
 end
 
 """
@@ -174,30 +180,13 @@ Base.@constprop :aggressive spin_weight(s)::Int = spin_weight(Val(s))
 """
     conformal_weight(::Val{S})
 
-Return the conformal weight (spin weight + boost weight) of field component `S`, which is
-the power of the conformal factor ``κ`` in the BMS transformation law.
-
-Note that we are assuming that these fields represent the asymptotic values of the physical
-fields at null infinity, so they have already been rescaled by the appropriate power of the
-conformal factor to be finite and nonzero at null infinity.  The transformation law for the
-physical fields (finite-radius Weyl and Faraday spinors) would have a different conformal
-weight, but the asymptotic fields are the ones we are transforming.
-
-More specifically, the *asymptotic* Weyl spinor ``ψ`` and Faraday spinor ``φ`` are related
-to the finite-radius Weyl spinor ``Ψ`` by ``Ψ = ωψ`` and the finite-radius Faraday spinor
-``Φ`` by ``Φ = ωφ``.  The factor ``ω`` is the conformal factor that goes to zero (but has
-nonzero derivative) at null infinity, which transforms as ``ω′=κω``, so we pick up a factor
-of ``κ⁻¹`` in the transformation laws for ``ψ`` and ``φ`` compared to ``Ψ`` and ``Φ``.
-Since ``Ψ`` and ``Φ`` are the physical quantities, they do not change under coordinate
-transformations.
-
-Meanwhile the basis spinors each transform with a factor of ``1/√κ``.  The Weyl components
-``ψₙ`` are defined by contracting the Weyl spinor with *four* basis spinors, so they pick up
-a factor of ``κ⁻²`` from the basis spinors and an additional factor of ``κ⁻¹`` from the
-conformal factor, for a total of ``κ⁻³``.  Similarly, the Faraday components ``φₙ`` are
-defined by contracting the Faraday spinor with *two* basis spinors, so they pick up a factor
-of ``κ⁻¹`` from the conformal factor and an additional factor of ``κ⁻¹`` from the basis
-spinors, for a total of ``κ⁻²``.
+Return the conformal weight of field component `S` — the integer `w` such that the
+component picks up a factor ``κ^w`` in its BMS transformation law: ``-3`` for the Weyl
+components, ``-2`` for the Faraday components and the news, and ``-1`` for the radiative
+shears and the strain.  These are the weights of the *asymptotic* fields, already rescaled
+to be finite and nonzero at null infinity; see the ["BMS Action on Fields"](@ref "BMS
+Action on Fields") documentation page for the derivation, including how the rescaling by
+the vanishing conformal factor ``ω`` contributes to each weight.
 """
 conformal_weight(::Val{:ψ₀}) = -3
 conformal_weight(::Val{:ψ₁}) = -3
@@ -215,17 +204,15 @@ conformal_weight(::Val{:φ₂}) = -2
 """
     mix_components!(dataᵢⱼ, κ⁻¹, ðt′╱2κ, ð²α, dc)
 
-Apply the BMS component-mixing transformation to `dataᵢⱼ`.  `κ⁻¹` is the inverse conformal
-factor for this pixel, `ðt′╱2κ` is the eth-derivative of the retarded time in the new frame
-divided by ``2κ`` (the *geometric* null-rotation parameter ``b = ðu'/2κ``, computed with the
-native Newman–Penrose ``ð``), and `ð²α` is the second eth-derivative of the
-supertranslation.  The latter enters the radiative-shear/strain law with a factor of one
-half (the ½ has the same dyad/√2 origin as the ½ in ``b``).  The radiative shear is a
-different quantity on each null infinity: the ``l``-congruence shear ``σ`` (spin weight
-``+2``) on ``ℐ⁺``, shifting by ``+F_σ\\, ð²α/2``; and the ``n``-congruence shear ``λ`` (NP's
-``λ``, spin weight ``-2``) on ``ℐ⁻``, shifting by ``+F_λ\\, ð̄²α/2``.  The strain ``h`` (spin
-weight ``-2``) is present on both, shifting by ``+F_h\\, ð̄²α/2`` on ``ℐ⁺`` and ``-F_h\\,
-ð̄²α/2`` on ``ℐ⁻``.
+Apply the BMS component-mixing transformation — the peeling towers and the inhomogeneous
+radiative-shear/strain shifts of the ["BMS Action on Fields"](@ref "BMS Action on Fields")
+documentation page — to the single pixel's component values `dataᵢⱼ`, in place.
+
+The arguments are: `dataᵢⱼ`, a complex vector of the component values at this pixel, in
+the order given by `dc`; `κ⁻¹`, the inverse conformal factor at this pixel; `ðt′╱2κ`, the
+*geometric* null-rotation parameter ``b = ðt'/2κ`` at this pixel (computed with the native
+Newman–Penrose ``ð``); `ð²α`, the second eth-derivative of the supertranslation at this
+pixel; and `dc`, the [`DataComponents`](@ref) descriptor.
 
 The convention factors come from the `Conventions` carried by `dc`, and appear in the laws
 exactly as in the ["Convention dependence" documentation](@ref
@@ -388,8 +375,13 @@ it from `dc′`.
 function represent!(
     data::AbstractArray{<:Complex,3}, dc::DataComponents{C,I}, conventions::Conventions
 ) where {C,I}
-    @assert size(data, 3) == length(C) "Input `data` has $(size(data, 3)) components, " *
-        "but `dc` has $(length(C))"
+    if size(data, 3) != length(C)
+        throw(
+            ArgumentError(
+                "Input `data` has $(size(data, 3)) components, but `dc` has $(length(C))"
+            ),
+        )
+    end
     for (k, S) ∈ enumerate(C)
         f =
             conversion_factor(conventions, Val(S)) /

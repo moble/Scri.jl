@@ -171,6 +171,10 @@ with the primed conformal metric ``ĝ' = κ²ĝ``:
 σ' = -c_σ\, m̃'^a m̃'^b ∇'_a l̃'_b.
 ```
 
+At the default ``c_σ = 1`` this definition is Eq. (85c) of
+[Moxon_2020](@citet) evaluated in the primed frame, so the law derived
+here is precisely the transformation of the SpECTRE/SXS shear.
+
 The spin–boost prefactors of the three legs, together with ``∇'``,
 combine into the single boost weight the shear carries as a connection
 coefficient at ``ℐ`` — the uniform Weyl factor ``κ^{-1}`` of [the
@@ -298,17 +302,17 @@ again matching the code.  The news is unchanged, ``N' = κ^{-2}N``.
 
 ## [Convention dependence](@id convention_dependence_fields)
 
-The laws above are written in the package's default ([SpEC +
+The laws above are written in the package's default ([SXS +
 Newman–Penrose ``ð``](@ref conventions-type)) convention.  Data in
-another convention ``X`` relates to the SpEC data by the per-component
+another convention ``X`` relates to the SXS data by the per-component
 factors of the [conventions page](@ref conventions-type) — all in
-**export form**, ``q^{[X]} = F q^{[\mathrm{SpEC}]}`` —
+**export form**, ``q^{[X]} = F q^{[\mathrm{SXS}]}`` —
 
 ```math
-ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SpEC}]},
+ψ_n^{[X]} = F_n\, ψ_n^{[\mathrm{SXS}]},
 \quad F_n = c_s c_ψ c_R\,(c_l c_m)^{2-n};
 \qquad
-h^{[X]} = F_h\, h^{[\mathrm{SpEC}]},
+h^{[X]} = F_h\, h^{[\mathrm{SXS}]},
 \quad F_h = c_s c_h,
 ```
 
@@ -316,14 +320,14 @@ and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l
 c_m)^{1-n}``, two legs instead of four) and the radiative shear
 (``F_σ`` on ``ℐ⁺``, ``F_λ`` on ``ℐ⁻``; below).  A transform that
 *stays in* convention ``X`` is the composition ``\text{convert }
-X{→}\mathrm{SpEC}``, then the SpEC law above, then ``\text{convert
+X{→}\mathrm{SXS}``, then the SXS law above, then ``\text{convert
 back}``.  Whether a parameter survives that round trip depends on
 whether the law is homogeneous or inhomogeneous.
 
 **Homogeneous laws — the peeling towers.**  For the Weyl tower,
 
 ```math
-ψ_n'^{[X]} = F_n\, ψ_n'^{[\mathrm{SpEC}]}
+ψ_n'^{[X]} = F_n\, ψ_n'^{[\mathrm{SXS}]}
 = κ^{-3}\sum_k \binom{4-n}{k}\, b^{\,k}\, \frac{F_n}{F_{n+k}}\, ψ_{n+k}^{[X]},
 \qquad
 \frac{F_n}{F_{n+k}} = (c_l c_m)^{k},
@@ -334,7 +338,7 @@ denominator and the tower keeps its exact shape with a **rescaled
 parameter**
 
 ```math
-b^{[X]} = c_l\, c_m\, b^{[\mathrm{SpEC}]}
+b^{[X]} = c_l\, c_m\, b^{[\mathrm{SXS}]}
 = c_l\, c_m\, \frac{ðu'}{2κ},
 ```
 
@@ -349,7 +353,7 @@ On ``ℐ⁻`` the tower mixes *downward* (the parameter is ``\bar b =
 inverts: ``F_n/F_{n-k} = (c_l c_m)^{-k}``, and
 
 ```math
-\bar b^{[X]} = \frac{\bar b^{[\mathrm{SpEC}]}}{c_l\, c_m}.
+\bar b^{[X]} = \frac{\bar b^{[\mathrm{SXS}]}}{c_l\, c_m}.
 ```
 
 Equivalently, from the tetrad: the ``ℐ⁻`` case mixes the ``l̃`` leg
@@ -414,6 +418,21 @@ and the geometric shift ``\tfrac12 ð^2 α = m̃^A m̃^B D_A D_B α`` are
 computed with the Newman–Penrose ``ð`` natively (and the supertranslation
 ``α`` is just a function on the sphere); ``c_ð`` only changes how those
 *same* quantities would be *written* in another eth normalization.
+
+**Summary.**  The same-convention laws and their surviving convention
+factors, collected in one place (upper sign on ``ℐ⁺``, lower on
+``ℐ⁻``; the towers use ``b^{[X]}`` on ``ℐ⁺`` and ``\bar b^{[X]}`` on
+``ℐ⁻``):
+
+| quantity       | same-convention law                                   | surviving factors                                                                |
+|:---------------|:------------------------------------------------------|:---------------------------------------------------------------------------------|
+| ``ψ_n``        | ``κ^{-3} ×`` binomial tower                           | ``b^{[X]} = c_l c_m\,\frac{ðu'}{2κ}``, ``\bar b^{[X]} = \frac{ð̄v'/2κ}{c_l c_m}`` |
+| ``φ_n``        | ``κ^{-2} ×`` binomial tower                           | same mixing parameters                                                           |
+| ``σ`` (``ℐ⁺``) | ``κ^{-1}(σ + F_σ\,\tfrac12 ð^2α)``                    | ``F_σ = c_s c_σ c_l c_m^2``                                                      |
+| ``λ`` (``ℐ⁻``) | ``κ^{-1}(λ + F_λ\,\tfrac12 ð̄^2α)``                    | ``F_λ = c_s c_λ/(c_l c_m^2)``                                                    |
+| ``h``          | ``κ^{-1}(h ± F_h\,\tfrac12 ð̄^2α)``                    | ``F_h = c_s c_h``                                                                |
+| ``N``          | ``κ^{-2} N``                                          | none                                                                             |
+| time law       | ``t' = κ(t - c_α α)``                                 | ``c_α``                                                                          |
 
 **What the code does.**  Collecting the survivors, a same-convention
 transform requires exactly three convention insertions on top of the

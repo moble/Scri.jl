@@ -12,7 +12,7 @@ import Quaternionic:
     basetype,
     from_spherical_coordinates,
     ℂreal
-import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
+import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors, D_matrices, WignerDindex
 import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
 import OffsetArrays: OffsetVector
 import Logging
@@ -50,7 +50,24 @@ include("aberration.jl")
 include("bms.jl")
 include("transform.jl")
 
-export transform!, diagnostics, BMS
+export transform!,
+    diagnostics,
+    BMS,
+    DataComponents,
+    Conventions,
+    represent!,
+    compose,
+    conformal_factor,
+    lorentz,
+    supertranslation,
+    frame_rotation,
+    boost_velocity,
+    translation,
+    time_translation,
+    space_translation,
+    proper_supertranslation
+# Note: the single-character accessors `ℐ` and `c_α`, and `ℓₘₐₓ`/`ell_max`, are
+# deliberately NOT exported (collision-prone names); use them qualified, as `Scri.ℐ(g)`.
 
 include("precompilation.jl")
 

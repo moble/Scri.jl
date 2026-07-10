@@ -98,6 +98,7 @@ makedocs(;
         edit_link="main",  # Link out to "main" branch on github
         canonical="https://moble.github.io/Scri.jl",
         assets=String["assets/citations.css", "assets/custom.css"],
+        size_threshold_ignore=["50-api.md"],  # the API page is deliberately one long page
     ),
     remotes=notes_remotes,
     pages=[list_pages()..., notes_pages...],
