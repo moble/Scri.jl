@@ -4,14 +4,15 @@ CurrentModule = Scri
 
 # Data Components
 
-The waveform array passed to [`transform!`](@ref) is three-dimensional,
-with its third axis running over the different physical fields — strain,
-Weyl components, Faraday components, and so on.  The
-[`DataComponents`](@ref Scri.DataComponents) descriptor declares *which*
-fields those are, and in *what order*, so that the transform knows the
-spin weight, conformal weight, and mixing law of each slice.  It also
-records which end of null infinity the data live on and which
-[conventions](@ref conventions-type) they are expressed in.
+The waveform array passed to [`transform!`](@ref) is
+three-dimensional, with its third axis running over the different
+physical fields — strain, Weyl components, Faraday components, and so
+on.  The [`DataComponents`](@ref Scri.DataComponents) descriptor
+declares *which* fields those are, and in *what order*, so that the
+transform knows the spin weight, conformal weight, and mixing law of
+each slice.  It also records which end of null infinity the data exist
+on and which [conventions](@ref conventions-type) they are expressed
+in.
 
 ## The components
 
@@ -37,11 +38,11 @@ DataComponents("Psi_3", "psi4", "sigma")   # → DataComponents(:ψ₃, :ψ₄, 
 
 ## Future versus past null infinity
 
-The `ℐ` sign selects the piece of null infinity the data describe: `+1`
-for ``ℐ⁺`` (outgoing radiation) and `-1` for ``ℐ⁻`` (incoming), with
-`+1` the default.  The two ends carry *different* radiative shears — the
-``ℓ``-congruence ``σ`` on ``ℐ⁺`` and the ``n``-congruence ``λ`` on
-``ℐ⁻`` (see [Tensor Components](@ref)) — so the constructor rejects
+The `ℐ` sign selects the piece of null infinity the data describe:
+`+1` for ``ℐ⁺`` (outgoing radiation) and `-1` for ``ℐ⁻`` (incoming),
+with `+1` the default.  The two ends have *different* radiative shears
+— the ``ℓ``-congruence ``σ`` on ``ℐ⁺`` and the ``n``-congruence ``λ``
+on ``ℐ⁻`` (see [Tensor Components](@ref)) — so the constructor rejects
 ``σ`` on ``ℐ⁻`` and ``λ`` on ``ℐ⁺``:
 
 ```julia
@@ -72,7 +73,7 @@ DataComponents(:ψ₀, :ψ₁; ℐ=-1)           # OK: ψ₀ needs only ψ₁ ab
 DataComponents(:ψ₃)                      # ERROR: ψ₃ requires ψ₄
 ```
 
-The strain, news, and shears carry no such requirement — their laws
+The strain, news, and shears impose no such requirement — their laws
 are [self-contained](@ref "Strain, shear, and news").
 
 ## Conventions travel with the data

@@ -146,10 +146,10 @@ which the cure is simply to increase ``ℓ_\mathrm{max}``.
 
 The [augmented SSHT](@ref "Augmented Direct SSHT") supplies a second,
 cheaper check.  Because the pixel grid is larger than the mode basis,
-the analysis step also returns the energy ``ξ`` that lives in the null
-space — the part of the pixel data that *no* band-limited field can
-represent.  Analytically ``ξ ≈ 0``; a large ``ξ`` signals exactly the
-same thing as a large ``E(ℓ_\mathrm{max})`` — a transformation extreme
-enough to push energy past the band limit.  For ``σ``, ``h``, or
-``ψ₄`` data, these are the ``ℓ = 0`` and ``ℓ = 1`` modes — shown, for
-example, in red on the [spline-error plots](@ref "Spline Errors").
+the analysis step also returns the energy ``ξ`` from the null space —
+the part of the pixel data that *no* band-limited field can represent.
+Analytically ``ξ ≈ 0``; a large ``ξ`` signals exactly the same thing
+as a large ``E(ℓ_\mathrm{max})`` — a transformation extreme enough to
+push energy past the band limit.  For ``σ``, ``h``, or ``ψ₄`` data,
+these are the ``ℓ = 0`` and ``ℓ = 1`` modes — shown, for example, in
+red on the [spline-error plots](@ref "Spline Errors").

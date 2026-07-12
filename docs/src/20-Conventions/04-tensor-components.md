@@ -45,11 +45,11 @@ decomposed into components as
 \end{aligned}
 ```
 
-These are consistent with the Weyl components above: each ``φ_n``
-carries spin weight ``1-n`` (just as ``ψ_n`` carries ``2-n``), and
-each step down either tower trades a leg scaling as ``c_l`` or ``c_m``
-for one scaling as its inverse.  Paralleling the Weyl conversion ``∝
-(c_l c_m)^{2-n}``, the inter-convention factor is
+These are consistent with the Weyl components above: each ``φ_n`` has
+spin weight ``1-n`` (just as ``ψ_n`` has ``2-n``), and each step down
+either tower trades a leg scaling as ``c_l`` or ``c_m`` for one
+scaling as its inverse.  Paralleling the Weyl conversion ``∝ (c_l
+c_m)^{2-n}``, the inter-convention factor is
 
 ```math
 {}^{[A]}φ_n = c_φ\, (c_l c_m)^{1-n}\, φ_n,

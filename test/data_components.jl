@@ -35,7 +35,7 @@
     @test dc isa DataComponents{(:ψ₄, :σ)}
 end
 
-@testitem "DataComponents: carries its Conventions" tags = [:unit, :fast] begin
+@testitem "DataComponents: includes its Conventions" tags = [:unit, :fast] begin
     import Scri: DataComponents, Conventions
 
     # Defaults to the package-native conventions, stored as compile-time singletons.
@@ -246,7 +246,7 @@ end
 
     # ℐ⁺: σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
     # ℐ⁻: λ' = κ⁻¹·(λ + ½conj(ð²α)),  h' = κ⁻¹·(h − ½conj(ð²α))
-    # (λ is the ℐ⁻ radiative shear; its shift carries + conj(ð²α), opposite the strain.)
+    # (λ is the ℐ⁻ radiative shear; its shift is + conj(ð²α), opposite the strain.)
     rng = Random.Xoshiro(99)
     dc⁺ = DataComponents(:σ, :h)
     dc⁻ = DataComponents(:λ, :h; ℐ=-1)
@@ -276,9 +276,9 @@ end
     import Scri:
         DataComponents, Conventions, dyad_factor, shear_factor, lambda_factor, strain_factor
 
-    # With a generic convention carried by `dc`, the laws read (docs, "Convention
-    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
-    # ℐ⁺ shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
+    # With a generic convention contained in `dc`, the laws read (docs, "Convention
+    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻; ℐ⁺
+    # shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
     # −F_h·ð̄²α/2.
     rng = Random.Xoshiro(17)
     X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)

@@ -34,9 +34,9 @@ below, and [Representations of the supertranslation](@ref bms_representations).
 Both conventions are pure bookkeeping.  Operations combining two elements
 ([`compose`](@ref), `==`, `isapprox`) accept any mix: the differences are accounted for
 exactly, and wherever the two inputs disagree the result uses the default (`+1`) convention.
-Data also live on a fixed null infinity, so [`DataComponents`](@ref) carries `ℐ` as a type
-parameter; the [`transform!`](@ref) bridge re-represents the element to match the data.  See
-[the conventions page](@ref scri_pm_conventions).
+Data must be given on a fixed portion of null infinity, so [`DataComponents`](@ref) includes
+`ℐ` as a type parameter; the [`transform!`](@ref) bridge re-represents the element to match
+the data.  See [the conventions page](@ref scri_pm_conventions).
 
 See [the BMS group documentation](@ref bms_group) for details about the group structure,
 action, and conventions.
@@ -687,7 +687,7 @@ end
     @test hash(gpad) == hash(g)
     @test gpad ≈ g
 
-    # Genuinely different elements differ.
+    # Different elements differ.
     @test BMS(Λ, 2α) != g
     @test !(BMS(Λ, 2α) ≈ g)
     Λ′ = random_lorentz(rng, Float64)
@@ -856,12 +856,12 @@ end
 """
     rotor_from_direction(k̂)
 
-A rotor `R` carrying the `z`-axis basis vector to the direction `k̂` — that is,
+A rotor `R` taking the `z`-axis basis vector to the direction `k̂` — that is,
 `R(Quaternionic.𝐤) = k̂`, where `Quaternionic.𝐤` is the quaternion basis element for the
 `z` direction (not to be confused with the null vector ``𝐤`` of the documentation, whose
-spatial part is `k̂`).  Any such rotor would do for evaluating spin-weight-0 functions;
-this one is built from the spherical coordinates of `k̂`, using pole-safe two-argument
-`atan` forms.
+spatial part is `k̂`).  Any such rotor would do for evaluating spin-weight-0 functions; this
+one is built from the spherical coordinates of `k̂`, using pole-safe two-argument `atan`
+forms.
 """
 function rotor_from_direction(k̂::QuatVec)
     x, y, z = vec(k̂)
@@ -1281,12 +1281,12 @@ Compose two BMS elements: the result acts as `g₁` *first*, then `g₂`:
 ```
 
 Because `κ₁` and the mapped direction `Λ₁𝐤` are realized on the labeled celestial sphere,
-the composed supertranslation depends on the labeling — which each element carries as its
+the composed supertranslation depends on the labeling — which each element includes as its
 `I` type parameter (see [Representations of the supertranslation](@ref
-bms_representations)).  The inputs may use any mix of conventions
-(`A`, `I`): each convention the two inputs *share* is kept for the result, and each
-convention on which they *disagree* is resolved by converting both inputs — exactly — to
-the default (`+1`).  `c_α` does not otherwise enter the group law.
+bms_representations)).  The inputs may use any mix of conventions (`A`, `I`): each
+convention the two inputs *share* is kept for the result, and each convention on which they
+*disagree* is resolved by converting both inputs — exactly — to the default (`+1`).  `c_α`
+does not otherwise enter the group law.
 
 The composed supertranslation is computed pointwise on a spherical grid of bandwidth `ℓʷ`
 and then re-expanded in spherical harmonics, keeping modes up to `ℓₘₐₓ`.  The default is

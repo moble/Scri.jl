@@ -112,7 +112,7 @@ the data.  Pure spacetime translations are just the ``ℓ = 0`` and
 direction is available from [`conformal_factor`](@ref
 Scri.conformal_factor).
 
-The `BMS` element also carries the two convention signs `c_α` and `ℐ`
+The `BMS` element also tracks the two convention signs `c_α` and `ℐ`
 that fix how its supertranslation is [represented](@ref
 bms_representations); operations that combine elements reconcile these
 automatically.

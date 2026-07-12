@@ -221,13 +221,13 @@ radius are one and the same.
 
 ### From the null cone to ``ℐ⁺``
 
-The construction so far lived in Minkowski space, with ``𝒩⁺`` the null
-cone of a single point and the fiber ``ℝ⁺`` acting by dilation.  That
-picture is scaffolding.  A general asymptotically flat spacetime has no
-preferred origin, its interior null congruences focus and caustic, and
-it has no global null cone — yet the celestial sphere survives intact,
-because the object we actually need is not the null cone of a point but
-**future null infinity ``ℐ⁺`` itself**.
+The construction so far was embedded in Minkowski space, with ``𝒩⁺``
+the null cone of a single point and the fiber ``ℝ⁺`` acting by
+dilation.  That picture is scaffolding.  A general asymptotically flat
+spacetime has no preferred origin, its interior null congruences focus
+and caustic, and it has no global null cone — yet the celestial sphere
+survives intact, because the object we actually need is not the null
+cone of a point but **future null infinity ``ℐ⁺`` itself**.
 
 In the conformally compactified spacetime, ``ℐ⁺`` is a smooth null
 hypersurface with topology ``ℝ × 𝕊²``.  Its null generators are the

@@ -18,7 +18,7 @@ the idempotent ``u₊ = (1+𝐭𝐳)/2`` gives ``ℂℜ(Λu₊) = ½e^{φₐ/2}�
 :std:label:`iwasawa-kan`) for the extraction.
 
 The sign `ℐ` enters only through the boost velocity.  The ``u₊`` extraction is tied to the
-null vector ``ℓ ∝ (1, +k̂)`` after the pixel rotor carries ``𝐳 → k̂``, which matches the ℐ⁺
+null vector ``ℓ ∝ (1, +k̂)`` where the pixel rotor takes ``𝐳 → k̂``, which matches the ℐ⁺
 labeling directly.  At ℐ⁻ the labeling is antipodal — pixel ``k̂`` labels the null vector
 ``(1, −k̂)`` — and conjugating by spatial parity turns ``B(v⃗)`` acting on ``(1, −k̂)`` into
 ``B(−v⃗)`` acting on the label ``(1, +k̂)``, while leaving the parity-invariant rotation

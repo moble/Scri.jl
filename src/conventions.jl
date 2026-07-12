@@ -214,7 +214,7 @@ Factor taking the ``ℐ⁻`` radiative shear ``λ`` from the SXS convention to c
 Just as the radiative Weyl component switches from ``ψ₄`` (on ``ℐ⁺``) to ``ψ₀`` (on
 ``ℐ⁻``), the radiative shear switches from ``σ`` to the NP coefficient ``λ`` — the shear of
 the incoming ``n`` congruence, which is the one transverse to ``ℐ⁻``.  Following Moxon (and
-thus SXS), it is defined *without* the minus sign that ``σ`` carries,
+thus SXS), it is defined *without* the minus sign that ``σ`` has,
 
 ```math
 λ = c_λ m̄ᵃm̄ᵇ∇ₐn_b        (spin weight -2).

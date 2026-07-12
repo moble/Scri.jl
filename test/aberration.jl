@@ -6,10 +6,10 @@ end
 @testmodule AberrationOracle begin
     # The superseded implementation of `aberration`, from Appendix C of Boyle (2015),
     # retained verbatim as an independent oracle for the KAN-based implementation in
-    # src/aberration.jl.  It works with explicit angles on the sphere — see the
-    # "Aberration of Gravitational Waves" page of the documentation for its derivation —
-    # and needs a Taylor branch where the angle formulas are ill-conditioned.  That
-    # completely different structure is what makes it a genuinely independent check.
+    # src/aberration.jl.  It works with explicit angles on the sphere — see the "Aberration
+    # of Gravitational Waves" page of the documentation for its derivation — and needs a
+    # Taylor branch where the angle formulas are ill-conditioned.  That completely different
+    # structure is what makes it a truly independent check.
     #
     # The `emitted` keyword corresponds to the primary implementation's `ℐ` argument:
     # `emitted = true` ⟺ `ℐ = +1` (ℐ⁺), `emitted = false` ⟺ `ℐ = -1` (ℐ⁻).
@@ -58,11 +58,11 @@ end
                 )
             )
 
-            # Taylor expansion of sin((Θ̑−Θ)/2) / (β sinΘ̑) about β=0.
-            # For ε = -1 the ratio is negative (leading term -1/2); factoring out ε and using
-            # εβ inside restores a uniform +1/2 leading term in the series body.
-            # Multiplying by k̂′xv⃗ (which carries the explicit factor of β sinΘ̑) gives the
-            # full vector term sin((Θ̑−Θ)/2) * (k̂′×v⃗)/|k̂′×v⃗| without any division by μ.
+            # Taylor expansion of sin((Θ̑−Θ)/2) / (β sinΘ̑) about β=0.  For ε = -1 the ratio
+            # is negative (leading term -1/2); factoring out ε and using εβ inside restores
+            # a uniform +1/2 leading term in the series body.  Multiplying by k̂′xv⃗ (which
+            # includes the explicit factor of β sinΘ̑) gives the full vector term
+            # sin((Θ̑−Θ)/2) * (k̂′×v⃗)/|k̂′×v⃗| without any division by μ.
             sinΔΘ╱2╱βsinΘ̑ =
                 ε * (
                     1 +
@@ -86,7 +86,7 @@ end
             Rotor{basetype(Q)}(Q)
         else
             Θ = 2atan(exp(-ε * φ) * tan(Θ̑ / 2))  # Eq. (C7): rest-frame polar angle; ε flips sign
-            exp((k̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) carries ε
+            exp((k̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) implicitly includes ε
         end
 
         return B′ * RRₚᵢ
@@ -125,13 +125,13 @@ end
                     components(AberrationOracle.aberration(R, v⃗; emitted)) atol = 50eps(T)
             end
         end
-        # Near-pole configurations (k̂′ nearly parallel to ±v⃗).  Here the oracle takes
-        # its Taylor branch (β·sinΘ̑ < ∛ϵ), which is a series in β alone — accurate for
-        # small β, but genuinely wrong when β is large and only sinΘ̑ is small (e.g. at
-        # δ = 1e-7, β = 0.99, ℐ⁺, the rotor x-component should be e⁻ᵠ·δ/2 ≈ 3.544e-9;
-        # the KAN K factor gets this right, while the Taylor branch returns 9.25e-10).
-        # So evaluate the oracle at BigFloat, where β·sinΘ̑ ≫ ∛eps(BigFloat) keeps it in
-        # its well-conditioned exact branch; the T-valued inputs embed exactly.
+        # Near-pole configurations (k̂′ nearly parallel to ±v⃗).  Here the oracle takes its
+        # Taylor branch (β·sinΘ̑ < ∛ϵ), which is a series in β alone — accurate for small β,
+        # but wrong when β is large and only sinΘ̑ is small (e.g. at δ = 1e-7, β = 0.99, ℐ⁺,
+        # the rotor x-component should be e⁻ᵠ·δ/2 ≈ 3.544e-9; the KAN K factor gets this
+        # right, while the Taylor branch returns 9.25e-10).  So evaluate the oracle at
+        # BigFloat, where β·sinΘ̑ ≫ ∛eps(BigFloat) keeps it in its well-conditioned exact
+        # branch; the T-valued inputs embed exactly.
         for δ ∈ T.([1e-7, 1e-3]), β ∈ T.([1e-3, 0.5, 0.99]), θ₀ ∈ (δ, T(π) - δ)
             R = Rotor(cos(θ₀ / 2), sin(θ₀ / 2), 0, 0)  # pixel at angle θ₀ from ẑ
             v⃗ = QuatVec(zero(T), 0, β)

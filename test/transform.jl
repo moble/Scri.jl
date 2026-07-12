@@ -82,9 +82,9 @@ end
     )
     @test d_bridge == d_core
 
-    # ℐ⁻: the element applied with ℐ⁻ data components, which carry ℐ = -1 and the
-    # reversed peeling tower (ψ₂ requires ψ₁, ψ₀).  This element has no supertranslation,
-    # so its re-representation to match dc is trivial and the raw parts agree.
+    # ℐ⁻: the element applied with ℐ⁻ data components, which is given by ℐ = -1 and the
+    # reversed peeling tower (ψ₂ requires ψ₁, ψ₀).  This element has no supertranslation, so
+    # its re-representation to match dc is trivial and the raw parts agree.
     dc⁻ = Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; ℐ=-1)
     d_bridge⁻ = mkdata()
     Scri.transform!(d_bridge⁻, t, g⁺, dc⁻)
@@ -102,11 +102,11 @@ end
     # The same element transforms differently on the two null infinities (ℐ comes from dc).
     @test d_bridge⁻ != d_bridge
 
-    # With a supertranslation carrying odd-ℓ content, the bridge must first re-represent
-    # the ℐ⁺ element in dc's ℐ⁻ labeling (the antipodal mode flip via the `BMS` conversion constructor), so it
-    # agrees with the core method called on the *converted* modes...  The data must be
-    # time-dependent here: a supertranslation only shifts retarded time, so it is invisible
-    # on constant-in-time data.
+    # With a supertranslation including odd-ℓ content, the bridge must first re-represent
+    # the ℐ⁺ element in dc's ℐ⁻ labeling (the antipodal mode flip via the `BMS` conversion
+    # constructor), so it agrees with the core method called on the *converted* modes...
+    # The data must be time-dependent here: a supertranslation only shifts retarded time, so
+    # it is invisible on constant-in-time data.
     function mktdata()
         d = zeros(ComplexF64, N, 4, 3)
         for j ∈ 1:4
@@ -136,8 +136,8 @@ end
     @test d_bridgeˢ == d_coreˢ
 
     # ...whereas an element already in the ℐ⁻ representation passes its modes through
-    # unchanged — and the two genuinely differ, because the same raw modes mean different
-    # functions in the two labelings.
+    # unchanged — and the two differ, because the same raw modes mean different functions in
+    # the two labelings.
     g⁻ = Scri.BMS{Float64}(; parts..., ℐ=-1)
     d_bridge⁻ˢ = mktdata()
     Scri.transform!(d_bridge⁻ˢ, t, g⁻, dc⁻)
@@ -329,21 +329,22 @@ end
     using DoubleFloats: Double64
     import Random
 
-    # Fully independent, end-to-end numerical check of `compute_ðt′╱2κ`.  We build the actual
-    # field `t′(k̂) = κ(k̂)·(t − α(k̂))` on the sphere, take its `ð` with SphericalFunctions,
-    # divide by `2κ`, and compare to `ðt′╱2κ[1,:] + t·ðt′╱2κ[2,:]`.  Nothing here touches the
-    # hand-expanded `λ = R̃v⃗R` polynomial or the derived `−(b·αₚ + ðα/2)` form: `k̂ = R𝐤R̃` comes
-    # from Quaternionic rotor action and `ð` from SphericalFunctions, so this independently
-    # verifies BOTH the closed form AND that SphericalFunctions' `ð` matches the convention the
-    # closed form was derived in.
+    # Fully independent, end-to-end numerical check of `compute_ðt′╱2κ`.  We build the
+    # actual field `t′(k̂) = κ(k̂)·(t − α(k̂))` on the sphere, take its `ð` with
+    # SphericalFunctions, divide by `2κ`, and compare to `ðt′╱2κ[1,:] + t·ðt′╱2κ[2,:]`.
+    # Nothing here touches the hand-expanded `λ = R̃v⃗R` polynomial or the derived `−(b·αₚ +
+    # ðα/2)` form: `k̂ = R𝐤R̃` comes from Quaternionic rotor action and `ð` from
+    # SphericalFunctions, so this independently verifies BOTH the closed form AND that
+    # SphericalFunctions' `ð` matches the convention the closed form was derived in.
     #
     # `κ = 1/(γ(1 − ℐv⃗·k̂))` is not band-limited, so `t′` is not either — but a tiny boost
     # (β ≈ 1e-3) with a large `ℓₘₐₓ` shrinks the out-of-band tail to `~β^ℓₘₐₓ`, far below
     # roundoff, so the spin-0 analysis (square `ₛ𝐘`) and the `ð` are exact and there is no
-    # aliasing.  The cross term `ðt′╱2κ[2,:]·αₚ` (the part that hid two sign errors) is `~1e-3`
-    # here — many orders above the agreement, so its sign is genuinely pinned.  Running at both
-    # `Float64` (≈1e-11) and `Double64` (≈4e-20) shows the residual tracks precision exactly,
-    # confirming it is roundoff/conditioning rather than a real discrepancy.
+    # aliasing.  The cross term `ðt′╱2κ[2,:]·αₚ` (the part that hid two sign errors) is
+    # `~1e-3` here — many orders above the agreement, so its sign is truly pinned down.
+    # Running at both `Float64` (≈1e-11) and `Double64` (≈4e-20) shows the residual tracks
+    # precision exactly, confirming it is roundoff/conditioning rather than a real
+    # discrepancy.
     rng = Random.Xoshiro(2718)
     for (T, rtol) ∈ ((Float64, 1e-8), (Double64, 1e-18))
         v⃗ = QuatVec{T}(7e-4, -5e-4, 9e-4)        # β ≈ 1.2e-3
@@ -457,7 +458,7 @@ end
     using Quaternionic: QuatVec, rotor
     using Random
 
-    # The sign formerly passed as c_α now lives in Conventions.c_α: transforming with
+    # The sign formerly passed as c_α is now stored in Conventions.c_α: transforming with
     # c_α = −1 must equal transforming with the default conventions and −α, exactly.
     rng = Xoshiro(21)
     ℓ, Nᵗ = 4, 10
@@ -705,8 +706,8 @@ end
 
     # Transform by g, then by inv(g), and compare against the *analytic* original data.
     # Each transformation shrinks the span of times with full-sphere coverage, so the
-    # round-trip output lives on a smaller grid; comparing against the closed-form time
-    # dependence of the input evaluates the original exactly at those final times, with
+    # round-trip result is returned on a "squeezed" grid; comparing against the closed-form
+    # time dependence of the input evaluates the original exactly at those final times, with
     # no interpolation oracle needed.  The tolerance is set by the spline floor and the
     # band-limit truncation of the mild boost.
     rng = Random.Xoshiro(6565)

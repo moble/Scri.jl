@@ -481,10 +481,10 @@ the flagplane is what ``𝐑_{γ𝐳}`` rotates (spin weight).
 
 The ``AN`` factors preserve both the flagpole's direction and the
 flagplane, so all the *positional* information — which flagpole, and
-which flagplane through it — is carried by the ``K`` factor alone.
+which flagplane through it — is encoded in the ``K`` factor alone.
 That is the geometric content of the statement above that ``𝐑_K``
-contains everything a spin-weighted field needs: it is the (unique,
-up to the equivariance already accounted for) rotation carrying the
+contains everything a spin-weighted field needs: it is the (unique, up
+to the equivariance already accounted for) rotation carrying the
 reference flagpole and flagplane at the pole onto those produced by
 the full transformation ``Λ``.
 

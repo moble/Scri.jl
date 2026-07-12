@@ -122,7 +122,7 @@ function transform!(
 
     # The time-law sign in t′ = κ(t − c_α α) comes from the data conventions; the remaining
     # convention factors (dyad rescaling of the mixing parameter and the F_σ/F_h shift
-    # factors) live in `mix_components!`, which reads them from `dc` itself.
+    # factors) are computed in `mix_components!`, which reads them from `dc` itself.
     c_α = dc.conventions.c_α
 
     ###
@@ -220,6 +220,8 @@ function transform!(
     # TaskFailedException.
     αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
     task_t′ = if isnothing(t′)
+        # `compute_t′` returns the vector and the crossover time tᵪ, but we don't need the
+        # latter, so just take the first element of the tuple.
         OhMyThreads.@spawn first(compute_t′(t, αₚ, Rₚ, v⃗, I))
     else
         validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
@@ -416,7 +418,7 @@ same component `:ψ₄`.  Alternatively, if the argument is `nothing` (the defau
 ``ℐ⁻``) will be chosen — though a warning will be issued.
 
 The `ℐ` and `conventions` keywords are used only when `data_components` is *not* already a
-`DataComponents` value (which carries its own).
+`DataComponents` value (which contains its own).
 """
 function transform!(
     data::Array{Complex{T1}},
@@ -471,14 +473,14 @@ Apply the BMS element `g` to `data` in place.  This convenience wrapper unpacks 
 velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity`](@ref),
 [`frame_rotation`](@ref), and [`supertranslation`](@ref) — and forwards to the main
 [`transform!`](@ref) method.  Because the accessors define `lorentz(g) = inv(Boost(v⃗) *
-Lorentz(R))`, these parts carry exactly the meaning the `v⃗` and `R` arguments have in the
+Lorentz(R))`, these parts have exactly the meaning the `v⃗` and `R` arguments have in the
 main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
 
-The data live on the null infinity singled out by `dc`'s `ℐ` type parameter, so `g` is
+The data are given on the null infinity singled out by `dc`'s `ℐ` type parameter, so `g` is
 first re-expressed in that representation — and with the supertranslation sign given by the
 data conventions' `c_α` — via the [`BMS`](@ref) conversion constructor, which accounts
-exactly for whatever conventions (`A`, `I`) `g` was constructed with.  Returns `(data,
-t′)`, as the main method does.
+exactly for whatever conventions (`A`, `I`) `g` was constructed with.  Returns `(data, t′)`,
+as the main method does.
 """
 function transform!(
     data::Array{<:Complex},

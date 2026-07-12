@@ -4,12 +4,13 @@
 
 Singleton types representing the numbers ``+1`` and ``-1`` *at the type level*.
 
-Their whole purpose is to make a sign that is fixed by a choice of convention disappear from the
-generated code.  Because the value lives in the type, multiplication is resolved at compile time:
-`One() * x` returns `x` itself (the very same object) and `MinusOne() * x` returns `-x`, so a
-convention factor of ``±1`` costs nothing (at most a negation) rather than a runtime multiply.
-Products of these singletons stay singletons (`MinusOne() * MinusOne() === One()`), so a chain
-like ``c_s c_ψ c_R`` collapses to a single `One`/`MinusOne` before it ever touches field data.
+Their whole purpose is to make a sign that is fixed by a choice of convention disappear from
+the generated code.  Because the value is encoded in the type, multiplication is resolved at
+compile time: `One() * x` returns `x` itself (the very same object) and `MinusOne() * x`
+returns `-x`, so a convention factor of ``±1`` costs nothing (at most a negation) rather
+than a runtime multiply.  Products of these singletons stay singletons (`MinusOne() *
+MinusOne() === One()`), so a chain like ``c_s c_ψ c_R`` collapses to a single
+`One`/`MinusOne` before it ever touches field data.
 
 They deliberately do **not** subtype `Number`.  A ``±1`` newtype that did would have to define
 `*(::One, ::Number)` and `convert(::Type{<:Number}, ::One)`, which then clash — irreconcilably,
@@ -70,7 +71,7 @@ Base.:^(::MinusOne, p::Integer) = iseven(p) ? One() : MinusOne()
 Base.:+(a::SignSingleton, b::SignSingleton) = signval(a) + signval(b)
 Base.:-(a::SignSingleton, b::SignSingleton) = signval(a) - signval(b)
 
-# Mixing a sign with a genuine number likewise falls back to ordinary arithmetic: the
+# Mixing a sign with a more specific number likewise falls back to ordinary arithmetic: the
 # singleton contributes its ``±1`` value.  (Unlike `*`/`/`, addition cannot elide the
 # operand, so there is nothing to gain by staying at the type level here.)
 Base.:+(a::SignSingleton, x::Number) = signval(a) + x
@@ -119,9 +120,10 @@ Base.show(io::IO, ::MinusOne) = print(io, "MinusOne()")
     signify(x)
 
 Normalize a convention value to its most specialized representation: an exact ``+1`` becomes
-`One()`, an exact ``-1`` becomes `MinusOne()`, and anything else is returned unchanged.  This is
-how the [`Conventions`](@ref) constructor turns the common ``±1`` factors into type-level
-constants while leaving genuine numbers (`-√2`, `1/√2`, a complex phase, …) as they are.
+`One()`, an exact ``-1`` becomes `MinusOne()`, and anything else is returned unchanged.
+This is how the [`Conventions`](@ref) constructor turns the common ``±1`` factors into
+type-level constants while leaving other numbers (`-√2`, `1/√2`, a complex phase, …) as they
+are.
 """
 function signify(x)
     if x == 1

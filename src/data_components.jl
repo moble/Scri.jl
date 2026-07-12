@@ -214,13 +214,13 @@ the order given by `dc`; `κ⁻¹`, the inverse conformal factor at this pixel; 
 Newman–Penrose ``ð``); `ð²α`, the second eth-derivative of the supertranslation at this
 pixel; and `dc`, the [`DataComponents`](@ref) descriptor.
 
-The convention factors come from the `Conventions` carried by `dc`, and appear in the laws
+The convention factors come from the `Conventions` contained in `dc`, and appear in the laws
 exactly as in the ["Convention dependence" documentation](@ref
 convention_dependence_fields): the towers run on ``c_l c_m\\, ðu′/2κ`` (on ``ℐ⁺``; the
-parameter is ``ð̄v′/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the
-shifts use ``F_σ`` from [`shear_factor`](@ref), ``F_λ`` from [`lambda_factor`](@ref), and
-``F_h`` from [`strain_factor`](@ref).  At the default conventions every factor is a `One`
-singleton and compiles away.
+parameter is ``ð̄v′/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the shifts
+use ``F_σ`` from [`shear_factor`](@ref), ``F_λ`` from [`lambda_factor`](@ref), and ``F_h``
+from [`strain_factor`](@ref).  At the default conventions every factor is a `One` singleton
+and compiles away.
 
 Note that Julia specializes on the concrete type of `dc`.  This means that the indexes into
 `dataᵢⱼ` for the various components are known at compile time, and the branches for which
@@ -360,7 +360,8 @@ end
 
 Re-express `data` — mode weights with dimensions `(Nᵐ, Nᵗ, Nᵈ)`, as for
 [`transform!`](@ref), described by `dc` — in the given `conventions`, in place.  Returns
-`(data, dc′)`, where `dc′` is a new `DataComponents` carrying the target conventions.
+`(data, dc′)`, where `dc′` is a new `DataComponents` object containing the target
+conventions.
 
 Each component slice is multiplied by the ratio of its [`conversion_factor`](@ref)s,
 ``F^{[\\text{to}]}/F^{[\\text{from}]}`` — a constant per component, so mode weights and pixel

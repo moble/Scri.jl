@@ -3,8 +3,8 @@
 # These suites test the composition law *without assuming its derivation*: every expected
 # value is produced by an independent oracle — the raw 4-vector action from Quaternionic,
 # Minkowski geometry of translations, or Wigner-D matrices — never by the composition law
-# itself.  The shared helpers (and the same philosophy) live in the `BMSTestSetup` module
-# defined alongside the implementation in src/bms.jl.
+# itself.  The shared helpers (and the same philosophy) are found in the `BMSTestSetup`
+# module defined alongside the implementation in src/bms.jl.
 
 @testitem "BMS: action-consistency of composition" tags = [:validation, :fast] setup = [
     BMSTestSetup
@@ -62,10 +62,10 @@ end
 
     # The metamorphic composition test, repeated on ℐ⁻ (ℐ = -1): acting with g₂∘g₁ must
     # equal acting with g₁ then g₂, where the reference action is computed from raw geometry
-    # with the antipodal section 𝐤 = (1, -k̂).  The elements carry the ℐ⁻ representation as
-    # their `ℐ` type parameter (attached to the same raw modes the oracle reads), and plain
-    # `compose` must thread the ℐ⁻ conformal factor and direction map through correctly,
-    # independently of the derivation.
+    # with the antipodal section 𝐤 = (1, -k̂).  The elements include the ℐ⁻ representation
+    # as their `ℐ` type parameter (attached to the same raw modes the oracle reads), and
+    # plain `compose` must thread the ℐ⁻ conformal factor and direction map through
+    # correctly, independently of the derivation.
     rng = Random.Xoshiro(3141)
     at_ℐ⁻(g) = Scri.BMS(g.Λ, g.α; ℐ=-1)
 
@@ -289,9 +289,9 @@ end
         @test (g * g₁) * g₂ ≈ g * (g₁ * g₂) atol = ϵ
     end
 
-    # Boosted elements: `inv` and `compose` truncate genuinely unbounded bandwidth, so
-    # the axioms hold only as the resolution grows; with mild boosts and ℓ-headroom the
-    # truncation tail sits far below these tolerances.
+    # Boosted elements: `inv` and `compose` truncate unbounded bandwidth, so the axioms hold
+    # only as the resolution grows; with mild boosts and ℓ-headroom the truncation tail sits
+    # far below these tolerances.
     for _ ∈ 1:3
         g = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=3//20)
         g⁻¹ = inv(g; ℓₘₐₓ=12)

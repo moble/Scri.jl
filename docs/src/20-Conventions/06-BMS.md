@@ -48,12 +48,13 @@ single BMS group.
 
 ## [Future and past null infinity](@id scri_pm_conventions)
 
-The data that we manipulate, and the various transformations live on a
-chosen piece of ``ℐ`` — the two pieces of which are future null
+The data that we manipulate *and* the various transformations exist on
+a chosen piece of ``ℐ`` — the two pieces of which are future null
 infinity ``ℐ⁺`` and past null infinity ``ℐ⁻``.  Knowing which piece we
 are working on is important, and we will frequently need to retain a
-sign to track that information in a variable which we will denote
-simply as ``ℐ``.  The sign is defined as
+sign to track that information.  By mild abuse of notation, we will
+denote this variable simply as ``ℐ`` — or `ℐ` in the code.  The sign
+is defined as
 
 ```math
 ℐ = \begin{cases}
@@ -87,7 +88,7 @@ by writing the null ray as ``𝐤 = (1, ℐ k̂)``.
 A supertranslation must be represented as a function on the sphere, so
 it is important to know which sphere is being used.  For example, it
 would be reasonable to define a supertranslation acting on ``ℐ⁻`` via
-its isomorphic BMS⁺ element.  Therefore each `BMS` object must carry a
+its isomorphic BMS⁺ element.  Therefore each `BMS` object must track a
 sign ``ℐ`` to indicate which piece of ``ℐ`` the supertranslation
 should be interpreted as acting on.
 
