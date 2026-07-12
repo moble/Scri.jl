@@ -126,38 +126,9 @@ data′, _ = transform!(data, t, v⃗, R, α, dc; t′=my_grid)
 The supplied grid must be strictly increasing and must stay within
 the valid span (an `ArgumentError` explains the limits if not).
 
-## Differentiability
-
-`transform!` can be differentiated end-to-end with
-[ForwardDiff](https://juliadiff.org/ForwardDiff.jl/) with respect to
-the BMS parameters — boost velocity, rotation, and supertranslation
-(hence also time and space translations).  Two things to know:
-
-* **Fix the output grid.**  Pass the `t′` keyword; otherwise the
-    default output grid itself moves with the parameters, and the
-    derivative of the data at output index `j` mixes the field
-    derivative with the motion of the grid.  With a fixed `t′`, you
-    get clean partial derivatives of the field at fixed output times —
-    which will usually be what you want in an optimization loop.  But
-    this means choosing the range of `t′` values to be small enough
-    that you are sure it will always be within the valid span for
-    every boost or supertranslation parameter value the optimization
-    loop will try.  [`Scri.compute_t′](@ref) — specifically the method
-    `compute_t′(t, β, δt)` takes the input time array `t` and
-    estimates for the largest boost speed `β` and supertranslation
-    magnitude `δt` you will see, and returns a time array guaranteed
-    to be valid for every transformation within those bounds.
-* **Load ForwardDiff.**  Doing so activates a package extension that
-    keeps dual numbers out of the parameter-independent pixel grid and
-    its matrix factorizations; without it, derivatives with respect to
-    the rotation come out as `NaN`.
-
-The `data` array must have the dual type (e.g.,
-`Complex{typeof(θ)}.(data)` for a differentiated parameter `θ` inside
-the differentiated function), since `transform!` works in place.
-Derivatives agree with finite differences at the `1e-8` level; see the
-testitem `"transform!: ForwardDiff derivatives with respect to BMS
-parameters"`.
+If you need to differentiate `transform!` with respect to the BMS
+parameters — for example, inside an optimization loop — see
+[Automatic Differentiation](@ref).
 
 ## Checking the result
 

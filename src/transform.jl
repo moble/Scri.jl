@@ -59,8 +59,8 @@ Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, 
 
 The transformation is differentiable end-to-end with ForwardDiff with respect to the BMS
 parameters, provided the output grid is held fixed with `t′` and ForwardDiff is loaded
-(activating a package extension); see the [Differentiability](@ref) section of the
-"Transforming Waveforms" documentation page.
+(activating a package extension); see the [Automatic Differentiation](@ref)
+documentation page.
 
 """
 function transform!(
