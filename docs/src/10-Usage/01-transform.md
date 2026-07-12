@@ -142,9 +142,11 @@ the BMS parameters — boost velocity, rotation, and supertranslation
     this means choosing the range of `t′` values to be small enough
     that you are sure it will always be within the valid span for
     every boost or supertranslation parameter value the optimization
-    loop will try.  See [`Scri.compute_t′_bounds`](@ref) for a utility
-    that computes the valid span for a given input grid and BMS
-    element.
+    loop will try.  [`Scri.compute_t′](@ref) — specifically the method
+    `compute_t′(t, β, δt)` takes the input time array `t` and
+    estimates for the largest boost speed `β` and supertranslation
+    magnitude `δt` you will see, and returns a time array guaranteed
+    to be valid for every transformation within those bounds.
 * **Load ForwardDiff.**  Doing so activates a package extension that
     keeps dual numbers out of the parameter-independent pixel grid and
     its matrix factorizations; without it, derivatives with respect to

@@ -26,7 +26,7 @@ using Pkg
 Pkg.add("Scri")
 ```
 
-## Example Usage
+## Quick Start
 
 The main functionality of the package is provided by the
 [`transform!`](@ref) function, which takes as input a set of waveforms
@@ -41,10 +41,10 @@ Random.seed!(1234)  # hide
 using Quaternionic
 using Scri
 
-# You have to tell the transform what components are in the data array
+# The transform needs to know what components are in the data array
 data_components = ("h", "Psi4")
 
-# Construct random test data
+# Construct data (this is just random example data)
 ℓₘₐₓ = 8
 Nᵗ = 10_000
 Nᵐ = (ℓₘₐₓ + 1)^2
@@ -82,9 +82,9 @@ data layout, the calling forms, and the returned time grid.
 
 ## Performance
 
-The transformation is heavily multithreaded.  Start Julia with threads
-enabled — e.g., `julia -t auto` — or `transform!` will run on a single
-core.  The dominant costs scale steeply with the angular band limit,
+The transformation scales well with multithreading.  Start Julia with
+threads enabled to get the greatest efficiency — e.g., `julia -t
+auto`.  The dominant costs scale steeply with the angular band limit,
 so read [Choosing ``ℓ_\mathrm{max}``](@ref) before padding your data
 to very high ``ℓ``.
 

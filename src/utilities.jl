@@ -71,11 +71,60 @@ function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=One())
             "the time coordinate closer to the average value of t.",
         )
     end
+    return rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
+end
+
+"""
+    rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
+
+Map the input time samples `t` affinely onto the span `[t′ₘᵢₙ, t′ₘₐₓ]`, returning the new
+grid `t′` together with the crossover time `tᵪ` at which `t′ = t` (the fixed point of the
+affine map).  This is the common grid-construction step of the [`compute_t′`](@ref)
+methods.
+"""
+function rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
+    tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
     t′ = @. t′ₘᵢₙ + scale * (t - tₘᵢₙ)
     t′[end] = t′ₘₐₓ  # ensure exact endpoint to avoid extrapolation
     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
     return t′, tᵪ
+end
+
+"""
+    compute_t′(t, β, δt)
+
+Construct a single output time grid `t′` that is guaranteed to consist of complete slices
+for *every* BMS transformation whose boost speed is at most `β` and whose supertranslation
+satisfies `|α(k̂)| ≤ δt` in every direction `k̂` — regardless of the boost direction, the
+frame rotation, and the choice of `ℐ = ±1`.
+
+This is the natural choice for the `t′` keyword of [`transform!`](@ref) in an optimization
+loop over BMS parameters, where the grid must remain valid at every parameter value the
+optimizer tries, and where differentiation with
+[ForwardDiff](https://juliadiff.org/ForwardDiff.jl/) requires the grid to be held fixed.
+Estimate an upper bound `β` on the boost speed and an upper bound `δt` on the magnitude of
+the supertranslation (including any time translation) that the optimizer may reach, and use
+the resulting grid for every evaluation.
+
+The grid is built exactly as in the exact-transformation method — an affine rescaling of `t`
+onto the worst-case span of [`compute_t′_bounds`](@ref) — and the return value is likewise
+`(t′, tᵪ)`, with `tᵪ` the fixed point of the affine map.  Because the span is a worst case,
+it is generally smaller than the exact span for any particular transformation.
+"""
+function compute_t′(t, β::Real, δt::Real)
+    tₘᵢₙ, tₘₐₓ = t[begin], t[end]
+    t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, β, δt)
+    if t′ₘₐₓ ≤ t′ₘᵢₙ
+        error(
+            "\n\tThere are no complete slices in the t′ coordinate system " *
+            "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)] in the worst case allowed by " *
+            "β = $β and δt = $δt." *
+            "\n\tYou may wish to decrease β or δt, or move the origin (zero) of " *
+            "the time coordinate closer to the average value of t.",
+        )
+    end
+    return rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
 end
 
 """
@@ -106,6 +155,35 @@ function compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=One())
         t′ₘᵢₙ = max(t′ₘᵢₙ, (tₘᵢₙ - αₚ[p]) / κ⁻¹)
         t′ₘₐₓ = min(t′ₘₐₓ, (tₘₐₓ - αₚ[p]) / κ⁻¹)
     end
+    return t′ₘᵢₙ, t′ₘₐₓ
+end
+
+"""
+    compute_t′_bounds(t, β, δt)
+
+Return the extreme values `(t′ₘᵢₙ, t′ₘₐₓ)` of a transformed time grid that remain valid for
+*every* BMS transformation whose boost speed is at most `β` and whose supertranslation
+satisfies `|α(k̂)| ≤ δt` in every direction `k̂`.  This is the worst-case counterpart of the
+exact-transformation method above, for use when the transformation is not yet known — most
+commonly in an optimization loop over BMS parameters, where a single fixed `t′` grid must
+stay within the valid span at every parameter value the optimizer tries.
+
+The bounds follow from the per-direction constraint `t′/κ(k̂) + α(k̂) ∈ [t[begin], t[end]]`:
+the conformal factor `1/κ = γ(1 - ℐ v⃗⋅k̂)` ranges over `[γ(1-β), γ(1+β)]` as the direction
+varies, and the supertranslation over `[-δt, δt]`, so taking the adverse extreme of each
+gives a span contained in the exact span of any admissible transformation.  The boost
+direction, the frame rotation, and the choice of `ℐ = ±1` only move these extremes around
+the sphere, so none of them affects the result.  A returned pair with `t′ₘₐₓ ≤ t′ₘᵢₙ` means
+that some admissible transformation may leave no complete slice.
+"""
+function compute_t′_bounds(t, β::Real, δt::Real)
+    0 ≤ β < 1 || throw(ArgumentError("Boost-speed bound must satisfy 0 ≤ β < 1; got β=$β"))
+    δt ≥ 0 || throw(ArgumentError("Supertranslation bound must satisfy δt ≥ 0; got δt=$δt"))
+    γ = 1 / √(1 - β^2)
+    κ⁻¹₋, κ⁻¹₊ = γ * (1 - β), γ * (1 + β)
+    tₘᵢₙ, tₘₐₓ = t[begin], t[end]
+    t′ₘᵢₙ = max((tₘᵢₙ + δt) / κ⁻¹₋, (tₘᵢₙ + δt) / κ⁻¹₊)
+    t′ₘₐₓ = min((tₘₐₓ - δt) / κ⁻¹₋, (tₘₐₓ - δt) / κ⁻¹₊)
     return t′ₘᵢₙ, t′ₘₐₓ
 end
 
