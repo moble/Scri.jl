@@ -127,6 +127,24 @@ function compute_t′(t, β::Real, δt::Real)
     return rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
 end
 
+@doc raw"""
+    v⃗dotk̂(Rₚᵢ, vˣ, vʸ, vᶻ)
+
+Compute ``v⃗ ⋅ k̂`` for the direction ``k̂ = Rₚᵢ 𝐤 R̃ₚᵢ`` singled out by the pixel rotor
+`Rₚᵢ` — the third column of the rotation matrix of `Rₚᵢ`, contracted with the boost
+velocity components.  This is the angular dependence entering the inverse conformal factor
+``1/κ = γ(1 - ℐ v⃗⋅k̂)``.  Generic over the component types, so `Rₚᵢ` and the velocity may
+carry dual numbers.
+"""
+@inline function v⃗dotk̂(Rₚᵢ, vˣ, vʸ, vᶻ)
+    (Rʷ, Rˣ, Rʸ, Rᶻ) = components(Rₚᵢ)
+    return (
+        2vˣ * (Rʷ * Rʸ + Rˣ * Rᶻ) +
+        2vʸ * (Rʸ * Rᶻ - Rʷ * Rˣ) +
+        vᶻ * (Rʷ^2 + Rᶻ^2 - Rˣ^2 - Rʸ^2)
+    )
+end
+
 """
     compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=1)
 
@@ -145,13 +163,7 @@ function compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=One())
     T = promote_type(eltype(t), eltype(αₚ), typeof(γ))
     t′ₘᵢₙ, t′ₘₐₓ = typemin(T), typemax(T)
     @inbounds @simd for p ∈ eachindex(αₚ, Rₚ)
-        (Rʷ, Rˣ, Rʸ, Rᶻ) = components(Rₚ[p])
-        v⃗dotk̂ = (
-            2vˣ * (Rʷ * Rʸ + Rˣ * Rᶻ) +
-            2vʸ * (Rʸ * Rᶻ - Rʷ * Rˣ) +
-            vᶻ * (Rʷ^2 + Rᶻ^2 - Rˣ^2 - Rʸ^2)
-        )
-        κ⁻¹ = γ * (1 - ℐ * v⃗dotk̂)
+        κ⁻¹ = γ * (1 - ℐ * v⃗dotk̂(Rₚ[p], vˣ, vʸ, vᶻ))
         t′ₘᵢₙ = max(t′ₘᵢₙ, (tₘᵢₙ - αₚ[p]) / κ⁻¹)
         t′ₘₐₓ = min(t′ₘₐₓ, (tₘₐₓ - αₚ[p]) / κ⁻¹)
     end
@@ -190,20 +202,19 @@ end
 """
     validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=1)
 
-Check that a user-supplied output time grid `t′` is usable by [`transform!`](@ref): it must
-have the same length as `t`, be strictly increasing, and lie within the pixel-wise bounds
-of [`compute_t′_bounds`](@ref) (up to a small roundoff allowance), so that no pixel ever
-requires extrapolation beyond the input time span.  Throws an `ArgumentError` otherwise;
-returns `t′` for convenience.
+Check that a user-supplied output time grid `t′` is usable by [`transform!`](@ref) or
+[`transform_objective`](@ref): it must be nonempty, strictly increasing, and lie within
+the pixel-wise bounds of [`compute_t′_bounds`](@ref) (up to a small roundoff allowance),
+so that no pixel ever requires extrapolation beyond the input time span.  Throws an
+`ArgumentError` otherwise; returns `t′` for convenience.
+
+Note that this function does *not* require `length(t′) == length(t)`; that restriction
+applies only to [`transform!`](@ref) — which writes its result back into `data` in place —
+and is enforced at its call site.  [`transform_objective`](@ref) and
+[`pixel_waveform`](@ref) accept output grids of any length.
 """
 function validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=One())
-    if length(t′) != length(t)
-        throw(
-            ArgumentError(
-                "Supplied `t′` has $(length(t′)) samples, but `t` has $(length(t))"
-            ),
-        )
-    end
+    isempty(t′) && throw(ArgumentError("Supplied `t′` must have at least one sample"))
     issorted(t′; lt=(≤)) ||
         throw(ArgumentError("Supplied `t′` must be strictly increasing"))
     t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)

@@ -13,13 +13,13 @@ astronomy.
 
 ## Installation
 
-From the Julia REPL, press `]` to enter the package manager, then run:
+From the Julia REPL, press `]` to enter the package manager, then run
 
 ```julia
 pkg> add Scri
 ```
 
-Or equivalently, from any Julia session:
+Or equivalently, in any Julia session or script run
 
 ```julia
 using Pkg
@@ -72,15 +72,15 @@ A few very important points:
       from 0 (even for nonzero spin weight), then increasing ``m``,
       and the third axis matching `data_components` in length and
       order.
-  3. The supertranslation `α` above was constructed randomly, so it
-      doesn't represent a real-valued function; `transform!`
-      automatically imposes the reality condition by averaging each
-      mode with its complex-conjugate partner.
+  3. The supertranslation `α` is a real-valued function given as
+      (scalar) spherical-harmonic mode weights.  These weights were
+      constructed randomly, so they don't represent a real-valued
+      function; `transform!` automatically imposes the reality
+      condition by averaging each mode with its appropriately signed
+      complex-conjugate partner.
 
-See [Transforming Waveforms](@ref) for the full description of the
-data layout, the calling forms, and the returned time grid.
-
-## Performance
+See [Transforming Waveforms](@ref) for more details, including the
+data layout, the signatures, and the returned time grid.
 
 The transformation scales well with multithreading.  Start Julia with
 threads enabled to get the greatest efficiency — e.g., `julia -t

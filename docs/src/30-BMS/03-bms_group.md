@@ -219,7 +219,7 @@ radius are one and the same.
     rotational invariance to align the boost with any direction we
     like, so the result is general.
 
-### From the null cone to ``ℐ⁺``
+### [From the null cone to ``ℐ⁺``](@id from_cone_to_scri)
 
 The construction so far was embedded in Minkowski space, with ``𝒩⁺``
 the null cone of a single point and the fiber ``ℝ⁺`` acting by
@@ -239,15 +239,66 @@ sphere,
 π : ℐ⁺ → 𝕊² = ℐ⁺ / (\text{generators}).
 ```
 
-This is the same bundle projection as before, with one substitution:
-the null direction is now *tangent* to ``ℐ⁺`` — the generator — rather
-than a radial arrow from a point, and the fiber is the retarded-time
-line ``ℝ`` in place of the dilation group ``ℝ⁺``.  The two are the same
-one-dimensional abelian group (``ℝ⁺ ≅ ℝ`` under ``log``): dilation of
-the Minkowski null cone is the linear shadow of the affine ``u``-flow
-along generators.  In Minkowski the generators of ``ℐ⁺`` are labeled by
-exactly the directions ``k̂`` of the null rays through the origin, which
-is why the null-cone model is faithful.
+This is the same bundle projection as before, but the change runs
+deeper than swapping one fiber for another.  ``ℐ⁺`` is itself a null
+cone: in the compactified spacetime its generators all converge on
+future timelike infinity, so ``ℐ⁺`` is the *past* light cone of
+``i⁺`` — an *absorption* cone — whereas the model we built was the
+*future* light cone of a bulk point, an *emission* cone.  And the two
+kinds of cone are ruled by *opposite* legs of the null pair.  For a
+bulk vertex the comparison is elementary.  The future cone of the
+origin has generator ``\{ λ\,(1, k̂) \mid λ > 0 \}`` at sky direction
+``k̂``: its tangent is the outgoing leg ``ℓ ∝ (1, k̂)``.  The past
+cone of the origin consists of points ``-s\,(1, p̂)``, which sit at
+sky direction ``k̂ = -p̂`` and have future-pointing tangent ``(1, p̂)
+= (1, -k̂) ∝ 𝐧``: the *ingoing* leg at that sky position.  This is
+exactly the situation at ``ℐ⁺``: the outgoing ray with tangent ``ℓ ∝
+(1, k̂)`` *ends* there, striking ``ℐ⁺`` transversally, while the
+generator through the same point runs along the other leg, ``𝐧 ∝ (1,
+-k̂)`` — the ``ñ = \sqrt{2}\,∂ᵤ`` of [the standard tetrad](@ref
+"Tetrad"), with the retarded time ``u`` flowing along it.
+
+The null-cone model is therefore faithful as a bundle over the sphere
+— in Minkowski the generators of ``ℐ⁺`` are labeled by exactly the
+directions ``k̂`` of the null rays through the origin — but *not*
+leg-by-leg.  Following any generator of the origin's cone out to
+infinity, the retarded time ``u = t - r = 0`` is constant, so the
+entire cone arrives at the single cut ``u = 0`` of ``ℐ⁺``: the
+dilation direction collapses at infinity, and the internal direction
+that replaces it — the one the fiber ``ℝ`` of retarded time runs along
+— is the *other* member of the null pair.  The two fibers are
+abstractly the same one-dimensional abelian group (``ℝ⁺ ≅ ℝ`` under
+``\log``), but they are attached along opposite null legs.  Passing
+from the null cone to ``ℐ⁺`` swaps the degenerate direction of the
+data surface from ``ℓ`` to ``𝐧``, while keeping the same celestial
+sphere with the same labels.
+
+!!! details "Isn't ``ℐ⁺`` also the light cone of ``i⁰``?"
+
+    In compactified Minkowski the same surface can equally be
+    described as the future light cone of spatial infinity ``i⁰`` —
+    the cone of ``i⁰`` refocuses at ``i⁺``.  But the bulk analogy that
+    correctly predicts the tangent structure is the past-cone one: at
+    sky position ``k̂`` a bulk past cone is ruled by ``(1, -k̂) ∝
+    𝐧``, matching ``ñ = \sqrt{2}\,∂ᵤ``, whereas a bulk future cone is
+    ruled by ``ℓ``, which at ``ℐ⁺`` is transverse.  When in doubt,
+    trust the tetrad: the generator is the leg the time coordinate
+    flows along.
+
+This swap is not bookkeeping; it decides which transformations act
+*within* the surface.  Every BMS transformation maps generators of
+``ℐ⁺`` to generators — the fibration is preserved — but no foliation
+by cross-sections is preserved: there is no invariant family of cuts,
+and that failure *is* the supertranslation freedom introduced below.
+A transformation relating two frames adapted to ``ℐ⁺`` must therefore
+fix the generator direction ``𝐧`` at each point, while nothing fixes
+the transverse ``ℓ``.  In the language of [the Lorentz page](@ref
+which_null_direction), tetrad transitions at ``ℐ⁺`` lie in the
+stabilizer ``MAN_{𝐧}`` of the generator, so field components mix by
+null rotations about ``𝐧`` — worked out on [the tetrad page](@ref
+"BMS Action on the Tetrad") — whereas characteristic data on an
+outgoing null cone, or radiation at ``ℐ⁻`` (the future light cone of
+``i⁻``, ruled like an emission cone), selects ``N_{ℓ}`` instead.
 
 Two features of ``ℐ⁺`` are worth isolating, because the rest of the page
 rests on them:

@@ -162,20 +162,38 @@ We can write
 m̃' = d \left(m̃ + \frac{ðu'}{2 κ} ñ\right).
 ```
 
-It remains to fix ``d``.  The Lorentz part of the BMS transformation
-is a single rotor ``L ∈ \mathrm{Spin}⁺(3,1)``.  Carried to the pole
-and factored [as for the Lorentz group](@ref "Iwasawa and Hopf"), its
-three pieces act on ``𝐦`` one at a time.  The null rotation ``N``
-fixes ``ñ`` and reproduces the shift ``m̃ ↦ m̃ + (ðu'/2κ)\,ñ`` found
-above, and is just the [null rotation worked out earlier](@ref "Null
-rotations") with the roles of ``\boldsymbol{ℓ}`` and ``𝐧`` exchanged.
-Its coefficient is linear in ``u`` because ``m̃`` and ``m̃'`` are
+It remains to fix ``d`` — but first, note what kind of object the
+mixing we just found is.  Both tetrads are adapted to ``ℐ⁺``: each has
+its ``ñ`` tangent to the generators.  A transformation relating two
+frames adapted to a null hypersurface must preserve the one null
+direction the surface itself singles out, and [the stabilizer of a
+null direction](@ref which_null_direction) — here ``𝐧`` — is exactly
+the four-parameter subgroup ``MAN_{𝐧}``: a spin about it, a boost
+along it, and the null rotations ``N_{𝐧}`` fixing it.  The shift ``m̃
+↦ m̃ + (ðu'/2κ)\,ñ`` found above is the ``N_{𝐧}`` piece: it is the
+[null rotation worked out earlier](@ref "Null rotations") with the
+roles of ``\boldsymbol{ℓ}`` and ``𝐧`` exchanged.  It is *not*,
+however, a factor of the Lorentz rotor ``L`` itself.  Expanding
+
+```math
+ðu' = (ðκ)\left[u - c_α α\right] - κ\, c_α\, ðα,
+```
+
+the parameter collects two separate contributions.  The first is the
+*tilt of the cuts*, linear in ``u`` because ``m̃`` and ``m̃'`` are
 tangent to *different* cuts — of constant ``u`` and of constant ``u'``
 — and the angle-dependent rescaling ``u' = κu`` tilts those cuts apart
-at a rate set by the lever arm ``u``.  The shift therefore vanishes on
-the boost's fixed cut ``u = 0`` and grows linearly up the generator,
-as the null rotation's shear should.  That leaves the boost ``A`` and
-the spin ``K`` to supply ``d``, and each is a one-line computation.
+at a rate set by the lever arm ``u``; it vanishes on the boost's fixed
+cut ``u = 0`` and grows linearly up the generator, as a null
+rotation's shear should.  The second is the *shear a supertranslation
+imprints*, proportional to ``ðα`` and present even when ``L = 1``.  A
+fixed rotor could reproduce neither the ``u``-dependence nor the ``L =
+1`` case, so the honest definition of the null-rotation parameter is
+the coordinate derivative ``ðu'`` itself.  What the Lorentz rotor
+*does* supply — carried to the pole and factored [as for the Lorentz
+group](@ref "Iwasawa and Hopf") — is the spin–boost part, which the
+[two parabolics share](@ref which_null_direction): the boost ``A`` and
+the spin ``K`` fix ``d``, each by a one-line computation.
 
 The ``K`` factor is the Hopf-fiber rotor ``R_γ =
 \exp\left[\tfrac{γ}{2} 𝐱𝐲\right]``, a rotation about the null
@@ -358,7 +376,10 @@ m̃' &= \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðv'}{2κ}\, l̃\right), \\
 ```
 
 The only structural change is that the null rotation now fixes ``l̃``
-(the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it.  That
+(the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it: the
+mixing lives in ``N_{\boldsymbol{ℓ}}`` rather than ``N_{𝐧}``, as
+befits the [future light cone of ``i⁻``](@ref from_cone_to_scri),
+which is ruled like an emission cone.  That
 same exchange reverses the peeling tower of the [field
 components](@ref "BMS Action on Fields"): the component left unmixed by
 the null rotation is the one assembled from the most factors of the

@@ -7,12 +7,13 @@ CurrentModule = Scri
 A general BMS element is the composition of three simpler
 transformations, which this package applies in a fixed order:
 supertranslation ``α`` first, then spatial rotation ``R``, then boost
-``v⃗``.  Each of the three is specified in the coordinate system of the
-initial, inertial observer ``A``, and each is described below as if it
+``v⃗``.  Each of the three is specified in the coordinate system of
+the initial, inertial observer, and each is described below as if it
 were acting alone.  Throughout, we use the *passive* convention: the
 spacetime events are fixed, and it is the coordinates used to describe
-them that change (see [BMS Transformations](@ref) for the theory, and
-[The BMS Group](@ref bms_group) for the group structure).
+them that change (see [BMS Transformations](@ref) for some details
+about conventions, and [The Lorentz Group](@ref) and [The BMS
+Group](@ref bms_group) for the underlying theory).
 
 ## The three parts
 

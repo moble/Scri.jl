@@ -12,7 +12,8 @@ import Quaternionic:
     basetype,
     from_spherical_coordinates,
     ℂreal
-import SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors, D_matrices, WignerDindex
+import SphericalFunctions:
+    ₛ𝐘, ð, golden_ratio_spiral_rotors, D_matrices, WignerDindex, sYlm_prep, sYlm_values!
 import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
 import OffsetArrays: OffsetVector
 import Logging
@@ -51,6 +52,8 @@ include("bms.jl")
 include("transform.jl")
 
 export transform!,
+    transform_objective,
+    pixel_waveform,
     diagnostics,
     BMS,
     DataComponents,

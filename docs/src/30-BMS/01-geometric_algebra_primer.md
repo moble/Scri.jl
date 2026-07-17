@@ -38,7 +38,7 @@
     tilde is the *reverse*, defined below), so that composition of
     transformations is just multiplication of rotors.  The character of
     the transformation is fixed by the square of the generator:
-    ``(𝐱𝐲)² = -1`` gives the trigonometric form above — an ordinary
+    ``(𝐱𝐲)² = -1`` produces the trigonometric form above — an ordinary
     rotation; ``(𝐭𝐳)² = +1`` makes the functions hyperbolic — a boost;
     and a *null* generator truncates the series — a "null rotation".
     All three cases are worked out on [The Lorentz Group](@ref) page.
@@ -236,7 +236,7 @@ There is a corollary that is also important for our purposes:
 > expressed as the product of _an even number_ of at most ``p+q``
 > simple reflections.
 
-Composing two reflections gives conjugation by a product of two unit
+Composing two reflections is the same as conjugation by a product of two unit
 vectors — a _rotor_ ``R`` — acting as ``𝐯 ↦ R𝐯R̃``.  The tilde here
 denotes the _reverse_ operation, which swaps the order of the vectors
 in any product; for a product of unit vectors this is the inverse, so

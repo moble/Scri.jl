@@ -4,9 +4,9 @@ Here, our focus is on using Geometric Algebra (GA) to understand and
 implement Lorentz transformations — and to decompose those
 transformations into conventional pieces.  In the context of spacetime
 and Lorentz transformations, GA allows us to work with null tetrads
-and the Lorentz group in a more intuitive and geometrically meaningful
-way.  This treatment ties in surprisingly neatly with the approach via
-stereographic coordinates and conformal transformations
+and the Lorentz group ``ℒ`` in a more intuitive and geometrically
+meaningful way.  This treatment ties in neatly with the classical
+approach via stereographic coordinates and complex analysis
 [PenroseRindler_1984, PenroseRindler_1986, ODonnell_2003](@cite),
 while retaining clearer connections to the underlying geometry.
 
@@ -49,26 +49,26 @@ and the only nonzero inner products are
 ```
 
 This simple tetrad is aligned with the axes of the standard basis, but
-we can apply any Lorentz transformation to it to get a more general
-null tetrad.  In particular, we can apply an ordinary rotation to
-"point" ``\boldsymbol{ℓ}`` in any direction we like.  This suggests
-the standard factorization of the Lorentz group, beginning with
-rotations tied to the spherical coordinates, followed by rotations
-about the radial direction, followed by boosts in the radial
-direction, and finally followed by null rotations about the rotated
-``\boldsymbol{ℓ}``.  We will discuss these transformations in more
-detail below, but the important point is that we decompose a general
-Lorentz transformation *specifically with respect to* either
+we can apply any Lorentz transformation to it to get the null tetrad
+appropriate to any other observer.  In particular, we can apply an
+ordinary rotation to "point" ``\boldsymbol{ℓ}`` in any direction we
+like.  This suggests the standard factorization of the Lorentz group,
+beginning with rotations tied to the spherical coordinates, followed
+by rotations about the radial direction, followed by boosts in the
+radial direction, and finally followed by null rotations about the
+rotated ``\boldsymbol{ℓ}``.  We will discuss these transformations in
+more detail below, but the important point is that we decompose a
+general Lorentz transformation *specifically with respect to* either
 ``\boldsymbol{ℓ}`` or ``𝐧``.
 
-## The Lorentz group
+## The Lorentz group ``ℒ``
 
 Before we decompose the (proper orthochronous) Lorentz group, we need
-to understand how the Lorentz group shows up in Geometric Algebra.  The
-answer is already implicit in [the primer](@ref "A Primer on Geometric
-Algebra"): every proper orthochronous Lorentz transformation is a rotor
-``R ∈ \mathrm{Spin}⁺(3,1)`` — an even, unit-norm product of vectors —
-acting on a vector by conjugation,
+to understand how the Lorentz group shows up in Geometric Algebra.
+The answer is already implicit in [the primer](@ref "A Primer on
+Geometric Algebra"): every proper orthochronous Lorentz transformation
+is a rotor ``R ∈ \mathrm{Spin}⁺(3,1)`` — the product of an even number
+of unit-norm vectors — acting on a vector ``𝐯`` by conjugation,
 
 ```math
 𝐯' = R\, 𝐯\, R̃,
@@ -76,20 +76,24 @@ acting on a vector by conjugation,
 
 with composition of transformations given by multiplication of rotors.
 Each rotor is the exponential of a bivector, and the *type* of
-transformation is fixed by the sign of that bivector's square — exactly
-the three cases met in the primer.
+transformation is fixed by the sign of that bivector's square:
+negative for pure rotations, positive for pure boosts, and zero for
+null rotations.
 
 A **rotation** comes from a *spatial* bivector, which squares to
-``-1``.  Writing ``𝐢 = 𝐳𝐲``, ``𝐣 = 𝐱𝐳``, ``𝐤 = 𝐲𝐱`` for the three
-spatial bivectors, a rotation by angle ``θ`` in the plane of a unit
-bivector ``𝐁`` is
+``-1``.  Writing ``𝐢 = 𝐳𝐲``, ``𝐣 = 𝐱𝐳``, ``𝐤 = 𝐲𝐱`` for the
+three basis spatial bivectors, a rotation by angle ``θ`` in the plane
+of a unit bivector ``𝐁`` is
 
 ```math
 R = \exp\left[\frac{θ}{2} 𝐁\right] = \cos\frac{θ}{2} + 𝐁 \sin\frac{θ}{2}.
 ```
 
 These involve no factor of ``𝐭`` and generate the maximal compact
-subgroup ``\mathrm{Spin}(3)``.
+subgroup ``\mathrm{Spin}(3)``.  Note that this is exactly [Euler's
+formula](https://en.wikipedia.org/wiki/Euler's_formula), with the
+bivector playing the role of ``i``.  (In fact, complex analysis is
+just GA in two dimensions, with ``i = 𝐱𝐲``.)
 
 A **boost** comes from a *timelike* bivector, which squares to ``+1``.
 A boost along ``𝐳`` with rapidity ``φ`` is
@@ -98,8 +102,11 @@ A boost along ``𝐳`` with rapidity ``φ`` is
 R = \exp\left[\frac{φ}{2} 𝐭𝐳\right] = \cosh\frac{φ}{2} + 𝐭𝐳 \sinh\frac{φ}{2},
 ```
 
-the trigonometric functions turned hyperbolic by ``(𝐭𝐳)² = +1``.  The
-speed is ``β = \tanh φ`` and the Lorentz factor is ``γ = \cosh φ``.
+the trigonometric functions turned hyperbolic by ``(𝐭𝐳)² = +1``.
+The speed is ``β = \tanh φ`` and the Lorentz factor is ``γ = \cosh
+φ``.  This *similar to* Euler's formula, but with hyperbolic trig
+functions replacing the circular ones because the bivector squares to
+``+1`` instead of ``-1``.
 
 Rotations and boosts together already generate the whole proper
 orthochronous group, but there is a third, degenerate case that will
@@ -114,7 +121,7 @@ A null rotation is a very particular type of Lorentz transformation
 (sometimes called a [parabolic
 transformation](https://en.wikipedia.org/wiki/Lorentz_group#Parabolic))
 that leaves a chosen null vector invariant.  The basic idea is that
-the null rotation simultaneously boosts in a direction orthogonal to
+the null rotation *simultaneously* boosts in a direction orthogonal to
 the null vector, and rotates in the plane defined by that direction
 and the null vector — with the rotation being exactly what is needed
 to leave the null direction unchanged.
@@ -136,7 +143,7 @@ which will be important.  Now, for any (not necessarily unit) vector
 ``\boldsymbol{ℓ ξ} = -\boldsymbol{ξ ℓ}`` generates a null rotation.
 More specifically, this bivector generates a boost in the
 ``\boldsymbol{ξ}`` direction, and *simultaneously* a rotation in the
-``\boldsymbol{ξ}``-``𝐳`` plane.  Specifically, we expand the product
+``\boldsymbol{ξ}``-``𝐳`` plane.  To see this, we expand the product
 
 ```math
 \boldsymbol{ℓ ξ} = \frac{𝐭\boldsymbol{ξ} + 𝐳\boldsymbol{ξ}}{\sqrt{2}}.
@@ -144,7 +151,9 @@ More specifically, this bivector generates a boost in the
 
 The ``𝐭\boldsymbol{ξ}`` term generates a boost in the
 ``\boldsymbol{ξ}`` direction, and the ``𝐳\boldsymbol{ξ}`` term
-generates a rotation in the ``\boldsymbol{ξ}``-``𝐳`` plane.
+generates the rotation in the ``\boldsymbol{ξ}``-``𝐳`` plane that
+counteracts the mixing that would give ``\boldsymbol{ℓ}`` a component
+along ``\boldsymbol{ξ}``.
 
 Define the spinor
 
@@ -153,15 +162,33 @@ Define the spinor
 ```
 
 Because ``\boldsymbol{ℓ}² = 0``, the exponential series terminates
-after the second term, and we have
+after the second term.  That is, because ``\boldsymbol{ℓ}`` and
+``\boldsymbol{ξ}`` are orthogonal, they anticommute, so
+
+```math
+\left(\boldsymbol{ℓ ξ}\right)^2
+=\boldsymbol{ℓ ξ ℓ ξ}
+=-\boldsymbol{ℓ ℓ ξ ξ}
+=-\boldsymbol{ℓ}^2 \boldsymbol{ξ}^2
+= 0.
+```
+
+Therefore, we have
 
 ```math
 𝐑 = 1 + \frac{1}{2} \boldsymbol{ℓ ξ},
 ```
 
-which makes calculations particularly simple.  The results on the
-basis ``(𝐭, 𝐱, 𝐲, 𝐳)`` are not enlightening, but the results on
-the ``(\boldsymbol{ℓ}, 𝐧, 𝐦, 𝐦̄)`` basis are very interesting:
+which makes calculations particularly simple.  The fact that the
+generator of this transformation ``\tfrac{1}{2} \boldsymbol{ℓ ξ}``
+squares to zero makes it "nilpotent", which means that the group of
+null rotations about ``\boldsymbol{ℓ}`` is a nilpotent Lie group.
+This becomes important below, where the nilpotent property gives this
+group its distinction as the "N" of the "KAN" decomposition.
+
+The action on the basis ``(𝐭, 𝐱, 𝐲, 𝐳)`` is not enlightening, but
+the results on the ``(\boldsymbol{ℓ}, 𝐦, 𝐦̄, 𝐧)`` basis are nicely
+systematic:
 
 ```math
 \begin{aligned}
@@ -175,27 +202,95 @@ the ``(\boldsymbol{ℓ}, 𝐧, 𝐦, 𝐦̄)`` basis are very interesting:
 This is just the usual conformal transformation of the tetrad, though
 exhibited in a simpler and more geometric form.
 
+!!! details "Conformal representations and the stereographic approach"
+
+    In general, it is possible to represent the geometry of a normed
+    vector space ``ℝ^{p,q}`` use the "conformal representation", which
+    introduces two new vectors, one timelike and one spacelike.
+    Points in ``ℝ^{p,q}`` are represented as null vectors in
+    ``ℝ^{p+1,q+1}``.  The value of adding these extra dimensions is
+    that *extended* objects like lines, planes, hyperplanes, circles,
+    and higher-dimensional spheres can all be represented by objects
+    in the geometric algebra of this higher-dimensional space.
+    Intersections, tangencies, and transformations of these extended
+    objects are then obtained as simple algebraic operations using
+    geometric algebra.
+
+    In fact, the field of "Conformal Geometric Algebra" is built on
+    this fact and the facility with which GA represents its
+    transformations [DoranLasenby_2003](@cite), and so has become a
+    standard tool in computer graphics and robotics for describing
+    transformations of the plane and 3D space.
+
+    A closely related fact is that the conformal group of ``ℝ^{p,q}``
+    is isomorphic to the connected component of the identity of the
+    group ``\mathrm{SO}(p+1,q+1)``.  Though generally only true for
+    ``p+q > 2``, the case ``(p,q)=(2,0)`` qualifies with some caveats
+    [Schottenloher_2008; Theorems 2.9 and 2.11](@cite).  In our case,
+    ``ℝ^{2,0}`` is the  ``𝐱``-``𝐲`` plane, and this says that the
+    conformal group of the plane is isomorphic to
+    ``\mathrm{SO}^+(3,1)``, which is exactly the Lorentz group!  But
+    complex algebra is precisely the geometric algebra of the
+    ``𝐱``-``𝐲`` plane, so complex analysis is exactly what we need to
+    analyze the Lorentz group in this approach.
+
+    In *most* applications of these facts, ``ℝ^{p,q}`` is generally
+    the physical space of interest, and the extra two dimensions are
+    essentially fictitious — invented to take advantage of this
+    mathematical trick.  What's remarkable about the stereographic /
+    complex approach pioneered by Penrose is that it *reverses* this
+    picture.  Null vectors in the full physical spacetime are the
+    objects of interest and Lorentz is the crucial group, whereas the
+    complex plane and its conformal transformations are mathematical
+    artifice.  And yet, with help from complex analysis, this plane
+    becomes the primary analysis tool for the null cone and for the
+    Lorentz group in the BMS literature.
+
+    Geometric Algebra actually bridges both pictures; it allows us to
+    directly manipulate both general Lorentz transformations and the
+    complex representation using the same language and notation.
+
+Nothing in this construction relies on our particular choice of
+``\boldsymbol{ℓ}``.  In particular, exchanging ``\boldsymbol{ℓ} ↔ 𝐧``
+throughout yields the family of null rotations that fix ``𝐧``
+instead, shifting ``𝐦`` along ``𝐧`` and sending ``\boldsymbol{ℓ} ↦
+\boldsymbol{ℓ} + \boldsymbol{ξ} + \tfrac{1}{2} ξ²\, 𝐧``.  When the
+distinction matters we subscript each family by the null vector it
+fixes — ``N_{\boldsymbol{ℓ}}`` versus ``N_{𝐧}``.  The question of
+*which* family acts on radiation data at null infinity turns out to be
+surprisingly delicate; see [Which null direction?](@ref
+which_null_direction) below.
+
 ## Cartan (polar) decomposition
 
-There are two natural ways to factor a general rotor ``Λ ∈
-\mathrm{Spin}⁺(3,1)``, and we will use both.  The first is the one
-closest to physical intuition: every proper orthochronous Lorentz
-transformation is a boost followed by a rotation,
+There are two natural ways to factor a general rotor ``Λ ∈ ℒ =
+\mathrm{Spin}⁺(3,1)``, and we will use both.  The first is somewhat
+simpler, factoring an arbitrary transformation into a boost
+followed by a rotation:
 
 ```math
-Λ = B(v⃗)\, R,
+Λ = R\, B.
 ```
 
-with ``B(v⃗) = \exp\left[\tfrac{φ}{2} 𝐭v̂\right]`` a pure boost of
+This is the *Cartan decomposition*, which — in general — takes an
+arbitrary semisimple Lie group ``G`` and factors it into the product
+of a compact subgroup ``K`` and non-compact part ``P`` so that ``G =
+K\, P``.  Here, the compact subgroup is the rotation group
+``\mathrm{Spin}(3)``, and the non-compact part is the set of boosts.
+(Note that ``P`` is not a subgroup, because it is not closed under
+multiplication.)  The decomposition is not unique, but is determined
+by a choice of time axis.
+
+
+with ``B = \exp\left[\tfrac{φ}{2} 𝐭v̂\right]`` a pure boost of
 velocity ``v⃗ = (\tanh φ)\, v̂`` and ``R ∈ \mathrm{Spin}(3)`` a pure
-rotation.  This is the *polar decomposition* of the rotor — the
-group-theoretic *Cartan decomposition* ``G = \exp(𝔭)\, K``, with the
-boosts the noncompact part ``𝔭`` and the rotations the compact part
-``K`` — and it is unique.  It is the sense in which two boosts in
-different directions compose to "a boost plus a Wigner rotation":
-multiplying two pure boosts yields a rotor whose polar decomposition has
-a nontrivial ``R`` (see the [aberration page](@ref "Wigner rotation:
-composition of non-collinear boosts")).
+rotation.
+
+  It is the sense in which two boosts in different directions
+compose to "a boost plus a Wigner rotation": multiplying two pure
+boosts yields a rotor whose polar decomposition has a nontrivial ``R``
+(see the [aberration page](@ref "Wigner rotation: composition of
+non-collinear boosts")).
 
 The factorization is cheap, with no transcendental functions and no
 square roots of the transformation.  `Quaternionic.jl` represents a
@@ -451,8 +546,12 @@ f\left(Λ\, 𝐑_{γ𝐳}\, 𝐑_{φₐ𝐳}\right)
 ```
 
 The null rotation ``𝐑_{\boldsymbol{ξ}}`` cannot satisfy such a simple
-equivariance condition; it must be accounted for by considering mixing
-of the tetrad as shown above.  But the effect of ``𝐑_{φₐ𝐳}`` can be
+equivariance condition — in fact no equivariance weight for null
+rotations can exist at all — so it must be accounted for by mixing of
+the tetrad components.  Which null rotations do that mixing — those
+fixing ``\boldsymbol{ℓ}`` or those fixing ``𝐧`` — is a sharper
+question than it looks; see [Which null direction?](@ref
+which_null_direction).  But the effect of ``𝐑_{φₐ𝐳}`` can be
 accounted for with a simple multiplication by ``e^{b φₐ}`` — which we
 will see is essentially the conformal factor ``κ`` to the appropriate
 power.  So information about the direction of propagation and tangent
@@ -523,8 +622,112 @@ pure-rotation factor carrying the reference pair onto them is the
 ``K`` factor of that product.  This is exactly what
 [`aberration`](@ref Scri.aberration)`(R * R′ₚ, v⃗)` computes.  The
 ``A`` and ``N`` factors that the extraction discards are exactly the
-ones accounted for elsewhere — the conformal factor ``κ`` and the
-component mixing.
+ones accounted for elsewhere — the conformal factor ``κ``, and the
+component mixing, which re-enters in mirrored form as a null rotation
+about the generator ``𝐧`` (see [Which null direction?](@ref
+which_null_direction)).
+
+## [Which null direction?](@id which_null_direction)
+
+Everything above treated ``\boldsymbol{ℓ}`` as the special null
+direction: the ``N`` of ``KAN`` was chosen to fix ``\boldsymbol{ℓ}``,
+and the flagpole picture reinforced the choice.  But [as noted
+earlier](@ref "Null rotations"), nothing in the group forces it.  Null
+rotations about ``𝐧`` work just as well, and give a second Iwasawa
+decomposition,
+
+```math
+\mathrm{Spin}^+(3,1) = K\,A\,N_{\boldsymbol{ℓ}} = K\,A\,N_{𝐧},
+```
+
+with the *same* ``K`` and ``A``, and the nilpotent subgroups
+subscripted by the null vector they fix.  (The literature on
+semisimple groups [Knapp_1996](@cite) writes these as ``N`` and ``N̄``
+and calls them *opposite* nilpotent subgroups; we prefer the explicit
+subscripts.)  The two decompositions of a single rotor have genuinely
+different factors, so we must face a question the group theory alone
+cannot answer: when transforming radiation data, which null direction
+is the right one to build the decomposition around?
+
+Start with how much the two choices *share*.  Write
+
+```math
+M = \left\{ \exp\left[\frac{γ}{2} 𝐱𝐲\right] \right\} ≅ \mathrm{Spin}(2)
+```
+
+for the rotations about ``𝐳`` — the Hopf fiber inside ``K`` — so that
+``MA`` is the combined *spin–boost* subgroup.  Every element of ``MA``
+preserves *both* null rays at once, merely rescaling them oppositely:
+
+```math
+𝐑\, \boldsymbol{ℓ}\, 𝐑̃ = e^{φₐ}\, \boldsymbol{ℓ},
+\qquad
+𝐑\, 𝐧\, 𝐑̃ = e^{-φₐ}\, 𝐧,
+\qquad
+𝐑 = 𝐑_{γ𝐳}\, 𝐑_{φₐ𝐳} ∈ MA.
+```
+
+The full stabilizer of the ray ``[\boldsymbol{ℓ}]`` is the
+four-parameter subgroup ``MAN_{\boldsymbol{ℓ}}``, and the stabilizer
+of ``[𝐧]`` is ``MAN_{𝐧}``.  (Such stabilizers of null rays are
+called *parabolic subgroups*, and the piece ``MA`` common to both is
+called their *Levi factor*.)  The two stabilizers differ *only* in
+their nilpotent factors.  Now recall [the equivariance condition](@ref
+"Reversing the order"): spin weight and boost weight are the
+multipliers ``e^{isγ}`` and ``e^{bφₐ}`` picked up under
+right-multiplication by ``MA`` — they are characters of ``MA`` alone.
+Since ``MA`` is blind to the difference between ``\boldsymbol{ℓ}`` and
+``𝐧``, so is the entire weight apparatus.  Spin weight, boost weight,
+and the conformal rescaling are perfectly symmetric between the two
+null directions, and cannot distinguish them even in principle.
+
+Could a *null-rotation weight* break the tie?  No — and the reason is
+instructive.  Conjugating a null rotation by the boost dilates its
+generator,
+
+```math
+𝐑_{φₐ𝐳}\, \boldsymbol{ℓξ}\, 𝐑̃_{φₐ𝐳} = e^{φₐ}\, \boldsymbol{ℓξ},
+```
+
+since the boost rescales ``\boldsymbol{ℓ}`` and leaves the transverse
+``\boldsymbol{ξ}`` alone.  A multiplier ``χ`` for null rotations,
+consistent with the group structure, would therefore have to satisfy
+``χ(𝐑_{\boldsymbol{ξ}}) = χ(𝐑_{e^{φₐ}\boldsymbol{ξ}})`` for every
+``φₐ``; taking ``φₐ → -∞`` and using continuity forces ``χ ≡ 1``.
+There is no such thing as null-rotation weight.  A field component can
+at best be *invariant* under a family of null rotations; otherwise it
+must *mix* with other components — which is exactly what happens, on
+[the tetrad page](@ref "BMS Action on the Tetrad").
+
+So the choice cannot come from the group, nor from the weights.  It
+comes from the *surface carrying the data*.  A null hypersurface
+singles out, at each of its points, exactly one null direction — its
+generator, the degenerate direction of its induced metric — and a
+transformation relating two frames adapted to the surface must
+preserve that direction.  The frame transitions therefore live in the
+generator's stabilizer.  For radiation at ``ℐ⁺`` the generator is
+``𝐧``, not ``\boldsymbol{ℓ}`` — even though the radiation propagates
+along ``\boldsymbol{ℓ}`` — because ``ℐ⁺`` is ruled like an
+*absorption* cone rather than an emission cone; this is explained at
+[From the null cone to ``ℐ⁺``](@ref from_cone_to_scri).  The
+transitions at ``ℐ⁺`` thus lie in ``MAN_{𝐧}``, and components mix by
+null rotations about the generator.  At ``ℐ⁻``, and on the outgoing
+null cone of an emitter, the generator is ``\boldsymbol{ℓ}`` and the
+roles revert to ``MAN_{\boldsymbol{ℓ}}``.
+
+None of this demotes the ``\boldsymbol{ℓ}``-adapted decomposition used
+above; it just delimits its two jobs.  Its ``K`` factor is the *base
+map* — which generator, which flagpole and flagplane — and because
+``𝐑_K`` is a *rotation*, it carries the whole null pair
+``(\boldsymbol{ℓ}, 𝐧)`` at the pole onto the pair at the new point
+simultaneously, so the same ``K`` serves no matter which stabilizer
+the data surface selects.  Its ``A`` factor carries the boost weight,
+and ``A`` is common to both parabolics anyway.  The one factor that is
+*not* shared, ``N_{\boldsymbol{ℓ}}``, is also the one factor that
+never acts on the data by a weight; its physical effect re-enters in
+mirrored form, as the null rotation about the generator ``𝐧`` whose
+parameter is computed directly from the coordinate transformation on
+[the tetrad page](@ref "BMS Action on the Tetrad").
 
 ## Reinterpreting ``i``
 

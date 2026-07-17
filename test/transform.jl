@@ -972,3 +972,469 @@ end
         @test abs(d - fd) < 1e-6 * max(1.0, abs(fd))
     end
 end
+
+@testmodule PixelReconstruction begin
+    import Scri
+    import LinearAlgebra
+    import SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    using LinearAlgebra: qr
+
+    # Reconstruct the stage-2 pixel values from `transform!` output, exactly.  The
+    # augmented LU of the analysis stage solves [Q⊥ ₛY]·[ξ; modes] = pixels, so the
+    # pixels are recovered as ₛY·modes + Q⊥·ξ (plain ₛY·modes for s = 0), with Q⊥
+    # rebuilt exactly as in `transform!`.  The synthesis matrices are built at the
+    # primal type, so dual-typed mode data reconstruct through primal matrices.
+    function reconstruct_pixels(d′::AbstractArray{Complex{T},3}, dc) where {T}
+        Nᵐ, Nᵗ, Nᵈ = size(d′)
+        ℓₘₐₓ = isqrt(Nᵐ) - 1
+        T′ = Scri.primal_float(T)
+        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T′)
+        components = typeof(dc).parameters[1]
+        pixels = Array{Complex{T},3}(undef, Nᵐ, Nᵗ, Nᵈ)
+        for k ∈ 1:Nᵈ
+            s = Scri.spin_weight(Val(components[k]))
+            ₛY = ₛ𝐘(s, ℓₘₐₓ, T′, R′ₚ)
+            if s == 0
+                pixels[:, :, k] = ₛY * d′[:, :, k]
+            else
+                F = qr(ₛY)
+                Q = F.Q * Matrix{Bool}(LinearAlgebra.I, Nᵐ, Nᵐ)
+                Q⊥ = Q[:, (Nᵐ - s ^ 2 + 1):end]
+                pixels[:, :, k] = ₛY * d′[(s ^ 2 + 1):end, :, k] + Q⊥ * d′[1:(s ^ 2), :, k]
+            end
+        end
+        return pixels
+    end
+end
+
+@testitem "transform_objective: matches exact pixel reconstruction of transform!" tags = [
+    :unit, :validation
+] setup = [PixelReconstruction] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # The objective must equal Σ|pixels − target|², where the pixels are reconstructed
+    # exactly from `transform!` output — same transformation, two very different code
+    # paths (fused per-pixel dots vs GEMM synthesis + augmented-LU analysis roundtrip).
+    rng = Random.Xoshiro(4242)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 24
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(1e-2, -2e-2, 3e-2)
+    R = randn(rng, Rotor{Float64})
+    α = 0.1 * Random.randn(rng, ComplexF64, 9)
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃, :ψ₂)  # includes s = ∓2, ∓1, and 0
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 4)
+
+    d′, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′)
+    expected = sum(abs2, pixels .- target)
+
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    @test obj ≈ expected rtol = 1e-11
+
+    # `data` is read-only for the objective.
+    data₀ = copy(data)
+    Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    @test data == data₀
+end
+
+@testitem "transform_objective: ForwardDiff derivatives match finite differences" tags = [
+    :unit, :validation
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import ForwardDiff
+    import Random
+
+    # Clones of the `transform!` AD closures, but with no dual-typed copy of `data`
+    # inside — the whole point of `transform_objective` is that `data` stays primal.
+    rng = Random.Xoshiro(7171)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    R₀ = randn(rng, Rotor{Float64})
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    data₀[1:4, :, :] .= 0
+
+    _, t′₀ = Scri.transform!(
+        copy(data₀), copy(t), QuatVec(0.0, 0.0, 1e-3), R₀, zeros(ComplexF64, 4), dc
+    )
+    tc = (t′₀[begin] + t′₀[end]) / 2
+    t′fix = tc .+ 0.9 .* (t′₀ .- tc)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+
+    function by_boost(β::T) where {T}
+        return Scri.transform_objective(
+            data₀,
+            t,
+            QuatVec(zero(β), zero(β), β),
+            R₀,
+            zeros(Complex{T}, 4),
+            dc,
+            target;
+            t′=t′fix,
+        )
+    end
+    function by_δt(δt::T) where {T}
+        α = zeros(Complex{T}, 4)
+        α[1] = 2 * √T(π) * δt
+        return Scri.transform_objective(
+            data₀, t, QuatVec(0.0, 0.0, 1e-3), R₀, α, dc, target; t′=t′fix
+        )
+    end
+    function by_rotation(θ::T) where {T}
+        Rθ = Rotor{T}(R₀) * Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ))
+        return Scri.transform_objective(
+            data₀,
+            t,
+            QuatVec(zero(θ), zero(θ), zero(θ) + 1e-3),
+            Rθ,
+            zeros(Complex{T}, 4),
+            dc,
+            target;
+            t′=t′fix,
+        )
+    end
+
+    h = 1e-6
+    for (f, x₀) ∈ ((by_boost, 1e-3), (by_δt, 0.5), (by_rotation, 0.1))
+        d = ForwardDiff.derivative(f, x₀)
+        fd = (f(x₀ + h) - f(x₀ - h)) / 2h
+        @test isfinite(d)
+        @test abs(d - fd) < 1e-6 * max(1.0, abs(fd))
+    end
+end
+
+@testitem "transform_objective: derivatives match the memory-heavy dual reference" tags = [
+    :unit, :validation
+] setup = [PixelReconstruction] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import ForwardDiff
+    import Random
+
+    # The reference computes the same objective the memory-heavy way: dual-typed copy of
+    # `data` through `transform!`, exact pixel reconstruction (primal matrices × dual
+    # modes), then the same L² sum.  Same function, two computations — values and
+    # derivatives should agree far beyond finite-difference accuracy.
+    rng = Random.Xoshiro(7272)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    R₀ = randn(rng, Rotor{Float64})
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    data₀[1:4, :, :] .= 0
+
+    _, t′₀ = Scri.transform!(
+        copy(data₀), copy(t), QuatVec(0.0, 0.0, 1e-3), R₀, zeros(ComplexF64, 4), dc
+    )
+    tc = (t′₀[begin] + t′₀[end]) / 2
+    t′fix = tc .+ 0.9 .* (t′₀ .- tc)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+
+    function heavy(β::T) where {T}
+        data = Complex{T}.(data₀)
+        d, _ = Scri.transform!(
+            data,
+            copy(t),
+            QuatVec(zero(β), zero(β), β),
+            R₀,
+            zeros(Complex{T}, 4),
+            dc;
+            t′=t′fix,
+        )
+        pixels = PixelReconstruction.reconstruct_pixels(d, dc)
+        return sum(abs2, pixels .- target)
+    end
+    function lean(β::T) where {T}
+        return Scri.transform_objective(
+            data₀,
+            t,
+            QuatVec(zero(β), zero(β), β),
+            R₀,
+            zeros(Complex{T}, 4),
+            dc,
+            target;
+            t′=t′fix,
+        )
+    end
+
+    β₀ = 1e-3
+    @test lean(β₀) ≈ heavy(β₀) rtol = 1e-11
+    @test ForwardDiff.derivative(lean, β₀) ≈ ForwardDiff.derivative(heavy, β₀) rtol = 1e-9
+end
+
+@testitem "sYlm_values!: ForwardDiff duals through the Wigner-H recursion" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: Rotor, randn
+    using SphericalFunctions: sYlm_prep, sYlm_values!
+    import ForwardDiff
+    import Random
+
+    # `transform_objective` sends dual-typed rotors through `sYlm_values!`; the Wigner-H
+    # recursion inside is generic (its `@fastmath` sites fall back to ordinary ops for
+    # duals).  Check d/dθ of the ₛYₗₘ row under R(θ) = exp(θ𝐢/2)·R₀ against central
+    # finite differences, for every spin weight used by the data components, through
+    # random linear functionals of the row (covering real and imaginary parts).
+    rng = Random.Xoshiro(7373)
+    ℓₘₐₓ = 5
+    R₀ = randn(rng, Rotor{Float64})
+    c = Random.randn(rng, ComplexF64, (ℓₘₐₓ + 1)^2)
+    h = 1e-6
+    for s ∈ -2:2
+        function Yrow(θ::T) where {T}
+            storage = sYlm_prep(ℓₘₐₓ, 2, T)
+            Rθ = Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ)) * R₀
+            return copy(sYlm_values!(storage, Rθ, s))
+        end
+        for f ∈ (θ -> real(sum(c .* Yrow(θ))), θ -> imag(sum(c .* Yrow(θ))))
+            d = ForwardDiff.derivative(f, 0.1)
+            fd = (f(0.1 + h) - f(0.1 - h)) / 2h
+            @test isfinite(d)
+            @test abs(d - fd) < 1e-6 * max(1.0, abs(fd))
+        end
+    end
+end
+
+@testitem "transform_objective: declared input band limit ℓₘₐₓ₀ is exact and validated" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # Mirrors the `transform!` ℓₘₐₓ₀ testitem: on zero-padded data the declaration only
+    # skips provably-zero terms in the per-pixel dots, and a false declaration throws.
+    rng = Random.Xoshiro(7474)
+    ℓ₀ = 2
+    ℓ = 6
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(1e-3, -2e-3, 0.0)
+    R = randn(rng, Rotor{Float64})
+    α = 1e-2 * Random.randn(rng, ComplexF64, 4)
+    dc = Scri.DataComponents(:h, :ψ₄)
+
+    data = zeros(ComplexF64, N, Nᵗ, 2)
+    data[5:((ℓ₀ + 1) ^ 2), :, :] .= Random.randn(rng, ComplexF64, (ℓ₀ + 1)^2 - 4, Nᵗ, 2)
+
+    _, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
+
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    obj₀ = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ₀)
+    @test obj₀ ≈ obj rtol = 1e-13
+
+    # Out-of-range and violated declarations throw.
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ + 1
+    )
+    bad = copy(data)
+    bad[(ℓ₀ + 1) ^ 2 + 3, 1, 1] = 1.0
+    @test_throws ArgumentError Scri.transform_objective(
+        bad, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ₀
+    )
+end
+
+@testitem "transform_objective: determinism, weights, and input validation" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    rng = Random.Xoshiro(7575)
+    ℓ = 2
+    N = (ℓ + 1)^2
+    Nᵗ = 12
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    v⃗ = QuatVec(1e-2, 0.0, -1e-2)
+    R = randn(rng, Rotor{Float64})
+    α = 1e-2 * Random.randn(rng, ComplexF64, 4)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+
+    _, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
+    function obj(; weights=nothing, t′grid=t′)
+        return Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′grid, weights)
+    end
+
+    # Deterministic: repeated calls are bitwise identical, and unit weights match the
+    # default exactly.
+    @test obj() == obj()
+    @test obj(; weights=ones(N)) == obj()
+
+    # Nontrivial weights match the manually weighted sum of per-pixel objectives.
+    w = rand(rng, N)
+    onehot(i) = [j == i ? 1.0 : 0.0 for j ∈ 1:N]
+    per_pixel = [obj(; weights=onehot(i)) for i ∈ 1:N]
+    @test obj(; weights=w) ≈ sum(w .* per_pixel) rtol = 1e-13
+
+    # Bad shapes and grids throw.
+    @test_throws ArgumentError obj(; weights=ones(N - 1))
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target[:, :, 1:1]; t′=t′
+    )
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target[:, 1:(Nᵗ - 1), :]; t′=t′
+    )
+    @test_throws ArgumentError obj(; t′grid=reverse(t′))
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target[:, 1:0, :]; t′=t′[1:0]
+    )
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target; t′=t′ .+ 1000.0
+    )
+end
+
+@testitem "pixel_waveform: direct synthesis and interpolation-free grids" tags = [
+    :unit, :fast
+] begin
+    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    import Random
+
+    rng = Random.Xoshiro(7676)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 16
+    t = collect(LinRange(-8.0, 8.0, Nᵗ))
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃, :ψ₂)  # spins -2, -2, -1, 0
+    R′ₚ = golden_ratio_spiral_rotors(0, ℓ, Float64)
+
+    # Time-constant modes: splining a constant is exact, so every output slice must be
+    # the direct synthesis ₛ𝐘·modes, at every t′ — including a coarse, offset grid.
+    modes = Random.randn(rng, ComplexF64, N, 4)
+    data = repeat(reshape(modes, N, 1, 4), 1, Nᵗ, 1)
+    t′ = collect(LinRange(-7.3, 6.1, 5))
+    out = Scri.pixel_waveform(data, t, dc, t′)
+    @test size(out) == (N, 5, 4)
+    for (k, s) ∈ enumerate((-2, -2, -1, 0))
+        direct = ₛ𝐘(s, ℓ, Float64, R′ₚ) * modes[(s ^ 2 + 1):end, k]
+        for j ∈ 1:5
+            @test out[:, j, k] ≈ direct rtol = 1e-13
+        end
+    end
+
+    # t′ = t: interpolation lands exactly on the knots, so the result is just the
+    # synthesis of each time slice (roundoff only).
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 4)
+    out = Scri.pixel_waveform(data, t, dc, t)
+    for (k, s) ∈ enumerate((-2, -2, -1, 0))
+        direct = ₛ𝐘(s, ℓ, Float64, R′ₚ) * data[(s ^ 2 + 1):end, :, k]
+        @test out[:, :, k] ≈ direct rtol = 1e-13
+    end
+
+    # Grids outside the span of `t`, or non-increasing, or empty, are rejected.
+    @test_throws ArgumentError Scri.pixel_waveform(data, t, dc, t .- 1.0)
+    @test_throws ArgumentError Scri.pixel_waveform(data, t, dc, reverse(t))
+    @test_throws ArgumentError Scri.pixel_waveform(data, t, dc, Float64[])
+end
+
+@testitem "transform_objective: coarse output grids (Nᵗ′ ≠ Nᵗ)" tags = [:unit, :validation] setup = [
+    PixelReconstruction
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # The kernel evaluates each output time independently, so the objective on a coarse
+    # subset of a valid grid must equal the subset-sum of the fine-grid per-slice
+    # contributions — while `transform!` itself still requires length(t′) == length(t).
+    rng = Random.Xoshiro(7777)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 24
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(1e-2, 2e-2, -1e-2)
+    R = randn(rng, Rotor{Float64})
+    α = 0.1 * Random.randn(rng, ComplexF64, 4)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+
+    d′, t′f = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
+    target_f = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′f)
+
+    sub = 1:3:Nᵗ
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target_f[:, sub, :]; t′=t′f[sub])
+    expected = sum(abs2, pixels[:, sub, :] .- target_f[:, sub, :])
+    @test obj ≈ expected rtol = 1e-11
+
+    # A single-sample grid also works.
+    obj₁ = Scri.transform_objective(
+        data, t, v⃗, R, α, dc, target_f[:, 12:12, :]; t′=t′f[12:12]
+    )
+    @test obj₁ ≈ sum(abs2, pixels[:, 12, :] .- target_f[:, 12, :]) rtol = 1e-11
+
+    # `transform!` still rejects grids of the wrong length.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; t′=t′f[sub]
+    )
+end
+
+@testitem "transform!/transform_objective: generic v⃗/R arguments and dispatch" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # Plain-vector v⃗ and R must dispatch through the generic conversion methods and give
+    # bitwise-identical results — so AD users can pass slices of a parameter vector
+    # without touching Quaternionic.
+    rng = Random.Xoshiro(7878)
+    ℓ = 2
+    N = (ℓ + 1)^2
+    Nᵗ = 12
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    v⃗ = QuatVec(1e-2, -1e-2, 2e-2)
+    R = randn(rng, Rotor{Float64})
+    v⃗vec = [v⃗.x, v⃗.y, v⃗.z]
+    Rvec = [R.w, R.x, R.y, R.z]
+    α = 1e-2 * Random.randn(rng, ComplexF64, 4)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+
+    d₁, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    d₂, t′₂ = Scri.transform!(copy(data), copy(t), v⃗vec, Rvec, copy(α), dc)
+    @test d₁ == d₂
+    @test t′ == t′₂
+
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    @test Scri.transform_objective(data, t, v⃗vec, Rvec, α, dc, target; t′=t′) == obj
+    @test Scri.transform_objective(data, t, v⃗vec, R, α, dc, target; t′=t′) == obj
+
+    # The BMS convenience method matches the unpacked call, exactly as for `transform!`.
+    # The element's accessors describe a (slightly) different transformation than the raw
+    # (v⃗, R) above, so use a worst-case grid valid for both, and a matching target.
+    g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R)
+    t′w = first(Scri.compute_t′(t, 0.1, 0.5))
+    target_w = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′w)
+    expected = Scri.transform_objective(
+        data,
+        t,
+        Scri.boost_velocity(g),
+        Scri.frame_rotation(g),
+        Scri.supertranslation(g),
+        dc,
+        target_w;
+        t′=t′w,
+    )
+    @test Scri.transform_objective(data, t, g, dc, target_w; t′=t′w) == expected
+
+    # No method ambiguities are introduced by the convenience methods.  (A blanket
+    # `detect_ambiguities(Scri)` would also pick up a pre-existing, unrelated clash
+    # between ForwardDiff's `convert(::Type{Dual}, x)` and the `Signs` conversions
+    # whenever ForwardDiff happens to be loaded, so check just these functions.)
+    for f ∈ (Scri.transform!, Scri.transform_objective, Scri.pixel_waveform)
+        ms = collect(methods(f))
+        for i ∈ eachindex(ms), j ∈ 1:(i - 1)
+            @test !Base.isambiguous(ms[i], ms[j])
+        end
+    end
+end

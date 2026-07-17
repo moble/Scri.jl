@@ -12,6 +12,14 @@ following pages describe how to [specify the transformation](@ref
 "Data Components"), and how to [choose the angular resolution](@ref
 "Choosing ``ℓ_\mathrm{max}``").
 
+If you are optimizing the BMS parameters to minimize the difference
+with another waveform, you may want to use the
+[`transform_objective`](@ref) function instead, which is more
+efficient in both time and memory usage.  See the [Automatic
+Differentiation](@ref) page for details.  Still, that function is
+based on `transform!` — at least in spirit — so it is helpful to
+understand `transform!` before trying to use `transform_objective`.
+
 ## The data array
 
 The waveform data are passed as a single three-dimensional array of
@@ -34,19 +42,19 @@ complex numbers with dimensions ``(Nᵐ, Nᵗ, Nᵈ)``:
     [`DataComponents`](@ref) descriptor.
 
 The array's element type must be complex, with a real type at least as
-wide (referring to the number of bytes, or precision) as every other
+"wide" (referring to the number of bytes, or precision) as every other
 input's; `transform!` throws an `ArgumentError` otherwise, since it
 cannot widen the array it modifies in place.
 
 !!! note
 
-    Here, "first" means the most rapidly varying index in memory
-    (the leftmost index in Julia's column-major order).  If you are
-    transferring an array from Python, you probably won't be copying
-    it; it will be effectively transposed for you, so the *last*
-    dimension of the corresponding NumPy array will be the mode
-    index, the middle dimension will be time, and the first dimension
-    will be data component.
+    Here, the "first" dimension refers to the most rapidly varying
+    index in memory (the leftmost index in Julia's column-major
+    order).  If you are transferring an array from Python, you
+    probably won't be copying it; it will be effectively transposed
+    for you, so the *last* dimension of the corresponding NumPy array
+    will be the mode index, the middle dimension will be time, and
+    the first dimension will be data component.
 
 ## In-place semantics
 
@@ -66,7 +74,7 @@ usually want to *pad first* — embed the data in a larger array before
 transforming — as described under [Choosing
 ``ℓ_\mathrm{max}``](@ref).
 
-## Calling forms
+## Signatures
 
 The fully explicit form takes the transformation as separate parts —
 boost velocity `v⃗` (a `QuatVec`), frame rotation `R` (a `Rotor`), and
@@ -95,45 +103,45 @@ g = BMS(; boost_velocity=v⃗, frame_rotation=R, supertranslation=α)
 data′, t′ = transform!(data, t, g, dc)
 ```
 
-All three forms are described in detail on the next page,
-[Specifying a BMS Transformation](@ref).
+All three forms are described in detail on the next page, [Specifying
+a BMS Transformation](@ref).
 
 ## The output time grid
 
-Boosts and supertranslations mix time and direction, so a slice of
-constant transformed time ``t'`` is "tilted" with respect to the
-input slices, and slices near the ends of the input span are no
-longer covered by data over the whole sphere.  `transform!` therefore
-constructs a new time grid `t′` — with the same number of samples as
-`t`, uniformly covering the largest span for which every direction on
-the sphere has data — and returns it along with the data:
+Boosts and supertranslations mix time and space, so a slice of
+constant transformed time ``t'`` is "tilted" with respect to the input
+slices.  But each slice needs complete data over the whole sphere to
+supply the spherical-harmonic synthesis; the first such slice of
+``t'`` will be later than the first slice of ``t``, and the last slice
+of ``t'`` will be earlier than the last slice of ``t``.  This is a
+necessary feature of any transformation with a nonzero boost or
+supertranslation.  `transform!` therefore constructs a new time grid
+`t′` by *scaling* the input `t` to cover the largest possible span.
+In particular, `t'` has the same number of samples as `t`.  This `t′`
+is returned along with the data:
 
 ```julia
 data′, t′ = transform!(data, t, v⃗, R, α, dc)
 ```
 
-The transformed mode weights `data′[:, j, :]` are the data on the
-slice of constant transformed time `t′[j]`.
-
-If you need a specific output grid — most commonly in an optimization
-loop over BMS parameters, where a fixed grid makes iterations
-directly comparable — pass it with the `t′` keyword:
+It is *possible* to pass a custom `t′` array with the corresponding keyword:
 
 ```julia
 data′, _ = transform!(data, t, v⃗, R, α, dc; t′=my_grid)
 ```
 
-The supplied grid must be strictly increasing and must stay within
-the valid span (an `ArgumentError` explains the limits if not).
+However, the supplied grid must be strictly increasing, must stay
+within the valid span of ranges, and *must have the same number of
+samples as `t`*.  The latter is not a fundamental limitation, but the
+general case is not yet implemented, because the motivation is not yet
+clear.  The typical use case for this is probably covered by the
+[`transform_objective`](@ref) function; see the [Automatic
+Differentiation](@ref) page for details.
 
-If you need to differentiate `transform!` with respect to the BMS
-parameters — for example, inside an optimization loop — see
-[Automatic Differentiation](@ref).
-
-## Checking the result
+## Accuracy
 
 The transformation is spectrally accurate in angle but limited by the
-band limit ``ℓ_\mathrm{max}`` and by interpolation error in time.
-Use [`diagnostics`](@ref) to compute per-``ℓ`` power monitors of the
-input and output, and see [Choosing ``ℓ_\mathrm{max}``](@ref) and
-[Spline Errors](@ref) for how to interpret them.
+band limit ``ℓ_\mathrm{max}`` and by interpolation error in time.  Use
+[`diagnostics`](@ref) to compute per-``ℓ`` power monitors of the input
+and output, and see [Choosing ``ℓ_\mathrm{max}``](@ref) and [Spline
+Errors](@ref) for how to interpret them.
