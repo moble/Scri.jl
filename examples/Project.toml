@@ -11,3 +11,6 @@ Scri = "ccc3add2-6548-56f5-a99b-c07b0a26ef59"
 
 [sources]
 Scri = {path = ".."}
+
+[compat]
+JLD2 = "0.6.5"
