@@ -47,7 +47,7 @@ Base.:*(::One, ::MinusOne) = MinusOne()
 Base.:*(::MinusOne, ::One) = MinusOne()
 Base.:*(::MinusOne, ::MinusOne) = One()
 
-# Division and inverse (needed by e.g. the strain factor's ``c_h^{-1}`` and ratios of Weyl
+# Division and inverse (needed by e.g., the strain factor's ``c_h^{-1}`` and ratios of Weyl
 # factors); ``±1`` is its own inverse, and dividing by/into it is the same elision.
 Base.:/(x::Number, ::One) = x
 Base.:/(x::Number, ::MinusOne) = -x
@@ -110,7 +110,7 @@ Base.convert(::Type{T}, ::One) where {T<:Number} = one(T)
 Base.convert(::Type{T}, ::MinusOne) where {T<:Number} = -one(T)
 Base.promote_rule(::Type{<:SignSingleton}, ::Type{T}) where {T<:Number} = T
 
-# Broadcast as a scalar (e.g. `A .*= f` where `f` may be a sign singleton).
+# Broadcast as a scalar (e.g., `A .*= f` where `f` may be a sign singleton).
 Base.broadcastable(x::SignSingleton) = Ref(x)
 
 Base.show(io::IO, ::One) = print(io, "One()")

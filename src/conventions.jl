@@ -16,7 +16,7 @@ Sign and scale factors setting conventions.  The parameters are
   - `c_α` for the supertranslation law
 
 For precise definitions of each of these factors, their allowed values, and the structural
-conventions this package fixes once and for all (e.g. ``l`` outgoing, ``m``'s handedness,
+conventions this package fixes once and for all (e.g., ``l`` outgoing, ``m``'s handedness,
 ``h`` of spin weight ``-2``), see the [documentation](@ref conventions-overview).  The
 default values are all 1, corresponding to the SXS conventions.  The constructor validates
 the values: `c_s`, `c_R`, and `c_α` must be ``±1``; `c_l` must be real; `c_m` must have
@@ -87,7 +87,7 @@ function Conventions(;
     end
     # Exact ±1 → singleton (so common conventions elide); every other value is kept in its input
     # type verbatim, with no float conversion — extended-precision inputs stay exact, and it is
-    # the caller's job to combine them only through precision-preserving operations (e.g. `x / y`
+    # the caller's job to combine them only through precision-preserving operations (e.g., `x / y`
     # rather than `x * y^-1`, since an integer base to a negative power throws a `DomainError`).
     return Conventions(
         signify(c_s),

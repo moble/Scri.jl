@@ -733,7 +733,7 @@ mapping of a sphere to a plane must be.[^3]
     onto a point on the sphere.  For example, if we write
 
     ```math
-    \boldsymbol{ζ} = 𝐱\frac{θ}{2}\, \exp\left[ϕ𝐲𝐱\right]
+    \boldsymbol{ζ} = \frac{θ}{2}\, \exp\left[ϕ𝐲𝐱\right]𝐱
     ```
 
     the rotor ``R = \exp{\boldsymbol{ζ}𝐳}`` carries ``𝐳`` to the

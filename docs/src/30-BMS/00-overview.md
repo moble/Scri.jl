@@ -109,6 +109,6 @@ their tetrads.  As noted above, this is a subtle but critical part of
 understanding how the BMS group behaves.
 
 Finally, we discuss [how the BMS group act on fields](@ref "BMS Action
-on the Fields") used to describe the physical phenomena of interest.
-This is a relatively straightforward and simple application of the
+on Fields") used to describe the physical phenomena of interest.  This
+is a relatively straightforward and simple application of the
 coordinate- and tetrad-transformation laws.

@@ -96,7 +96,7 @@ end
 @testitem "aberration: KAN K factor matches Boyle (2015) oracle" tags = [:unit, :validation] setup = [
     AberrationSetup, AberrationOracle
 ] begin
-    import Quaternionic: Rotor, QuatVec, components, absvec
+    import Quaternionic: Rotor, QuatVec, Boost, components, absvec
     using .AberrationSetup: FloatTypes
     using Random: Xoshiro
 
@@ -121,13 +121,13 @@ end
         for β ∈ T.([1e-8, 1e-3, 0.1, 0.5, 0.9, 0.99])
             v⃗ = β * randdirection(T)
             for R ∈ rotors
-                @test components(Scri.aberration(R, v⃗, ℐ)) ≈
+                @test components(Scri.aberration(R, Boost(ℐ * v⃗))) ≈
                     components(AberrationOracle.aberration(R, v⃗; emitted)) atol = 50eps(T)
             end
         end
         # Near-pole configurations (k̂′ nearly parallel to ±v⃗).  Here the oracle takes its
         # Taylor branch (β·sinΘ̑ < ∛ϵ), which is a series in β alone — accurate for small β,
-        # but wrong when β is large and only sinΘ̑ is small (e.g. at δ = 1e-7, β = 0.99, ℐ⁺,
+        # but wrong when β is large and only sinΘ̑ is small (e.g., at δ = 1e-7, β = 0.99, ℐ⁺,
         # the rotor x-component should be e⁻ᵠ·δ/2 ≈ 3.544e-9; the KAN K factor gets this
         # right, while the Taylor branch returns 9.25e-10).  So evaluate the oracle at
         # BigFloat, where β·sinΘ̑ ≫ ∛eps(BigFloat) keeps it in its well-conditioned exact
@@ -138,7 +138,76 @@ end
             oracle = AberrationOracle.aberration(
                 Rotor{BigFloat}(R), QuatVec{BigFloat}(v⃗); emitted
             )
-            @test components(Scri.aberration(R, v⃗, ℐ)) ≈ T.(components(oracle)) atol = 50ϵ
+            @test components(Scri.aberration(R, Boost(ℐ * v⃗))) ≈ T.(components(oracle)) atol =
+                50ϵ
+        end
+    end
+end
+
+@testitem "aberration: is the K factor of a genuine KAN factorization" tags = [
+    :unit, :validation
+] setup = [AberrationSetup] begin
+    import Random
+    import Quaternionic:
+        Rotor, Quaternion, QuatVec, Boost, KAN, components, normalize, randn
+    using .AberrationSetup: FloatTypes
+
+    # The docstring's central claim is that `aberration` returns the ``K`` factor of the
+    # Iwasawa ``KAN`` decomposition of `Λ * R′ₚᵢ`.  The other tests here verify
+    # *consequences* of that claim (the direction map, the spin phase against the Boyle
+    # (2015) oracle, the group identities).  This one verifies the claim itself, and does
+    # so without trusting `Quaternionic.KAN`'s internals — which compute the same
+    # idempotent projection, so bare agreement with `KAN`'s first return value would be a
+    # tautology rather than a test.
+    #
+    # Instead we take `A` and `N` from `KAN` merely as *candidate* factors and check the
+    # defining properties directly:
+    #
+    #   1. `K * A * N` reconstructs `Λ * R′ₚᵢ`,
+    #   2. `K` is a real rotor — a pure rotation, so `K ∈ Spin(3)`,
+    #   3. `A = coshφₐ╱2 + sinhφₐ╱2 𝐭𝐳` — a boost along the preferred axis, so `A ∈ A`,
+    #   4. `N` fixes the null direction `ℓ` — components `(1, ζ, imζ, 0)`, so `N ∈ N`.
+    #
+    # Iwasawa's theorem says such a factorization is unique, so 1–4 together pin `K` to
+    # be *the* ``K`` factor.  This also fails loudly if `Quaternionic` ever changes its
+    # preferred time axis or null direction, which the Scri-local oracle cannot detect.
+    #
+    # β is capped at 0.999: the reconstruction in (1) involves cancellation between
+    # ultra-relativistic factors and is conditioned like γ, not like `aberration` itself
+    # (whose behavior out to β = 1 - 64eps is covered by the unit-norm tests below).
+    rng = Random.Xoshiro(4646)
+    for T ∈ FloatTypes, ℐ ∈ (-1, +1)
+        ϵ = eps(T)
+        for β ∈ T.([1//10^6, 1//1000, 1//2, 9//10, 999//1000]),
+            R′ₚᵢ ∈ (one(Rotor{T}), Rotor{T}(1, T(1)/10^7, 0, 0), randn(rng, Rotor{T}))
+
+            R = randn(rng, Rotor{T})  # frame rotation, as folded in by the caller
+            v⃗ = β * normalize(randn(rng, QuatVec{T}))
+            Λ = Boost(ℐ * v⃗) * R
+            K = Scri.aberration(R′ₚᵢ, Λ)
+            _, A, N = KAN(Λ * R′ₚᵢ)
+
+            # (1) K A N reconstructs the full transformation.  Compare as `Quaternion`s so
+            # that no constructor silently renormalizes the product away.
+            ΛR′ₚᵢ = Λ * R′ₚᵢ
+            scale = maximum(abs, components(ΛR′ₚᵢ))
+            @test maximum(abs, components(Quaternion(K * A * N) - Quaternion(ΛR′ₚᵢ))) <
+                100ϵ * scale
+
+            # (2) K is a rotation: real components, unit norm.
+            @test all(isreal, components(K))
+            @test abs(sum(abs2, components(K)) - 1) < 8ϵ
+
+            # (3) A is a boost along 𝐭𝐳 = im𝐤: scalar part real, no 𝐢/𝐣, 𝐤 part imaginary.
+            @test abs(imag(A[1])) < 8ϵ
+            @test abs(A[2]) < 8ϵ
+            @test abs(A[3]) < 8ϵ
+            @test abs(real(A[4])) < 8ϵ
+
+            # (4) N is a null rotation fixing ℓ: components (1, ζ, imζ, 0).
+            @test abs(N[1] - 1) < 8ϵ
+            @test abs(N[4]) < 8ϵ
+            @test abs(N[3] - im * N[2]) < 8ϵ
         end
     end
 end
@@ -146,7 +215,7 @@ end
 @testitem "aberration: geometric sign — equatorial pixel: cosΘ = ℐβ" tags = [
     :unit, :validation, :fast
 ] setup = [AberrationSetup] begin
-    import Quaternionic: Rotor, QuatVec, 𝐤
+    import Quaternionic: Rotor, QuatVec, Boost, 𝐤
     using .AberrationSetup: FloatTypes
 
     # R maps 𝐤 → 𝐢: rotation by π/2 about y.  This is an equatorial pixel (Θ̑ = π/2) for
@@ -158,7 +227,7 @@ end
             R = Rotor(cos(π/4), 0, sin(π/4), 0)
             for β ∈ T.([0.1, 0.3, 0.5, 0.7, 0.9])
                 v⃗ = QuatVec(0, 0, β)
-                R_rest = Scri.aberration(R, v⃗, ℐ)
+                R_rest = Scri.aberration(R, Boost(ℐ * v⃗))
                 k̂_rest = R_rest(𝐤)
                 # For pure vectors p, q: (p*q).w = −(p·q), so k̂_rest · ẑ = −(k̂_rest * 𝐤).w.
                 cos_Θ = -(k̂_rest * 𝐤).w
@@ -172,7 +241,7 @@ end
 @testitem "aberration: round-trip with inverse gives identity" tags = [:unit, :validation] setup = [
     AberrationSetup
 ] begin
-    import Quaternionic: Rotor, QuatVec, 𝐤, absvec, components, ×̂
+    import Quaternionic: Rotor, QuatVec, Boost, 𝐤, absvec, components, ×̂
     using .AberrationSetup: FloatTypes
 
     # boosted_rotor(v⃗, R) is an alternative implementation of the ℐ = -1 direction:
@@ -202,15 +271,15 @@ end
                 v⃗ = QuatVec(T(0.6) * β, T(-0.8) * β, 0)
                 # Cross-check against alternative implementation (looser tolerance due to acos).
                 R_boost = boosted_rotor(v⃗, R)
-                @test components(Scri.aberration(R_boost, v⃗)) ≈ components(R) atol =
+                @test components(Scri.aberration(R_boost, Boost(v⃗))) ≈ components(R) atol =
                     100eps(T)
                 # ℐ⁺ and ℐ⁻ are mutual inverses in both directions: the two differ only by
                 # v⃗ → -v⃗, and K(B(-v⃗) K(B(v⃗) R)) = R by uniqueness of the Iwasawa
                 # decomposition (B(-v⃗) cancels B(v⃗) and the leftover AN factor is absorbed).
                 for ℐ ∈ (-1, +1)
-                    R_first = Scri.aberration(R, v⃗, ℐ)
-                    @test components(Scri.aberration(R_first, v⃗, -ℐ)) ≈ components(R) atol =
-                        4eps(T)
+                    R_first = Scri.aberration(R, Boost(ℐ * v⃗))
+                    @test components(Scri.aberration(R_first, Boost(-ℐ * v⃗))) ≈
+                        components(R) atol = 4eps(T)
                 end
             end
         end
@@ -220,7 +289,7 @@ end
 @testitem "aberration: azimuthal symmetry — z-rotation commutes with z-boost" tags = [
     :unit, :validation, :fast
 ] setup = [AberrationSetup] begin
-    import Quaternionic: Rotor, QuatVec, components
+    import Quaternionic: Rotor, QuatVec, Boost, components
     using .AberrationSetup: FloatTypes
 
     # For boost along z, any rotation Rz about z preserves v⃗, so
@@ -233,8 +302,8 @@ end
                 v⃗ = QuatVec(0, 0, β)
                 for α ∈ [π/6, π/3, 2π/3]
                     Rz = Rotor(cos(α/2), 0, 0, sin(α/2))  # rotation by α about z
-                    lhs = Scri.aberration(Rz * R_base, v⃗)
-                    rhs = Rz * Scri.aberration(R_base, v⃗)
+                    lhs = Scri.aberration(Rz * R_base, Boost(v⃗))
+                    rhs = Rz * Scri.aberration(R_base, Boost(v⃗))
                     @test components(lhs) ≈ components(rhs) atol = 4eps(T)
                 end
             end
@@ -245,7 +314,7 @@ end
 @testitem "aberration: small-β precision — Float64 matches BigFloat" tags = [
     :unit, :validation, :fast
 ] begin
-    import Quaternionic: Rotor, QuatVec, components
+    import Quaternionic: Rotor, QuatVec, Boost, components
 
     # The old implementation needed a 5th-order Taylor branch when β·sinΘ̑ was small; the
     # KAN K-factor extraction is purely algebraic and globally nonsingular, so no branch
@@ -260,8 +329,10 @@ end
         θ = BigFloat(θ64)
         R_big = Rotor(cos(θ / 2), sin(θ / 2), 0, 0)
         v⃗_big = QuatVec(zero(BigFloat), 0, BigFloat(β64))
-        result_big = Scri.aberration(R_big, v⃗_big, ℐ)
-        result_f64 = Scri.aberration(Rotor{Float64}(R_big), QuatVec{Float64}(v⃗_big), ℐ)
+        result_big = Scri.aberration(R_big, Boost(ℐ * v⃗_big))
+        result_f64 = Scri.aberration(
+            Rotor{Float64}(R_big), Boost(ℐ * QuatVec{Float64}(v⃗_big))
+        )
         @test components(Rotor{Float64}(result_big)) ≈ components(result_f64) atol = 4eps()
     end
 end
@@ -293,14 +364,14 @@ end
                 Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
             ]
             for (η₁, k̂₁, η₂, k̂₂) ∈ boost_pairs
-                L₁ = Boost(η₁, k̂₁);
+                L₁ = Boost(η₁, k̂₁)
                 L₂ = Boost(η₂, k̂₂)
                 v⃗_eff, R_Wigner = Quaternionic.vR(L₂ * L₁)
                 v⃗₁ = tanh(η₁) * QuatVec(k̂₁[1], k̂₁[2], k̂₁[3])
                 v⃗₂ = tanh(η₂) * QuatVec(k̂₂[1], k̂₂[2], k̂₂[3])
                 for R ∈ rotors
-                    lhs = Scri.aberration(Scri.aberration(R, v⃗₁), v⃗₂)
-                    rhs = Scri.aberration(R_Wigner * R, v⃗_eff)
+                    lhs = Scri.aberration(Scri.aberration(R, Boost(v⃗₁)), Boost(v⃗₂))
+                    rhs = Scri.aberration(R_Wigner * R, Boost(v⃗_eff))
                     @test components(lhs) ≈ components(rhs) atol = 10eps(T)
                 end
             end
@@ -313,7 +384,7 @@ end
 ] begin
     using Scri: aberration
     import Random
-    using Quaternionic: Rotor, QuatVec, components, normalize, randn
+    using Quaternionic: Rotor, QuatVec, Boost, components, normalize, randn
     using .AberrationSetup: FloatTypes
 
     # The K factor is a unit rotor by construction (ℂℜ(Λu₊) normalized), but the
@@ -329,7 +400,7 @@ end
                 Rotor{T}(1, 1e-7, 0, 0),                   # pixel barely off the pole
             )
                 v⃗ = β * normalize(randn(rng, QuatVec{T}))
-                K = aberration(R, v⃗, ℐ)
+                K = aberration(R, Boost(ℐ * v⃗))
                 @test abs(sum(abs2, components(K)) - 1) ≤ 8eps(T)
             end
         end
@@ -338,7 +409,7 @@ end
 
 @testitem "aberration: robustness as β → 1" tags = [:unit, :fast] setup = [AberrationSetup] begin
     using Scri: aberration
-    using Quaternionic: Rotor, QuatVec, components
+    using Quaternionic: Rotor, QuatVec, Boost, components
     using .AberrationSetup: FloatTypes
 
     # The fragile paths of angle-based implementations (atanh(β) → ∞; exp(-φ)tan(Θ̑/2) → 0
@@ -353,7 +424,7 @@ end
     for β ∈ (0.9, 0.99, 0.999, 0.9999), ℐ ∈ (-1, +1)
         v⃗ = QuatVec(0.0, 0.0, β)
         for R ∈ pixels
-            K = aberration(R, v⃗, ℐ)
+            K = aberration(R, Boost(ℐ * v⃗))
             c = components(K)
             @test all(isfinite, c)
             @test abs(sum(abs2, c) - 1) ≤ 16eps()
@@ -366,7 +437,7 @@ end
 ] setup = [AberrationSetup] begin
     using Scri: aberration
     import Random
-    using Quaternionic: Rotor, QuatVec, components, normalize, randn
+    using Quaternionic: Rotor, QuatVec, Boost, components, normalize, randn
     using .AberrationSetup: FloatTypes
 
     # For ANY rotation Rf (not just about the boost axis),
@@ -380,8 +451,8 @@ end
             Rf = randn(rng, Rotor{T})
             β = T(9//10) * rand(rng, T)
             v⃗ = β * normalize(randn(rng, QuatVec{T}))
-            lhs = aberration(Rf * R, Rf(v⃗), ℐ)
-            rhs = Rf * aberration(R, v⃗, ℐ)
+            lhs = aberration(Rf * R, Boost(ℐ * Rf(v⃗)))
+            rhs = Rf * aberration(R, Boost(ℐ * v⃗))
             err = min(
                 maximum(abs, components(lhs - rhs)), maximum(abs, components(lhs + rhs))
             )
@@ -394,7 +465,7 @@ end
     AberrationSetup
 ] begin
     using Scri: aberration
-    using Quaternionic: Rotor, QuatVec, components, 𝐤
+    using Quaternionic: Rotor, QuatVec, Boost, components, 𝐤
     using LinearAlgebra: dot
 
     # The full formula cosΘ = (cosΘ̑ + ℐβ)/(1 + ℐβ cosΘ̑) on a grid of pixel angles Θ̑
@@ -405,7 +476,7 @@ end
         v⃗ = QuatVec(0.0, 0.0, β)
         for Θ̑ ∈ (π/6, π/4, π/3, π/2, 2π/3, 3π/4)
             R = Rotor{Float64}(cos(Θ̑ / 2), 0, sin(Θ̑ / 2), 0)  # rotate 𝐤 by Θ̑ about y
-            K = aberration(R, v⃗, ℐ)
+            K = aberration(R, Boost(ℐ * v⃗))
             k̂_rest = K(𝐤)
             cosΘ = dot([k̂_rest.x, k̂_rest.y, k̂_rest.z], [0, 0, 1.0])
             expected = (cos(Θ̑) + ℐ * β) / (1 + ℐ * β * cos(Θ̑))
@@ -419,7 +490,7 @@ end
 ] begin
     using Scri: aberration
     import Random
-    using Quaternionic: Rotor, QuatVec, components, randn
+    using Quaternionic: Rotor, QuatVec, Boost, components, randn
     using .AberrationSetup: FloatTypes
 
     # Two successive parallel boosts equal one boost at the relativistically composed
@@ -431,8 +502,8 @@ end
         β = (β₁ + β₂) / (1 + β₁ * β₂)
         for _ ∈ 1:4
             R = randn(rng, Rotor{Float64})
-            lhs = aberration(aberration(R, β₁ * v̂, ℐ), β₂ * v̂, ℐ)
-            rhs = aberration(R, β * v̂, ℐ)
+            lhs = aberration(aberration(R, Boost(ℐ * β₁ * v̂)), Boost(ℐ * β₂ * v̂))
+            rhs = aberration(R, Boost(ℐ * β * v̂))
             err = min(
                 maximum(abs, components(lhs - rhs)), maximum(abs, components(lhs + rhs))
             )
@@ -447,7 +518,7 @@ end
     using Scri: aberration
     import ForwardDiff
     import Random
-    using Quaternionic: Rotor, QuatVec, components, randn
+    using Quaternionic: Rotor, QuatVec, Boost, components, randn
 
     # `aberration` is purely algebraic with no branches, so it should differentiate
     # cleanly — including at small β, where angle-based implementations switch to Taylor
@@ -456,7 +527,7 @@ end
     rng = Random.Xoshiro(4545)
     R = randn(rng, Rotor{Float64})
     for ℐ ∈ (-1, +1), i ∈ 1:4
-        f(β) = components(aberration(R, QuatVec(zero(β), zero(β), β), ℐ))[i]
+        f(β) = components(aberration(R, Boost(ℐ * QuatVec(zero(β), zero(β), β))))[i]
         for β₀ ∈ (0.5, 1e-5, 0.0)
             d = ForwardDiff.derivative(f, β₀)
             @test isfinite(d)

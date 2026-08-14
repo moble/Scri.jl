@@ -270,6 +270,7 @@ function transform!(
     β = absvec(v⃗)
     γ = 1 / √(1 - β^2)
     vˣ, vʸ, vᶻ = vec(v⃗)
+    Λ = Boost(I * v⃗) * R
 
     # Compute uniformly spaced rotors that are simple to produce, but close to ideal for
     # sampling the sphere.  Use spin weight 0 to accommodate all fields on the same grid.
@@ -293,7 +294,7 @@ function transform!(
     # `ℐ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map;
     # see the `aberration` docstring and the "Future and past null infinity" conventions.
     Polyester.@batch for i ∈ eachindex(Rₚ)
-        Rₚ[i] = aberration(R * R′ₚ[i], v⃗, I)
+        Rₚ[i] = aberration(R′ₚ[i], Λ)
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
@@ -715,7 +716,7 @@ Dual numbers are confined to per-pixel scalars and a few task-local buffers of s
 `O(Nᵈ × Nᵗ)`, so the memory overhead of differentiation is negligible, and `data` can be
 reused across optimizer iterations without copying.  A `BMS`-valued transformation may be
 passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may be anything the `QuatVec` and
-`Rotor` constructors accept — e.g. plain vectors, such as slices of an optimizer's
+`Rotor` constructors accept — e.g., plain vectors, such as slices of an optimizer's
 parameter vector.
 
 The keyword `t′` is **required**: it is the fixed output time grid on which the
@@ -794,6 +795,7 @@ function transform_objective(
     β = absvec(v⃗)
     γ = 1 / √(1 - β^2)
     vˣ, vʸ, vᶻ = vec(v⃗)
+    Λ = Boost(I * v⃗) * R
 
     # The uniform output pixel grid is parameter-independent, so build it at the primal
     # float type (see `primal_float`), as in `transform!`.  The same goes for the ð
@@ -825,7 +827,7 @@ function transform_objective(
         OhMyThreads.@set scheduler = :static
         OhMyThreads.@set ntasks = nthreads()
         OhMyThreads.@local storage = sYlm_prep(ℓₘₐₓ, 2, TΘ)
-        Rₚ[i] = aberration(R * R′ₚ[i], v⃗, I)
+        Rₚ[i] = aberration(R′ₚ[i], Λ)
         # Evaluate α, ðα, and ð²α at this pixel by dotting each mode vector with the
         # matching ₛYₗₘ row (spins 0, 1, and 2).  Each `sYlm_values!` call overwrites the
         # storage, so each dot product completes before the next spin is computed.  The

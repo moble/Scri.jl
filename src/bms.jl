@@ -989,14 +989,15 @@ end
         end
     end
 
-    # transform_ray at ℐ⁻ agrees with the independently-tested `aberration(…, -1)`
-    # direction map (the same check test #9 makes at ℐ⁺), pinning the section convention.
+    # transform_ray at ℐ⁻ agrees with the independently-tested `aberration` direction map
+    # built with `Boost(-v⃗)` (the same check test #9 makes at ℐ⁺, with `Boost(v⃗)`), pinning
+    # the section convention.
     for _ ∈ 1:8
         R = random_rotation(rng, Float64)
         R′ₚ = random_rotation(rng, Float64)
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         g = BMS{Float64}(; frame_rotation=R, boost_velocity=v⃗)
-        k̂ᵣₑₛₜ = aberration(R * R′ₚ, v⃗, -1)(𝐤)
+        k̂ᵣₑₛₜ = aberration(R′ₚ, Boost(-v⃗) * R)(𝐤)
         _, k̂′ = transform_ray(g.Λ, k̂ᵣₑₛₜ; ℐ=-1)
         @test maximum(abs, components(k̂′ - R′ₚ(𝐤))) < 1e-12
     end
@@ -1184,9 +1185,9 @@ end
     import Random
     using Scri: aberration, transform_ray
     using .BMSTestSetup: random_direction, random_rotation
-    using Quaternionic: QuatVec, Rotor, components, 𝐤
+    using Quaternionic: QuatVec, Rotor, Boost, components, 𝐤
 
-    # transform! evaluates rest-frame data at Rₚ = aberration(R * R′ₚ, v⃗) to fill the
+    # transform! evaluates rest-frame data at Rₚ = aberration(R′ₚ, Boost(v⃗) * R) to fill the
     # transformed-frame pixel R′ₚ.  The BMS ray map must therefore take the rest-frame
     # direction Rₚ(𝐤) to the transformed-frame direction R′ₚ(𝐤).  This cross-validates
     # the stored Lorentz rotor (both the boost sign and the rotation/boost order) against
@@ -1197,7 +1198,7 @@ end
         R′ₚ = random_rotation(rng, Float64)
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         g = BMS{Float64}(; frame_rotation=R, boost_velocity=v⃗)
-        k̂ᵣₑₛₜ = aberration(R * R′ₚ, v⃗)(𝐤)
+        k̂ᵣₑₛₜ = aberration(R′ₚ, Boost(v⃗) * R)(𝐤)
         _, k̂′ = transform_ray(g.Λ, k̂ᵣₑₛₜ)
         @test maximum(abs, components(k̂′ - R′ₚ(𝐤))) < 1e-12
     end
@@ -1257,7 +1258,7 @@ is_identity_rotor(Λ::Lorentz) = Λ == one(Λ) || Λ == -one(Λ)
 If `Λ` is exactly a pure rotation — all four of its complex components have exactly zero
 imaginary part, so there is no boost content whatsoever — return that rotation as a
 `Rotor`; otherwise return `nothing`.  The exactness requirement is deliberate: this is
-used to detect short-circuit opportunities (e.g. in [`compose`](@ref)) where the result
+used to detect short-circuit opportunities (e.g., in [`compose`](@ref)) where the result
 can then be computed exactly, and the natural construction paths (`BMS(; frame_rotation)`,
 `Lorentz(R)`, and their products/inverses) do produce exactly real components.
 """

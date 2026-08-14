@@ -298,7 +298,7 @@ input data, as functions of time.
 
 `data` is a complex mode-weight array with dimensions `(Nᵐ, Nᵗ, Nᵈ)`, exactly as for
 [`transform!`](@ref), and `data_components` is the corresponding [`DataComponents`](@ref)
-descriptor.  Returns a `Dict{Symbol,Matrix}` mapping each component symbol (e.g. `:h` or
+descriptor.  Returns a `Dict{Symbol,Matrix}` mapping each component symbol (e.g., `:h` or
 `:ψ₄`) to a real `Nᵗ × (ℓₘₐₓ+1)` matrix whose `[j, ℓ+1]` entry is ``E(ℓ)`` at time index
 `j`.
 

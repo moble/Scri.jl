@@ -311,7 +311,7 @@ components are being processed.
             # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation, whose
             # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
             # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
-            # down to ψ₄ (s=-2): e.g. ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).  Because
+            # down to ψ₄ (s=-2): e.g., ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).  Because
             # this tower mixes downward, the dyad factor divides — Fₙ/Fₙ₋₁ = 1/(c_l c_m) —
             # and the conjugation acts only on the SXS input, never on the factor:
             # b̄^{[X]} = conj(ðt′/2κ)/(c_l c_m), which is NOT conj(b^{[X]}) unless c_l² = 1.

@@ -4,7 +4,7 @@
 @testitem "transform!: pure-boost spin-0 conformal factor (ℐ⁺ and ℐ⁻)" tags = [
     :validation, :integration, :fast
 ] begin
-    using Quaternionic: QuatVec, Rotor, 𝐤, vec, absvec
+    using Quaternionic: QuatVec, Rotor, Boost, 𝐤, vec, absvec
     using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
     using LinearAlgebra: lu, dot
 
@@ -35,7 +35,8 @@
         Scri.transform!(data, copy(t), v⃗, one(Rotor{Float64}), zeros(ComplexF64, 1), dc)
 
         # Replicate transform!'s rest-frame grid and the expected pixel values.
-        Rₚ = [Scri.aberration(R′ₚ, v⃗, ℐ) for R′ₚ ∈ Rs]   # R = 1, so R*R′ₚ = R′ₚ
+        Λ = Boost(ℐ * v⃗)   # R = 1, so Λ = Boost(ℐ*v⃗) * R = Boost(ℐ*v⃗)
+        Rₚ = [Scri.aberration(R′ₚ, Λ) for R′ₚ ∈ Rs]
         ψ₂_rest = ₛ𝐘(0, ℓ, Float64, Rₚ) * α0                    # input ψ₂ at rest directions
         κ⁻¹ = [γ * (1 - ℐ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
         expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)
@@ -165,7 +166,7 @@ end
     # A pure supertranslation (no boost, no rotation) with time-independent data isolates the
     # null-rotation mixing and the shear shift at κ = 1.  We check transform! against the
     # analytic laws — ψₙ' = Σₖ C(4−n,k) bᵏ ψₙ₊ₖ with b = −ðα/2, and σ' = σ + ½ð²α — evaluated
-    # independently on the same grid.  This pins the *signs* (e.g. that b = −ðα/2, not +ðα/2)
+    # independently on the same grid.  This pins the *signs* (e.g., that b = −ðα/2, not +ðα/2)
     # and the factor of ½ on σ, which the component-level tests (which take b and ð²α as given)
     # cannot.
     ℓ = 8
