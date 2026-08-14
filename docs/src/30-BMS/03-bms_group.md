@@ -6,7 +6,7 @@ The natural setting for outgoing radiation is a coordinate system built
 from the light cones themselves.  We foliate the neighborhood of ``ℐ⁺``
 by outgoing null cones, label each cone by a *retarded time* ``u`` that
 is constant across it, and coordinatize the cross-sections by a radial
-coordinate ``r`` together with two angles ``xᴬ = (θ, φ)`` that stay
+coordinate ``r`` together with two angles ``xᴬ = (θ, ϕ)`` that stay
 fixed along each outgoing null ray.  That ray — the generator of the
 cone — is the null vector ``ℓ`` of [the standard tetrad](@ref
 "Tetrad").  These are the *Bondi–Sachs coordinates* [Sachs_1962a](@cite).
@@ -73,7 +73,7 @@ k̂(𝐤) = π_𝐭(𝐤) - 𝐭
 ```
 
 then gives its direction on the sphere.  Introducing coordinates
-``xᴬ`` on ``𝕊²`` — the usual ``(θ, φ)``, say — the section is
+``xᴬ`` on ``𝕊²`` — the usual ``(θ, ϕ)``, say — the section is
 
 ```math
 σᵝ(xᴬ) = (1, k̂(xᴬ))ᵝ,
@@ -108,26 +108,52 @@ what a Lorentz transformation does to it.
 
 A Lorentz transformation ``Λ`` preserves the null cone ``𝒩⁺`` — null
 vectors map to null vectors — but it does *not* preserve the section:
-the image ``Λσ`` of a unit-time-component null vector generally has some
-other time component, so it no longer satisfies ``ℓ⁰ = 1``.  Restoring
-the preferred section takes a rescaling, and the factor that does it is
-the conformal factor.  Define
+the image ``Λσ`` of a unit-time-component null vector generally has
+some other time component, so it no longer satisfies ``k⁰ = 1``.  The
+preferred section is restored by a simple rescaling, and it turns out
+that the factor that does it is the conformal factor by which the
+metric transforms.  Define
 
 ```math
 κ(Λ, 𝐤) = \frac{k⁰}{{Λ⁰}ᵦkᵝ} = \frac{1}{γ(1-v⃗⋅k̂)},
 ```
 
-the ratio of the old time component to the new one; the second form is
-the familiar Doppler factor of a pure boost with velocity ``v⃗``,
+the ratio of the old time component to the new one.  The second form
+is the familiar Doppler factor of a pure boost with velocity ``v⃗``,
 recovered explicitly on the [aberration page](@ref "Aberration of
-Gravitational Waves").  A Lorentz transformation acts on the section by
+Gravitational Waves").  A Lorentz transformation acts on the section
+by
 
 ```math
 σ' = κ\, (Λ ∘ σ),
 ```
 
 the factor of ``κ`` undoing the change in time component, so that
-``σ'`` again has ``ℓ'^{0'} = 1``.
+``σ'`` again has ``k'^{0'} = 1``.
+
+!!! note "The conformal factor and KAN"
+
+    We saw [previously](@ref "Iwasawa's ``KAN`` decomposition") that
+    the KAN decomposition gives us a very useful way of understanding
+    Lorentz transformations.  The conformal factor ``κ`` will also be
+    extremely important in the BMS group, so it will be useful to
+    relate the two.  Every KAN decomposition must be taken *with
+    respect to* some null direction.  If we choose ``𝐤``, then we saw
+    that the effect of the ``AN`` factors is to rescale the null
+    vector by a factor ``e^{φₐ}``.  The rotation ``K`` does not change
+    the time component, so the conformal factor is simply
+
+    ```math
+    κ = e^{-φₐ}
+    ```
+
+    Where we emphasize that this ``φₐ`` is the one that results from
+    decomposition with respect to ``𝐤``.  Alternatively, we can note
+    that if ``R`` is any rotation that takes the standard reference
+    vector ``\boldsymbol{ℓ} = (𝐭 + 𝐳) / \sqrt{2}`` to ``𝐤``, then
+    ``κ(Λ, 𝐤) = κ(ΛR, \boldsymbol{ℓ})``, so ``φₐ`` also results from
+    the KAN decomposition of ``ΛR`` with respect to
+    ``\boldsymbol{ℓ}``.
 
 Now, by the same logic as in the previous section, we can show the
 pullback in the new coordinate system:
@@ -143,7 +169,8 @@ differentiating ``κ`` and one differentiating ``σ``:
 \frac{∂{σ'}ᵝ}{∂xᴬ} = \frac{∂κ}{∂xᴬ} {Λᵝ}ᵧσᵞ + κ {Λᵝ}ᵧ \frac{∂σᵞ}{∂xᴬ}.
 ```
 
-Three facts collapse the expansion.  First, ``Λ`` preserves the metric:
+We can simplify this expansion using three facts.  First, ``Λ``
+preserves the metric:
 
 ```math
 ηᵦᵧ {Λᵝ}ᵤ {Λᵞ}ᵥ = ηᵤᵥ.
@@ -155,8 +182,8 @@ Second, the section is null:
 ηᵦᵧ σᵝ σᵞ = 0.
 ```
 
-And third, differentiating that relation shows that the section is
-orthogonal to its own derivative:
+And third, differentiating that null condition shows that the
+section's derivatives are orthogonal to the section itself:
 
 ```math
 ηᵦᵧ σᵝ \frac{∂σᵞ}{∂xᴬ} = 0.
@@ -212,7 +239,7 @@ radius are one and the same.
     \sin θ\, dθ``, while ``\sin² θ' = 1 - \cos² θ'`` applied to the
     aberration formula gives ``\sin θ' = κ \sin θ``; together these
     yield ``dθ' = κ\, dθ``.  The unit-sphere metric ``dθ² + \sin²θ\,
-    dφ²`` therefore rescales as ``{dΩ'}² = κ²\, dΩ²``.  Rotations
+    dϕ²`` therefore rescales as ``{dΩ'}² = κ²\, dΩ²``.  Rotations
     leave the unit-sphere metric alone, so a general Lorentz
     transformation — a boost composed with rotations — rescales it by
     ``κ²`` with the very same ``κ``.  And, of course, we can use that
@@ -267,11 +294,12 @@ entire cone arrives at the single cut ``u = 0`` of ``ℐ⁺``: the
 dilation direction collapses at infinity, and the internal direction
 that replaces it — the one the fiber ``ℝ`` of retarded time runs along
 — is the *other* member of the null pair.  The two fibers are
-abstractly the same one-dimensional abelian group (``ℝ⁺ ≅ ℝ`` under
-``\log``), but they are attached along opposite null legs.  Passing
-from the null cone to ``ℐ⁺`` swaps the degenerate direction of the
-data surface from ``ℓ`` to ``𝐧``, while keeping the same celestial
-sphere with the same labels.
+abstractly the same one-dimensional abelian group (``ℝ⁺
+\mathrel{\cong_{\text{Grp}}} ℝ`` under ``\log``), but they are
+attached along opposite null legs.  Passing from the null cone to
+``ℐ⁺`` swaps the degenerate direction of the data surface from ``ℓ``
+to ``𝐧``, while keeping the same celestial sphere with the same
+labels.
 
 !!! details "Isn't ``ℐ⁺`` also the light cone of ``i⁰``?"
 
@@ -433,13 +461,13 @@ product](https://en.wikipedia.org/wiki/Semidirect_product#Outer_semidirect_produ
 [Aluffi_2009; page 230](@cite) of these two groups:
 
 ```math
-\text{BMS} = ℒ ⋉_φ 𝒮,
+\text{BMS} = ℒ ⋉_ρ 𝒮,
 ```
 
-where the homomorphism ``φ: ℒ → \text{Aut}(𝒮)`` is given by
+where the homomorphism ``ρ: ℒ → \text{Aut}(𝒮)`` is given by
 
 ```math
-φ(Λ)(α) = α/κ.
+ρ(Λ)(α) = α/κ.
 ```
 
 The identity element of this group is the pair ``(1, 0)``, and a
@@ -456,9 +484,9 @@ The group operation is defined as
 ```
 
 It's easy to see that multiplication by ``1/κ = γ(1-v⃗⋅k̂)`` preserves
-the defining properties of the supertranslations, so ``φ(Λ)`` is
+the defining properties of the supertranslations, so ``ρ(Λ)`` is
 indeed an automorphism.  And repeated multiplication by ``1/κᵢ`` is
-consistent with the composition of Lorentz transformations, so ``φ``
+consistent with the composition of Lorentz transformations, so ``ρ``
 is a homomorphism.
 
 The groups ``ℒ`` and ``𝒮`` are isomorphic to subgroups of
@@ -494,7 +522,7 @@ and proved some important properties, including:
      translation group.
 
 In particular, the Poincaré group — which Sachs refers to by its
-longer name: the inhomogeneous (proper) orthochronous Lorentz group —
+longer name, the inhomogeneous (proper) orthochronous Lorentz group —
 is a subgroup of the BMS group, though it is not a normal subgroup
 because conjugating a spatial translation by a Lorentz transformation
 results in a general supertranslation.
@@ -520,18 +548,18 @@ results in a general supertranslation.
     ```
     The last equality is because ``α`` is constant over the sphere,
     so evaluating in the direction ``Λ𝐤`` is the same as evaluating
-    in the direction ``𝐤``, and that value is ``δt``.  That factor
-    of  ``1/κ`` is given by our composition law, and is exactly the
-    same as the result of the Poincaré transformation.
+    in the direction ``𝐤``, and the resulting value is ``δt``.  That
+    factor of  ``1/κ`` is given by our composition law, and is exactly
+    the same as the result of the Poincaré transformation.
 
 ## [Representations of the supertranslation](@id bms_representations)
 
 Strictly speaking, there are *two* BMS groups: ``\text{BMS}⁺`` acting
 on ``ℐ⁺`` and ``\text{BMS}⁻`` acting on ``ℐ⁻``.  They are isomorphic —
-canonically so, under the antipodal matching of [Future and past null
-infinity](@ref scri_pm_conventions) [Strominger_2014,
+canonically so, under the antipodal matching of ["Future and past null
+infinity"](@ref scri_pm_conventions) [Strominger_2014,
 Strominger_2017](@cite) — so nothing about the group structure
-distinguishes them; what differs is purely the *representation* of
+distinguishes them; what differs is just the *representation* of
 elements.  The supertranslation ``α`` is stored as mode weights of a
 function of the labels ``k̂`` on the celestial sphere, and the two
 ends of null infinity are labeled antipodally: at ``ℐ⁺`` a generator
@@ -564,26 +592,26 @@ conversion constructor `BMS(g; c_α, ℐ)` (see [`BMS`](@ref)) converts
 an element between representations — exactly, since both conversions
 are pure sign flips.
 
-Because the twist in the twisted group law,
+Because the "twist" in the twisted group law,
 
 ```math
 α(𝐤) = α₁(𝐤) + α₂(Λ₁𝐤)/κ(Λ₁, 𝐤),
 ```
 
-is built from the label map ``Λ₁𝐤`` and the conformal factor — both
-realized on the *labeled* sphere — the coordinates of a composite
-element depend on the representation even though the abstract group
-does not.  To make that precise, write ``∘⁺`` and ``∘⁻`` for the two
-composition laws: each is the formula above, with the label map and
-conformal factor computed from the corresponding section ``𝐤 = (1,
-±k̂)``.  Note that ``κ`` itself needs no such decoration: as defined
-[above](@ref "Lorentz transformations ``ℒ`` and the conformal factor
-``κ``"), it is a single function of ``Λ`` and a null vector — indeed,
-being scale-invariant in ``𝐤``, a function of the null *ray* — and
-the two labelings merely feed it antipodal rays, ``κ(Λ, (1, -k̂))`` on
-``ℐ⁻`` whereas it is ``κ(Λ, (1, +k̂))`` on ``ℐ⁺``.  The same is true
-of the label map.  Now promote the relabeling of ``α`` to a map on
-whole elements,
+is built from the label map ``Λ₁𝐤`` and the conformal factor ``κ(Λ₁,
+𝐤)`` — both realized on the *labeled* sphere — the coordinates of a
+composite element depend on the representation even though the
+abstract group does not.  To make that precise, write ``∘⁺`` and
+``∘⁻`` for the two composition laws: each is the formula above, with
+the label map and conformal factor computed from the corresponding
+section ``𝐤 = (1, ±k̂)``.  Note that ``κ`` itself needs no such
+decoration: as defined [above](@ref "Lorentz transformations ``ℒ`` and
+the conformal factor ``κ``"), it is a single function of a Lorentz
+transformation and a null vector — indeed, being scale-invariant in
+``𝐤``, a function of the null *ray* — and the two labelings merely
+feed it antipodal rays, ``κ(Λ, (1, -k̂))`` on ``ℐ⁻`` whereas it is
+``κ(Λ, (1, +k̂))`` on ``ℐ⁺``.  The same is true of the label map.  Now
+we promote the relabeling of ``α`` to a map on whole elements,
 
 ```math
 \begin{aligned}
@@ -752,12 +780,12 @@ shown in the diagram below.
       <text y="21" class="katex"><tspan class="mord mathnormal">δx⃗</tspan></text>
     </g>
 
-    <!-- Level 3: Spherical coordinates (θ, φ) -->
+    <!-- Level 3: Spherical coordinates (θ, ϕ) -->
     <g transform="translate(630, 335)">
       <rect class="box" x="-55" y="-31" width="110" height="62" rx="6"/>
       <text y="-13">Spherical</text>
       <text y="4">coordinates</text>
-      <text y="21" class="katex"><tspan class="mord mathnormal">(<tspan class="mord mathnormal">θ</tspan>, <tspan class="mord mathnormal">φ</tspan>)</tspan></text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">(<tspan class="mord mathnormal">θ</tspan>, <tspan class="mord mathnormal">ϕ</tspan>)</tspan></text>
     </g>
 
     <!-- Level 3: Spin angle ψ -->
@@ -767,11 +795,11 @@ shown in the diagram below.
       <text y="14" class="katex"><tspan class="mord mathnormal">ψ</tspan></text>
     </g>
 
-    <!-- Level 3: 1-D boosts η -->
+    <!-- Level 3: 1-D boosts φ -->
     <g transform="translate(880, 335)">
       <rect class="box" x="-55" y="-25" width="110" height="50" rx="6"/>
       <text y="-5">1-D boosts</text>
-      <text y="14" class="katex"><tspan class="mord mathnormal">η</tspan></text>
+      <text y="14" class="katex"><tspan class="mord mathnormal">φ</tspan></text>
     </g>
 
     <!-- Level 3: Null rotations -->
@@ -779,7 +807,7 @@ shown in the diagram below.
       <rect class="box" x="-50" y="-31" width="100" height="62" rx="6"/>
       <text y="-13">Null</text>
       <text y="4">rotations</text>
-      <text y="21" class="katex"><tspan class="mord mathnormal">ζ</tspan></text>
+      <text y="21" class="katex"><tspan class="mord mathnormal">ξ</tspan></text>
     </g>
   </g>
 </svg>
@@ -809,7 +837,7 @@ as a quaternion, which can be constructed in numerous ways, including
 the generator of the rotation, the axis and angle of the rotation, the
 Euler angles, or the spherical coordinates and spin angle (which is
 essentially a different version of Euler angles).  Finally, a general
-boost may be decomposed into a 1-D boost of rapidity ``η`` in the
-``(θ, φ)`` direction, and a null rotation of parameter ``ζ`` about
+boost may be decomposed into a 1-D boost of rapidity ``φ`` in the
+``(θ, ϕ)`` direction, and a null rotation of parameter ``ξ`` about
 that direction.  This is not often an intuitive decomposition, but it
 is important in discussions of boost weight.

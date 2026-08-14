@@ -16,11 +16,11 @@ aware of it.
 
 Spin-weighted spherical functions [*cannot actually be defined*](@cite
 Boyle_2016) over the sphere ``𝕊²`` itself; they are more properly
-defined over the sphere ``𝕊³`` — or better yet ``\mathrm{Spin}(3) ≃
-\mathrm{SU}(2)``, the group of unit quaternions.  Then we can easily
-define ``\eth`` in those terms.  Start with the right-derivative
-operator with respect to the generator ``𝔤`` acting on a function
-``f`` and evaluated at ``Q``:
+defined over the sphere ``𝕊³`` — or better yet ``\mathrm{Spin}(3)
+\mathrel{\cong_{\text{Grp}}} \mathrm{SU}(2)``, the group of unit
+quaternions.  Then we can easily define ``\eth`` in those terms.
+Start with the right-derivative operator with respect to the generator
+``𝔤`` acting on a function ``f`` and evaluated at ``Q``:
 
 ```math
 R_𝔤 f(Q) = -i \left.\frac{d}{dϵ}\right|_{ϵ=0} f\left(Q e^{-ϵ𝔤/2}\right).

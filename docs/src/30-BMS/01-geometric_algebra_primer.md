@@ -23,7 +23,8 @@
     ```
     This last result begins to show that reflections can be implemented
     by multiplication, and reflections give rise to rotations and boosts.
-    (See the discussion of the Cartan-Dieudonné theorem for details.)
+    (See the [discussion of the Cartan-Dieudonné theorem](@ref
+    Reflections-and-rotations) for details.)
 
     While the idea of a rotation about an axis doesn't generalize, the
     idea of "rotation in a plane" works in any number of dimensions,
@@ -70,8 +71,8 @@ see [DoranLasenby_2003](@cite).
 Geometric Algebra starts with a _real_ vector space ``𝕍``, equipped
 with an inner product taking a pair of vectors ``𝐯, 𝐰 ∈ 𝕍`` to
 ``𝐯⋅𝐰 = 𝐰⋅𝐯 ∈ ℝ``.  We then introduce a product called the
-_geometric product_, which is associative and distributive, but not
-necessarily commutative.  We express the geometric product between
+_geometric product_, which is _associative_ and _distributive_, but
+not necessarily commutative.  We express the geometric product between
 vectors ``𝐯`` and ``𝐰`` simply as juxtaposition: ``𝐯𝐰``.  The
 geometric product is essentially the tensor product, subject to the
 identification that ``𝐯𝐯 = 𝐯⋅𝐯``.  We also have compatibility with
@@ -87,8 +88,8 @@ using inner products of arbitrary (even degenerate) signature.
 
 An example is very helpful in clarifying.  Consider the vector space
 ``ℝ²``, with the standard basis vectors ``𝐱`` and ``𝐲``.  Consider
-the sum ``𝐱+𝐲``.  The product of this vector with itself is
-identified with the inner product
+the sum ``𝐱+𝐲``.  Using the property ``𝐯𝐯 = 𝐯⋅𝐯``, and our usual
+ability to evaluate the inner product, we can compute
 
 ```math
 (𝐱+𝐲)(𝐱+𝐲) = (𝐱+𝐲)⋅(𝐱+𝐲) = 2.
@@ -146,9 +147,11 @@ product](https://en.wikipedia.org/wiki/Wedge_product), producing a
 and ``𝐰²≥0``, this result is a _general complex number_ associated
 with the plane spanned by ``𝐯`` and ``𝐰``, with ``𝐯⋅𝐰`` being the
 real part and ``𝐯 ∧ 𝐰`` being the imaginary part which squares to a
-negative number.  Note that the wedge product corresponds to the usual
-cross product in three dimensions, but generalizes to arbitrary
-dimensions and signatures.
+negative number.  Note that the wedge product in Geometric Algebra
+acts precisely like the wedge product of differential forms and
+carries the same intuition of oriented area.  In three dimensions, it
+corresponds to the usual cross product, but generalizes to arbitrary
+dimensions and signatures.[^2]
 
 [^1]: It is remarkable that this formula actually has a scalar being
     added to the wedge product of two vectors — which is a rank-2
@@ -158,14 +161,23 @@ dimensions and signatures.
     actually necessary.  Mathematicians routinely define the tensor
     space to allow for adding arbitrary ranks together.
 
+[^2]:   More precisely, the wedge product is the [Hodge
+    dual](https://en.wikipedia.org/wiki/Hodge_star_operator) of the
+    cross product in three dimensions.  The Hodge dual appears in
+    Geometric Algebra as left-multiplication by the inverse
+    pseudoscalar, which is described later in the text.  But outside
+    of three dimensions, this duality is not usually useful, so the
+    wedge product alone is used.
+
 !!! important "Geometric Algebra generates Complex Algebra"
 
-    The geometric product of two vectors is precisely a complex number,
-    with the real part being the inner product of the vectors, and the
-    imaginary part being a bivector representing the plane spanned by
-    those vectors.  This is a generalization of the fact that the
-    product of two orthogonal vectors is a bivector that squares to -1,
-    and thus can be identified with the unit imaginary.
+    The geometric product of two (spacelike) vectors is precisely a
+    complex number, with the real part being the inner product of the
+    vectors, and the imaginary part being a bivector representing the
+    plane spanned by those vectors.  This is a generalization of the
+    fact that the product of two orthogonal (spacelike, unit) vectors
+    is a bivector that squares to -1, and thus can be identified with
+    the unit imaginary.
 
 ## Reflections and rotations
 
@@ -199,7 +211,7 @@ above, we have
 ```
 
 That is, this negative conjugation by ``𝐧`` reflects the vector
-``𝐯`` along the line defined by ``𝐧``; reflections are represented
+``𝐯`` through the line defined by ``𝐧``; reflections are represented
 as simple conjugations in the algebra.  We can compose reflections,
 just by applying this transformation repeatedly, which is equivalent
 to negative conjugation by the product of the vectors defining the
@@ -311,8 +323,8 @@ development of Geometric Algebra has fully resolved.
 
 Collecting the grades, the algebra over a ``d``-dimensional space is a
 direct sum of its grade-``k`` subspaces, each of dimension
-``\binom{d}{k}`` — one row of Pascal's triangle.  The three cases we use
-are ``d = 2``, ``d = 3``, and ``d = 4`` (Minkowski):
+``\binom{d}{k}``.  The three cases we use are ``d = 2``, ``d = 3``,
+and ``d = 4`` (Minkowski):
 
 | algebra          | scalar | vector | bivector | trivector | pseudoscalar | total       |
 |:-----------------|:------:|:------:|:--------:|:---------:|:------------:|:-----------:|
@@ -320,9 +332,10 @@ are ``d = 2``, ``d = 3``, and ``d = 4`` (Minkowski):
 | ``𝒢(ℝ³)``        |   1    |   3    |    3     |     1     |              | ``2³ = 8``  |
 | ``𝒢(ℝ^{3,1})``   |   1    |   4    |    6     |     4     |      1       | ``2⁴ = 16`` |
 
-The grades we lean on are the vectors (grade 1) and the bivectors (grade
-2), and in each case it is the _even_ grades — scalar, bivector, and (in
-four dimensions) pseudoscalar — that form the rotors.
+The individual grades we use most are the vectors (grade 1) and the
+bivectors (grade 2), but we also frequently use objects given by the
+sum of scalar, bivector, and pseudoscalar parts — which are spinors
+and rotors.
 
 In ``𝒢(ℝ²)`` the single bivector ``𝐱𝐲`` is the pseudoscalar and the
 unit imaginary, so the even part — scalar plus bivector — is a copy of
@@ -331,7 +344,7 @@ unit imaginary, so the even part — scalar plus bivector — is a copy of
 quaternions, so the even part — scalar plus those three bivectors — is a
 copy of ``ℍ``, whose unit-norm elements are ``\mathrm{Spin}(3)``, the
 rotors of spatial rotation.  In ``𝒢(ℝ^{3,1})`` the six bivectors split
-into three _spatial_ ones (``𝐲𝐳, 𝐳𝐱, 𝐱𝐲``, squaring to ``-1``,
+into three _spatial_ ones (``𝐳𝐲, 𝐱𝐳, 𝐲𝐱``, squaring to ``-1``,
 generating rotations) and three _timelike_ ones (``𝐭𝐱, 𝐭𝐲, 𝐭𝐳``,
 squaring to ``+1``, generating boosts).  The eight-dimensional even part
 — scalar, six bivectors, and pseudoscalar — contains

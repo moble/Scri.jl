@@ -6,10 +6,10 @@ CurrentModule = Scri
 
 This is a Julia package for working with gravitational and
 electromagnetic waveforms at future or past null infinity, including
-transformations under the BMS group.  The package is designed to be
-fast, accurate, and easy to use, and is intended to be a useful tool
-for researchers in numerical relativity and gravitational-wave
-astronomy.
+transformations under the [Bondi-Metzner-Sachs (BMS) group](@ref
+bms-overview).  The package is designed to be fast, accurate, and easy
+to use, and is intended to be a useful tool for researchers in
+numerical relativity and gravitational-wave astronomy.
 
 ## Installation
 

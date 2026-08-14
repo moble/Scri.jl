@@ -274,7 +274,7 @@ feeds the parameter ``b`` itself into the tower, but an ``l̃``-fixed
 rotation (``ℐ⁻``) feeds ``\bar b``.  Spin weights force it: with the
 ``l̃``-rich component ``ψ_0`` now unmixed, the tower runs *downward*
 in spin from ``ψ_0`` (``s=+2``) to ``ψ_4`` (``s=-2``), and the two
-terms in each rung — e.g. ``ψ_1 = ψ_1 + \bar b\,ψ_0`` — share a spin
+terms in each rung — e.g., ``ψ_1 = ψ_1 + \bar b\,ψ_0`` — share a spin
 weight only because ``\bar b`` *lowers* spin:
 
 ```math

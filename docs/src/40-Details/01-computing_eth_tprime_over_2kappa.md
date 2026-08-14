@@ -81,11 +81,13 @@ We can now immediately apply the definition of ``ð`` to compute
 \begin{aligned}
 ð(v⃗⋅k̂)
 &= c_ð R_{x̂+iŷ} v⃗⋅k̂ \\
-&= -c_ð i \left.\frac{d}{dϵ}\right|_{ϵ=0} v⃗ ⋅ (Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̄) \\
-&= -c_ð i v⃗ ⋅ \left[Q \left( -(x̂+iŷ)/2 ẑ + ẑ (x̂+iŷ)/2 \right) Q̄\right] \\
-&= c_ð v⃗ ⋅ \left[Q \left( (ix̂-ŷ) ẑ \right) Q̄\right] \\
-&= c_ð v⃗ ⋅ \left[Q \left( -iŷ-x̂ \right) Q̄\right] \\
-&= c_ð \left( Q̄ v⃗ Q \right) ⋅ \left( -iŷ-x̂ \right) \\
+&= -c_ð i \left.\frac{d}{dϵ}\right|_{ϵ=0} \left\{
+  v⃗ ⋅ \left[Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̄\right] \right\} \\
+&= -c_ð i v⃗ ⋅ \left\{Q \left[ \left.\frac{d}{dϵ}\right|_{ϵ=0} \left(
+  e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2}\right) \right] Q̄ \right\} \\
+&= -c_ð i v⃗ ⋅ \left\{Q \left[ -\frac{x̂+iŷ}{2} ẑ + ẑ \frac{x̂+iŷ}{2} \right] Q̄ \right\} \\
+&= -c_ð v⃗ ⋅ \left[Q \left( iŷ+x̂ \right) Q̄\right] \\
+&= -c_ð \left( Q̄ v⃗ Q \right) ⋅ \left( x̂+iŷ \right) \\
 &= -c_ð \left( λˣ + i λʸ \right).
 \end{aligned}
 ```

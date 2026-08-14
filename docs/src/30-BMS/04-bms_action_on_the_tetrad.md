@@ -77,15 +77,17 @@ the Lorentz boost, and the two contributions combine to the same
 The differing regularization powers ``κ⁻⁽¹⁺ᵇ⁾`` are exactly cancelled
 by the boost weights ``κᵇ``, leaving the uniform Weyl factor ``1/κ``.
 
-Another important set of relations is the action of the vectors on
-their coordinates, such as
+Another important set of relations is the action of the vectors on the
+coordinates, such as
 
 ```math
 \begin{aligned}
 ñ(u) &= \sqrt{2} &\qquad\qquad
 ñ'(u') &= \sqrt{2} \\
 m̃(u) &= 0 &\qquad\qquad
-m̃'(u') &= 0,
+m̃'(u') &= 0 \\
+n(θ) &= 0 &\qquad\qquad
+ñ'(θ') &= 0,
 \end{aligned}
 ```
 
@@ -124,9 +126,10 @@ ñ'(u) &= a ñ(u) + b m̃(u) + b̄ m̄̃(u) \\
 \end{aligned}
 ```
 
-But since ``u = u' / κ + c_αα``, we know that ``ñ'(u) = \sqrt{2} /
-κ``, so we have ``a = 1/κ``.  We can similarly apply both sides to
-``θ`` and ``ϕ`` to determine that ``b = b̄ = 0``, so that
+But since ``u = u' / κ + c_αα`` and ``κ`` and ``α`` are independent of
+time, we know that ``ñ'(u) = \sqrt{2} / κ``, so we have ``a = 1/κ``.
+We can similarly apply both sides to ``θ`` and ``ϕ`` to determine that
+``b = b̄ = 0``, so that
 
 ```math
 ñ' = \frac{1}{κ} ñ.
@@ -191,7 +194,7 @@ fixed rotor could reproduce neither the ``u``-dependence nor the ``L =
 1`` case, so the honest definition of the null-rotation parameter is
 the coordinate derivative ``ðu'`` itself.  What the Lorentz rotor
 *does* supply — carried to the pole and factored [as for the Lorentz
-group](@ref "Iwasawa and Hopf") — is the spin–boost part, which the
+group](@ref "IwasawaHopfLevi") — is the spin–boost part, which the
 [two parabolics share](@ref which_null_direction): the boost ``A`` and
 the spin ``K`` fix ``d``, each by a one-line computation.
 
