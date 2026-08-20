@@ -4,34 +4,29 @@ CurrentModule = Scri
 
 # Scri
 
-!!! warning "Documentation in progress"
-
-    This documentation is still being written.  Some sections may be
-    incomplete.  Please bear with me while I fill things in.
-
 This is a Julia package for working with gravitational and
 electromagnetic waveforms at future or past null infinity, including
-transformations under the BMS group.  The package is designed to be
-fast, accurate, and easy to use, and is intended to be a useful tool
-for researchers in numerical relativity and gravitational-wave
-astronomy.
+transformations under the [Bondi-Metzner-Sachs (BMS) group](@ref
+bms-overview).  The package is designed to be fast, accurate, and easy
+to use, and is intended to be a useful tool for researchers in
+numerical relativity and gravitational-wave astronomy.
 
 ## Installation
 
-From the Julia REPL, press `]` to enter the package manager, then run:
+From the Julia REPL, press `]` to enter the package manager, then run
 
 ```julia
 pkg> add Scri
 ```
 
-Or equivalently, from any Julia session:
+Or equivalently, in any Julia session or script run
 
 ```julia
 using Pkg
 Pkg.add("Scri")
 ```
 
-## Example Usage
+## Quick Start
 
 The main functionality of the package is provided by the
 [`transform!`](@ref) function, which takes as input a set of waveforms
@@ -40,18 +35,22 @@ corresponding times, and a set of parameters specifying the BMS
 transformation to be applied, and returns the transformed waveform and
 the corresponding retarded times in the new frame.
 
-```julia
+```@example quickstart
+using Random  # hide
+Random.seed!(1234)  # hide
 using Quaternionic
 using Scri
 
-# Construct random test data
-ℓₘₐₓ = 8
+# The transform needs to know what components are in the data array
 data_components = ("h", "Psi4")
+
+# Construct data (this is just random example data)
+ℓₘₐₓ = 8
 Nᵗ = 10_000
 Nᵐ = (ℓₘₐₓ + 1)^2
 Nᵈ = length(data_components)
 data = randn(ComplexF64, Nᵐ, Nᵗ, Nᵈ)
-t = collect(LinRange(-50, 5000, Nᵗ))
+t = collect(LinRange(-50.0, 5000.0, Nᵗ))
 
 # Construct a random-ish BMS transformation
 v⃗ = 1e-3 * normalize(randn(QuatVecF64))
@@ -59,35 +58,35 @@ R = randn(RotorF64)
 α = 1e-3 * randn(ComplexF64, Nᵐ)
 
 # Perform the transformation
-data′, t′ = Scri.transform!(data, t, v⃗, R, α; data_components)
+data′, t′ = transform!(data, t, v⃗, R, α; data_components)
+size(data′), extrema(t′)
 ```
 
-Note a few very important points:
+A few very important points:
 
-  1. The `transform!` function modifies its input `data` in place,
-      and also returns the modified version.  (The exclamation mark is
-      the Julia convention for indicating that the function modifies
-      its arguments in place.)  This is done for performance reasons,
-      to avoid unnecessary allocations.  If you want to keep the
-      original data, you can make a copy before calling `transform!`
-      with the [`Base.copy`](@extref Julia) function.
-  2. The input `data` must be shaped as a three-dimensional array,
-      with the first dimension corresponding to the mode weights, the
-      second dimension corresponding to time, and the third dimension
-      corresponding to the different field components.
-  3. The first index of the `data` array represents mode weights
-      starting with ``ℓ=0``, even for fields with nonzero spin weight.
-      The mode weights are ordered in the standard way, with the
-      ``m=-ℓ`` mode first and the ``m=+ℓ`` mode last, then
-      incrementing ``ℓ``.
-  4. The third index of the `data` array must correspond to the
-      `data_components` argument.  That is, it must have the same
-      length, and describe the components in the same order.
-  5. In this example, the supertranslation `α` was constructed
-      randomly, and doesn't represent a real-valued function.
-      Internally, `transform!` automatically imposes the reality
-      condition on `α` by averaging each mode with its
+  1. `transform!` modifies its input `data` **in place** (and also
+      returns it); [copy](@extref Julia Base.copy) first if you need
+      the original.
+  2. The `data` array is three-dimensional — modes × times ×
+      components — with the mode weights ordered by increasing ``ℓ``
+      from 0 (even for nonzero spin weight), then increasing ``m``,
+      and the third axis matching `data_components` in length and
+      order.
+  3. The supertranslation `α` is a real-valued function given as
+      (scalar) spherical-harmonic mode weights.  These weights were
+      constructed randomly, so they don't represent a real-valued
+      function; `transform!` automatically imposes the reality
+      condition by averaging each mode with its appropriately signed
       complex-conjugate partner.
+
+See [Transforming Waveforms](@ref) for more details, including the
+data layout, the signatures, and the returned time grid.
+
+The transformation scales well with multithreading.  Start Julia with
+threads enabled to get the greatest efficiency — e.g., `julia -t
+auto`.  The dominant costs scale steeply with the angular band limit,
+so read [Choosing ``ℓ_\mathrm{max}``](@ref) before padding your data
+to very high ``ℓ``.
 
 ## Name and Pronunciation
 

@@ -1,0 +1,147 @@
+```@meta
+CurrentModule = Scri
+```
+
+# Transforming Waveforms
+
+The central function of this package is [`transform!`](@ref), which
+applies a BMS transformation to asymptotic data.  This page describes
+the data it expects, what it does to them, and what it returns; the
+following pages describe how to [specify the transformation](@ref
+"Specifying a BMS Transformation") and the [data components](@ref
+"Data Components"), and how to [choose the angular resolution](@ref
+"Choosing ``ℓ_\mathrm{max}``").
+
+If you are optimizing the BMS parameters to minimize the difference
+with another waveform, you may want to use the
+[`transform_objective`](@ref) function instead, which is more
+efficient in both time and memory usage.  See the [Automatic
+Differentiation](@ref) page for details.  Still, that function is
+based on `transform!` — at least in spirit — so it is helpful to
+understand `transform!` before trying to use `transform_objective`.
+
+## The data array
+
+The waveform data are passed as a single three-dimensional array of
+complex numbers with dimensions ``(Nᵐ, Nᵗ, Nᵈ)``:
+
+* The **first** dimension holds the spin-weighted spherical-harmonic
+    *mode weights*, ordered by increasing ``ℓ`` starting from ``ℓ =
+    0``, and by increasing ``m`` from ``-ℓ`` to ``+ℓ`` within each
+    ``ℓ`` — so the mode ``(ℓ, m)`` sits at index ``ℓ² + ℓ + m + 1``.
+    The band limit is implicit in the size: ``ℓ_\mathrm{max} =
+    \sqrt{Nᵐ} - 1``.  Note that the ``ℓ < |s|`` modes are present
+    *even for fields of nonzero spin weight* ``s``; they are ignored
+    on input (they should be zero), and on output they hold the
+    null-space diagnostic ``ξ`` of the [augmented SSHT](@ref
+    "Augmented Direct SSHT") — but could also be safely ignored.
+* The **second** dimension runs over the time samples, matching the
+    `t` argument.
+* The **third** dimension runs over the physical field components —
+    strain, Weyl components, and so on — in the order declared by the
+    [`DataComponents`](@ref) descriptor.
+
+The array's element type must be complex, with a real type at least as
+"wide" (referring to the number of bytes, or precision) as every other
+input's; `transform!` throws an `ArgumentError` otherwise, since it
+cannot widen the array it modifies in place.
+
+!!! note
+
+    Here, the "first" dimension refers to the most rapidly varying
+    index in memory (the leftmost index in Julia's column-major
+    order).  If you are transferring an array from Python, you
+    probably won't be copying it; it will be effectively transposed
+    for you, so the *last* dimension of the corresponding NumPy array
+    will be the mode index, the middle dimension will be time, and
+    the first dimension will be data component.
+
+## In-place semantics
+
+The exclamation mark is Julia's convention for functions that modify
+their arguments: `transform!` overwrites `data` with the transformed
+mode weights (and also returns it, for convenience).  This avoids
+allocating a second copy of what is often a very large array.  If you
+need to keep the original, copy it first:
+
+```julia
+data′, t′ = transform!(copy(data), t, v⃗, R, α, dc)
+```
+
+The band limit of the output is the band limit of the array you pass
+in.  Because BMS transformations push power to higher ``ℓ``, you will
+usually want to *pad first* — embed the data in a larger array before
+transforming — as described under [Choosing
+``ℓ_\mathrm{max}``](@ref).
+
+## Signatures
+
+The fully explicit form takes the transformation as separate parts —
+boost velocity `v⃗` (a `QuatVec`), frame rotation `R` (a `Rotor`), and
+supertranslation mode weights `α` — along with the
+[`DataComponents`](@ref) descriptor:
+
+```julia
+dc = DataComponents(:h, :ψ₄)
+data′, t′ = transform!(data, t, v⃗, R, α, dc)
+```
+
+A keyword form builds the descriptor for you, accepting flexible
+spellings of the component names and the `ℐ` and `conventions`
+parameters:
+
+```julia
+data′, t′ = transform!(data, t, v⃗, R, α; data_components=("h", "Psi4"))
+```
+
+And a [`BMS`](@ref)-element form takes the whole transformation as a
+single group element — the natural choice when composing
+transformations or reusing them:
+
+```julia
+g = BMS(; boost_velocity=v⃗, frame_rotation=R, supertranslation=α)
+data′, t′ = transform!(data, t, g, dc)
+```
+
+All three forms are described in detail on the next page, [Specifying
+a BMS Transformation](@ref).
+
+## The output time grid
+
+Boosts and supertranslations mix time and space, so a slice of
+constant transformed time ``t'`` is "tilted" with respect to the input
+slices.  But each slice needs complete data over the whole sphere to
+supply the spherical-harmonic synthesis; the first such slice of
+``t'`` will be later than the first slice of ``t``, and the last slice
+of ``t'`` will be earlier than the last slice of ``t``.  This is a
+necessary feature of any transformation with a nonzero boost or
+supertranslation.  `transform!` therefore constructs a new time grid
+`t′` by *scaling* the input `t` to cover the largest possible span.
+In particular, `t'` has the same number of samples as `t`.  This `t′`
+is returned along with the data:
+
+```julia
+data′, t′ = transform!(data, t, v⃗, R, α, dc)
+```
+
+It is *possible* to pass a custom `t′` array with the corresponding keyword:
+
+```julia
+data′, _ = transform!(data, t, v⃗, R, α, dc; t′=my_grid)
+```
+
+However, the supplied grid must be strictly increasing, must stay
+within the valid span of ranges, and *must have the same number of
+samples as `t`*.  The latter is not a fundamental limitation, but the
+general case is not yet implemented, because the motivation is not yet
+clear.  The typical use case for this is probably covered by the
+[`transform_objective`](@ref) function; see the [Automatic
+Differentiation](@ref) page for details.
+
+## Accuracy
+
+The transformation is spectrally accurate in angle but limited by the
+band limit ``ℓ_\mathrm{max}`` and by interpolation error in time.  Use
+[`diagnostics`](@ref) to compute per-``ℓ`` power monitors of the input
+and output, and see [Choosing ``ℓ_\mathrm{max}``](@ref) and [Spline
+Errors](@ref) for how to interpret them.

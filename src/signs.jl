@@ -4,12 +4,13 @@
 
 Singleton types representing the numbers ``+1`` and ``-1`` *at the type level*.
 
-Their whole purpose is to make a sign that is fixed by a choice of convention disappear from the
-generated code.  Because the value lives in the type, multiplication is resolved at compile time:
-`One() * x` returns `x` itself (the very same object) and `MinusOne() * x` returns `-x`, so a
-convention factor of ``±1`` costs nothing (at most a negation) rather than a runtime multiply.
-Products of these singletons stay singletons (`MinusOne() * MinusOne() === One()`), so a chain
-like ``c_s c_ψ c_R`` collapses to a single `One`/`MinusOne` before it ever touches field data.
+Their whole purpose is to make a sign that is fixed by a choice of convention disappear from
+the generated code.  Because the value is encoded in the type, multiplication is resolved at
+compile time: `One() * x` returns `x` itself (the very same object) and `MinusOne() * x`
+returns `-x`, so a convention factor of ``±1`` costs nothing (at most a negation) rather
+than a runtime multiply.  Products of these singletons stay singletons (`MinusOne() *
+MinusOne() === One()`), so a chain like ``c_s c_ψ c_R`` collapses to a single
+`One`/`MinusOne` before it ever touches field data.
 
 They deliberately do **not** subtype `Number`.  A ``±1`` newtype that did would have to define
 `*(::One, ::Number)` and `convert(::Type{<:Number}, ::One)`, which then clash — irreconcilably,
@@ -46,7 +47,7 @@ Base.:*(::One, ::MinusOne) = MinusOne()
 Base.:*(::MinusOne, ::One) = MinusOne()
 Base.:*(::MinusOne, ::MinusOne) = One()
 
-# Division and inverse (needed by e.g. the strain factor's ``c_h^{-1}`` and ratios of Weyl
+# Division and inverse (needed by e.g., the strain factor's ``c_h^{-1}`` and ratios of Weyl
 # factors); ``±1`` is its own inverse, and dividing by/into it is the same elision.
 Base.:/(x::Number, ::One) = x
 Base.:/(x::Number, ::MinusOne) = -x
@@ -70,7 +71,7 @@ Base.:^(::MinusOne, p::Integer) = iseven(p) ? One() : MinusOne()
 Base.:+(a::SignSingleton, b::SignSingleton) = signval(a) + signval(b)
 Base.:-(a::SignSingleton, b::SignSingleton) = signval(a) - signval(b)
 
-# Mixing a sign with a genuine number likewise falls back to ordinary arithmetic: the
+# Mixing a sign with a more specific number likewise falls back to ordinary arithmetic: the
 # singleton contributes its ``±1`` value.  (Unlike `*`/`/`, addition cannot elide the
 # operand, so there is nothing to gain by staying at the type level here.)
 Base.:+(a::SignSingleton, x::Number) = signval(a) + x
@@ -109,7 +110,7 @@ Base.convert(::Type{T}, ::One) where {T<:Number} = one(T)
 Base.convert(::Type{T}, ::MinusOne) where {T<:Number} = -one(T)
 Base.promote_rule(::Type{<:SignSingleton}, ::Type{T}) where {T<:Number} = T
 
-# Broadcast as a scalar (e.g. `A .*= f` where `f` may be a sign singleton).
+# Broadcast as a scalar (e.g., `A .*= f` where `f` may be a sign singleton).
 Base.broadcastable(x::SignSingleton) = Ref(x)
 
 Base.show(io::IO, ::One) = print(io, "One()")
@@ -119,9 +120,10 @@ Base.show(io::IO, ::MinusOne) = print(io, "MinusOne()")
     signify(x)
 
 Normalize a convention value to its most specialized representation: an exact ``+1`` becomes
-`One()`, an exact ``-1`` becomes `MinusOne()`, and anything else is returned unchanged.  This is
-how the [`Conventions`](@ref) constructor turns the common ``±1`` factors into type-level
-constants while leaving genuine numbers (`-√2`, `1/√2`, a complex phase, …) as they are.
+`One()`, an exact ``-1`` becomes `MinusOne()`, and anything else is returned unchanged.
+This is how the [`Conventions`](@ref) constructor turns the common ``±1`` factors into
+type-level constants while leaving other numbers (`-√2`, `1/√2`, a complex phase, …) as they
+are.
 """
 function signify(x)
     if x == 1

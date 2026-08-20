@@ -60,7 +60,7 @@ end
     @test MinusOne() - One() === -2
     @test One() - One() === 0
 
-    # Mixing a sign with a genuine number contributes its ±1 value, staying in the number's type.
+    # Mixing a sign with a number contributes its ±1 value, staying in the number's type.
     for x ∈ (3, 3.0, 3.0 + 4.0im, 3 + 4im, -2.5)
         @test One() + x === 1 + x
         @test x + One() === x + 1

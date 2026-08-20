@@ -46,5 +46,15 @@
             data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, Nᵈ)
             transform!(data, t, v⃗, R, αᵢₙ; data_components)
         end
+
+        # A small primal `transform_objective`/`pixel_waveform` call, for the most common
+        # component set.
+        for dcsymbols ∈ ((:h,), (:ψ₄,))
+            dc = DataComponents(dcsymbols...)
+            data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, length(dcsymbols))
+            t′ = first(compute_t′(t, 1e-4, 1e-4))
+            target = pixel_waveform(data, t, dc, t′)
+            transform_objective(data, t, v⃗, R, αᵢₙ, dc, target; t′)
+        end
     end
 end
