@@ -50,27 +50,29 @@ quaternions, vector calculus, and differential forms.  It provides a
 geometric interpretation of algebraic operations, making it
 particularly useful in physics, engineering, and computer graphics.
 Nonetheless, it is simple enough to be accessible to anyone familiar
-with basic algebra.  GA is fundamentally identical to Clifford
-Algebra; the different names reflect different emphases and traditions
-in the literature.  GA is typically developed over ``ℝ``, rather than
-``ℂ`` — the complex structures we usually encounter in physics
-appearing naturally within the algebra, rather than being introduced
-_ad hoc_.  GA also emphasizes the geometric interpretation of the
-algebraic structures, over what is usually an algebraic emphasis in
-literature using the name Clifford Algebra.
+with basic vector and matrix algebra.
+
+GA is fundamentally identical to Clifford Algebra; the different names
+reflect different emphases and traditions in the literature.  GA is
+typically developed over ``ℝ``, rather than ``ℂ`` — the complex
+structures we usually encounter in physics appearing naturally within
+the algebra, rather than being introduced _ad hoc_.  GA also
+emphasizes the geometric interpretation of the algebraic structures,
+instead of what is usually an algebraic emphasis in literature using
+the name Clifford Algebra.
 
 Before getting into the details of null tetrads and Lorentz
 transformations, we need to review some of the basics of Geometric
 Algebra.  This is not meant to be a comprehensive introduction to GA,
 but rather a quick primer on the key concepts and operations that we
 will need for our purposes.  For a more comprehensive introduction,
-see [DoranLasenby_2003](@cite).
+see the excellent book by [DoranLasenby_2003](@citet).
 
 ## The geometric product
 
-Geometric Algebra starts with a _real_ vector space ``𝕍``, equipped
-with an inner product taking a pair of vectors ``𝐯, 𝐰 ∈ 𝕍`` to
-``𝐯⋅𝐰 = 𝐰⋅𝐯 ∈ ℝ``.  We then introduce a product called the
+We start with a _real_ (finite-dimensional) vector space ``𝕍``,
+equipped with an inner product that takes a pair of vectors ``𝐯, 𝐰 ∈
+𝕍`` to ``𝐯⋅𝐰 = 𝐰⋅𝐯 ∈ ℝ``.  We then introduce a product called the
 _geometric product_, which is _associative_ and _distributive_, but
 not necessarily commutative.  We express the geometric product between
 vectors ``𝐯`` and ``𝐰`` simply as juxtaposition: ``𝐯𝐰``.  The
@@ -83,8 +85,10 @@ s(𝐯𝐰) = (s𝐯)𝐰 = 𝐯(s𝐰) = (𝐯𝐰)s
 \qquad \text{for any }s ∈ ℝ.
 ```
 
-These rules are enough to extend the algebra to arbitrary dimensions,
-using inner products of arbitrary (even degenerate) signature.
+_Just these rules_ are all that we really need.  They are enough to
+extend the algebra to arbitrary dimensions, using inner products of
+arbitrary (definite, indefinite, or even degenerate) signature.  But
+we can derive some important facts to make it easier to use GA.
 
 An example is very helpful in clarifying.  Consider the vector space
 ``ℝ²``, with the standard basis vectors ``𝐱`` and ``𝐲``.  Consider
@@ -124,12 +128,20 @@ product.  This has an important consequence:
 That is, ``(𝐱𝐲)² = -1``; the product ``𝐱𝐲`` _is the unit
 imaginary_ associated to the ``𝐱``-``𝐲`` plane.
 
-Obviously, parallel vectors commute, since they can be expressed as
-scalar multiples of each other and scalars commute with all vectors.
-These are the two critical features of the geometric product: parallel
-vectors commute, while orthogonal vectors anticommute.  Combined with
-associativity and distributivity, these properties allow us to
-calculate quite general geometric products in arbitrary dimensions.
+Note that this argument works in _any_ two-dimensional space, and with
+_any_ signature.  We can _always_ find two distinct orthogonal
+vectors, and their geometric product will always anticommute — though
+their square may be positive, negative, or zero, depending on the
+signature.  Obviously, parallel vectors commute, since they can be
+expressed as scalar multiples of each other and scalars commute with
+all vectors.  These are the two critical features of the geometric
+product that are also _completely_ general:
+
+> Parallel vectors commute, while orthogonal vectors anticommute.
+
+Combined with associativity and distributivity, these properties allow
+us to calculate quite general geometric products in arbitrary
+dimensions.
 
 Specifically, we can decompose the geometric product of two vectors
 into symmetric and antisymmetric parts:[^1]
@@ -263,16 +275,16 @@ In fact, the even products of unit vectors form the _Spin_ group, and
 it is a _double_ cover of the special orthogonal group: just as with a
 single reflection, ``±R`` give the same transformation ``𝐯 ↦ R𝐯R̃``,
 but now the two sheets are connected, so a continuous rotation by
-``2π`` returns the transformation to the identity while returning ``R``
-to ``-R``.  This is the key to understanding how spinors arise in
-physics.  A spinor is an object the Spin group acts on _directly_ — by a
-single rotor ``R``, rather than by the two-sided conjugation ``R\,(⋅)\,R̃``
-— and so it detects the very sign that the orthogonal transformation
-forgets.  The rotors we build in the following pages are exactly such
-objects, and the spin-weighted fields we ultimately transform are built
-from spinors — the "square roots" of the null tetrad legs — which is why
-the Spin group, not merely the rotation group, is the right language
-throughout.
+``2π`` returns the transformation to the identity while returning
+``R`` to ``-R``.  This is the key to understanding how spinors arise
+in physics.  A spinor is an object the Spin group acts on _directly_ —
+by a single rotor ``R``, rather than by the two-sided conjugation
+``R\,(⋅)\,R̃`` — and so it detects the very sign that the orthogonal
+transformation forgets.  The rotors we build in the following pages
+are exactly such objects, and the spin-weighted fields we ultimately
+transform are built from spinors — the "square roots" of the null
+tetrad legs — which is why the Spin group, not merely the rotation
+group, is the right language throughout.
 
 ## Higher-dimensional products
 
@@ -353,3 +365,47 @@ throughout to represent Lorentz transformations.  Finally, the spatial
 pseudoscalar ``𝐈₃ = 𝐱𝐲𝐳`` and the spacetime pseudoscalar ``𝐈₄ =
 𝐭𝐱𝐲𝐳`` are the objects that will [stand in for the unit
 imaginary](@ref "Reinterpreting ``i``") in the null tetrad.
+
+## Reinterpreting ``i``
+
+TL;DR: ``i ∈ ℂ`` is replaced by ``𝐈₃ = 𝐈𝐭``, the spatial
+pseudoscalar.  It actually transforms whenever ``𝐭`` transforms, but
+if we just write expressions in terms of ``𝐈₃' = 𝐈𝐭'`` without
+explicitly transforming ``𝐭``, that should be fine, because the
+interpretation of ``i`` also needs to change.  And at that point, it's
+just a bookkeeping device, so we don't need to worry about the fact
+that it transforms.  The reason ``𝐈₃`` appears is because it is
+central in the spatial subalgebra; it commutes with everything _in
+that subalgebra_, which is why it can act like ``i``.
+
+The unit imaginary ``i ∈ ℂ`` is a purely algebraic object that has no
+geometric meaning to Newman and Penrose.  In Geometric Algebra, we try
+to identify the geometric meaning of all algebraic objects.  But the
+replacement for ``𝐦`` is not so clear.  We need something that
+ensures ``𝐦𝐦=0``, while also transforming reasonably under null
+rotations.  The obvious guess is ``i↦𝐈``, which is invariant under
+(proper, orthochronous) Lorentz transformations.  Unfortunately,
+``(𝐱+𝐈𝐲)²`` simply does not have zero scalar part.  The next
+obvious guess is ``i↦𝐱𝐲``, the pseudoscalar of the "screen" space
+that ``𝐦`` represents.  Unfortunately, ``(𝐱+𝐱𝐲𝐲)=2𝐱``, which
+also obviously does not square to zero.  Finally, we come to
+``𝐈₃=𝐈𝐭``.  This does actually work correctly, with the caveat that
+``𝐭`` also transforms; when we transform a quantity involving ``i``,
+we have to remember that ``i`` will have new meaning in the new frame.
+
+!!! warning "Transformation of 𝐈₃"
+
+    ``𝐈₃`` itself transforms under null rotations, so we have to
+    expect our transformation law for ``𝐦`` to reflect this.
+    Specifically, we need to factor as
+    ``𝐑 𝐈₃𝐲 𝐑̄  = (𝐑 𝐈₃ 𝐑̄ )\, (𝐑 𝐲 𝐑̄)``.
+
+This is _almost_ the null tetrad used in, e.g., the Newman-Penrose
+formalism, except our definitions of ``𝐦`` and ``𝐦̄`` do not use the
+unit imaginary ``i ∈ ℂ``, but rather the unit pseudoscalar ``𝐈 ∈
+𝒢(ℝ^{3,1})``.  In fact, with these definitions, ``𝐦`` and ``𝐦̄``
+are not even vectors, but more general multivectors.  This makes
+almost no difference to the calculations, but it does allow us to work
+entirely within the geometric algebra, without the gratuitous and
+geometrically meaningless use of complex numbers in just part of the
+tetrad.

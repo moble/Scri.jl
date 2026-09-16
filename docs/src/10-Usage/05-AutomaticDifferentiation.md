@@ -195,33 +195,33 @@ g = ForwardDiff.gradient(objective, θ₀)
 
 A few things to know:
 
-  - **Norm equivalence.**  The objective is a *pixel-domain* ``L²``
-    norm.  The pixel grid has exactly as many points as modes and the
-    synthesis matrices are full rank, so it vanishes exactly when the
-    mode-domain difference vanishes, and defines an equivalent norm —
-    but its numerical value differs from `sum(abs2, ...)` over mode
-    weights.  Objective values are comparable across iterations, which
-    is all an optimizer needs.
+- **Norm equivalence.**  The objective is a *pixel-domain* ``L²``
+  norm.  The pixel grid has exactly as many points as modes and the
+  synthesis matrices are full rank, so it vanishes exactly when the
+  mode-domain difference vanishes, and defines an equivalent norm —
+  but its numerical value differs from `sum(abs2, ...)` over mode
+  weights.  Objective values are comparable across iterations, which
+  is all an optimizer needs.
 
-  - **Memory.**  Per thread, the dual-typed storage is a few buffers
-    of size `O(Nᵈ Nᵗ)` — with `ntasks` threads and `N` parameters,
-    roughly `ntasks × (3NᵗNᵈ + 2Nᵐ) × (1+N) × 16` bytes — compared to
-    `(NᵐNᵗNᵈ + 5Nᵐ²) × (1+N) × 16` bytes for dual `data` plus dual
-    synthesis matrices when differentiating through `transform!`.  For
-    production-sized arrays this can be a reduction by an order of
-    magnitude or two.
+- **Memory.**  Per thread, the dual-typed storage is a few buffers of
+  size `O(Nᵈ Nᵗ)` — with `ntasks` threads and `N` parameters, roughly
+  `ntasks × (3NᵗNᵈ + 2Nᵐ) × (1+N) × 16` bytes — compared to `(NᵐNᵗNᵈ +
+  5Nᵐ²) × (1+N) × 16` bytes for dual `data` plus dual synthesis
+  matrices when differentiating through `transform!`.  For
+  production-sized arrays this can be a reduction by an order of
+  magnitude or two.
 
-  - **Speed.**  Nothing important is lost by leaving the GEMM
-    formulation behind: `Complex{Dual}` is not a BLAS type, so a dual
-    `transform!` already runs on generic matrix multiplication.  The
-    per-pixel dot products do the same work, and the analysis stage is
-    eliminated entirely.
+- **Speed.**  Nothing important is lost by leaving the GEMM
+  formulation behind: `Complex{Dual}` is not a BLAS type, so a dual
+  `transform!` already runs on generic matrix multiplication.  The
+  per-pixel dot products do the same work, and the analysis stage is
+  eliminated entirely.
 
-  - **Stability.**  The spline knots and Thomas factors stay primal
-    (duals enter only because the values being interpolated are dual,
-    so the conditioning of the interpolation is unchanged), and the
-    results accumulate per-pixel → per-task → across tasks.  The
-    result is deterministic for a fixed number of threads.
+- **Stability.**  The spline knots and Thomas factors stay primal
+  (duals enter only because the values being interpolated are dual, so
+  the conditioning of the interpolation is unchanged), and the results
+  accumulate per-pixel → per-task → across tasks.  The result is
+  deterministic for a fixed number of threads.
 
 ## Accuracy
 

@@ -429,15 +429,15 @@ Quaternionic :jl:function:`Quaternionic.BR`).
 We can write the Cartan decomposition as
 
 ```math
-\mathrm{Spin}^+(3,1) \mathrel{\cong_{\text{Top}}} K \times P,
+\mathrm{Spin}^+(3,1) \simeq K \times P,
 ```
 
 where ``K = \mathrm{Spin}(3)`` is the (maximal compact) subgroup of
 rotations, and ``P`` is the set of boosts.  Note that this
-relationship is not *group isomorphism*
-``\mathrel{\cong_{\text{Grp}}}``, because the ``P`` factor is not a
-group; rather, it is just *topological isomorphism* (homeomorphism)
-``\mathrel{\cong_{\text{Top}}}``.  But the point is that any Lorentz
+relationship is not *group isomorphism* (which will be denoted here
+with ``\cong``), because the ``P`` factor is not a group; rather, it
+is just *topological isomorphism* (homeomorphism, which will be
+denoted here with ``\simeq``).  But the point is that any Lorentz
 transformation can be written as the product of a rotor and a boost.
 The decomposition is not unique, but is determined by a choice of time
 axis ``𝐭``.
@@ -634,15 +634,14 @@ We can also calculate the fiber (preimage of ``𝔥``) over any ``k̂ ∈
 ```
 
 In this case, we can actually interpret the fiber ``𝕊¹`` as being the
-circle group ``\mathrm{Spin}(2) \mathrel{\cong_{\text{Grp}}} U(1)``.
-So along with the KAN decomposition, we have decomposed
-``\mathrm{Spin}^+(3,1)`` into a product of the *subspace* ``𝕊²`` and
-three *subgroups*:
+circle group ``\mathrm{Spin}(2) \cong U(1)``.  So along with the KAN
+decomposition, we have decomposed ``\mathrm{Spin}^+(3,1)`` into a
+product of the *subspace* ``𝕊²`` and three *subgroups*:
 
 ```math
 \begin{gathered}
 \mathrm{Spin}^+(3,1)
-\mathrel{\cong_{\text{Top}}}
+\simeq
 \bigg\{ k̂ \bigg\} ×
 \bigg\{ \exp\bigg[\frac{γ}{2} 𝐲𝐱 \bigg] \bigg\} ×
 \bigg\{ \exp\bigg[\frac{φₐ}{2} \, 𝐭𝐳 \bigg] \bigg\} ×
@@ -651,10 +650,9 @@ three *subgroups*:
 \end{gathered}
 ```
 
-Again, this relationship is not *group isomorphism*
-``\mathrel{\cong_{\text{Grp}}}``, because the ``k̂`` factor is not a
-group; rather, it is just *topological isomorphism* (homeomorphism)
-``\mathrel{\cong_{\text{Top}}}``.
+Again, this relationship is not *group isomorphism* ``\cong``, because
+the ``k̂`` factor is not a group; rather, it is just *topological
+isomorphism* (homeomorphism) ``\simeq``.
 
 ### The Levi factor
 
@@ -770,7 +768,7 @@ Hopf-Levi decomposition to ``SMAN``:
 
 ```math
 \mathrm{Spin}^+(3,1)
-\mathrel{\cong_{\text{Top}}}
+\simeq
 S \times M \times A \times N,
 ```
 
@@ -942,397 +940,3 @@ spherical harmonics as functions on ``\mathrm{Spin}(3)``
 [Boyle_2016](@cite); the boost weight is included separately simply by
 multiplication; and the null rotation is included by [mixing
 components](@ref Mixing:-the-peeling-tower).
-
-## Flagpoles and flagplanes
-
-It might help to step back for a moment and remember the broader goal.
-We are dealing with polarized fields propagating radially along null
-directions, and finding how those fields transform under Lorentz
-transformations.  So in each direction, and for each observer, we need
-to be able to describe the null direction and the polarization.  The
-literature has two geometric objects that are used to describe these
-two pieces of information: the "flagpole" and the "flagplane".
-
-We first define the null vector
-
-```math
-𝐊
-≔ Λ \boldsymbol{ℓ} \bar{Λ}
-∝ 𝐑_K \boldsymbol{ℓ} 𝐑_K
-= 𝐑_{k̂} \boldsymbol{ℓ} 𝐑_{k̂}.
-```
-
-This is the direction of propagation of the field, as a full
-four-vector of the spacetime.  It's important to note that ``𝐑_{k̂}``
-picks out the direction, and that *direction* is invariant under
-``𝐑_{γ𝐲'𝐱'}``, ``𝐑_{φₐ𝐭''𝐳''}``, and ``𝐑_{\boldsymbol{ℓ}'''
-\boldsymbol{ξ}'''}``.  This is precisely the object often referred to
-as the "flagpole" in the spinor literature [PenroseRindler_1984; p.
-37](@cite).
-
-Now, to specify the polarization of the field components, we need to
-specify a fiducial direction in the plane orthogonal to ``𝐊``
-[Boyle_2016](@cite).  Conventionally, when dealing only with
-rotations, this fiducial direction is just the ``𝐱`` basis vector
-after rotation.  We can define[^6]
-
-```math
-𝐋 ≔ Λ 𝐱 \bar{Λ}.
-```
-
-We would *like* to use this as the fiducial direction for the
-polarization, but as long as the ``N`` factor is non-trivial, it is no
-longer be spatial.  It is not immediately clear which value of the
-field should be extracted from the original frame to allow us to
-compute the transformed field.  Somehow, we have to get "as close as
-we can" to some sort of concordance between the frames.
-
-[^6]: Note that we often include ``𝐲`` by constructing the "complex
-    vector" ``𝐦 = 𝐑_K \tfrac{𝐱 + i 𝐲}{\sqrt{2}} 𝐑̄_K``.  This is,
-    in fact, how spin-weighted spherical harmonics are defined
-    [Boyle_2016](@cite).
-
-Writing out the components ``\boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲``, a
-straightforward calculation shows that the final transformed direction
-of ``𝐱`` is
-
-```math
-x''''
-= Λ 𝐱 \bar{Λ}
-=  𝐑_K\, \left(𝐱 + ξˣe^{φₐ}\boldsymbol{ℓ}\right)\, 𝐑̄_K
-= 𝐋 + ξˣe^{φₐ}𝐊.
-```
-
-Now, the set
-
-```math
-\{c𝐊 + 𝐑_K\, 𝐱\, 𝐑̄_K \mathrel{|} c∈ℝ\}
-```
-
-is the set of all possible transformations of ``𝐱`` for the given
-flagpole.  So we might take this equivalence class as the object that
-determines the fiducial direction for the polarization; any given
-observer will just need to choose the particular member that is
-spatial relative to their own frame.
-
-It might help to make contact with the rest of the literature here.
-Conventionally, we take all *positive* scalings of that set to be the
-"flagplane":
-
-```math
-\{a𝐊 + b𝐋 \mathrel{|} a,b∈ℝ; b>0\}.
-```
-
-[PenroseRindler_1984](@Citet), for example, take great pains to
-explain that a flagplane is a *half*-plane — the purpose being to
-ensure that the flagplane must rotate through a full ``2π`` to return
-to itself, rather than just the ``π`` that would return a full plane
-to itself.  This is exactly the geometry encoded by an *oriented*
-plane, which is what a simple bivector represents.[^7]  Therefore, we
-can also represent the flagplane by the bivector
-
-```math
-𝐅 = 𝐊 ∧ 𝐋 = Λ \left(\boldsymbol{ℓ} ∧ 𝐱\right) \bar{Λ}.
-```
-
-This bivector scales as ``e^{φₐ}`` under the ``A`` factor, but is
-invariant under the ``N`` factor.  This could be a more elegant
-representation of the flagplane than the conventional one, because it
-is a geometric object that also participates in the algebra of the
-spacetime, and retains information about the magnitude.
-
-[^7]: A "simple" bivector is one that can be written as the wedge
-    product of two vectors — a distinction that matters in four or
-    more dimensions.  For example, the bivector ``𝐭∧𝐱`` is simple, but
-    ``𝐭∧𝐱+𝐲∧𝐳`` is not.  Only a *simple* bivector represents an
-    oriented plane.  This should be familiar from any of the standard
-    treatments of differential geometry [MisnerThorneWheeler_1973,
-    DoranLasenby_2003, Frankel_2011, Lee_2019](@cite).
-
-!!! details "Comparison to Penrose-Rindler"
-
-    [PenroseRindler_1984](@Citet) use the two-spinor formalism
-    extensively.  This is closely related to the quaternion formalism:
-    if ``Q = a𝟏 + b𝐢 + c𝐣 + d𝐤`` is the quaternion, the corresponding
-    two-spinor is ``(ξ, η) = (a + id, c + ib)``.  Alternatively, given
-    a two-spinor ``(ξ, η)``, we re-imagine the unit imaginary ``i`` as
-    the bivector ``𝐤`` and we have ``Q = ξ + 𝐣 η``.  We can then
-    check, for example, that the ``𝐋`` and ``𝐊`` vectors defined above
-    are precisely equal to the ones given by Eqs. (1.4.14) and
-    (1.4.16), respectively, of [PenroseRindler_1984](@cite).
-
-Our field components are really functions of both the flagpole picking
-out the direction of propagation, and the flagplane picking out the
-tangent orientation that allows us to describe the polarization.  In
-the language of the equivariance condition above, the flagpole is what
-``𝐑_{φₐ𝐭𝐳}`` rescales (boost weight) and the flagplane is what
-``𝐑_{γ𝐲𝐱}`` rotates (spin weight).  The ``AN`` factors preserve
-both the flagpole's direction and the flagplane, so all the
-*positional* information — which flagpole, and which flagplane through
-it — is encoded in the ``K`` factor alone.
-
-## Working in the unprimed frame
-
-At this point, we are in a good position to understand a subtlety in
-the implementation of the transformation.  The field is expressed in
-either frame on a series of time slices, and on each time slice the
-field components are decomposed in spin-weighted spherical harmonics.
-During the transformation, these have to be evaluated at a series of
-"pixels" — rotors from ``\mathrm{Spin}(3)`` [Boyle_2016](@cite), which
-correspond as discussed above to flagpoles and flagplanes.
-Specifically, there is a natural choice of pixels in the *transformed*
-frame which will allow us to compute the mode weights.  We will denote
-those pixels as ``𝐑'_p``.  But the field at each such pixel has to be
-computed from the original data.  So we need to evaluate it at some
-corresponding ``𝐑_p``.  The previous section tells us that the
-flagpole and flagplane should be the same for both:
-
-```math
-\begin{aligned}
-𝐑'ₚ \boldsymbol{ℓ}' 𝐑̄'ₚ
-&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̄ₚ,
-\\
-𝐑'ₚ \left(𝐱' ∧ \boldsymbol{ℓ}'\right) 𝐑̄'ₚ
-&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̄ₚ.
-\end{aligned}
-```
-
-The reference vectors being acted on here are related by the
-transformation:
-
-```math
-\boldsymbol{ℓ}' = Λ \boldsymbol{ℓ} \bar{Λ},
-\qquad
-𝐱' = Λ 𝐱 \bar{Λ}.
-```
-
-Therefore, the expression above can be rewritten as
-
-```math
-\begin{aligned}
-𝐑'ₚ Λ \boldsymbol{ℓ} \bar{Λ} 𝐑̄'ₚ
-&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̄ₚ,
-\\
-𝐑'ₚ Λ \left(𝐱 ∧ \boldsymbol{ℓ}\right) \bar{Λ} 𝐑̄'ₚ
-&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̄ₚ,
-\end{aligned}
-```
-
-so we might expect that the correct ``𝐑ₚ`` to use would be
-
-```math
-𝐑ₚ = 𝐑'ₚ Λ.
-```
-
-Or better yet, the previous section argued that all we actually need
-is the ``K`` factor of that product, so we might expect that the right
-choice would be
-
-```math
-𝐑ₚ = K\left(𝐑'ₚ Λ\right),
-```
-
-where ``K`` is the function that extracts the ``K`` factor from a
-``KAN`` decomposition.
-
-*However*, the subtlety is that the `𝐑'ₚ` actually generated by the
-code is just an array of four numbers.  And throughout the code, the
-frame of those four numbers is never explicitly specified.  Therefore,
-such an array is inherently always in the same frame.  Since the rest
-of the calculation assumes the frame is the unprimed one, the code is
-effectively treating the array as being in the *unprimed* frame.  On
-the other hand, the code generating that array doesn't know anything
-about that distinction, and our information is relative to the
-*primed* frame.  That is, in principal we expect the code to generate
-
-```math
-𝐑'ₚ = R'ₚʷ + R'ₚˣ 𝐢' + R'ₚʸ 𝐣' + R'ₚᶻ 𝐤',
-```
-
-but what it actually stores is the array of components
-
-```julia
-𝐑'ₚ = [R'ₚʷ,  R'ₚˣ,  R'ₚʸ,  R'ₚᶻ]
-```
-
-(Note that the previous equation was in "math" face, while this one is
-in "code" face, to distinguish what *should* happen analytically from
-what *does* happen practically.)  To resolve the mismatch, we just
-have to conjugate by ``Λ`` to get the correct rotor relative to the
-primed frame, which we can do implicitly and arrive at
-
-```julia
-𝐑ₚ = K(Λ * 𝐑'ₚ)
-```
-
-as the correct rotor to use in the unprimed frame.  This is exactly
-what [`aberration`](@ref Scri.aberration)`(R′ₚ, Λ)` computes.  Again,
-the ``A`` and ``N`` factors that the extraction discards are exactly
-the ones accounted for elsewhere: the conformal factor ``κ``, and the
-component mixing, which re-enters in as a null rotation about the
-generator ``𝐧``, as discussed next.
-
-## [Which null direction?](@id which_null_direction)
-
-!!! note "TO DO"
-
-    I need to rewrite this section entirely.  I should use
-    ``ΘN_{\boldsymbol{ℓ}} = N_n``.
-
-    I guess the point is that the same Λ can be decomposed in two
-    different ways, but they still mean the same thing.  So for
-    understanding the coordinates on the null cone, we decompose with
-    respect to the null ray corresponding to the given point on the
-    sphere.  But to understand the transformation of the field, we
-    decompose with respect to the generator of the null hypersurface
-    carrying the field.  Different observers generate different
-    tetrads, but they are both (pseudo-)orthonormal tetrads, so they
-    are related by a Lorentz transformation.  Moreover, the two
-    tetrads are both adapted to the same null hypersurface, so they
-    are related by a transformation in the stabilizer of the
-    generator.
-
-Everything above treated ``\boldsymbol{ℓ}`` as the special null
-direction: the rotation of ``M`` was chosen to fix ``\boldsymbol{ℓ}``,
-the boost of ``A`` was chosen to be along that direction, and the null
-rotation of ``N`` was chosen to fix that vector.  But nothing in the
-construction requires this choice of null direction.  For example,
-fixing the conjugate null vector ``𝐧`` works just as well, and gives
-a second Iwasawa decomposition:
-
-```math
-\mathrm{Spin}^+(3,1) = K\,A\,N_{\boldsymbol{ℓ}} = K\,A\,N_{𝐧},
-```
-
-with the *same* ``K`` and ``A``, and the nilpotent subgroups
-subscripted by the null vector they fix.  The two decompositions of a
-single rotor have different factors, so we must face a question the
-group theory alone cannot answer: when transforming radiation data,
-which null direction is the right one to build the decomposition
-around?
-
-Start with how much the two choices *share*.  Write
-
-```math
-M = \left\{ \exp\left[\frac{γ}{2} 𝐲𝐱\right] \right\}
-\mathrel{\cong_{\text{Grp}}}
-\mathrm{Spin}(2)
-```
-
-for the rotations about ``𝐳`` — the Hopf fiber inside ``K`` — so that
-``MA`` is the combined *spin–boost* subgroup.  Every element of ``MA``
-preserves *both* null rays at once, merely rescaling them oppositely:
-
-```math
-𝐑\, \boldsymbol{ℓ}\, 𝐑̃ = e^{φₐ}\, \boldsymbol{ℓ},
-\qquad
-𝐑\, 𝐧\, 𝐑̃ = e^{-φₐ}\, 𝐧,
-\qquad
-𝐑 = 𝐑_{γ𝐳}\, 𝐑_{φₐ𝐳} ∈ MA.
-```
-
-The full stabilizer of the ray ``[\boldsymbol{ℓ}]`` is the
-four-parameter subgroup ``MAN_{\boldsymbol{ℓ}}``, and the stabilizer
-of ``[𝐧]`` is ``MAN_{𝐧}``.  (Such stabilizers of null rays are
-called *parabolic subgroups*, and the piece ``MA`` common to both is
-called their *Levi factor*.)  The two stabilizers differ *only* in
-their nilpotent factors.  Now recall [the equivariance condition](@ref
-"Reversing the order"): spin weight and boost weight are the
-multipliers ``e^{isγ}`` and ``e^{bφₐ}`` picked up under
-right-multiplication by ``MA`` — they are characters of ``MA`` alone.
-Since ``MA`` is blind to the difference between ``\boldsymbol{ℓ}`` and
-``𝐧``, so is the entire weight apparatus.  Spin weight, boost weight,
-and the conformal rescaling are perfectly symmetric between the two
-null directions, and cannot distinguish them even in principle.
-
-Could a *null-rotation weight* break the tie?  No — and the reason is
-instructive.  Conjugating a null rotation by the boost dilates its
-generator,
-
-```math
-𝐑_{φₐ𝐳}\, \boldsymbol{ℓξ}\, 𝐑̃_{φₐ𝐳} = e^{φₐ}\, \boldsymbol{ℓξ},
-```
-
-since the boost rescales ``\boldsymbol{ℓ}`` and leaves the transverse
-``\boldsymbol{ξ}`` alone.  A multiplier ``χ`` for null rotations,
-consistent with the group structure, would therefore have to satisfy
-``χ(𝐑_{\boldsymbol{ξ}}) = χ(𝐑_{e^{φₐ}\boldsymbol{ξ}})`` for every
-``φₐ``; taking ``φₐ → -∞`` and using continuity forces ``χ ≡ 1``.
-There is no such thing as null-rotation weight.  A field component can
-at best be *invariant* under a family of null rotations; otherwise it
-must *mix* with other components — which is exactly what happens, on
-[the tetrad page](@ref "BMS Action on the Tetrad").
-
-So the choice cannot come from the group, nor from the weights.  It
-comes from the *surface carrying the data*.  A null hypersurface
-singles out, at each of its points, exactly one null direction — its
-generator, the degenerate direction of its induced metric — and a
-transformation relating two frames adapted to the surface must
-preserve that direction.  The frame transitions therefore live in the
-generator's stabilizer.  For radiation at ``ℐ⁺`` the generator is
-``𝐧``, not ``\boldsymbol{ℓ}`` — even though the radiation propagates
-along ``\boldsymbol{ℓ}`` — because ``ℐ⁺`` is ruled like an
-*absorption* cone rather than an emission cone; this is explained at
-[From the null cone to ``ℐ⁺``](@ref from_cone_to_scri).  The
-transitions at ``ℐ⁺`` thus lie in ``MAN_{𝐧}``, and components mix by
-null rotations about the generator.  At ``ℐ⁻``, and on the outgoing
-null cone of an emitter, the generator is ``\boldsymbol{ℓ}`` and the
-roles revert to ``MAN_{\boldsymbol{ℓ}}``.
-
-None of this demotes the ``\boldsymbol{ℓ}``-adapted decomposition used
-above; it just delimits its two jobs.  Its ``K`` factor is the *base
-map* — which generator, which flagpole and flagplane — and because
-``𝐑_K`` is a *rotation*, it carries the whole null pair
-``(\boldsymbol{ℓ}, 𝐧)`` at the pole onto the pair at the new point
-simultaneously, so the same ``K`` serves no matter which stabilizer
-the data surface selects.  Its ``A`` factor carries the boost weight,
-and ``A`` is common to both parabolics anyway.  The one factor that is
-*not* shared, ``N_{\boldsymbol{ℓ}}``, is also the one factor that
-never acts on the data by a weight; its physical effect re-enters in
-mirrored form, as the null rotation about the generator ``𝐧`` whose
-parameter is computed directly from the coordinate transformation on
-[the tetrad page](@ref "BMS Action on the Tetrad").
-
-## Reinterpreting ``i``
-
-TL;DR: ``i ∈ ℂ`` is replaced by ``𝐈₃ = 𝐈𝐭``, the spatial
-pseudoscalar.  It actually transforms whenever ``𝐭`` transforms, but
-if we just write expressions in terms of ``𝐈₃' = 𝐈𝐭'`` without
-explicitly transforming ``𝐭``, that should be fine, because the
-interpretation of ``i`` also needs to change.  And at that point, it's
-just a bookkeeping device, so we don't need to worry about the fact
-that it transforms.  The reason ``𝐈₃`` appears is because it is
-central in the spatial subalgebra; it commutes with everything *in
-that subalgebra*, which is why it can act like ``i``.
-
-The unit imaginary ``i ∈ ℂ`` is a purely algebraic object that has no
-geometric meaning to Newman and Penrose.  In Geometric Algebra, we try
-to identify the geometric meaning of all algebraic objects.  But the
-replacement for ``𝐦`` is not so clear.  We need something that
-ensures ``𝐦𝐦=0``, while also transforming reasonably under null
-rotations.  The obvious guess is ``i↦𝐈``, which is invariant under
-(proper, orthochronous) Lorentz transformations.  Unfortunately,
-``(𝐱+𝐈𝐲)²`` simply does not have zero scalar part.  The next
-obvious guess is ``i↦𝐱𝐲``, the pseudoscalar of the "screen" space
-that ``𝐦`` represents.  Unfortunately, ``(𝐱+𝐱𝐲𝐲)=2𝐱``, which
-also obviously does not square to zero.  Finally, we come to
-``𝐈₃=𝐈𝐭``.  This does actually work correctly, with the caveat that
-``𝐭`` also transforms; when we transform a quantity involving ``i``,
-we have to remember that ``i`` will have new meaning in the new frame.
-
-!!! warning "Transformation of 𝐈₃"
-
-    ``𝐈₃`` itself transforms under null rotations, so we have to
-    expect our transformation law for ``𝐦`` to reflect this.
-    Specifically, we need to factor as
-    ``𝐑 𝐈₃𝐲 𝐑̄  = (𝐑 𝐈₃ 𝐑̄ )\, (𝐑 𝐲 𝐑̄)``.
-
-This is *almost* the null tetrad used in, e.g., the Newman-Penrose
-formalism, except our definitions of ``𝐦`` and ``𝐦̄`` do not use the
-unit imaginary ``i ∈ ℂ``, but rather the unit pseudoscalar ``𝐈 ∈
-𝒢(ℝ^{3,1})``.  In fact, with these definitions, ``𝐦`` and ``𝐦̄``
-are not even vectors, but more general multivectors.  This makes
-almost no difference to the calculations, but it does allow us to work
-entirely within the geometric algebra, without the gratuitous and
-geometrically meaningless use of complex numbers in just part of the
-tetrad.

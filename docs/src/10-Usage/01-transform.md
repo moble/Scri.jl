@@ -10,7 +10,7 @@ the data it expects, what it does to them, and what it returns; the
 following pages describe how to [specify the transformation](@ref
 "Specifying a BMS Transformation") and the [data components](@ref
 "Data Components"), and how to [choose the angular resolution](@ref
-"Choosing ``ℓ_\mathrm{max}``").
+choosing_ell_max).
 
 If you are optimizing the BMS parameters to minimize the difference
 with another waveform, you may want to use the
@@ -72,7 +72,7 @@ The band limit of the output is the band limit of the array you pass
 in.  Because BMS transformations push power to higher ``ℓ``, you will
 usually want to *pad first* — embed the data in a larger array before
 transforming — as described under [Choosing
-``ℓ_\mathrm{max}``](@ref).
+``ℓ_\mathrm{max}``](@ref choosing_ell_max).
 
 ## Signatures
 
@@ -143,5 +143,5 @@ Differentiation](@ref) page for details.
 The transformation is spectrally accurate in angle but limited by the
 band limit ``ℓ_\mathrm{max}`` and by interpolation error in time.  Use
 [`diagnostics`](@ref) to compute per-``ℓ`` power monitors of the input
-and output, and see [Choosing ``ℓ_\mathrm{max}``](@ref) and [Spline
-Errors](@ref) for how to interpret them.
+and output, and see [Choosing ``ℓ_\mathrm{max}``](@ref
+choosing_ell_max) and [Spline Errors](@ref) for how to interpret them.

@@ -206,12 +206,14 @@ throws an `ArgumentError`).  This is chiefly useful in optimization loops over B
 parameters, where a fixed output grid makes the results directly comparable across
 iterations.
 
-The optional keyword `ℓₘₐₓ₀` declares the *input* band limit: a promise that every mode
-with ``ℓ > ℓₘₐₓ₀`` in `data` is exactly zero (as when band-limited data have been
-zero-padded to a larger array, per the pad-first workflow of [Choosing
-``ℓ_\\mathrm{max}``](@ref)).  The first (synthesis) stage then processes only the nonzero
-modes, reducing its cost by roughly the factor `(ℓₘₐₓ₀+1)²/Nᵐ`.  The promise is verified,
-and an `ArgumentError` is thrown if any declared-zero mode is nonzero.
+The optional keyword `ℓₘₐₓ₀` declares the *input* band limit: a
+promise that every mode with ``ℓ > ℓₘₐₓ₀`` in `data` is exactly zero
+(as when band-limited data have been zero-padded to a larger array,
+per the pad-first workflow of [Choosing ``ℓ_\\mathrm{max}``](@ref
+choosing_ell_max)).  The first (synthesis) stage then processes only
+the nonzero modes, reducing its cost by roughly the factor
+`(ℓₘₐₓ₀+1)²/Nᵐ`.  The promise is verified, and an `ArgumentError` is
+thrown if any declared-zero mode is nonzero.
 
 Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, if given).
 
@@ -610,12 +612,15 @@ direction of the `i`-th rotor of `golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)
 are spline-interpolated from `t` to `t′` with the same natural cubic spline used by
 [`transform!`](@ref).
 
-The `data`, `t`, and `dc` arguments are exactly as in [`transform!`](@ref); in particular
-`data` must have size `(Nᵐ, length(t), Nᵈ)`, with `Nᵐ` a perfect square setting
-`ℓₘₐₓ = √Nᵐ - 1`.  If the target waveform is known at a smaller band limit than the data
-to be transformed, zero-pad its modes up to the same `Nᵐ` before calling this function
-(the pad-first workflow of [Choosing ``ℓ_\mathrm{max}``](@ref)) — the pixel grid, and
-hence the pixel correspondence with `transform_objective`, is set by `Nᵐ`.
+The `data`, `t`, and `dc` arguments are exactly as in
+[`transform!`](@ref); in particular `data` must have size `(Nᵐ,
+length(t), Nᵈ)`, with `Nᵐ` a perfect square setting `ℓₘₐₓ = √Nᵐ - 1`.
+If the target waveform is known at a smaller band limit than the data
+to be transformed, zero-pad its modes up to the same `Nᵐ` before
+calling this function (the pad-first workflow of [Choosing
+``ℓ_\mathrm{max}``](@ref choosing_ell_max)) — the pixel grid, and
+hence the pixel correspondence with `transform_objective`, is set by
+`Nᵐ`.
 
 The output grid `t′` must be strictly increasing and contained in `[t[begin], t[end]]`,
 but — unlike the `t′` keyword of `transform!` — it may have **any** length ≥ 1.  In

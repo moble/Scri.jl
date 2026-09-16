@@ -303,10 +303,12 @@ descriptor.  Returns a `Dict{Symbol,Matrix}` mapping each component symbol (e.g.
 `j`.
 
 For a component of spin weight `s`, the `ℓ < |s|` rows of `data` hold the null-space
-diagnostic `ξ` of the [augmented SSHT](@ref "Augmented Direct SSHT") after a transform, so
-the corresponding `E(ℓ)` values measure power that no band-limited field can represent;
-together with `E(ℓₘₐₓ)`, these indicate whether a transformation was adequately resolved.
-See [Choosing ``ℓ_\\mathrm{max}``](@ref) for how to interpret them.
+diagnostic `ξ` of the [augmented SSHT](@ref "Augmented Direct SSHT")
+after a transform, so the corresponding `E(ℓ)` values measure power
+that no band-limited field can represent; together with `E(ℓₘₐₓ)`,
+these indicate whether a transformation was adequately resolved.  See
+[Choosing ``ℓ_\\mathrm{max}``](@ref choosing_ell_max) for how to
+interpret them.
 
 Loading `Plots` activates an extension providing `diagnostics(t, data, data_components)`,
 which returns a corresponding `Dict` of plots of these powers against time.

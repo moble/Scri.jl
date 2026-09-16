@@ -85,8 +85,8 @@ data layout, the signatures, and the returned time grid.
 The transformation scales well with multithreading.  Start Julia with
 threads enabled to get the greatest efficiency — e.g., `julia -t
 auto`.  The dominant costs scale steeply with the angular band limit,
-so read [Choosing ``ℓ_\mathrm{max}``](@ref) before padding your data
-to very high ``ℓ``.
+so read [Choosing ``ℓ_\mathrm{max}``](@ref choosing_ell_max) before
+padding your data to very high ``ℓ``.
 
 ## Name and Pronunciation
 

@@ -2,7 +2,7 @@
 CurrentModule = Scri
 ```
 
-# Choosing ``ℓ_\mathrm{max}``
+# [Choosing ``ℓ_\mathrm{max}``](@id choosing_ell_max)
 
 A BMS transformation mixes energy into higher ``ℓ`` modes.  The input
 waveform will have a fairly low *initial* band limit
