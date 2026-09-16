@@ -12,11 +12,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "docs/**"
-      - "src/**"
-      - "*.toml"
-    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write

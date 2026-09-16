@@ -166,7 +166,7 @@ end
 #   Z_INSIDE (2): inner segments, origin → sphere surface
 #   Z_SPHERE (3): the translucent sphere (tints everything below)
 #   Z_NEAR   (4): outer segments pointing toward the camera, plus their labels
-# Each arrow is split at the sphere surface; the outer piece carries the head.
+# Each arrow is split at the sphere surface; the outer piece includes the head.
 
 const Z_FAR, Z_INSIDE, Z_SPHERE, Z_NEAR = 1, 2, 3, 4
 

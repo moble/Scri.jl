@@ -35,7 +35,7 @@
     @test dc isa DataComponents{(:ψ₄, :σ)}
 end
 
-@testitem "DataComponents: carries its Conventions" tags = [:unit, :fast] begin
+@testitem "DataComponents: includes its Conventions" tags = [:unit, :fast] begin
     import Scri: DataComponents, Conventions
 
     # Defaults to the package-native conventions, stored as compile-time singletons.
@@ -56,27 +56,27 @@ end
     import Scri: DataComponents
 
     # ψₙ (n < 4) without its required upper neighbours.
-    @test_throws AssertionError DataComponents(:ψ₃)           # missing ψ₄
-    @test_throws AssertionError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
-    @test_throws AssertionError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
-    @test_throws AssertionError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₃)           # missing ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
 
     # Gaps in the chain.
-    @test_throws AssertionError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
-    @test_throws AssertionError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
 
     # The radiative-shear slots are ℐ-locked: σ is ℐ⁺-only, λ is ℐ⁻-only.
-    @test_throws AssertionError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
-    @test_throws AssertionError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
-    @test_throws AssertionError DataComponents(:λ; ℐ=1)
+    @test_throws ArgumentError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
+    @test_throws ArgumentError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
+    @test_throws ArgumentError DataComponents(:λ; ℐ=1)
 end
 
 @testitem "DataComponents: invalid symbols are rejected" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    @test_throws AssertionError DataComponents(:foo)
-    @test_throws AssertionError DataComponents(:Weyl₀)
-    @test_throws AssertionError DataComponents(:ψ₄, :bad_component)
+    @test_throws ArgumentError DataComponents(:foo)
+    @test_throws ArgumentError DataComponents(:Weyl₀)
+    @test_throws ArgumentError DataComponents(:ψ₄, :bad_component)
 end
 
 # ── Accessors ─────────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ end
 
     # ℐ⁺: σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
     # ℐ⁻: λ' = κ⁻¹·(λ + ½conj(ð²α)),  h' = κ⁻¹·(h − ½conj(ð²α))
-    # (λ is the ℐ⁻ radiative shear; its shift carries + conj(ð²α), opposite the strain.)
+    # (λ is the ℐ⁻ radiative shear; its shift is + conj(ð²α), opposite the strain.)
     rng = Random.Xoshiro(99)
     dc⁺ = DataComponents(:σ, :h)
     dc⁻ = DataComponents(:λ, :h; ℐ=-1)
@@ -276,9 +276,9 @@ end
     import Scri:
         DataComponents, Conventions, dyad_factor, shear_factor, lambda_factor, strain_factor
 
-    # With a generic convention carried by `dc`, the laws read (docs, "Convention
-    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
-    # ℐ⁺ shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
+    # With a generic convention contained in `dc`, the laws read (docs, "Convention
+    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻; ℐ⁺
+    # shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
     # −F_h·ð̄²α/2.
     rng = Random.Xoshiro(17)
     X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
@@ -354,7 +354,7 @@ end
 
     # Component-count mismatch is caught.
     dc2 = DataComponents(:ψ₄, :h)
-    @test_throws AssertionError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
+    @test_throws ArgumentError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
 end
 
 @testitem "mix_components!: News scales by κ⁻² with no mixing" tags = [:unit, :fast] begin

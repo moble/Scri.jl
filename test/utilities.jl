@@ -138,7 +138,7 @@ end
 
 @testitem "impose_reality: rejects non-square-length input" tags = [:unit, :fast] begin
     for N ∈ [2, 3, 5, 6, 7, 10]
-        @test_throws AssertionError Scri.impose_reality(zeros(ComplexF64, N), 10, 1)
+        @test_throws ArgumentError Scri.impose_reality(zeros(ComplexF64, N), 10, 1)
     end
 end
 
@@ -195,8 +195,8 @@ end
         vdotn =
             2v_x * (w * y + x * z) + 2v_y * (y * z - w * x) + v_z * (w^2 + z^2 - x^2 - y^2)
         # Reference: apply rotor to 𝐤, then take dot product component-wise
-        n̂ = R(𝐤)
-        vdotn_ref = v⃗[2] * n̂[2] + v⃗[3] * n̂[3] + v⃗[4] * n̂[4]
+        k̂ = R(𝐤)
+        vdotn_ref = v⃗[2] * k̂[2] + v⃗[3] * k̂[3] + v⃗[4] * k̂[4]
         @test vdotn ≈ vdotn_ref atol = 4eps(Float64)
     end
 end
@@ -333,4 +333,99 @@ end
     v⃗ = QuatVec(0.0, 0.0, 0.0)
     t = collect(range(-1.0, 1.0; length=51))
     @test_throws ErrorException Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+end
+
+# ── compute_t′ worst-case (β, δt) methods ─────────────────────────────────────
+
+@testitem "compute_t′_bounds(t, β, δt): analytic special cases" tags = [:unit, :fast] begin
+    # β = 0: the bounds are just the supertranslation-shrunk span.
+    t = collect(range(-10.0, 10.0; length=101))
+    @test Scri.compute_t′_bounds(t, 0.0, 1.5) == (-8.5, 8.5)
+    # δt = 0, span straddling zero: both bounds set by the red-shifted (anti-boost)
+    # direction, matching the exact-transformation Doppler test above.
+    β = 0.5
+    γ = 1 / √(1 - β^2)
+    (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, 0.0)
+    @test t′ₘᵢₙ ≈ -10.0 / (γ * (1 + β))
+    @test t′ₘₐₓ ≈ 10.0 / (γ * (1 + β))
+    # δt = 0, entirely positive span: the lower bound is set by the blue-shifted
+    # direction, the upper bound by the red-shifted one.
+    t₊ = collect(range(5.0, 20.0; length=101))
+    (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t₊, β, 0.0)
+    @test t′ₘᵢₙ ≈ 5.0 / (γ * (1 - β))
+    @test t′ₘₐₓ ≈ 20.0 / (γ * (1 + β))
+end
+
+@testitem "compute_t′_bounds(t, β, δt): invalid arguments throw" tags = [:unit, :fast] begin
+    t = collect(range(-10.0, 10.0; length=101))
+    @test_throws ArgumentError Scri.compute_t′_bounds(t, -0.1, 1.0)
+    @test_throws ArgumentError Scri.compute_t′_bounds(t, 1.0, 1.0)
+    @test_throws ArgumentError Scri.compute_t′_bounds(t, 1.2, 1.0)
+    @test_throws ArgumentError Scri.compute_t′_bounds(t, 0.5, -1.0)
+end
+
+@testitem "compute_t′_bounds(t, β, δt): tight — achieved by extreme transformations" tags = [
+    :unit, :fast
+] begin
+    import Quaternionic: Rotor, QuatVec
+    # Pixels at ±z with boost β along +z realize both extremes of κ⁻¹; a constant
+    # supertranslation ±δt realizes the extremes of α.  Each worst-case bound is then
+    # attained exactly by one such transformation.
+    β, δt = 0.4, 1.0
+    Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(0.0, 1.0, 0.0, 0.0)]
+    v⃗ = QuatVec(0.0, 0.0, β)
+    t = collect(range(-10.0, 10.0; length=101))
+    (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, δt)
+    @test t′ₘᵢₙ == Scri.compute_t′_bounds(t, [-δt, -δt], Rₚ, v⃗)[1]
+    @test t′ₘₐₓ == Scri.compute_t′_bounds(t, [+δt, +δt], Rₚ, v⃗)[2]
+end
+
+@testitem "compute_t′_bounds(t, β, δt): contained in exact span for random admissible transformations" tags = [
+    :unit, :fast
+] begin
+    import Quaternionic: Rotor, RotorF64, QuatVec, normalize
+    import Random
+
+    rng = Random.Xoshiro(31)
+    β, δt = 0.6, 2.0
+    t = collect(range(-50.0, 50.0; length=201))
+    (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, δt)
+    @test t′ₘᵢₙ < t′ₘₐₓ
+    (t′, _) = Scri.compute_t′(t, β, δt)
+    for _ ∈ 1:20
+        Nm = 25
+        Rₚ = randn(rng, RotorF64, Nm)
+        αₚ = δt .* (2 .* rand(rng, Nm) .- 1)
+        k̂ = normalize(randn(rng, QuatVec{Float64}))
+        v⃗ = (β * rand(rng)) * k̂
+        for ℐ ∈ (1, -1)
+            (exactₘᵢₙ, exactₘₐₓ) = Scri.compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)
+            @test exactₘᵢₙ ≤ t′ₘᵢₙ
+            @test t′ₘₐₓ ≤ exactₘₐₓ
+            # The worst-case grid therefore passes validation for every transformation.
+            @test Scri.validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ) === t′
+        end
+    end
+end
+
+@testitem "compute_t′(t, β, δt): grid spans the worst-case bounds" tags = [:unit, :fast] begin
+    β, δt = 0.3, 1.0
+    t = collect(range(-10.0, 10.0; length=101))
+    (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, δt)
+    (t′, tᵪ) = Scri.compute_t′(t, β, δt)
+    @test length(t′) == length(t)
+    @test all(diff(t′) .> 0)
+    @test t′[begin] == t′ₘᵢₙ
+    @test t′[end] == t′ₘₐₓ
+    # tᵪ is the fixed point of the affine map t ↦ t′(t).
+    scale = (t′ₘₐₓ - t′ₘᵢₙ) / (t[end] - t[begin])
+    @test t′ₘᵢₙ + scale * (tᵪ - t[begin]) ≈ tᵪ
+end
+
+@testitem "compute_t′(t, β, δt): collapsed worst-case range throws an error" tags = [
+    :unit, :fast
+] begin
+    # δt bigger than half the time span leaves no complete slice even at β=0.
+    t = collect(range(-1.0, 1.0; length=51))
+    @test_throws ErrorException Scri.compute_t′(t, 0.0, 5.0)
 end
