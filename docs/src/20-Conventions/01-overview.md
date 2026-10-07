@@ -44,6 +44,11 @@ A), which describes the CCE evolution implemented in the SpECTRE code.
 [Iozzo_2021](@citet) constructed a framework for comparing conventions
 across the literature, which is extended here.
 
+Conventions for spin weight, the spin-weighted spherical harmonics,
+and the rotation operators from which ``ð`` is built follow the
+[conventions summary](@extref SphericalFunctions
+:std:label:`summary_spin_weight`) of `SphericalFunctions.jl`.
+
 Conventions for Geometric Algebra are described in the documentation
 of `Quaternionic.jl`, [here for the
 fundamentals](https://moble.github.io/Quaternionic.jl/stable/geometric_algebra/)

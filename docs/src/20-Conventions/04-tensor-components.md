@@ -164,3 +164,18 @@ the same logic:
 ```math
 {}^{[A]}λ = \frac{c_s c_λ}{c_l c_m^2}\, λ.
 ```
+
+In the default convention, both radiative shears are tied to the
+strain.  The Bondi metric function ``J`` of [Moxon_2020](@citet) has
+leading coefficient ``J^{(1)} = h̄``, and their Eq. (86c) gives ``σ =
+J^{(1)}/2\sqrt2`` asymptotically; the same computation for ``λ`` on
+``ℐ⁻`` gives the conjugate relation:
+
+```math
+σ = \frac{h̄}{2\sqrt2} \quad (ℐ⁺),
+\qquad
+λ = \frac{h}{2\sqrt2} \quad (ℐ⁻),
+```
+
+with all three understood as the finite radiative data described at
+the top of this page.

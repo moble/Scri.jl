@@ -253,7 +253,7 @@ components are being processed.
     iφ₁ = component_index(dc, Val(:φ₁))
     iφ₀ = component_index(dc, Val(:φ₀))
 
-    @inbounds begin
+    @inbounds let √ = sqrt ∘ T
         ψ₀ = isnothing(iψ₀) ? 0 : dataᵢⱼ[iψ₀]
         ψ₁ = isnothing(iψ₁) ? 0 : dataᵢⱼ[iψ₁]
         ψ₂ = isnothing(iψ₂) ? 0 : dataᵢⱼ[iψ₂]
@@ -269,8 +269,8 @@ components are being processed.
 
         if I == +1
             # The ℐ⁺ tower mixes upward, so the convention-X mixing parameter is the SXS
-            # input rescaled by the neighboring-factor ratio Fₙ/Fₙ₊₁ = c_l c_m:
-            # b^{[X]} = (c_l c_m)·(ðt′/2κ).
+            # input rescaled by the neighboring-factor ratio Fₙ/Fₙ₊₁ = c_l c_m: b^{[X]} =
+            # (c_l c_m)·(ðt′/2κ).
             ðu′╱2κ = dyad_factor(dc.conventions) * ðt′╱2κ
             if !isnothing(iψ₀)
                 dataᵢⱼ[iψ₀] =
@@ -290,10 +290,10 @@ components are being processed.
                 dataᵢⱼ[iψ₄] = κ⁻³ * (ψ₄)
             end
             if !isnothing(iσ)
-                dataᵢⱼ[iσ] = κ⁻¹ * (σ + F_σ * ð²α / 2)
+                dataᵢⱼ[iσ] = κ⁻¹ * (σ - F_σ * ð²α / 2√2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h + F_h * ð̄²α / 2)
+                dataᵢⱼ[ih] = κ⁻¹ * (h - F_h * ð̄²α)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News
@@ -308,13 +308,14 @@ components are being processed.
                 dataᵢⱼ[iφ₂] = κ⁻² * (φ₂)
             end
         else  # I == -1
-            # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation, whose
-            # parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).  Only then do
-            # the two terms in each rung share a spin weight, as the tower runs from ψ₀ (s=+2)
-            # down to ψ₄ (s=-2): e.g., ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀ (s=+2).  Because
-            # this tower mixes downward, the dyad factor divides — Fₙ/Fₙ₋₁ = 1/(c_l c_m) —
-            # and the conjugation acts only on the SXS input, never on the factor:
-            # b̄^{[X]} = conj(ðt′/2κ)/(c_l c_m), which is NOT conj(b^{[X]}) unless c_l² = 1.
+            # The ℐ⁻ generator is l̃, so the peeling tower is the l-fixed null rotation,
+            # whose parameter is the conjugate ð̄v′╱2κ = conj(ðt′╱2κ) (spin weight -1).
+            # Only then do the two terms in each rung share a spin weight, as the tower runs
+            # from ψ₀ (s=+2) down to ψ₄ (s=-2): e.g., ψ₁ (s=+1) = ψ₁ + ð̄v′╱2κ (s=-1) · ψ₀
+            # (s=+2).  Because this tower mixes downward, the dyad factor divides — Fₙ/Fₙ₋₁
+            # = 1/(c_l c_m) — and the conjugation acts only on the SXS input, never on the
+            # factor: b̄^{[X]} = conj(ðt′/2κ)/(c_l c_m), which is NOT conj(b^{[X]}) unless
+            # c_l² = 1.
             ð̄v′╱2κ = conj(ðt′╱2κ) / dyad_factor(dc.conventions)
             if !isnothing(iψ₄)
                 dataᵢⱼ[iψ₄] =
@@ -334,10 +335,10 @@ components are being processed.
                 dataᵢⱼ[iψ₀] = κ⁻³ * (ψ₀)
             end
             if !isnothing(iλ)
-                dataᵢⱼ[iλ] = κ⁻¹ * (λ + F_λ * ð̄²α / 2)
+                dataᵢⱼ[iλ] = κ⁻¹ * (λ + F_λ * ð̄²α / 2√2)
             end
             if !isnothing(ih)
-                dataᵢⱼ[ih] = κ⁻¹ * (h - F_h * ð̄²α / 2)
+                dataᵢⱼ[ih] = κ⁻¹ * (h + F_h * ð̄²α)
             end
             if !isnothing(iNews)
                 dataᵢⱼ[iNews] = κ⁻² * News

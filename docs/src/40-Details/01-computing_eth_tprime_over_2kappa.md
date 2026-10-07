@@ -47,11 +47,13 @@ objective of what follows.
 
 As mentioned when we [introduced the ``ð`` operator](@ref
 the-operator-eth), ``ð`` is best understood as a derivative operator
-on the group ``\mathrm{Spin}(3)``.  It is not immediately obvious that
-``v⃗⋅k̂`` needs to be expressed as a function on ``\mathrm{Spin}(3)``,
-but in order to obtain an expression for ``ðt'/2κ`` that is a function
-on ``\mathrm{Spin}(3)``, we need to express all of the terms in that
-form.  The solution is simple:
+on the group ``\mathrm{Spin}(3)`` — the raising operator ``R_+`` of
+[SphericalFunctions.jl](@extref SphericalFunctions
+:std:label:`conv_L_R_definitions`).  It is not immediately obvious
+that ``v⃗⋅k̂`` needs to be expressed as a function on
+``\mathrm{Spin}(3)``, but in order to obtain an expression for
+``ðt'/2κ`` that is a function on ``\mathrm{Spin}(3)``, we need to
+express all of the terms in that form.  The solution is simple:
 
 ```math
 v⃗⋅k̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̄) = (Q̄ v⃗ Q) ⋅ ẑ.

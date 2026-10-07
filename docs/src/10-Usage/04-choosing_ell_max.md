@@ -51,7 +51,7 @@ There is no single formula, but two effects set the scale.
 
 * **Supertranslations.**  The effects of a supertranslation on
     asymptotic Bondi data can be understood in three ways.  First, the
-    shear and strain are altered by an additive term like ``ð²α/2``
+    shear and strain are altered by an additive term like ``ð²α``
     (or its conjugate).  So, for a supertranslation band-limited at
     ``ℓ_α``, the effects on the shear and strain are bounded by
     ``ℓ_α`` — which will typically be smaller than the data's own band

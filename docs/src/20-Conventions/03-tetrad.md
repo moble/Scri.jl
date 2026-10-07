@@ -22,10 +22,12 @@ nᵃ &= \frac{c_l^{-1}}{\sqrt{2}} \left(∂ₜ - ∂ᵣ\right)ᵃ.
 \end{aligned}
 ```
 
-(Note that we require ``|c_m| = 1``.)  The inner products are ``l
-\cdot n = -c_s`` and ``m \cdot m̄ = c_s``, with all other combinations
-zero.  In particular, each of these vectors is null.  This simplicity
-is what makes this tetrad so useful.
+(Note that we require ``|c_m| = 1``.)  With ``c_m = 1``, the ``m`` leg
+is the tangent basis ``(θ̂ + iϕ̂)/\sqrt{2}`` that defines [spin
+weight](@extref SphericalFunctions :std:label:`conv_spin_weight`).
+The inner products are ``l \cdot n = -c_s`` and ``m \cdot m̄ = c_s``,
+with all other combinations zero.  In particular, each of these
+vectors is null.  This simplicity is what makes this tetrad so useful.
 
 [^1]: The asymptotic-transformation paper [Boyle_2015](@citet) works
     instead with the *co*-tetrad defined as ``l_a = (du)_a``, ``m_a =

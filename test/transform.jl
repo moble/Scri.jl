@@ -155,7 +155,7 @@ end
     @test d_bridgeˢ != d_bridge⁻ˢ
 end
 
-@testitem "transform!: pure supertranslation pins mixing sign and shear ½" tags = [
+@testitem "transform!: pure supertranslation pins mixing sign and shear shift" tags = [
     :validation, :integration, :fast
 ] begin
     import Random
@@ -165,9 +165,9 @@ end
 
     # A pure supertranslation (no boost, no rotation) with time-independent data isolates the
     # null-rotation mixing and the shear shift at κ = 1.  We check transform! against the
-    # analytic laws — ψₙ' = Σₖ C(4−n,k) bᵏ ψₙ₊ₖ with b = −ðα/2, and σ' = σ + ½ð²α — evaluated
+    # analytic laws — ψₙ' = Σₖ C(4−n,k) bᵏ ψₙ₊ₖ with b = −ðα/2, and σ' = σ − ð²α/2√2 — evaluated
     # independently on the same grid.  This pins the *signs* (e.g., that b = −ðα/2, not +ðα/2)
-    # and the factor of ½ on σ, which the component-level tests (which take b and ð²α as given)
+    # and the factor on σ, which the component-level tests (which take b and ð²α as given)
     # cannot.
     ℓ = 8
     N = (ℓ + 1)^2
@@ -212,7 +212,7 @@ end
     @test maximum(abs, ψ₄ₒ .- ψ₄ᵢ) < tol                                    # ψ₄ unmixed
     @test maximum(abs, ψ₃ₒ .- (ψ₃ᵢ .+ b_g .* ψ₄ᵢ)) < tol                    # +b, b = −ðα/2
     @test maximum(abs, ψ₂ₒ .- (ψ₂ᵢ .+ 2 .* b_g .* ψ₃ᵢ .+ b_g .^ 2 .* ψ₄ᵢ)) < tol
-    @test maximum(abs, σₒ .- (σᵢ .+ ð²α_g ./ 2)) < tol                      # +½ð²α
+    @test maximum(abs, σₒ .- (σᵢ .- ð²α_g ./ (2√2))) < tol                  # −ð²α/2√2
 end
 
 @testitem "transform!: pure supertranslation at ℐ⁻ uses the conjugate parameter" tags = [
@@ -224,7 +224,7 @@ end
 
     # The ℐ⁻ mirror of the previous test.  The generator is l̃, so the peeling tower must use
     # the *conjugate* parameter b̄ = ð̄v'/2κ (spin −1), running ψ₀(s=+2) → ψ₄(s=−2); the shear
-    # shift flips sign, σ' = σ − ½ð²α.  Pins the conjugation in the I=−1 branch.
+    # shift is λ' = λ + ð̄²α/2√2.  Pins the conjugation in the I=−1 branch.
     ℓ = 8
     N = (ℓ + 1)^2
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
@@ -266,9 +266,65 @@ end
     @test maximum(abs, ψ₀ₒ .- ψ₀ᵢ) < tol                                    # ψ₀ unmixed
     @test maximum(abs, ψ₁ₒ .- (ψ₁ᵢ .+ b̄_g .* ψ₀ᵢ)) < tol                    # conjugate parameter
     @test maximum(abs, ψ₂ₒ .- (ψ₂ᵢ .+ 2 .* b̄_g .* ψ₁ᵢ .+ b̄_g .^ 2 .* ψ₀ᵢ)) < tol
-    @test maximum(abs, λₒ .- (λᵢ .+ conj.(ð²α_g) ./ 2)) < tol               # +½ð̄²α at ℐ⁻
+    @test maximum(abs, λₒ .- (λᵢ .+ conj.(ð²α_g) ./ (2√2))) < tol           # +ð̄²α/2√2 at ℐ⁻
     # The un-conjugated parameter would be wrong (spin-weight mismatch); confirm it differs.
     @test maximum(abs, ψ₁ₒ .- (ψ₁ᵢ .+ (-ðα_g ./ 2) .* ψ₀ᵢ)) > tol
+end
+
+@testitem "transform!: flat space acquires the pure-gauge strain of a supertranslated frame" tags = [
+    :validation, :integration, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, from_spherical_coordinates
+    using SphericalFunctions: ₛ𝐘
+    using LinearAlgebra: det
+    import ForwardDiff
+
+    # Minkowski space in the Bondi-like frame adapted to the cut t = t′ + α(n̂) of ℐ.  The
+    # generators are the envelope of the null hyperplanes t ∓ x⃗⋅n̂ = t′ + α(n̂), which gives
+    # x⃗ = ρn̂ − ℐ∇α and t = t′ + α + ℐρ (upper sign and ℐ = +1 on ℐ⁺).  The strain of this
+    # frame is h = conj(J⁽¹⁾), with J = ½q^Aq^B h_AB and q^A = (−1, −i/sinθ) as in Moxon et
+    # al. (2020), and r the areal radius; no transformation law enters.  The radiative shear
+    # follows from Eq. (86c) of that paper: σ = J⁽¹⁾/2√2 on ℐ⁺, and λ = conj(J⁽¹⁾)/2√2 on ℐ⁻.
+    ε₁, ε₂ = 0.3, 0.2
+    α(θ, ϕ) = ε₁ * sin(θ)^2 * cos(2ϕ) + ε₂ * (3cos(θ)^2 - 1)
+    function embedding(ρ, θ, ϕ, ℐ)
+        ∇α = ForwardDiff.gradient(p -> α(p[1], p[2]), [θ, ϕ])
+        n̂ = [sin(θ)cos(ϕ), sin(θ)sin(ϕ), cos(θ)]
+        θ̂ = [cos(θ)cos(ϕ), cos(θ)sin(ϕ), -sin(θ)]
+        ϕ̂ = [-sin(ϕ), cos(ϕ), zero(ϕ)]
+        return vcat(α(θ, ϕ) + ℐ * ρ, ρ * n̂ - ℐ * (∇α[1] * θ̂ + ∇α[2] / sin(θ) * ϕ̂))
+    end
+    function rJ(ρ, θ, ϕ, ℐ)
+        e = ForwardDiff.jacobian(p -> embedding(ρ, p[1], p[2], ℐ), [θ, ϕ])  # ∂_A x^a
+        η = [-1, 1, 1, 1]
+        g = [sum(η .* e[:, A] .* e[:, B]) for A ∈ 1:2, B ∈ 1:2]  # g_AB
+        q = [-1, -im / sin(θ)]
+        r = (det(g) / sin(θ)^2)^(1 / 4)
+        return r * (transpose(q) * g * q) / (2r^2)  # → J⁽¹⁾ as ρ → ∞
+    end
+    J⁽¹⁾(θ, ϕ, ℐ) = (10rJ(1e6, θ, ϕ, ℐ) - rJ(1e5, θ, ϕ, ℐ)) / 9  # removes the O(1/ρ) term
+
+    # Mode weights of α: sin²θ cos2ϕ = √(8π/15)(Y₂₂ + Y₂,₋₂) and 3cos²θ − 1 = √(16π/5) Y₂₀.
+    ℓₘₐₓ = 8
+    N = (ℓₘₐₓ + 1)^2
+    αmodes = zeros(ComplexF64, N)
+    αmodes[5] = αmodes[9] = ε₁ * sqrt(8π / 15)
+    αmodes[7] = ε₂ * sqrt(16π / 5)
+    t = collect(-1.0:0.5:1.0)
+    pts = [(0.4, 0.3), (0.9, 2.0), (1.5, 4.1), (2.3, 5.5), (2.9, 1.0)]
+    Rs = [from_spherical_coordinates(θ, ϕ) for (θ, ϕ) ∈ pts]
+    for (dc, ℐ) ∈
+        ((Scri.DataComponents(:σ, :h), 1), (Scri.DataComponents(:λ, :h; ℐ=-1), -1))
+        data = zeros(ComplexF64, N, length(t), 2)  # flat space: no shear, no strain
+        data′, _ = Scri.transform!(
+            data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), αmodes, dc
+        )
+        J = [J⁽¹⁾(θ, ϕ, ℐ) for (θ, ϕ) ∈ pts]
+        shear′ = ₛ𝐘(2ℐ, ℓₘₐₓ, Float64, Rs) * data′[5:end, 3, 1]
+        h′ = ₛ𝐘(-2, ℓₘₐₓ, Float64, Rs) * data′[5:end, 3, 2]
+        @test maximum(abs, h′ .- conj.(J)) < 1e-6
+        @test maximum(abs, shear′ .- (ℐ == 1 ? J : conj.(J)) ./ (2√2)) < 1e-6
+    end
 end
 
 @testitem "compute_ðt′╱2κ: λ-formula and the boost×supertranslation cross-term sign" tags = [
@@ -1437,5 +1493,135 @@ end
         for i ∈ eachindex(ms), j ∈ 1:(i - 1)
             @test !Base.isambiguous(ms[i], ms[j])
         end
+    end
+end
+
+@testitem "transform!: boosted Schwarzschild has the boosted Bondi four-momentum" tags = [
+    :validation, :integration, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, imz
+    using SphericalFunctions: ₛ𝐘, from_spherical_coordinates, golden_ratio_spiral_rotors
+
+    # Schwarzschild in its own Bondi frame is ψ₂ = −M, constant over the sphere and in time,
+    # with every other component zero (the value follows from the tetrad and Weyl-component
+    # definitions of the "Tensor Components" documentation page).  Boosting it exercises the
+    # conformal factor, the aberrated output grid, and the κ⁻³ Weyl weight against physical
+    # oracles rather than against the transformation laws themselves.  The mass aspect must
+    # become the boosted Coulomb aspect −Mκ⁻³, and its ℓ ≤ 1 part must assemble into the
+    # four-momentum Mγ(1, −v⃗) of a hole moving at −v⃗ in the new frame.  (The transformation
+    # is active on the frame, so the source moves the other way.)
+    ℓₘₐₓ = 8
+    N = (ℓₘₐₓ + 1)^2
+    M = 1.3
+    v = 0.2
+    γ = 1 / sqrt(1 - v^2)
+    dc = Scri.DataComponents(:ψ₁, :ψ₂, :ψ₃, :ψ₄)
+    iψ₁ = Scri.component_index(dc, Val(:ψ₁))
+    iψ₂ = Scri.component_index(dc, Val(:ψ₂))
+
+    t = collect(-2.0:0.5:2.0)
+    data = zeros(ComplexF64, N, length(t), 4)
+    data[1, :, iψ₂] .= -M * sqrt(4π)      # ψ₂ = −M, i.e., −M√(4π) Y₀,₀
+    data′, t′ = Scri.transform!(
+        data, t, QuatVec(0.0, 0.0, v), one(Rotor{Float64}), zeros(ComplexF64, N), dc
+    )
+
+    # Pointwise: the transformed mass aspect is the Coulomb aspect of a boosted hole, with
+    # the conformal factor on the *output* grid given by κ = γ(1 + v⃗⋅n̂′).
+    j = 5
+    Rs = golden_ratio_spiral_rotors(0, ℓₘₐₓ, Float64)
+    ψ₂′ = ₛ𝐘(0, ℓₘₐₓ, Float64, Rs) * data′[:, j, iψ₂]
+    κ = [γ * (1 + v * (R * imz * conj(R)).z) for R ∈ Rs]
+    @test maximum(abs, ψ₂′ .- (-M .* κ .^ -3)) < 1e-10 * M
+
+    # Integrated: ∮ψ₂′(1, n̂′)dΩ/4π is the Bondi four-momentum, which must be the boosted
+    # one.  The ℓ ≤ 1 modes carry it, since ∮Y₀,₀dΩ = √(4π) and cosθ = √(4π/3) Y₁,₀.  The
+    # residual is set by the ℓₘₐₓ truncation of κ⁻³, whose modes fall off like vᐟ.
+    E = real(data′[1, j, iψ₂]) / sqrt(4π)
+    Pᶻ = real(data′[3, j, iψ₂]) / sqrt(12π)
+    @test E ≈ -M * γ rtol = 1e-7
+    @test Pᶻ ≈ M * γ * v rtol = 1e-7
+    @test abs(data′[2, j, iψ₂]) < 1e-7 && abs(data′[4, j, iψ₂]) < 1e-7  # no transverse Pˣ, Pʸ
+
+    # The null-rotation piece of a boost has an independent geometric limit.  To first order
+    # in v a boost is a translation that grows with retarded time: at u′ the hole sits at
+    # −v⃗u′, so the origin is displaced by +v⃗u′ from it, and the translated-light-cone oracle
+    # of the companion test gives b = ð(v⃗⋅n̂ u′)/2, hence ψ₁′ = −3M u′ v sinθ/2 + O(v²).  The
+    # residual is linear in v (≈ 4v, relative), so a small boost pins the ðκ/2κ row of the
+    # mixing parameter — sign and magnitude both — against geometry rather than against the
+    # transformation law.
+    vₛ = 1e-4
+    θs = [0.4, 0.9, 1.5, 2.2, 2.9]
+    Rθ = [from_spherical_coordinates(θ, 0.7) for θ ∈ θs]
+    dataₛ = zeros(ComplexF64, N, length(t), 4)
+    dataₛ[1, :, iψ₂] .= -M * sqrt(4π)
+    dataₛ′, tₛ′ = Scri.transform!(
+        dataₛ, t, QuatVec(0.0, 0.0, vₛ), one(Rotor{Float64}), zeros(ComplexF64, N), dc
+    )
+    jₛ = 7
+    ψ₁ₛ = ₛ𝐘(1, ℓₘₐₓ, Float64, Rθ) * dataₛ′[2:end, jₛ, iψ₁]
+    oracle = [-3M * tₛ′[jₛ] * vₛ * sin(θ) / 2 for θ ∈ θs]
+    @test maximum(abs, real.(ψ₁ₛ) .- oracle) < 1e-3 * maximum(abs, oracle)
+    @test maximum(abs, imag.(ψ₁ₛ)) < 1e-3 * maximum(abs, oracle)
+end
+
+@testitem "transform!: translated Schwarzschild pins the null rotation against the light cone" tags = [
+    :validation, :integration, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    using SphericalFunctions: ₛ𝐘, from_spherical_coordinates
+
+    # A pure ℓ = 1 supertranslation is an ordinary spatial translation, and for Schwarzschild
+    # the exact answer is available from geometry alone.  Moving the origin to +δ⃗ relabels
+    # retarded time as u′ = u + δ⃗⋅n̂, i.e., α = −δ⃗⋅n̂ in the time law u′ = u − α.  The tetrad
+    # leg l̃ then points radially from the *new* origin while the principal null direction of
+    # the hole still points from the old one; at radius r the two differ by the angle δ⃗_⊥/r,
+    # which is the null rotation l̃′ = l̃ + b̄m̃ + bm̄̃ + |b|²ñ with b = ð(δ⃗⋅n̂)/2 once the legs
+    # are rescaled to ℐ.  Since Schwarzschild has only ψ₂ = −M, the tower then gives
+    # ψ₁′ = 3bψ₂ = −3M ð(δ⃗⋅n̂)/2, with ψ₂′ = ψ₂ untouched (κ = 1, and ψ₃ = ψ₄ = 0).
+    #
+    # Nothing here is taken from the transformation laws: b comes from the tilt of the
+    # displaced light cone, and ð(δ⃗⋅n̂) is written out in closed form.  This is what fixes
+    # the *sign* of the mixing parameter against geometry — the companion test that pins
+    # b = −ðα/2 does so only against an independent evaluation of the same convention.
+    ℓₘₐₓ = 8
+    N = (ℓₘₐₓ + 1)^2
+    M = 1.3
+    δ = 0.35
+    dc = Scri.DataComponents(:ψ₁, :ψ₂, :ψ₃, :ψ₄)
+    iψ₁ = Scri.component_index(dc, Val(:ψ₁))
+    iψ₂ = Scri.component_index(dc, Val(:ψ₂))
+    t = collect(-2.0:0.5:2.0)
+
+    θs = [0.4, 0.9, 1.5, 2.2, 2.9]
+    ϕs = [0.0, 1.0, 2.0, 3.0, 4.0]
+    Rs = [from_spherical_coordinates(θ, ϕ) for (θ, ϕ) ∈ zip(θs, ϕs)]
+
+    # Translation along ẑ:  δ⃗⋅n̂ = δ cosθ, and ð(cosθ) = −∂_θ cosθ = sinθ.
+    # Translation along x̂:  δ⃗⋅n̂ = δ sinθ cosϕ, and ð(sinθ cosϕ) = −(cosθ cosϕ − i sinϕ).
+    for (δ⃗, ðδn̂) ∈ (
+        (QuatVec(0.0, 0.0, δ), [δ * sin(θ) for θ ∈ θs]),
+        (
+            QuatVec(δ, 0.0, 0.0),
+            [-δ * (cos(θ)cos(ϕ) - im * sin(ϕ)) for (θ, ϕ) ∈ zip(θs, ϕs)],
+        ),
+    )
+        # α = −δ⃗⋅n̂ as mode weights, using Y₁,₀ ∝ cosθ and Y₁,±₁ ∝ ∓sinθ e^{±iϕ}/√2.
+        α = zeros(ComplexF64, N)
+        α[3] = -δ⃗.z * sqrt(4π / 3)
+        α[4] = (δ⃗.x - im * δ⃗.y) * sqrt(2π / 3)
+        α[2] = -conj(α[4])
+
+        data = zeros(ComplexF64, N, length(t), 4)
+        data[1, :, iψ₂] .= -M * sqrt(4π)
+        data′, _ = Scri.transform!(
+            data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
+        )
+
+        j = 5
+        ψ₂′ = ₛ𝐘(0, ℓₘₐₓ, Float64, Rs) * data′[:, j, iψ₂]
+        ψ₁′ = ₛ𝐘(1, ℓₘₐₓ, Float64, Rs) * data′[2:end, j, iψ₁]
+        @test maximum(abs, ψ₂′ .+ M) < 1e-12 * M            # a translation cannot change it
+        @test maximum(abs, ψ₁′ .- (-3M .* ðδn̂ ./ 2)) < 1e-12 * M
     end
 end
