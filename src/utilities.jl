@@ -337,10 +337,11 @@ end
 
 Rigidly rotate the spin-weight-0 mode weights `α` by the rotor `Q`: if the input modes
 represent the function ``f``, the output modes represent ``f′(k̂) = f(Q⁻¹ k̂)`` — that is,
-the function actively rotated by `Q`.  In terms of Wigner's ``𝔇`` matrices,
+the function actively rotated by `Q`.  In terms of Wigner's ``𝔇`` matrices, in the
+convention of SphericalFunctions.jl (version 3 and later),
 
 ```math
-f′_{ℓ,m′} = \sum_m \overline{𝔇^ℓ_{m′,m}(Q)}\, f_{ℓ,m}.
+f′_{ℓ,m′} = \sum_m 𝔇^ℓ_{m′,m}(Q)\, f_{ℓ,m}.
 ```
 
 A rigid rotation preserves the band limit, so this is exact (up to roundoff) at the input
@@ -349,14 +350,16 @@ The mode ordering is as in [`BMS`](@ref).
 """
 function rotate_modes(α::Vector{Complex{T}}, Q::Rotor, ℓₘₐₓ::Int) where {T}
     ℓᵅ = isqrt(length(α)) - 1
-    D = D_matrices(Q, min(ℓᵅ, ℓₘₐₓ))
+    𝔇 = D(Q, min(ℓᵅ, ℓₘₐₓ))
     out = zeros(Complex{T}, (ℓₘₐₓ + 1)^2)
-    for ℓ ∈ 0:min(ℓᵅ, ℓₘₐₓ), m′ ∈ (-ℓ):ℓ
-        s = zero(Complex{T})
-        for m ∈ (-ℓ):ℓ
-            s += conj(D[WignerDindex(ℓ, m′, m)]) * α[ℓ ^ 2 + ℓ + m + 1]
+    for (ℓ, 𝔇ˡ) ∈ 𝔇
+        for m′ ∈ (-ℓ):ℓ
+            s = zero(Complex{T})
+            for m ∈ (-ℓ):ℓ
+                s += 𝔇ˡ[m′, m] * α[ℓ ^ 2 + ℓ + m + 1]
+            end
+            out[ℓ ^ 2 + ℓ + m′ + 1] = s
         end
-        out[ℓ ^ 2 + ℓ + m′ + 1] = s
     end
     return out
 end

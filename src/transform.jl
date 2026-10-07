@@ -313,7 +313,7 @@ function transform!(
     # we use `OffsetVector` so that they can be indexed by their spin weight.
     𝒯 = OffsetVector(
         OhMyThreads.tmap(
-            s -> ₛ𝐘(s, ℓₘₐₓ, basetype(Tₚ), Rₚ),
+            s -> sYlm_matrix(Rₚ, ℓₘₐₓ, s),
             Matrix{Complex{basetype(Tₚ)}},
             -2:2;
             chunking=false,
@@ -325,7 +325,7 @@ function transform!(
         # direct SSHT" for details.
         OffsetVector(
             map(-2:2) do s
-                ₛY = ₛ𝐘(s, ℓₘₐₓ, T4′, R′ₚ)
+                ₛY = sYlm_matrix(R′ₚ, ℓₘₐₓ, s)
                 if s == 0
                     lu(ₛY)
                 else
@@ -652,9 +652,9 @@ function pixel_waveform(
     spins = Int[spin_weight(Val(c)) for c ∈ C]
     P = Array{Complex{TP},3}(undef, Nᵖ, Nᵗ, Nᵈ)
     for s ∈ unique(spins)
-        # ₛ𝐘 columns cover modes with ℓ ≥ |s|; the leading ℓ < |s| rows of `data` are
-        # ignored, as in `transform!`.
-        ₛY = ₛ𝐘(s, ℓₘₐₓ, TP′, R′ₚ)
+        # `sYlm_matrix` columns cover modes with ℓ ≥ |s|; the leading ℓ < |s| rows of
+        # `data` are ignored, as in `transform!`.
+        ₛY = sYlm_matrix(R′ₚ, ℓₘₐₓ, s)
         for k ∈ findall(==(s), spins)
             mul!(view(P, :, :, k), ₛY, view(data, (s ^ 2 + 1):Nᵐ, :, k))
         end
@@ -831,18 +831,18 @@ function transform_objective(
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
         OhMyThreads.@set scheduler = :static
         OhMyThreads.@set ntasks = nthreads()
-        OhMyThreads.@local storage = sYlm_prep(ℓₘₐₓ, 2, TΘ)
+        OhMyThreads.@local begin
+            calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, 0:2)
+            Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, 3)
+        end
         Rₚ[i] = aberration(R′ₚ[i], Λ)
         # Evaluate α, ðα, and ð²α at this pixel by dotting each mode vector with the
-        # matching ₛYₗₘ row (spins 0, 1, and 2).  Each `sYlm_values!` call overwrites the
-        # storage, so each dot product completes before the next spin is computed.  The
-        # sums run over the modes with ℓ ≥ s; `α` is real on the sphere by construction.
-        Y = sYlm_values!(storage, Rₚ[i], 0)
-        αₚ[i] = real(pixel_dot(Y, α, 1, Nᵐ))
-        Y = sYlm_values!(storage, Rₚ[i], 1)
-        ðαₚ[i] = pixel_dot(Y, ðα, 2, Nᵐ)
-        Y = sYlm_values!(storage, Rₚ[i], 2)
-        ð²αₚ[i] = pixel_dot(Y, ð²α, 5, Nᵐ)
+        # matching ₛYₗₘ row; the columns of `Y` hold spins 0, 1, and 2.  The sums run over
+        # the modes with ℓ ≥ s; `α` is real on the sphere by construction.
+        sYlm_rows!(Y, calc, Rₚ[i])
+        αₚ[i] = real(pixel_dot(view(Y, :, 1), α, 1, Nᵐ))
+        ðαₚ[i] = pixel_dot(view(Y, :, 2), ðα, 2, Nᵐ)
+        ð²αₚ[i] = pixel_dot(view(Y, :, 3), ð²α, 5, Nᵐ)
     end
 
     # Validate the output grid at these parameter values (synchronously, so a bad grid
@@ -854,17 +854,20 @@ function transform_objective(
     ### Stage C: Fused per-pixel synthesis → interpolation/mixing → accumulation
     ###
 
-    # Components sharing a spin weight reuse a single ₛYₗₘ evaluation per pixel.
+    # Components sharing a spin weight reuse a single ₛYₗₘ evaluation per pixel, and one
+    # calculator evaluates every spin weight in the range from a single recurrence.
     spins = Int[spin_weight(Val(c)) for c ∈ C]
     unique_spins = unique(spins)
     spin_components = [findall(==(s), spins) for s ∈ unique_spins]
+    spin_range = minimum(spins):maximum(spins)
 
     return OhMyThreads.tmapreduce(
         +, OhMyThreads.index_chunks(1:Nᵖ; n=nthreads()); chunking=false
     ) do chunk
         # Task-local storage and buffers, allocated once per chunk; these are the only
         # dual-typed arrays of the whole computation.
-        storage = sYlm_prep(ℓₘₐₓ, 2, TΘ)
+        calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range)
+        Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range))
         dᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ)
         d̈ᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ)
         d′ᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′)
@@ -874,11 +877,12 @@ function transform_objective(
             # mode data: dᵢ[k, j] = Σₘ Yₘ data[m, j, k], over the modes with ℓ ≥ |s| and
             # within any declared input band limit (m ≤ N₀).  The inner loop over m walks
             # a contiguous column of `data`.
+            sYlm_rows!(Y, calc, Rₚ[i])
             for (s, ks) ∈ zip(unique_spins, spin_components)
-                Y = sYlm_values!(storage, Rₚ[i], s)
+                Yˢ = view(Y, :, s - first(spin_range) + 1)
                 for k ∈ ks
                     @inbounds for j ∈ 1:Nᵗ
-                        dᵢ[k, j] = pixel_dot(Y, view(data, :, j, k), s ^ 2 + 1, N₀)
+                        dᵢ[k, j] = pixel_dot(Yˢ, view(data, :, j, k), s ^ 2 + 1, N₀)
                     end
                 end
             end
@@ -909,11 +913,30 @@ function transform_objective(
 end
 
 """
+    sYlm_rows!(Y, calc, R)
+
+Evaluate the spin-weighted spherical harmonics at the rotor `R` with the calculator `calc`,
+and store them in the columns of `Y`, one column for each spin weight that `calc` serves,
+in ascending order.  Each column is the ₛYₗₘ row of the synthesis matrix in the flat mode
+ordering from ``ℓ = 0`` that the data use, so it has `(ℓₘₐₓ + 1)^2` entries, of which those
+with ``ℓ < |s|`` are zero.  The element type of `R` must be that of `calc`.
+"""
+function sYlm_rows!(Y::AbstractMatrix, calc, R)
+    set_R!(calc, R)
+    for (ℓ, Yˡ) ∈ calc
+        for (j, s) ∈ enumerate(SphericalFunctions.spins(calc)), m ∈ (-ℓ):ℓ
+            Y[ℓ ^ 2 + ℓ + m + 1, j] = Yˡ[s, m]
+        end
+    end
+    return Y
+end
+
+"""
     pixel_dot(Y, f, m₁, m₂)
 
 Contract the ₛYₗₘ row `Y` with the mode vector `f` over the index range `m₁:m₂` — no
-conjugation, matching the synthesis convention `pixels = ₛ𝐘 modes`.  Both arguments may
-hold dual numbers.
+conjugation, matching the synthesis convention `pixels = sYlm_matrix(R⃗, ℓₘₐₓ, s) * modes`.
+Both arguments may hold dual numbers.
 """
 @inline function pixel_dot(Y, f, m₁, m₂)
     acc = zero(promote_type(eltype(Y), eltype(f)))

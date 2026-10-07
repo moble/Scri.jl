@@ -5,7 +5,7 @@
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, Boost, 𝐤, vec, absvec
-    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
     using LinearAlgebra: lu, dot
 
     # For a pure boost (no rotation, no supertranslation) acting on a spin-0 ψ₂ field with
@@ -19,7 +19,7 @@
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)   # the uniform B-frame grid transform! uses
     # A smooth, band-limited, real spin-0 field.
     f = [1.0 + 0.3 * vec(R(𝐤))[3] + 0.2 * vec(R(𝐤))[1]^2 for R ∈ Rs]
-    α0 = lu(ₛ𝐘(0, ℓ, Float64, Rs)) \ complex(f)
+    α0 = lu(sYlm_matrix(Rs, ℓ, 0)) \ complex(f)
 
     v⃗ = QuatVec(0.1, -0.15, 0.35)
     β = absvec(v⃗)
@@ -37,13 +37,13 @@
         # Replicate transform!'s rest-frame grid and the expected pixel values.
         Λ = Boost(ℐ * v⃗)   # R = 1, so Λ = Boost(ℐ*v⃗) * R = Boost(ℐ*v⃗)
         Rₚ = [Scri.aberration(R′ₚ, Λ) for R′ₚ ∈ Rs]
-        ψ₂_rest = ₛ𝐘(0, ℓ, Float64, Rₚ) * α0                    # input ψ₂ at rest directions
+        ψ₂_rest = sYlm_matrix(Rₚ, ℓ, 0) * α0                    # input ψ₂ at rest directions
         κ⁻¹ = [γ * (1 - ℐ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
         expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)
 
         # The square s=0 analysis is exactly invertible, so synthesizing the output modes on
         # the B-frame grid recovers the transformed pixel values.
-        out_pixels = ₛ𝐘(0, ℓ, Float64, Rs) * data[:, 1, 1]
+        out_pixels = sYlm_matrix(Rs, ℓ, 0) * data[:, 1, 1]
         @test maximum(abs, out_pixels .- expected) < 1e-12
 
         # ψ₂′ is constant in time (constant input, time-independent κ⁻³), so every slice
@@ -54,13 +54,13 @@ end
 
 @testitem "transform!: BMS-element bridge" tags = [:validation, :fast] begin
     using Quaternionic: QuatVec, rotor
-    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
     using LinearAlgebra: lu
 
     ℓ = 6
     N = (ℓ + 1)^2
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
-    α0 = lu(ₛ𝐘(0, ℓ, Float64, Rs)) \ complex([cospi(0.3) + 0.2 * R[1] for R ∈ Rs])
+    α0 = lu(sYlm_matrix(Rs, ℓ, 0)) \ complex([cospi(0.3) + 0.2 * R[1] for R ∈ Rs])
     t = [0.0, 1.0, 2.0, 3.0]
     mkdata() = (d=zeros(ComplexF64, N, 4, 3); foreach(j -> (d[:, j, 1] .= α0), 1:4); d)
 
@@ -160,7 +160,7 @@ end
 ] begin
     import Random
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
     using LinearAlgebra: lu
 
     # A pure supertranslation (no boost, no rotation) with time-independent data isolates the
@@ -180,8 +180,8 @@ end
     αmodes = zeros(ComplexF64, N)
     αmodes[1:9] .= randn(rng, ComplexF64, 9)   # ℓ ≤ 2 only
     α = Scri.impose_reality(αmodes, ℓ, 1)
-    ðα_g = ₛ𝐘(1, ℓ, Float64, Rs) * (ð(0, 0, ℓ, Float64) * α)[2:end]
-    ð²α_g = ₛ𝐘(2, ℓ, Float64, Rs) * (ð(1, 0, ℓ, Float64) * ð(0, 0, ℓ, Float64) * α)[5:end]
+    ðα_g = sYlm_matrix(Rs, ℓ, 1) * (ð(0, 0, ℓ, Float64) * α)[2:end]
+    ð²α_g = sYlm_matrix(Rs, ℓ, 2) * (ð(1, 0, ℓ, Float64) * ð(0, 0, ℓ, Float64) * α)[5:end]
     b_g = -ðα_g ./ 2
 
     # Time-independent inputs for ψ₂(s=0), ψ₃(s=−1), ψ₄(s=−2), σ(s=+2), band-limited to ℓ ≤ 3.
@@ -193,7 +193,7 @@ end
         modes[k][1:(spins[k] ^ 2)] .= 0  # ℓ < |s| (ignored)
         modes[k][17:end] .= 0          # ℓ > 3, so b·ψ stays within ℓₘₐₓ = 8 (no aliasing)
     end
-    in_pix = [ₛ𝐘(spins[k], ℓ, Float64, Rs) * modes[k][(spins[k] ^ 2 + 1):end] for k ∈ 1:4]
+    in_pix = [sYlm_matrix(Rs, ℓ, spins[k]) * modes[k][(spins[k] ^ 2 + 1):end] for k ∈ 1:4]
 
     data = zeros(ComplexF64, N, Nᵗ, 4)
     for k ∈ 1:4, j ∈ 1:Nᵗ
@@ -203,7 +203,7 @@ end
         data, collect(0.0:(Nᵗ - 1)), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
     )
     out_pix = [
-        ₛ𝐘(spins[k], ℓ, Float64, Rs) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
+        sYlm_matrix(Rs, ℓ, spins[k]) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
     ]
 
     ψ₂ᵢ, ψ₃ᵢ, ψ₄ᵢ, σᵢ = in_pix
@@ -220,7 +220,7 @@ end
 ] begin
     import Random
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
 
     # The ℐ⁻ mirror of the previous test.  The generator is l̃, so the peeling tower must use
     # the *conjugate* parameter b̄ = ð̄v'/2κ (spin −1), running ψ₀(s=+2) → ψ₄(s=−2); the shear
@@ -233,8 +233,8 @@ end
     αmodes = zeros(ComplexF64, N)
     αmodes[1:9] .= randn(rng, ComplexF64, 9)   # ℓ ≤ 2 only
     α = Scri.impose_reality(αmodes, ℓ, 1)
-    ðα_g = ₛ𝐘(1, ℓ, Float64, Rs) * (ð(0, 0, ℓ, Float64) * α)[2:end]
-    ð²α_g = ₛ𝐘(2, ℓ, Float64, Rs) * (ð(1, 0, ℓ, Float64) * ð(0, 0, ℓ, Float64) * α)[5:end]
+    ðα_g = sYlm_matrix(Rs, ℓ, 1) * (ð(0, 0, ℓ, Float64) * α)[2:end]
+    ð²α_g = sYlm_matrix(Rs, ℓ, 2) * (ð(1, 0, ℓ, Float64) * ð(0, 0, ℓ, Float64) * α)[5:end]
     b̄_g = conj.(-ðα_g ./ 2)   # b̄ = conj(b), b = −ðα/2
 
     # ℐ⁻ tower order: ψ₀ unmixed, builds ψ₁, ψ₂ from it.  ψ₀(s=2), ψ₁(s=1), ψ₂(s=0).
@@ -247,7 +247,7 @@ end
         modes[k][1:(spins[k] ^ 2)] .= 0
         modes[k][17:end] .= 0
     end
-    in_pix = [ₛ𝐘(spins[k], ℓ, Float64, Rs) * modes[k][(spins[k] ^ 2 + 1):end] for k ∈ 1:4]
+    in_pix = [sYlm_matrix(Rs, ℓ, spins[k]) * modes[k][(spins[k] ^ 2 + 1):end] for k ∈ 1:4]
 
     data = zeros(ComplexF64, N, Nᵗ, 4)
     for k ∈ 1:4, j ∈ 1:Nᵗ
@@ -257,7 +257,7 @@ end
         data, collect(0.0:(Nᵗ - 1)), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
     )
     out_pix = [
-        ₛ𝐘(spins[k], ℓ, Float64, Rs) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
+        sYlm_matrix(Rs, ℓ, spins[k]) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
     ]
 
     ψ₂ᵢ, ψ₁ᵢ, ψ₀ᵢ, λᵢ = in_pix
@@ -275,7 +275,7 @@ end
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, from_spherical_coordinates
-    using SphericalFunctions: ₛ𝐘
+    using SphericalFunctions: sYlm_matrix
     using LinearAlgebra: det
     import ForwardDiff
 
@@ -320,8 +320,8 @@ end
             data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), αmodes, dc
         )
         J = [J⁽¹⁾(θ, ϕ, ℐ) for (θ, ϕ) ∈ pts]
-        shear′ = ₛ𝐘(2ℐ, ℓₘₐₓ, Float64, Rs) * data′[5:end, 3, 1]
-        h′ = ₛ𝐘(-2, ℓₘₐₓ, Float64, Rs) * data′[5:end, 3, 2]
+        shear′ = sYlm_matrix(Rs, ℓₘₐₓ, 2ℐ) * data′[5:end, 3, 1]
+        h′ = sYlm_matrix(Rs, ℓₘₐₓ, -2) * data′[5:end, 3, 2]
         @test maximum(abs, h′ .- conj.(J)) < 1e-6
         @test maximum(abs, shear′ .- (ℐ == 1 ? J : conj.(J)) ./ (2√2)) < 1e-6
     end
@@ -381,7 +381,7 @@ end
 ] begin
     import Scri: compute_ðt′╱2κ
     using Quaternionic: QuatVec, Rotor, 𝐤, vec
-    using SphericalFunctions: ₛ𝐘, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
     using LinearAlgebra: dot
     using DoubleFloats: Double64
     import Random
@@ -396,7 +396,7 @@ end
     #
     # `κ = 1/(γ(1 − ℐv⃗·k̂))` is not band-limited, so `t′` is not either — but a tiny boost
     # (β ≈ 1e-3) with a large `ℓₘₐₓ` shrinks the out-of-band tail to `~β^ℓₘₐₓ`, far below
-    # roundoff, so the spin-0 analysis (square `ₛ𝐘`) and the `ð` are exact and there is no
+    # roundoff, so the spin-0 analysis (square `sYlm_matrix`) and the `ð` are exact and there is no
     # aliasing.  The cross term `ðt′╱2κ[2,:]·αₚ` (the part that hid two sign errors) is
     # `~1e-3` here — many orders above the agreement, so its sign is truly pinned down.
     # Running at both `Float64` (≈1e-11) and `Double64` (≈4e-20) shows the residual tracks
@@ -415,8 +415,8 @@ end
             αmodes[1:9] .= [Complex{T}(randn(rng), randn(rng)) for _ ∈ 1:9]
             α = Scri.impose_reality(αmodes, ℓₘₐₓ, 1)
 
-            Y0 = ₛ𝐘(0, ℓₘₐₓ, T, Rₚ)              # N×N, square ⟹ exact spin-0 analysis
-            Y1 = ₛ𝐘(1, ℓₘₐₓ, T, Rₚ)              # N×(N−1) spin-1 synthesis
+            Y0 = sYlm_matrix(Rₚ, ℓₘₐₓ, 0)              # N×N, square ⟹ exact spin-0 analysis
+            Y1 = sYlm_matrix(Rₚ, ℓₘₐₓ, 1)              # N×(N−1) spin-1 synthesis
             ð0 = ð(0, 0, ℓₘₐₓ, T)                # spin 0 → 1
             αₚ = real.(Y0 * α)                    # α on the grid
             ðαₚ = Y1 * (ð0 * α)[2:end]            # ðα on the grid (drops the ℓ=0 zero)
@@ -637,7 +637,7 @@ end
     :validation, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, randn
-    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
     import Random
 
     # For a pure rotation (no boost, no supertranslation) κ ≡ 1 and the mixing parameter
@@ -674,8 +674,8 @@ end
     Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
     Rs_rot = [R * R′ₚ for R′ₚ ∈ Rs]
     for (k, s) ∈ ((1, -2), (2, -2))
-        Y = ₛ𝐘(s, ℓ, Float64, Rs)
-        Y_rot = ₛ𝐘(s, ℓ, Float64, Rs_rot)
+        Y = sYlm_matrix(Rs, ℓ, s)
+        Y_rot = sYlm_matrix(Rs_rot, ℓ, s)
         valid = (s ^ 2 + 1):N
         out = Y * data′[valid, 3, k]
         expected = Y_rot * data₀[valid, 3, k]
@@ -1033,7 +1033,7 @@ end
 @testmodule PixelReconstruction begin
     import Scri
     import LinearAlgebra
-    import SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    import SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
     using LinearAlgebra: qr
 
     # Reconstruct the stage-2 pixel values from `transform!` output, exactly.  The
@@ -1050,7 +1050,7 @@ end
         pixels = Array{Complex{T},3}(undef, Nᵐ, Nᵗ, Nᵈ)
         for k ∈ 1:Nᵈ
             s = Scri.spin_weight(Val(components[k]))
-            ₛY = ₛ𝐘(s, ℓₘₐₓ, T′, R′ₚ)
+            ₛY = sYlm_matrix(R′ₚ, ℓₘₐₓ, s)
             if s == 0
                 pixels[:, :, k] = ₛY * d′[:, :, k]
             else
@@ -1226,31 +1226,41 @@ end
     @test ForwardDiff.derivative(lean, β₀) ≈ ForwardDiff.derivative(heavy, β₀) rtol = 1e-9
 end
 
-@testitem "sYlm_values!: ForwardDiff duals through the Wigner-H recursion" tags = [
+@testitem "sYlm_rows!: values, and ForwardDiff duals through sYlmCalculator" tags = [
     :unit, :fast
 ] begin
     using Quaternionic: Rotor, randn
-    using SphericalFunctions: sYlm_prep, sYlm_values!
+    using SphericalFunctions: sYlmCalculator, sYlm_matrix
     import ForwardDiff
     import Random
 
-    # `transform_objective` sends dual-typed rotors through `sYlm_values!`; the Wigner-H
-    # recursion inside is generic (its `@fastmath` sites fall back to ordinary ops for
-    # duals).  Check d/dθ of the ₛYₗₘ row under R(θ) = exp(θ𝐢/2)·R₀ against central
-    # finite differences, for every spin weight used by the data components, through
-    # random linear functionals of the row (covering real and imaginary parts).
+    # `transform_objective` evaluates the ₛYₗₘ rows at each pixel with `Scri.sYlm_rows!`,
+    # which moves one calculator to each new rotor and flattens its blocks.  First check the
+    # values against `sYlm_matrix`, stored from ℓ = 0, after the calculator has been moved
+    # away from the rotor it was built with.
     rng = Random.Xoshiro(7373)
     ℓₘₐₓ = 5
+    Nᵐ = (ℓₘₐₓ + 1)^2
     R₀ = randn(rng, Rotor{Float64})
-    c = Random.randn(rng, ComplexF64, (ℓₘₐₓ + 1)^2)
+    calc = sYlmCalculator(one(R₀), ℓₘₐₓ, -2:2)
+    Y = Scri.sYlm_rows!(Matrix{ComplexF64}(undef, Nᵐ, 5), calc, R₀)
+    for (j, s) ∈ enumerate(-2:2)
+        @test Y[:, j] ≈ sYlm_matrix([R₀], ℓₘₐₓ, s; ℓₘᵢₙ=0)[1, :] atol = 1e-14
+    end
+
+    # Then the derivatives: the pixel rotors are dual-typed.  Check d/dθ of the rows under
+    # R(θ) = exp(θ𝐢/2)·R₀ against central finite differences, for every spin weight used by
+    # the data components, through random linear functionals of each row (covering real and
+    # imaginary parts).
+    c = Random.randn(rng, ComplexF64, Nᵐ)
     h = 1e-6
-    for s ∈ -2:2
-        function Yrow(θ::T) where {T}
-            storage = sYlm_prep(ℓₘₐₓ, 2, T)
-            Rθ = Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ)) * R₀
-            return copy(sYlm_values!(storage, Rθ, s))
-        end
-        for f ∈ (θ -> real(sum(c .* Yrow(θ))), θ -> imag(sum(c .* Yrow(θ))))
+    function Yrows(θ::T) where {T}
+        Rθ = Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ)) * R₀
+        calc = sYlmCalculator(one(Rθ), ℓₘₐₓ, -2:2)
+        return Scri.sYlm_rows!(Matrix{Complex{T}}(undef, Nᵐ, 5), calc, Rθ)
+    end
+    for j ∈ 1:5
+        for f ∈ (θ -> real(sum(c .* Yrows(θ)[:, j])), θ -> imag(sum(c .* Yrows(θ)[:, j])))
             d = ForwardDiff.derivative(f, 0.1)
             fd = (f(0.1 + h) - f(0.1 - h)) / 2h
             @test isfinite(d)
@@ -1353,7 +1363,7 @@ end
 @testitem "pixel_waveform: direct synthesis and interpolation-free grids" tags = [
     :unit, :fast
 ] begin
-    using SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
     import Random
 
     rng = Random.Xoshiro(7676)
@@ -1365,14 +1375,14 @@ end
     R′ₚ = golden_ratio_spiral_rotors(0, ℓ, Float64)
 
     # Time-constant modes: splining a constant is exact, so every output slice must be
-    # the direct synthesis ₛ𝐘·modes, at every t′ — including a coarse, offset grid.
+    # the direct synthesis `sYlm_matrix * modes`, at every t′ — including a coarse, offset grid.
     modes = Random.randn(rng, ComplexF64, N, 4)
     data = repeat(reshape(modes, N, 1, 4), 1, Nᵗ, 1)
     t′ = collect(LinRange(-7.3, 6.1, 5))
     out = Scri.pixel_waveform(data, t, dc, t′)
     @test size(out) == (N, 5, 4)
     for (k, s) ∈ enumerate((-2, -2, -1, 0))
-        direct = ₛ𝐘(s, ℓ, Float64, R′ₚ) * modes[(s ^ 2 + 1):end, k]
+        direct = sYlm_matrix(R′ₚ, ℓ, s) * modes[(s ^ 2 + 1):end, k]
         for j ∈ 1:5
             @test out[:, j, k] ≈ direct rtol = 1e-13
         end
@@ -1383,7 +1393,7 @@ end
     data = Random.randn(rng, ComplexF64, N, Nᵗ, 4)
     out = Scri.pixel_waveform(data, t, dc, t)
     for (k, s) ∈ enumerate((-2, -2, -1, 0))
-        direct = ₛ𝐘(s, ℓ, Float64, R′ₚ) * data[(s ^ 2 + 1):end, :, k]
+        direct = sYlm_matrix(R′ₚ, ℓ, s) * data[(s ^ 2 + 1):end, :, k]
         @test out[:, :, k] ≈ direct rtol = 1e-13
     end
 
@@ -1500,7 +1510,8 @@ end
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, imz
-    using SphericalFunctions: ₛ𝐘, from_spherical_coordinates, golden_ratio_spiral_rotors
+    using SphericalFunctions:
+        sYlm_matrix, from_spherical_coordinates, golden_ratio_spiral_rotors
 
     # Schwarzschild in its own Bondi frame is ψ₂ = −M, constant over the sphere and in time,
     # with every other component zero (the value follows from the tetrad and Weyl-component
@@ -1530,7 +1541,7 @@ end
     # the conformal factor on the *output* grid given by κ = γ(1 + v⃗⋅n̂′).
     j = 5
     Rs = golden_ratio_spiral_rotors(0, ℓₘₐₓ, Float64)
-    ψ₂′ = ₛ𝐘(0, ℓₘₐₓ, Float64, Rs) * data′[:, j, iψ₂]
+    ψ₂′ = sYlm_matrix(Rs, ℓₘₐₓ, 0) * data′[:, j, iψ₂]
     κ = [γ * (1 + v * (R * imz * conj(R)).z) for R ∈ Rs]
     @test maximum(abs, ψ₂′ .- (-M .* κ .^ -3)) < 1e-10 * M
 
@@ -1559,7 +1570,7 @@ end
         dataₛ, t, QuatVec(0.0, 0.0, vₛ), one(Rotor{Float64}), zeros(ComplexF64, N), dc
     )
     jₛ = 7
-    ψ₁ₛ = ₛ𝐘(1, ℓₘₐₓ, Float64, Rθ) * dataₛ′[2:end, jₛ, iψ₁]
+    ψ₁ₛ = sYlm_matrix(Rθ, ℓₘₐₓ, 1) * dataₛ′[2:end, jₛ, iψ₁]
     oracle = [-3M * tₛ′[jₛ] * vₛ * sin(θ) / 2 for θ ∈ θs]
     @test maximum(abs, real.(ψ₁ₛ) .- oracle) < 1e-3 * maximum(abs, oracle)
     @test maximum(abs, imag.(ψ₁ₛ)) < 1e-3 * maximum(abs, oracle)
@@ -1569,7 +1580,7 @@ end
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: ₛ𝐘, from_spherical_coordinates
+    using SphericalFunctions: sYlm_matrix, from_spherical_coordinates
 
     # A pure ℓ = 1 supertranslation is an ordinary spatial translation, and for Schwarzschild
     # the exact answer is available from geometry alone.  Moving the origin to +δ⃗ relabels
@@ -1619,8 +1630,8 @@ end
         )
 
         j = 5
-        ψ₂′ = ₛ𝐘(0, ℓₘₐₓ, Float64, Rs) * data′[:, j, iψ₂]
-        ψ₁′ = ₛ𝐘(1, ℓₘₐₓ, Float64, Rs) * data′[2:end, j, iψ₁]
+        ψ₂′ = sYlm_matrix(Rs, ℓₘₐₓ, 0) * data′[:, j, iψ₂]
+        ψ₁′ = sYlm_matrix(Rs, ℓₘₐₓ, 1) * data′[2:end, j, iψ₁]
         @test maximum(abs, ψ₂′ .+ M) < 1e-12 * M            # a translation cannot change it
         @test maximum(abs, ψ₁′ .- (-3M .* ðδn̂ ./ 2)) < 1e-12 * M
     end

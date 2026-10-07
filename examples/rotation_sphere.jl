@@ -29,7 +29,7 @@ import Quaternionic:
     𝐢,
     𝐣,
     𝐤
-import SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors
+import SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
 import Scri
 import Scri: transform!
 
@@ -70,7 +70,7 @@ const R_f = exp(Quaternionic.QuatVecF64(0.0, 0.0, 1.0) * (π/4))
 const Rₛ = golden_ratio_spiral_rotors(0, ℓ_samp, Float64)
 const mask_vals = [in_F(vec(R(𝐤))...) for R ∈ Rₛ]
 #const mask_vals = [in_F(R) for R ∈ Rₛ]
-const Y_samp = ₛ𝐘(0, ℓₘₐₓ, Float64, Rₛ)         # rectangular: (4(ℓₘₐₓ+1)² × N_modes)
+const Y_samp = sYlm_matrix(Rₛ, ℓₘₐₓ, 0)          # rectangular: (4(ℓₘₐₓ+1)² × N_modes)
 const α_orig = Y_samp \ complex(mask_vals)         # least-squares → ψ₂ modes
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ const φg = range(0.0, 2Float64(π), Nφ)
 
 println("Building dense evaluation grid…")
 const Rs_mat = [R_f*from_spherical_coordinates(Float64(t), Float64(p)) for t ∈ θg, p ∈ φg]
-const Y_dense = ₛ𝐘(0, ℓₘₐₓ, Float64, vec(Rs_mat))
+const Y_dense = sYlm_matrix(vec(Rs_mat), ℓₘₐₓ, 0)
 
 const f_orig = clamp.(reshape(real.(Y_dense * α_orig), Nθ, Nφ), 0.0, 1.0)
 const f_rot = clamp.(reshape(real.(Y_dense * α_rot), Nθ, Nφ), 0.0, 1.0)

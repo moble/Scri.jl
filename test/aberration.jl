@@ -175,11 +175,15 @@ end
     # β is capped at 0.999: the reconstruction in (1) involves cancellation between
     # ultra-relativistic factors and is conditioned like γ, not like `aberration` itself
     # (whose behavior out to β = 1 - 64eps is covered by the unit-norm tests below).
+    #
+    # The near-pole pixel is normalized explicitly: `Rotor{T}(1, 10⁻⁷, 0, 0)` has norm
+    # 1 + 5×10⁻¹⁵, so `Λ * R′ₚᵢ` would lie off the group by far more than eps(Double64).
     rng = Random.Xoshiro(4646)
     for T ∈ FloatTypes, ℐ ∈ (-1, +1)
         ϵ = eps(T)
         for β ∈ T.([1//10^6, 1//1000, 1//2, 9//10, 999//1000]),
-            R′ₚᵢ ∈ (one(Rotor{T}), Rotor{T}(1, T(1)/10^7, 0, 0), randn(rng, Rotor{T}))
+            R′ₚᵢ ∈
+            (one(Rotor{T}), normalize(Rotor{T}(1, T(1)/10^7, 0, 0)), randn(rng, Rotor{T}))
 
             R = randn(rng, Rotor{T})  # frame rotation, as folded in by the caller
             v⃗ = β * normalize(randn(rng, QuatVec{T}))

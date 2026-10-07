@@ -532,7 +532,7 @@ end
         absvec,
         𝐤,
         from_spherical_coordinates
-    import SphericalFunctions: ₛ𝐘, golden_ratio_spiral_rotors, D_matrices, WignerDindex
+    import SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors, D
     using Scri: BMS, impose_reality
     using DoubleFloats: Double64
 
@@ -589,7 +589,7 @@ end
 
     # Evaluate spin-0 mode weights at the given rotors / at a single direction.
     function α_eval(α::Vector{Complex{T}}, Rs::AbstractVector{<:Rotor}) where {T}
-        return real.(ₛ𝐘(0, isqrt(length(α)) - 1, T, Rs) * α)
+        return real.(sYlm_matrix(Rotor{T}.(Rs), isqrt(length(α)) - 1, 0) * α)
     end
     α_value(α, k̂::QuatVec) = α_eval(α, [rotor_pointing(k̂)])[1]
 
@@ -603,15 +603,16 @@ end
     α_translation(δt, δx⃗) = k̂ -> δt - dot(vec(δx⃗), vec(k̂))
 
     # Rotate spin-0 mode weights: if f′(k̂) = f(Q⁻¹ k̂), then (pinned empirically against
-    # pointwise evaluation; see the "rotation conjugation" test items)
-    #     f′_{ℓ,m′} = Σₘ conj(D^ℓ_{m′,m}(Q)) f_{ℓ,m}.
+    # pointwise evaluation; see the "rotation conjugation" test items), in the 𝔇 convention
+    # of SphericalFunctions 3,
+    #     f′_{ℓ,m′} = Σₘ 𝔇^ℓ_{m′,m}(Q) f_{ℓ,m}.
     function rotate_modes(α::Vector{Complex{T}}, Q::Rotor, ℓₘₐₓ) where {T}
-        D = D_matrices(Q, ℓₘₐₓ)
+        𝔇 = D(Q, ℓₘₐₓ)
         out = zeros(Complex{T}, (ℓₘₐₓ + 1)^2)
-        for ℓ ∈ 0:ℓₘₐₓ, m′ ∈ (-ℓ):ℓ
+        for (ℓ, 𝔇ˡ) ∈ 𝔇, m′ ∈ (-ℓ):ℓ
             s = zero(Complex{T})
             for m ∈ (-ℓ):ℓ
-                s += conj(D[WignerDindex(ℓ, m′, m)]) * α[ℓ ^ 2 + ℓ + m + 1]
+                s += 𝔇ˡ[m′, m] * α[ℓ ^ 2 + ℓ + m + 1]
             end
             out[ℓ ^ 2 + ℓ + m′ + 1] = s
         end
@@ -875,8 +876,9 @@ Evaluate the supertranslation of `g` at the directions given by the rotors `Rs` 
 direction being `R(𝐤)`).  Returns a real vector.
 """
 function supertranslation_values(g::BMS{T}, Rs::AbstractVector{<:Rotor}) where {T<:Real}
+    # `sYlm_matrix` computes in the rotors' own type, so convert them to the common type.
     Tp = promote_type(T, basetype(eltype(Rs)))
-    return real.(ₛ𝐘(0, ℓₘₐₓ(g), Tp, Rs) * g.α)
+    return real.(sYlm_matrix(Rotor{Tp}.(Rs), ℓₘₐₓ(g), 0) * g.α)
 end
 
 @doc raw"""
@@ -1343,7 +1345,7 @@ function compose(
         resize_modes(g₁.α, ℓₘₐₓ) .+ rotate_modes(g₂.α, conj(Q₁), ℓₘₐₓ)
     else
         Rₚ = golden_ratio_spiral_rotors(0, ℓʷ, T)
-        α₁ₚ = real.(ₛ𝐘(0, ell_max(g₁), T, Rₚ) * g₁.α)
+        α₁ₚ = real.(sYlm_matrix(Rₚ, ell_max(g₁), 0) * g₁.α)
         R′ₚ = similar(Rₚ)
         κ₁ₚ = Vector{T}(undef, length(Rₚ))
         for p ∈ eachindex(Rₚ)
@@ -1351,9 +1353,9 @@ function compose(
             κ₁ₚ[p] = κ₁
             R′ₚ[p] = rotor_from_direction(k̂′)
         end
-        α₂ₚ = real.(ₛ𝐘(0, ell_max(g₂), T, R′ₚ) * g₂.α)
+        α₂ₚ = real.(sYlm_matrix(R′ₚ, ell_max(g₂), 0) * g₂.α)
         f = @. complex(α₁ₚ + α₂ₚ / κ₁ₚ)
-        modes = lu(ₛ𝐘(0, ℓʷ, T, Rₚ)) \ f
+        modes = lu(sYlm_matrix(Rₚ, ℓʷ, 0)) \ f
         modes[1:((ℓₘₐₓ + 1) ^ 2)]
     end
     return BMS{T,A,I}(Λ, α)

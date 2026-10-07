@@ -453,10 +453,8 @@ end
 
     # Rotation conjugation is exactly band-limited, so its error is pure roundoff and
     # must scale with eps(T).  This catches any hidden Float64 literal in the pipeline
-    # (grids, ₛ𝐘, rotors, …).  NOTE: the Wigner-D reference is computed in BigFloat and
-    # cast, because `D_matrices` itself loses half its digits at Double64 (≈ 3e-17, i.e.
-    # ~√eps(Double64), as of SphericalFunctions 2.2.9) — whereas golden_ratio grids, ₛ𝐘,
-    # and the lu solve are all clean at eps(Double64).
+    # (grids, `sYlm_matrix`, rotors, …).  The Wigner-D reference is computed in BigFloat
+    # and cast, so that it does not depend on the precision under test.
     err = Dict{DataType,Float64}()
     rng₀ = Random.Xoshiro(2121)
     Q64 = random_rotation(rng₀, Float64)
