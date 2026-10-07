@@ -45,11 +45,11 @@ decomposed into components as
 \end{aligned}
 ```
 
-These are consistent with the Weyl components above: each ``φ_n``
-carries spin weight ``1-n`` (just as ``ψ_n`` carries ``2-n``), and
-each step down either tower trades a leg scaling as ``c_l`` or ``c_m``
-for one scaling as its inverse.  Paralleling the Weyl conversion ``∝
-(c_l c_m)^{2-n}``, the inter-convention factor is
+These are consistent with the Weyl components above: each ``φ_n`` has
+spin weight ``1-n`` (just as ``ψ_n`` has ``2-n``), and each step down
+either tower trades a leg scaling as ``c_l`` or ``c_m`` for one
+scaling as its inverse.  Paralleling the Weyl conversion ``∝ (c_l
+c_m)^{2-n}``, the inter-convention factor is
 
 ```math
 {}^{[A]}φ_n = c_φ\, (c_l c_m)^{1-n}\, φ_n,
@@ -132,13 +132,15 @@ Finally, we also define the shear on ``ℐ⁺`` as
 σ = -c_σ m^a m^b ∇_a l_b,
 ```
 
-which has spin weight ``+2``.  The conversion factor follows the same
-reasoning as above: the two ``m`` legs are vectors, contributing
-``c_m^2``; the covariant derivative is convention-independent (the
-Christoffel symbols do not change, as shown under "[Metric and
-Curvature](@ref)"); and ``l_b = g_{bc} l^c`` is the *lowered* tetrad
-vector, contributing ``c_s c_l`` — one power of the metric survives.
-So
+which has spin weight ``+2``.  With the default ``c_σ = 1`` this is
+Eq. (85c) of [Moxon_2020](@citet), the definition used by the SpECTRE
+CCE code that produces SXS shear data.  The conversion factor follows
+the same reasoning as above: the two ``m`` legs are vectors,
+contributing ``c_m^2``; the covariant derivative is
+convention-independent (the Christoffel symbols do not change, as
+shown under "[Metric and Curvature](@ref)"); and ``l_b = g_{bc} l^c``
+is the *lowered* tetrad vector, contributing ``c_s c_l`` — one power
+of the metric survives.  So
 
 ```math
 {}^{[A]}σ = c_s c_σ c_l c_m^2\, σ.
@@ -162,3 +164,18 @@ the same logic:
 ```math
 {}^{[A]}λ = \frac{c_s c_λ}{c_l c_m^2}\, λ.
 ```
+
+In the default convention, both radiative shears are tied to the
+strain.  The Bondi metric function ``J`` of [Moxon_2020](@citet) has
+leading coefficient ``J^{(1)} = h̄``, and their Eq. (86c) gives ``σ =
+J^{(1)}/2\sqrt2`` asymptotically; the same computation for ``λ`` on
+``ℐ⁻`` gives the conjugate relation:
+
+```math
+σ = \frac{h̄}{2\sqrt2} \quad (ℐ⁺),
+\qquad
+λ = \frac{h}{2\sqrt2} \quad (ℐ⁻),
+```
+
+with all three understood as the finite radiative data described at
+the top of this page.

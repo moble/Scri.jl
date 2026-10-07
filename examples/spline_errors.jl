@@ -86,7 +86,7 @@ function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     Nᵈ = length(data_components)
     dc = Scri.DataComponents(data_components...)
 
-    t = collect(LinRange{BigFloat}(t₁, t₂, Nᵗ));
+    t = collect(LinRange{BigFloat}(t₁, t₂, Nᵗ))
 
     δt = t[2] - t[1]
     Ωₙ = π / δt  # Nyquist frequency
@@ -97,8 +97,8 @@ function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     αᵢₙ = zeros(Complex{T}, Nᵐ)
 
     # (ℓ, m) for each mode index
-    ℓᵢ = [isqrt(i-1) for i ∈ 1:Nᵐ];
-    mᵢ = [(i-1) - ℓᵢ[i]*(ℓᵢ[i]+1) for i ∈ 1:Nᵐ];
+    ℓᵢ = [isqrt(i-1) for i ∈ 1:Nᵐ]
+    mᵢ = [(i-1) - ℓᵢ[i]*(ℓᵢ[i]+1) for i ∈ 1:Nᵐ]
 
     c = zeros(Complex{T}, Nᵐ, Nᵈ)
     for (d, comp) ∈ enumerate(data_components)
@@ -167,7 +167,7 @@ function main(args=ARGS)
     )
     ArgParse.@add_arg_table! s begin
         "T"
-        help = "Floating-point precision type (e.g. Float64, Double64, BigFloat)"
+        help = "Floating-point precision type (e.g., Float64, Double64, BigFloat)"
         required = true
         "lmax"
         help = "Maximum harmonic mode ℓₘₐₓ"

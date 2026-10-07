@@ -16,11 +16,13 @@ aware of it.
 
 Spin-weighted spherical functions [*cannot actually be defined*](@cite
 Boyle_2016) over the sphere ``𝕊²`` itself; they are more properly
-defined over the sphere ``𝕊³`` — or better yet ``\mathrm{Spin}(3) ≃
-\mathrm{SU}(2)``, the group of unit quaternions.  Then we can easily
-define ``\eth`` in those terms.  Start with the right-derivative
-operator with respect to the generator ``𝔤`` acting on a function
-``f`` and evaluated at ``Q``:
+defined over the sphere ``𝕊³`` — or better yet ``\mathrm{Spin}(3)``,
+the group of unit quaternions.  Then we can easily define ``\eth`` in
+those terms.  Start with the right-derivative operator with respect to
+the generator ``𝔤`` acting on a function ``f`` and evaluated at ``Q``
+— the right angular-momentum operator of
+[SphericalFunctions.jl](@extref SphericalFunctions
+:std:label:`conv_L_R_definitions`):
 
 ```math
 R_𝔤 f(Q) = -i \left.\frac{d}{dϵ}\right|_{ϵ=0} f\left(Q e^{-ϵ𝔤/2}\right).
@@ -34,7 +36,12 @@ The ``ð`` operator is defined as
 
 where ``x`` and ``y`` generate rotations about their corresponding
 axes.  This is the form we will use when [deriving ``ðt'/2κ.``](@ref
-computing_eth_tprime_over_2kappa)
+computing_eth_tprime_over_2kappa)  Its conjugate ``ð̄`` is the
+complex-conjugate *operator*, ``ð̄η = \overline{ð\bar{η}}``, which
+equals ``-\bar{c}_ð\left(R_x - i R_y\right)`` and lowers the spin
+weight by one; this is the Newman–Penrose ``ð̄``.  Both identifications
+are derived under [spin-weighted functions](@extref SphericalFunctions
+:std:label:`conv_spin_weight`) in the SphericalFunctions.jl documentation.
 
 Of course, this may look unfamiliar.  The more common approach in the
 literature takes advantage of the fact that *sometimes* we can *just
@@ -54,8 +61,10 @@ implied by the more general and precise definition above, if we
 parameterize the quaternions by spherical coordinates, which
 conventionally represent an initial rotation about the ``y`` axis by
 ``θ`` followed by a rotation about the ``z`` axis by ``ϕ``.  Then, we
-can write ``Q = e^{ϕ 𝐤/2} e^{θ𝐣/2}``, and the right-derivative
-operator simplifies to precisely the Newman–Penrose form.
+can write ``Q = e^{ϕ 𝐤/2} e^{θ𝐣/2}``, as in the [SphericalFunctions.jl
+conventions](@extref SphericalFunctions :std:label:`conv_euler_angles`),
+and the right-derivative operator simplifies to precisely the
+Newman–Penrose form.
 
 For a spin-0 function this is just ``ð f = -c_ð\left(∂_θ +
 \frac{i}{\sin θ}∂_ϕ\right) f``, which ties ``ð`` to the angular dyad
@@ -71,8 +80,8 @@ of ``\sqrt{2}`` — and ultimately the ``1/2`` in the [Weyl mixing
 parameter](@ref "BMS Action on Fields") — whenever ``ð`` acting on a
 coordinate function is re-expressed through the tetrad.
 
-It is helpful to note that, acting on the spin-weighted spherical
-harmonics,
+It is helpful to note that, acting on the [spin-weighted spherical
+harmonics](@extref SphericalFunctions :std:label:`conv_swsh`),
 
 ```math
 ð\, {}_s Y_{ℓ,m} = c_ð\, \sqrt{(ℓ-s)(ℓ+s+1)}\; {}_{s+1} Y_{ℓ,m}.

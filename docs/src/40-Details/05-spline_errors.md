@@ -19,15 +19,15 @@ bounded by ``O(Mₙ (δt)^n)`` where ``Mₙ = \max|H⁽ⁿ⁾|`` is the largest
 magnitude of the ``n``-th derivative of the function being
 interpolated [Schumaker_2007, Unser_1993](@cite).
 
-Within any single spline interval all sky directions ``n̂`` require
+Within any single spline interval all sky directions ``k̂`` require
 rest-frame times from that same cubic (or degree-``(n{-}1)``)
-polynomial, so the function ``f(n̂) = H_\text{spline}\left(t'
-κ^{-1}(n̂)\right)`` on the sphere is a polynomial composed with the
-smooth Doppler factor ``κ^{-1}(n̂)``, hence analytic, and its SWSH
+polynomial, so the function ``f(k̂) = H_\text{spline}\left(t'
+κ^{-1}(k̂)\right)`` on the sphere is a polynomial composed with the
+smooth Doppler factor ``κ^{-1}(k̂)``, hence analytic, and its SWSH
 expansion converges exponentially.  Once different sky directions
 require times from different spline intervals, however, the angular
 function acquires a ``C^{n-2}`` kink — a jump in the ``(n-1)``-th
-tangential derivative — along the level-set curve ``{t' κ^{-1}(n̂) =
+tangential derivative — along the level-set curve ``{t' κ^{-1}(k̂) =
 t_k}`` on ``S²``.  For a boost of speed ``β`` this transition first
 occurs when ``2β|t'| > δt``, i.e., after only ``N_\text{good} ≈ ⌊
 1/(2β) ⌋`` time steps from the retarded-time origin.  An additional
@@ -66,7 +66,7 @@ E(ℓ) ∼ ℓ^{-n},
 For cubic splines (``n = 4``) this yields ``E(ℓ) ∼ ℓ^{-4}`` and
 ``ϵ_\text{trunc} ∼ M₄ (δt)^4 (ℓ_\text{max}')^{-3/2}``, a persistent
 power-law floor analogous to the Gibbs phenomenon
-[GottliebShu_2026](@cite).  Using higher-order splines lowers the
+[GottliebShu_1997](@cite).  Using higher-order splines lowers the
 floor as ``Mₙ(δt)^n`` and steepens the power law, but convergence
 requires ``ω_\text{max}\,δ t < 1`` (all frequencies sampled above
 Nyquist), and for numerical-relativity waveforms the effective upper
