@@ -174,7 +174,7 @@ using Scri, ForwardDiff
 #    optimizer may try (β_max and δt_max bound the boost speed and
 #    supertranslation magnitude).  Any length works: a coarse grid
 #    makes each iteration correspondingly cheaper.
-t′, _ = compute_t′(t, β_max, δt_max)
+t′ = compute_t′(t, β_max, δt_max)
 
 # 2. Compute the target waveform's pixel values on that grid.  This is
 #    θ-independent, so we build it once and reuse it on every iteration.
@@ -184,16 +184,25 @@ target = pixel_waveform(h_target_modes, t_target, dc, t′)
 
 # 3. The differentiable objective.  Note that `v⃗` and `𝔯` accept
 #    plain vectors, so slices of the parameter vector pass straight
-#    through.
+#    through.  Three rotation components are a rotation vector; see
+#    below.
 objective(θ) = transform_objective(
     data, t, θ[1:3], θ[4:6], α(θ[7:end]), dc, target; t′=t′
 )
 
-# Compute the gradient at the starting point θ₀.
+# Compute the gradient at the starting point θ₀.  The identity
+# transformation is θ = 0.
 g = ForwardDiff.gradient(objective, θ₀)
 ```
 
 A few things to know:
+
+- **Rotation parameters.**  Three components are read as a rotation
+  vector ``𝐮``, the rotation by the angle ``|𝐮|`` about the axis
+  ``𝐮``, which is the rotor ``\exp(𝐮/2)``; so the identity is zero,
+  and every parameter is used.  Four components are read as a rotor
+  `(w, x, y, z)` and normalized, which also works but leaves one
+  redundant parameter; see [`rotor_argument`](@ref Scri.rotor_argument).
 
 - **Norm equivalence.**  The objective is a *pixel-domain* ``L²``
   norm.  The pixel grid has exactly as many points as modes and the

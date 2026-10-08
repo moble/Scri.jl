@@ -627,6 +627,44 @@ end
     @test_throws ArgumentError Scri.transform!(
         copy(data), t, v⃗, R, zeros(ComplexF64, N + 11), dc
     )  # α too long
+    # Each of these used to fail inside a spawned task, or, for the NaN in α, to give NaN
+    # output silently.
+    @test_throws ArgumentError Scri.transform!(copy(data), reverse(t), v⃗, R, copy(α), dc)
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), [t[1:3]; t[3]; t[5:end]], v⃗, R, copy(α), dc
+    )  # repeated time
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), [t[1:3]; NaN; t[5:end]], v⃗, R, copy(α), dc
+    )
+    @test_throws ArgumentError Scri.transform!(copy(data), t, v⃗, R, copy(α)[1:3], dc)
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, v⃗, R, ComplexF64[NaN, 0, 0, 0], dc
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, QuatVec(NaN, 0.0, 0.0), R, copy(α), dc
+    )
+    # A dipole supertranslation spanning far more than the time span leaves no complete
+    # slice, so the default grid cannot be built.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, v⃗, R, [0.0im, 0.0im, 100.0 + 0.0im, 0.0im], dc
+    )
+    # A NaN rotor is not checked directly, but it makes the bounds of the output grid NaN.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), t, v⃗, Rotor{Float64}(NaN, 0, 0, 0), copy(α), dc
+    )
+    for ℓ′ ∈ (0, 1)  # too low a band limit for the spin-weight-2 harmonics
+        @test_throws ArgumentError Scri.transform!(
+            randn(ComplexF64, (ℓ′ + 1)^2, Nᵗ, 2), t, v⃗, R, zeros(ComplexF64, 1), dc
+        )
+        @test_throws ArgumentError Scri.transform!(
+            randn(ComplexF64, (ℓ′ + 1)^2, Nᵗ, 1),
+            t,
+            v⃗,
+            R,
+            zeros(ComplexF64, 1),
+            Scri.DataComponents(:φ₂),
+        )
+    end
     # Mixed precision: data must be at least as wide as the other inputs.
     @test_throws ArgumentError Scri.transform!(
         randn(ComplexF32, N, Nᵗ, 2), t, v⃗, R, copy(α), dc
@@ -765,43 +803,59 @@ end
     # Each transformation shrinks the span of times with full-sphere coverage, so the
     # round-trip result is returned on a "squeezed" grid; comparing against the closed-form
     # time dependence of the input evaluates the original exactly at those final times, with
-    # no interpolation oracle needed.  The tolerance is set by the spline floor and the
-    # band-limit truncation of the mild boost.
+    # no interpolation oracle needed.
     rng = Random.Xoshiro(6565)
-    ℓ_data = 2   # band limit of the physical content
-    ℓ = 8        # padded band limit, with headroom for the transformation
-    N = (ℓ + 1)^2
+    ℓ_data = 2  # band limit of the physical content
     Nᵗ = 201
     T = 500.0
     t = collect(LinRange(-T, T, Nᵗ))
-    f(m, k, t) = exp(-(t / 300)^2) * (1 + m / 10 + k / 7) * cis(t / 150 + m)
-    dc = Scri.DataComponents(:h, :ψ₄)
 
-    data = zeros(ComplexF64, N, Nᵗ, 2)
-    for k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
-        data[ℓ_data ^ 2 + i, j, k] = f(m, k, t[j])
+    v⃗ = QuatVec(1e-2, -2e-2, 3e-2)
+    R = randn(rng, Rotor{Float64})
+    α = Scri.impose_reality(3 * Random.randn(rng, ComplexF64, 9), 2, 1)
+    g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R, supertranslation=α)
+
+    # Return the largest error of the round trip in the physical modes, and the largest
+    # amplitude left in the modes above them, both relative to the data, for data with time
+    # dependence `f` padded to band limit ℓ, and an inverse computed to band limit ℓ⁻¹.
+    function round_trip(f, dc, ℓ, ℓ⁻¹, ℓʷ)
+        data = zeros(ComplexF64, (ℓ + 1)^2, Nᵗ, 2)
+        for k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
+            data[ℓ_data ^ 2 + i, j, k] = f(m, k, t[j])
+        end
+        d1, t1 = Scri.transform!(copy(data), copy(t), g, dc)
+        d2, t2 = Scri.transform!(d1, t1, inv(g; ℓₘₐₓ=ℓ⁻¹, ℓʷ), dc)
+        scale = maximum(abs, data)
+        maxerr = maximum(
+            abs(d2[ℓ_data ^ 2 + i, j, k] - f(m, k, t2[j])) for
+            k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
+        )
+        return maxerr / scale, maximum(abs, d2[((ℓ_data + 1) ^ 2 + 5):end, :, :]) / scale
     end
 
-    v⃗ = QuatVec(1e-4, -2e-4, 3e-4)
-    R = randn(rng, Rotor{Float64})
-    α = Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1)
-    g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R, supertranslation=α)
-    g⁻¹ = inv(g; ℓₘₐₓ=6, ℓʷ=16)
+    # On ℐ⁻, the elements, given in the ℐ⁺ representation, must first be re-expressed in
+    # the ℐ⁻ one, whose odd-ℓ modes of α differ in sign.  If `transform!` skipped that, ℐ⁻
+    # data would be transformed by an element and an inverse that do not correspond under
+    # the ℐ⁻ group law.  The two laws differ through the product of the boost and the
+    # supertranslation, so these are large enough that skipping the conversion leaves an
+    # error near 2e-2.
+    oscillating(m, k, t) = exp(-(t / 300)^2) * (1 + m / 10 + k / 7) * cis(t / 150 + m)
+    linear(m, k, t) = (1 + m / 10 + k / 7) * (cis(m) + (0.3 + 0.1im) * t / T)
+    for dc ∈ (Scri.DataComponents(:h, :ψ₄), Scri.DataComponents(:h, :ψ₀; ℐ=-1))
+        # With oscillating data, the floor near 5e-6 is set by the time interpolation near
+        # the ends of the span, where the natural spline's end condition is least accurate.
+        # It does not change with the band limits, and it falls as Nᵗ grows.
+        maxerr, residual = round_trip(oscillating, dc, 8, 6, 16)
+        @test maxerr < 2e-5
+        @test residual < 2e-5
 
-    d1, t1 = Scri.transform!(copy(data), copy(t), g, dc)
-    d2, t2 = Scri.transform!(d1, t1, g⁻¹, dc)
-
-    scale = maximum(abs, data)
-    maxerr = maximum(
-        abs(d2[ℓ_data ^ 2 + i, j, k] - f(m, k, t2[j])) for
-        k ∈ 1:2, (i, m) ∈ enumerate((-ℓ_data):ℓ_data), j ∈ 1:Nᵗ
-    )
-    # The floor here is the band-limit truncation of the *inverse element's*
-    # supertranslation sector (its α is exact only up to the ℓₘₐₓ/ℓʷ cutoffs of `inv`),
-    # measured at ≈ 5e-6 of the data scale for these parameters.
-    @test maxerr / scale < 2e-5
-    # The modes above the physical band limit must return to (near) zero.
-    @test maximum(abs, d2[((ℓ_data + 1) ^ 2 + 5):end, :, :]) / scale < 2e-5
+        # Data linear in time are interpolated exactly, isolating the truncation to finite
+        # band limits, which must fall geometrically to roundoff as they grow.  Measured:
+        # about 3e-5, 2e-8, 4e-11, and 3e-14 at ℓ = 4, 6, 8, and 10.
+        errs = [first(round_trip(linear, dc, ℓ, ℓ, 2ℓ + 4)) for ℓ ∈ (4, 6, 8, 10)]
+        @test all(errs[2:end] .< errs[1:(end - 1)] ./ 100)
+        @test errs[end] < 1e-12
+    end
 end
 
 @testitem "transform!: sequential transforms match the composed element" tags = [
@@ -889,6 +943,9 @@ end
     )
     @test_throws ArgumentError Scri.transform!(
         copy(data), copy(t), v⃗, R, copy(α), dc; t′=reverse(t′1)
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; t′=[t′1[1:2]; NaN; t′1[4:end]]
     )
 end
 
@@ -1166,6 +1223,63 @@ end
     end
 end
 
+@testitem "transform_objective and transform!: full gradients are finite where AD gave NaN" tags = [
+    :unit, :validation
+] begin
+    using Quaternionic: QuatVec, Rotor
+    using SphericalFunctions: golden_ratio_spiral_rotors
+    import ForwardDiff
+    import Random
+
+    # v⃗ = 0, R = 1, α = 0 is where every frame fit starts.  Each parameter is perturbed:
+    # the three velocity components, the four rotor components (which `Rotor` normalizes),
+    # and the real and imaginary parts of the ℓ ≤ 1 supertranslation modes.
+    rng = Random.Xoshiro(7373)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    data₀[1:4, :, :] .= 0
+    t′fix = Scri.compute_t′(t, 0.05, 0.5)
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+
+    parts(θ) = (QuatVec(θ[1:3]...), Rotor(θ[4:7]...), complex.(θ[8:11], θ[12:15]))
+    objective(θ) = Scri.transform_objective(data₀, t, parts(θ)..., dc, target; t′=t′fix)
+    function transformed(θ)
+        data = Complex{eltype(θ)}.(data₀)
+        d, _ = Scri.transform!(data, copy(t), parts(θ)..., dc; t′=t′fix)
+        return sum(abs2, d)
+    end
+
+    # With R = 1 and a boost along z or in the xz-plane, the first pixel of the grid, which
+    # has azimuth zero, keeps azimuth zero after aberration.  SphericalFunctions 2 gave NaN
+    # derivatives of the harmonics there; version 3 does not.  The rotation R₁ moves that
+    # pixel onto the pole itself, and a boost along z keeps it there.
+    R₁ = conj(first(golden_ratio_spiral_rotors(0, ℓ, Float64)))
+    R₁⃗ = [R₁.w, R₁.x, R₁.y, R₁.z]
+    h = 1e-6
+    for (v⃗, R⃗) ∈ (
+        ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]),
+        ([0.0, 0.0, 2e-3], [1.0, 0.0, 0.0, 0.0]),
+        ([1e-3, 0.0, 2e-3], [1.0, 0.0, 0.0, 0.0]),
+        ([0.0, 0.0, 0.0], R₁⃗),
+        ([0.0, 0.0, 2e-3], R₁⃗),
+    )
+        θ₀ = [v⃗..., R⃗..., zeros(8)...]
+        for f ∈ (objective, transformed)
+            ∇ = ForwardDiff.gradient(f, θ₀)
+            @test all(isfinite, ∇)
+            for i ∈ eachindex(θ₀)
+                e = [j == i ? h : 0.0 for j ∈ eachindex(θ₀)]
+                fd = (f(θ₀ + e) - f(θ₀ - e)) / 2h
+                @test abs(∇[i] - fd) < 1e-6 * max(1.0, abs(fd))
+            end
+        end
+    end
+end
+
 @testitem "transform_objective: derivatives match the memory-heavy dual reference" tags = [
     :unit, :validation
 ] setup = [PixelReconstruction] begin
@@ -1358,6 +1472,18 @@ end
     @test_throws ArgumentError Scri.transform_objective(
         data, t, v⃗, R, α, dc, target; t′=t′ .+ 1000.0
     )
+    @test_throws ArgumentError Scri.transform_objective(
+        data[1:4, :, :], t, v⃗, R, α, dc, target[1:4, :, :]; t′=t′
+    )  # ℓₘₐₓ = 1 is too low for the spin-weight-2 harmonics
+    @test_throws ArgumentError Scri.transform_objective(
+        data, reverse(t), v⃗, R, α, dc, target; t′=t′
+    )
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, [α; 0.0im], dc, target; t′=t′
+    )  # non-square α
+    @test_throws ArgumentError Scri.transform_objective(
+        data, t, v⃗, R, [NaN + 0im; α[2:end]], dc, target; t′=t′
+    )
 end
 
 @testitem "pixel_waveform: direct synthesis and interpolation-free grids" tags = [
@@ -1476,11 +1602,24 @@ end
     @test Scri.transform_objective(data, t, v⃗vec, Rvec, α, dc, target; t′=t′) == obj
     @test Scri.transform_objective(data, t, v⃗vec, R, α, dc, target; t′=t′) == obj
 
+    # Three rotation components are a rotation vector 𝐮, meaning the rotor exp(𝐮/2), so
+    # zero is the identity; four are a rotor, as before.
+    𝐮 = [0.3, -0.2, 0.5]
+    d₃, _ = Scri.transform!(copy(data), copy(t), v⃗vec, 𝐮, copy(α), dc)
+    d₄, _ = Scri.transform!(copy(data), copy(t), v⃗, exp(QuatVec(𝐮...) / 2), copy(α), dc)
+    @test d₃ == d₄
+    @test Scri.transform!(copy(data), copy(t), v⃗vec, zeros(3), copy(α), dc)[1] ==
+        Scri.transform!(copy(data), copy(t), v⃗, one(Rotor{Float64}), copy(α), dc)[1]
+    @test Scri.transform_objective(data, t, v⃗vec, QuatVec(𝐮...), α, dc, target; t′=t′) ==
+        Scri.transform_objective(data, t, v⃗, exp(QuatVec(𝐮...) / 2), α, dc, target; t′=t′)
+    @test Scri.rotor_argument((0.3, -0.2, 0.5)) == exp(QuatVec(𝐮...) / 2)
+    @test Scri.rotor_argument(Rvec) == Rotor(Rvec)
+
     # The BMS convenience method matches the unpacked call, exactly as for `transform!`.
     # The element's accessors describe a (slightly) different transformation than the raw
     # (v⃗, R) above, so use a worst-case grid valid for both, and a matching target.
     g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R)
-    t′w = first(Scri.compute_t′(t, 0.1, 0.5))
+    t′w = Scri.compute_t′(t, 0.1, 0.5)
     target_w = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′w)
     expected = Scri.transform_objective(
         data,
@@ -1504,6 +1643,46 @@ end
             @test !Base.isambiguous(ms[i], ms[j])
         end
     end
+end
+
+@testitem "transform!/transform_objective: Float32 parameters keep the precision of Float64 data" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor
+    import Random
+
+    # Narrow parameters used to make the pixel grid, κ⁻¹, and the harmonics narrow too,
+    # costing about 1e-7 relative error on a Float64 result.  Now the parameters are widened
+    # to the data's precision first, so the result must be exactly that of the same values
+    # given in Float64.
+    rng = Random.Xoshiro(7979)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 16
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    v⃗₃₂ = QuatVec{Float32}(1.0f-2, -2.0f-2, 3.0f-2)
+    R₃₂ = Rotor(0.9f0, 0.1f0, -0.3f0, 0.2f0)
+    α₃₂ = ComplexF32[0.1, 0.02im, 0.03, -0.01]
+    v⃗₆₄, R₆₄, α₆₄ = QuatVec{Float64}(v⃗₃₂), Rotor{Float64}(R₃₂), ComplexF64.(α₃₂)
+
+    d₃₂, t′₃₂ = Scri.transform!(copy(data), t, v⃗₃₂, R₃₂, α₃₂, dc)
+    d₆₄, t′₆₄ = Scri.transform!(copy(data), t, v⃗₆₄, R₆₄, α₆₄, dc)
+    @test d₃₂ == d₆₄
+    @test t′₃₂ == t′₆₄
+
+    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′₆₄)
+    obj₃₂ = Scri.transform_objective(data, t, v⃗₃₂, R₃₂, α₃₂, dc, target; t′=t′₆₄)
+    obj₆₄ = Scri.transform_objective(data, t, v⃗₆₄, R₆₄, α₆₄, dc, target; t′=t′₆₄)
+    @test obj₃₂ isa Float64
+    @test obj₃₂ == obj₆₄
+
+    # Integer supertranslation modes are widened the same way.  They used to fail inside a
+    # spawned task, when the reality condition halved them.
+    αᵢ = Complex{Int}[1, 1, 2, 3]
+    @test Scri.transform!(copy(data), t, v⃗₆₄, R₆₄, αᵢ, dc) ==
+        Scri.transform!(copy(data), t, v⃗₆₄, R₆₄, ComplexF64.(αᵢ), dc)
 end
 
 @testitem "transform!: boosted Schwarzschild has the boosted Bondi four-momentum" tags = [

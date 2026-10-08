@@ -182,7 +182,7 @@ end
     using Quaternionic: QuatVec, absvec
     using LinearAlgebra: dot
 
-    # The "Which way around is 𝐾?" note in docs/src/80-details/30-bms_group.md works
+    # The "Which way around is κ?" note in docs/src/30-BMS/04-bms_group.md works
     # through the conjugation Λ⁻¹ ∘ δt ∘ Λ for a pure boost with velocity v⃗, claiming
     # the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅k̂) — equivalently the
     # spacetime translation by the 4-vector Λ⁻¹δ = γ δt (1; v⃗).  Pin all three faces of
@@ -294,6 +294,9 @@ end
     # far below these tolerances.
     for _ ∈ 1:3
         g = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=3//20)
+        # At the default band limits, `inv` truncates where `compose` does, so an element
+        # composed with its inverse is the identity to roundoff, even with a boost.
+        @test g * inv(g) ≈ one(BMS{Float64}) atol = tol(Float64, 5)
         g⁻¹ = inv(g; ℓₘₐₓ=12)
         @test Scri.compose(g, g⁻¹; ℓₘₐₓ=12) ≈ one(BMS{Float64}) atol = 1e-7
         @test Scri.compose(g⁻¹, g; ℓₘₐₓ=12) ≈ one(BMS{Float64}) atol = 1e-7
@@ -306,7 +309,7 @@ end
     end
 end
 
-@testitem "BMS: normal subgroup and φ homomorphism" tags = [:validation, :fast] setup = [
+@testitem "BMS: normal subgroup and the Ad homomorphism" tags = [:validation, :fast] setup = [
     BMSTestSetup
 ] begin
     import Random
@@ -314,7 +317,7 @@ end
     using Quaternionic: components
 
     # 𝒮 is a normal subgroup: conjugating a pure supertranslation by a Lorentz
-    # transformation gives a pure supertranslation, namely φ(Λ)(α) = α∘Λ⁻¹ / κ_{Λ⁻¹} —
+    # transformation gives a pure supertranslation, namely Ad(Λ)(α) = α∘Λ⁻¹ / κ_{Λ⁻¹} —
     # which we evaluate pointwise from raw geometry, not from the composition law.
     rng = Random.Xoshiro(1919)
     for _ ∈ 1:4
@@ -333,7 +336,7 @@ end
         end
     end
 
-    # φ is a homomorphism: conjugating by g₂g₁ equals conjugating by g₁ then by g₂.
+    # Ad is a homomorphism: conjugating by g₂g₁ equals conjugating by g₁ then by g₂.
     conjugate(gΛ, s; ℓₘₐₓ) = Scri.compose(Scri.compose(gΛ, s), inv(gΛ; ℓₘₐₓ); ℓₘₐₓ)
     for _ ∈ 1:3
         Λ₁ = random_lorentz(rng, Float64; βmax=1//5)

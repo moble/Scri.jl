@@ -144,13 +144,13 @@ product](https://en.wikipedia.org/wiki/Semidirect_product#Outer_semidirect_produ
 [Aluffi_2009; page 230](@cite) of these two groups:
 
 ```math
-\text{BMS} = ℒ ⋉_ρ 𝒮,
+\text{BMS} = ℒ ⋉_{\mathrm{Ad}} 𝒮,
 ```
 
-where the homomorphism ``ρ: ℒ → \text{Aut}(𝒮)`` is given by
+where the homomorphism ``\mathrm{Ad}: ℒ → \text{Aut}(𝒮)`` is given by
 
 ```math
-ρ(Λ)(α) = α/κ.
+\mathrm{Ad}(Λ)(α)(𝐤) = \frac{α(Λ^{-1}𝐤)}{κ(Λ^{-1}, 𝐤)}.
 ```
 
 The identity element of this group is the pair ``(1, 0)``, and a
@@ -166,11 +166,25 @@ The group operation is defined as
 (Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂ ∘ Λ₁ / κ₁).
 ```
 
-It's easy to see that multiplication by ``1/κ = γ(1-v⃗⋅k̂)`` preserves
-the defining properties of the supertranslations, so ``ρ(Λ)`` is
-indeed an automorphism.  And repeated multiplication by ``1/κᵢ`` is
-consistent with the composition of Lorentz transformations, so ``ρ``
-is a homomorphism.
+The name comes from conjugation.  Writing each element as a product
+gives ``Λ₂ α₂ Λ₁ α₁ = Λ₂ Λ₁ (Λ₁^{-1} α₂ Λ₁)\, α₁``, and comparing this
+with the group law shows that ``Λ₁^{-1} α₂ Λ₁ = α₂ ∘ Λ₁ / κ₁``, which
+is ``\mathrm{Ad}(Λ₁^{-1})(α₂)``.  That is, ``\mathrm{Ad}(Λ)(α) = Λ α
+Λ^{-1}``, the action of ``ℒ`` on ``𝒮`` by conjugation.
+
+Composing with a Lorentz transformation and dividing by ``κ``
+preserves the defining properties of the supertranslations, so
+``\mathrm{Ad}(Λ)`` is indeed an automorphism.  The cocycle property of
+``κ`` in the footnote above then gives ``\mathrm{Ad}(Λ₂ Λ₁) =
+\mathrm{Ad}(Λ₂)\, \mathrm{Ad}(Λ₁)``, so ``\mathrm{Ad}`` is a
+homomorphism.
+
+Note that the map ``α ↦ α ∘ Λ / κ_Λ`` that appears directly in the
+group law is ``\mathrm{Ad}(Λ^{-1})``, not ``\mathrm{Ad}(Λ)``.  It
+reverses the order of composition: applying it for ``Λ₂`` and then for
+``Λ₁`` gives the map for ``Λ₂ Λ₁``.  It is therefore a *right* action
+of ``ℒ`` on ``𝒮``, an anti-homomorphism into ``\text{Aut}(𝒮)``, which
+is why the subscript on ``⋉`` names ``\mathrm{Ad}`` instead.
 
 The groups ``ℒ`` and ``𝒮`` are isomorphic to subgroups of
 ``\text{BMS}`` in the obvious way: we can identify any Lorentz

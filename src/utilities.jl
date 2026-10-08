@@ -54,21 +54,18 @@ The result is a simple rescaling:
 
     scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
     t′ = @. t′ₘᵢₙ + scale * (t - tₘᵢₙ)
-
-For convenience, this function also returns `tᵪ`, the crossover time at which `t′=t` (the
-fixed point of the t ↦ t′ map), which we can derive from the above formula as
-
-    tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
 """
 function compute_t′(t, αₚ, Rₚ, v⃗, ℐ=One())
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)
-    if t′ₘₐₓ ≤ t′ₘᵢₙ
-        error(
-            "\n\tThere are no complete slices in the t′ coordinate system " *
-            "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)], β = $(absvec(v⃗)) and α as given." *
-            "\n\tYou may wish to decrease β or move the origin (zero) of " *
-            "the time coordinate closer to the average value of t.",
+    if !(t′ₘᵢₙ < t′ₘₐₓ)  # negated, so that NaN bounds also fail
+        throw(
+            ArgumentError(
+                "There are no complete slices in the t′ coordinate system " *
+                "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)], β = $(absvec(v⃗)) and α as given.  " *
+                "You may wish to decrease β or move the origin (zero) of " *
+                "the time coordinate closer to the average value of t.",
+            ),
         )
     end
     return rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
@@ -78,17 +75,19 @@ end
     rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
 
 Map the input time samples `t` affinely onto the span `[t′ₘᵢₙ, t′ₘₐₓ]`, returning the new
-grid `t′` together with the crossover time `tᵪ` at which `t′ = t` (the fixed point of the
-affine map).  This is the common grid-construction step of the [`compute_t′`](@ref)
-methods.
+grid `t′`.  This is the common grid-construction step of the [`compute_t′`](@ref) methods.
 """
 function rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
     t′ = @. t′ₘᵢₙ + scale * (t - tₘᵢₙ)
     t′[end] = t′ₘₐₓ  # ensure exact endpoint to avoid extrapolation
-    tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
-    return t′, tᵪ
+
+    # We used to compute the crossover time `tᵪ` at which `t′ = t`
+    # (the fixed point of the affine map) as
+    #
+    #     tᵪ = (t′ₘᵢₙ - scale * tₘᵢₙ) / (1 - scale)
+    return t′
 end
 
 """
@@ -108,24 +107,36 @@ the supertranslation (including any time translation) that the optimizer may rea
 the resulting grid for every evaluation.
 
 The grid is built exactly as in the exact-transformation method — an affine rescaling of `t`
-onto the worst-case span of [`compute_t′_bounds`](@ref) — and the return value is likewise
-`(t′, tᵪ)`, with `tᵪ` the fixed point of the affine map.  Because the span is a worst case,
+onto the worst-case span of [`compute_t′_bounds`](@ref).  Because the span is a worst case,
 it is generally smaller than the exact span for any particular transformation.
 """
 function compute_t′(t, β::Real, δt::Real)
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, β, δt)
-    if t′ₘₐₓ ≤ t′ₘᵢₙ
-        error(
-            "\n\tThere are no complete slices in the t′ coordinate system " *
-            "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)] in the worst case allowed by " *
-            "β = $β and δt = $δt." *
-            "\n\tYou may wish to decrease β or δt, or move the origin (zero) of " *
-            "the time coordinate closer to the average value of t.",
+    if !(t′ₘᵢₙ < t′ₘₐₓ)  # negated, so that NaN bounds also fail
+        throw(
+            ArgumentError(
+                "There are no complete slices in the t′ coordinate system " *
+                "for t ∈ [$(tₘᵢₙ), ..., $(tₘₐₓ)] in the worst case allowed by " *
+                "β = $β and δt = $δt.  " *
+                "You may wish to decrease β or δt, or move the origin (zero) of " *
+                "the time coordinate closer to the average value of t.",
+            ),
         )
     end
     return rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
 end
+
+"""
+    lorentz_factor(v⃗)
+
+Return ``γ = 1/\\sqrt{1 - |v⃗|^2}`` for the boost velocity `v⃗`.  The squared speed is
+computed directly as the sum of the squared components, rather than by squaring `absvec(v⃗)`,
+because the square root inside `absvec` has an infinite derivative at `v⃗ = 0`.  With
+ForwardDiff duals, that infinity multiplies a zero partial and makes every derivative of `γ`
+NaN at the identity transformation, which is the natural starting point of an optimization.
+"""
+lorentz_factor(v⃗) = 1 / √(1 - abs2vec(v⃗))
 
 @doc raw"""
     v⃗dotk̂(Rₚᵢ, vˣ, vʸ, vᶻ)
@@ -152,12 +163,12 @@ Return the extreme values `(t′ₘᵢₙ, t′ₘₐₓ)` that a transformed ti
 pixel of the sphere still maps into the span of the input time samples `t` — that is, such
 that `t′ κ⁻¹(k̂) + α(k̂) ∈ [t[begin], t[end]]` for every pixel direction.  The inputs are as
 for [`compute_t′`](@ref), which uses these bounds to build its default grid; the same bounds
-validate a user-supplied grid in [`transform!`](@ref).  A returned pair with `t′ₘₐₓ ≤ t′ₘᵢₙ`
-means no complete slice exists.
+validate a user-supplied grid in [`transform!`](@ref).  A returned pair that does not satisfy
+`t′ₘᵢₙ < t′ₘₐₓ` means no complete slice exists; that includes a NaN, which any NaN in the
+inputs produces.
 """
 function compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ=One())
-    β = absvec(v⃗)
-    γ = 1 / √(1 - β^2)
+    γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     T = promote_type(eltype(t), eltype(αₚ), typeof(γ))
@@ -185,8 +196,8 @@ the conformal factor `1/κ = γ(1 - ℐ v⃗⋅k̂)` ranges over `[γ(1-β), γ(
 varies, and the supertranslation over `[-δt, δt]`, so taking the adverse extreme of each
 gives a span contained in the exact span of any admissible transformation.  The boost
 direction, the frame rotation, and the choice of `ℐ = ±1` only move these extremes around
-the sphere, so none of them affects the result.  A returned pair with `t′ₘₐₓ ≤ t′ₘᵢₙ` means
-that some admissible transformation may leave no complete slice.
+the sphere, so none of them affects the result.  A returned pair that does not satisfy
+`t′ₘᵢₙ < t′ₘₐₓ` means that some admissible transformation may leave no complete slice.
 """
 function compute_t′_bounds(t, β::Real, δt::Real)
     0 ≤ β < 1 || throw(ArgumentError("Boost-speed bound must satisfy 0 ≤ β < 1; got β=$β"))
@@ -203,10 +214,11 @@ end
     validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=1)
 
 Check that a user-supplied output time grid `t′` is usable by [`transform!`](@ref) or
-[`transform_objective`](@ref): it must be nonempty, strictly increasing, and lie within
-the pixel-wise bounds of [`compute_t′_bounds`](@ref) (up to a small roundoff allowance),
-so that no pixel ever requires extrapolation beyond the input time span.  Throws an
-`ArgumentError` otherwise; returns `t′` for convenience.
+[`transform_objective`](@ref): it must be nonempty, finite, strictly increasing, and lie
+within the pixel-wise bounds of [`compute_t′_bounds`](@ref) (up to a small roundoff
+allowance), so that no pixel ever requires extrapolation beyond the input time span.  Throws
+an `ArgumentError` otherwise, including when a NaN in the inputs makes the bounds NaN;
+returns `t′` for convenience.
 
 Note that this function does *not* require `length(t′) == length(t)`; that restriction
 applies only to [`transform!`](@ref) — which writes its result back into `data` in place —
@@ -215,10 +227,11 @@ and is enforced at its call site.  [`transform_objective`](@ref) and
 """
 function validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=One())
     isempty(t′) && throw(ArgumentError("Supplied `t′` must have at least one sample"))
+    all(isfinite, t′) || throw(ArgumentError("Supplied `t′` has a non-finite element"))
     issorted(t′; lt=(≤)) ||
         throw(ArgumentError("Supplied `t′` must be strictly increasing"))
     t′ₘᵢₙ, t′ₘₐₓ = compute_t′_bounds(t, αₚ, Rₚ, v⃗, ℐ)
-    if t′ₘₐₓ ≤ t′ₘᵢₙ
+    if !(t′ₘᵢₙ < t′ₘₐₓ)  # negated, so that NaN bounds also fail
         throw(
             ArgumentError(
                 "There are no complete slices in the t′ coordinate system for the given " *
@@ -230,7 +243,7 @@ function validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=One())
     # Allow a tiny roundoff excursion past the exact bounds; the spline evaluation handles
     # a distance-O(ϵ) extrapolation gracefully (error O(τ³)).
     tol = 8 * eps(typeof(t′ₘₐₓ)) * max(abs(t′ₘᵢₙ), abs(t′ₘₐₓ), t′ₘₐₓ - t′ₘᵢₙ)
-    if t′[begin] < t′ₘᵢₙ - tol || t′[end] > t′ₘₐₓ + tol
+    if !(t′ₘᵢₙ - tol ≤ t′[begin] && t′[end] ≤ t′ₘₐₓ + tol)
         throw(
             ArgumentError(
                 "Supplied `t′` ∈ [$(t′[begin]), ..., $(t′[end])] exceeds the valid range " *

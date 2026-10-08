@@ -32,8 +32,9 @@ coordinates — is untouched.
 The **spatial rotation** ``R`` is a rotor ``R ∈ \mathrm{Spin}(3)`` that
 rotates the angular coordinate system.  Observer ``B``'s spatial basis
 is related to ``A``'s by ``𝐞' = R\, 𝐞\, R̃``, so a null ray at ``𝐤`` in
-``A``'s frame appears at ``R\, 𝐤\, R̃`` in ``B``'s.  The time coordinate
-is unchanged.
+``A``'s frame appears at ``R̃\, 𝐤\, R`` in ``B``'s: the components of
+``𝐤`` along the rotated basis are those of ``R̃\, 𝐤\, R`` along the
+original one.  The time coordinate is unchanged.
 
 The **boost** is given by a velocity ``v⃗`` in ``A``'s frame.  Observer
 ``B``'s worldline is parallel to

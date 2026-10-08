@@ -7,6 +7,7 @@ import Quaternionic:
     Lorentz,
     Boost,
     absvec,
+    abs2vec,
     𝐤,
     components,
     basetype,
@@ -59,6 +60,7 @@ include("transform.jl")
 
 export transform!,
     transform_objective,
+    compute_t′,
     pixel_waveform,
     diagnostics,
     BMS,

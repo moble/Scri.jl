@@ -52,7 +52,7 @@
         for dcsymbols ∈ ((:h,), (:ψ₄,))
             dc = DataComponents(dcsymbols...)
             data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, length(dcsymbols))
-            t′ = first(compute_t′(t, 1e-4, 1e-4))
+            t′ = compute_t′(t, 1e-4, 1e-4)
             target = pixel_waveform(data, t, dc, t′)
             transform_objective(data, t, v⃗, R, αᵢₙ, dc, target; t′)
         end

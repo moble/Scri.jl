@@ -1,6 +1,6 @@
 # BMS group elements: a supertranslation followed by a Lorentz transformation.
 #
-# Conventions: see docs/src/80-details/30-bms_group.md
+# Conventions: see docs/src/30-BMS/04-bms_group.md
 
 @doc raw"""
     BMS{T<:Real,A,I}
@@ -63,6 +63,14 @@ BMS{T}(; kwargs...)   # assemble from parts; see below
 BMS(g; c_α, ℐ)        # convert an element between representations; see its own docstring
 ```
 
+!!! warning "A positional rotor is the inverse of the frame rotation"
+    The positional form stores its Lorentz part exactly as given, so in `BMS(R, α)` the
+    rotor `R` is the map applied to the labels of null rays, `k̂ ↦ R k̂ R̃`.  That is the
+    inverse of the frame rotation: `frame_rotation(BMS(R, α)) == conj(R)`, whereas
+    `BMS{T}(; frame_rotation=R)` has frame rotation `R`, the meaning that `R` has in
+    [`transform!`](@ref).  Use the keyword form when `R` is meant as a rotation of the
+    frame.
+
 The keyword constructor accepts any combination of
 
 - `supertranslation`: mode weights as above (any perfect-square length);
@@ -73,23 +81,24 @@ The keyword constructor accepts any combination of
 - `c_α`, `ℐ`: the conventions described above (both default `+1`);
 - `ℓₘₐₓ`: the resolution of the stored `α` (defaults to the smallest that fits).
 
-The internal representations are `Vector{Complex{T}}`, `Rotor{T}`, and `QuatVec{T}`, but
-any input convertible to those is accepted — real or lower-precision mode vectors, plain
+The internal representations are `Vector{Complex{T}}`, `Rotor{T}`, and `QuatVec{T}`, but any
+input convertible to those is accepted — real or lower-precision mode vectors, plain
 3-vectors for velocities and translations, and so on; the float type `T` is promoted to
 accommodate all the parts.
 
 The Lorentz part is assembled as the *passive* version of "rotate, then boost": `Λ =
 inv(Boost(v⃗) * Lorentz(R))`, so that `frame_rotation` and `boost_velocity` have exactly the
 same meaning as the `R` and `v⃗` arguments of [`transform!`](@ref).  In particular `κ(𝐤) =
-1/(γ(1 - v⃗⋅k̂))` for a pure boost.  The translation parts contribute `α(k̂) = δt - δx⃗⋅k̂`
-— i.e., the supertranslation of the spacetime translation by the 4-vector `(δt, δx⃗)`.  If
-`supertranslation` is also supplied, any `time_translation` and/or `space_translation`
-content is *added* to it to produce the total supertranslation.
+1/(γ(1 - ℐ v⃗⋅k̂))` for a pure boost, where `ℐ` is the element's representation `I`.  The
+translation parts contribute `α(k̂) = δt - δx⃗⋅k̂` — i.e., the supertranslation of the
+spacetime translation by the 4-vector `(δt, δx⃗)`.  If `supertranslation` is also supplied,
+any `time_translation` and/or `space_translation` content is *added* to it to produce the
+total supertranslation.
 
 ## Operations
 
-Group composition via `*` (or `∘`, or [`compose`](@ref) with explicit band limits),
-inverse via `inv`, identity via `one`.  Apply to a null ray with `g(t, k̂)`.  Accessors:
+Group composition via `*` (or `∘`, or [`compose`](@ref) with explicit band limits), inverse
+via `inv`, identity via `one`.  Apply to a null ray with `g(t, k̂)`.  Accessors:
 [`ℓₘₐₓ`](@ref), [`lorentz`](@ref), [`supertranslation`](@ref), [`frame_rotation`](@ref),
 [`boost_velocity`](@ref), [`translation`](@ref), [`time_translation`](@ref),
 [`space_translation`](@ref), [`proper_supertranslation`](@ref).
@@ -821,8 +830,13 @@ k̂' = ℐ\,\frac{\overrightarrow{Λk}}{(Λk)⁰}.
 
 The null-infinity sign `ℐ = ±1` selects the section `𝐤 = (1, ℐ k̂)` — outgoing
 (future-cone) labeling at ``ℐ⁺`` (`ℐ = +1`) or the antipodal past-light-cone labeling at
-``ℐ⁻`` (`ℐ = -1`); see [the conventions page](@ref scri_pm_conventions).  For a pure boost
-this gives `κ = 1/(γ(1 - ℐ v⃗⋅k̂))`, and the trailing `ℐ` on `k̂′` undoes the section sign
+``ℐ⁻`` (`ℐ = -1`); see [the conventions page](@ref scri_pm_conventions).  For the pure
+boost `Λ = Boost(-v⃗)`, which is the Lorentz part of the [`BMS`](@ref) element with boost
+velocity `v⃗`, this gives `κ = 1/(γ(1 - ℐ v⃗⋅k̂))`; `Λ = Boost(v⃗)` gives
+`κ = 1/(γ(1 + ℐ v⃗⋅k̂))` instead.  Quaternionic's `Boost(v⃗)` is the active boost, which
+takes the time axis `𝐭` to `γ(𝐭 + v⃗)`, the worldline of an observer moving with velocity
+`v⃗`; its inverse `Boost(-v⃗)` gives a vector's components in that observer's frame, which
+is the passive transformation a `BMS` element stores.  The trailing `ℐ` on `k̂′` undoes the section sign
 so that the returned direction is in the same `k̂` labeling (rotations map `k̂ ↦ Rk̂`
 regardless of `ℐ`).  The `ℐ = -1` map agrees with [`aberration`](@ref)`(…, -1)`.
 
@@ -1397,9 +1411,14 @@ and the null-infinity representation `I` governs the geometry internally.  `comp
 band-limit caveats (and `ℓₘₐₓ`/`ℓʷ` keywords) apply here too: the inverse of an element
 whose Lorentz part involves a boost is exact only in the limit of large `ℓʷ` and `ℓₘₐₓ`.
 The Lorentz part `inv(Λ)` is the exact GA reverse.
+
+The default `ℓₘₐₓ` is one more than that of `g`, which is also the band limit that
+`compose` gives `g * inv(g)` by default.  The two truncations then coincide, so `g * inv(g)`
+is the identity to roundoff.  The other order, `inv(g) * g`, truncates differently and is
+exact only in the limit.
 """
 function Base.inv(
-    g::BMS{T,A,I}; ℓₘₐₓ::Int=ell_max(g), ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g))
+    g::BMS{T,A,I}; ℓₘₐₓ::Int=ell_max(g) + 1, ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g))
 ) where {T<:Real,A,I}
     return compose(
         BMS{T,A,I}(one(Lorentz{T}), -g.α),

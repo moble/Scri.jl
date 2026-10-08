@@ -154,7 +154,7 @@ end
     # c_α = -1:
     #   t′ₘᵢₙ = max_p(tₘᵢₙ - αₚ[p]) = tₘᵢₙ - min(αₚ) = -10 - (-0.5) = -9.5
     #   t′ₘₐₓ = min_p(tₘₐₓ - αₚ[p]) = tₘₐₓ - max(αₚ) = 10 - 2 = 8
-    (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+    t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ -9.5
     @test t′[end] ≈ 8.0
@@ -172,7 +172,7 @@ end
     αₚ = [0.0, 0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
     t = collect(range(-10.0, 10.0; length=101))
-    (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+    t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     # For tₘᵢₙ<0<tₘₐₓ both bounds are set by the anti-boost (-z) pixel:
     @test length(t′) == length(t)
     @test t′[begin] ≈ -10.0 / (γ * (1 + β))
@@ -217,7 +217,7 @@ end
         # Non-uniform time grid centered near zero
         dt = abs.(randn(rng, 100)) .+ 0.01
         t = cumsum(dt) .- sum(dt) / 2
-        (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+        t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         @test length(t′) == length(t)
         @test all(diff(t′) .> 0)
     end
@@ -234,34 +234,10 @@ end
         αₚ = zeros(Nm)
         v⃗ = QuatVec(0.0, 0.0, 0.0)
         t = collect(range(-5.0, 5.0; length=51))
-        (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+        t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         # With β=0 and α=0, κ⁻¹=1 for every pixel, so t′ₘᵢₙ=tₘᵢₙ,
         # t′ₘₐₓ=tₘₐₓ, scale=1, and t′ = t exactly.
         @test t′ ≈ t atol = 4eps(maximum(abs, t))
-    end
-end
-
-@testitem "compute_t′: tᵪ is a fixed point of the affine map t↦t′(t)" tags = [
-    :unit, :fast, :validation
-] begin
-    import Quaternionic: RotorF64, QuatVec
-    import Random
-
-    rng = Random.Xoshiro(77)
-    for _ ∈ 1:10
-        Nm = 15
-        β = 0.1 + 0.5 * rand(rng)
-        Rₚ = randn(rng, RotorF64, Nm)
-        αₚ = 0.05 .* randn(rng, Nm)
-        v⃗ = QuatVec(0.0, 0.0, β)
-        t = collect(range(-10.0, 10.0; length=101))
-        (t′, tᵪ) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
-        # Reconstruct the affine map from returned endpoints and verify t′(tᵪ) = tᵪ.
-        tₘᵢₙ, tₘₐₓ = t[begin], t[end]
-        t′ₘᵢₙ, t′ₘₐₓ = t′[begin], t′[end]
-        scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
-        t′_at_tᵪ = t′ₘᵢₙ + scale * (tᵪ - tₘᵢₙ)
-        @test t′_at_tᵪ ≈ tᵪ atol = 4eps(max(abs(tᵪ), 1.0))
     end
 end
 
@@ -277,7 +253,7 @@ end
         αₚ = 0.05 .* randn(rng, Nm)
         v⃗ = QuatVec(0.0, 0.0, β)
         t = collect(range(-8.0, 8.0; length=81))
-        (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+        t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
         Δt′ = diff(t′)
         # The map t↦t′ is affine, so equal steps in t produce equal steps in t′.
         # Tolerance is relative to the full range, not the step: the forced
@@ -297,7 +273,7 @@ end
     αₚ = [0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
     t = collect(range(5.0, 20.0; length=101))
-    (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+    t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ t[begin] / k_inv atol = 4eps(t′[begin])
     @test t′[end] ≈ t[end] / k_inv atol = 4eps(t′[end])
@@ -314,7 +290,7 @@ end
     αₚ = [0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
     t = collect(range(-20.0, -5.0; length=101))
-    (t′, _) = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+    t′ = Scri.compute_t′(t, αₚ, Rₚ, v⃗)
     @test length(t′) == length(t)
     @test t′[begin] ≈ t[begin] / k_inv atol = 4eps(t′[begin])
     @test t′[end] ≈ t[end] / k_inv atol = 4eps(t′[end])
@@ -332,7 +308,15 @@ end
     αₚ = [-5.0, 5.0]
     v⃗ = QuatVec(0.0, 0.0, 0.0)
     t = collect(range(-1.0, 1.0; length=51))
-    @test_throws ErrorException Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+    @test_throws ArgumentError Scri.compute_t′(t, αₚ, Rₚ, v⃗)
+
+    # A NaN anywhere makes the bounds NaN; every comparison with NaN is false, so the
+    # check must be written in the negated form to catch it.
+    @test_throws ArgumentError Scri.compute_t′(t, [NaN, 0.0], Rₚ, v⃗)
+    @test_throws ArgumentError Scri.validate_t′(t, t, [NaN, 0.0], Rₚ, v⃗)
+    @test_throws ArgumentError Scri.validate_t′(
+        [t[1:3]; NaN; t[5:end]], t, [0.0, 0.0], Rₚ, v⃗
+    )
 end
 
 # ── compute_t′ worst-case (β, δt) methods ─────────────────────────────────────
@@ -391,7 +375,7 @@ end
     t = collect(range(-50.0, 50.0; length=201))
     (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, δt)
     @test t′ₘᵢₙ < t′ₘₐₓ
-    (t′, _) = Scri.compute_t′(t, β, δt)
+    t′ = Scri.compute_t′(t, β, δt)
     for _ ∈ 1:20
         Nm = 25
         Rₚ = randn(rng, RotorF64, Nm)
@@ -412,14 +396,11 @@ end
     β, δt = 0.3, 1.0
     t = collect(range(-10.0, 10.0; length=101))
     (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, δt)
-    (t′, tᵪ) = Scri.compute_t′(t, β, δt)
+    t′ = Scri.compute_t′(t, β, δt)
     @test length(t′) == length(t)
     @test all(diff(t′) .> 0)
     @test t′[begin] == t′ₘᵢₙ
     @test t′[end] == t′ₘₐₓ
-    # tᵪ is the fixed point of the affine map t ↦ t′(t).
-    scale = (t′ₘₐₓ - t′ₘᵢₙ) / (t[end] - t[begin])
-    @test t′ₘᵢₙ + scale * (tᵪ - t[begin]) ≈ tᵪ
 end
 
 @testitem "compute_t′(t, β, δt): collapsed worst-case range throws an error" tags = [
@@ -427,5 +408,5 @@ end
 ] begin
     # δt bigger than half the time span leaves no complete slice even at β=0.
     t = collect(range(-1.0, 1.0; length=51))
-    @test_throws ErrorException Scri.compute_t′(t, 0.0, 5.0)
+    @test_throws ArgumentError Scri.compute_t′(t, 0.0, 5.0)
 end

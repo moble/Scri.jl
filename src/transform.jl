@@ -2,19 +2,26 @@
     validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
 
 Check the shared input contract of [`transform!`](@ref) and [`transform_objective`](@ref):
-the boost speed is subluminal; `t` has at least 4 samples; `data` is a 3-dimensional array
-whose first dimension is a perfect square and whose second and third dimensions match those
-of `t` and `dc`, respectively; `αᵢₙ` fits within the band limit; and any declared input band
-limit `ℓₘₐₓ₀` is in range and honored by `data`.  This function throws an `ArgumentError` on
-any violation.  If there is none, it returns `(Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀)`, where `N₀` is the
-number of modes within the declared input band limit (`Nᵐ` if none was declared).
+`v⃗` is finite and subluminal; `t` is finite, strictly increasing, and has at least 4
+samples; `data` is a 3-dimensional array whose first dimension is a perfect square and whose
+second and third dimensions match those of `t` and `dc`, respectively; the band limit is at
+least 2; `αᵢₙ` is finite, has a perfect-square length, and fits within the band limit; and
+any declared input band limit `ℓₘₐₓ₀` is in range and honored by `data`.
+
+This function throws an `ArgumentError` on any violation.  Its callers run it before
+spawning any task, so that a bad input never surfaces as a `TaskFailedException`.  If there
+is no violation, it returns `(Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀)`, where `N₀` is the number of modes
+within the declared input band limit (`Nᵐ` if none was declared).
 """
 function validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
     # These are explicit throws (not `@assert`) so they survive even when asserts are
     # disabled.
     check(cond, msg) = cond || throw(ArgumentError(msg))
+    check(all(isfinite, vec(v⃗)), "Input `v⃗` = $v⃗ has a non-finite component")
     check(absvec(v⃗) < 1, "Input `v⃗` has magnitude $(absvec(v⃗)), but expected less than 1")
     check(length(t) ≥ 4, "Input `t` has only $(length(t)) samples, but expected at least 4")
+    check(all(isfinite, t), "Input `t` has a non-finite element")
+    check(issorted(t; lt=(≤)), "Input `t` must be strictly increasing")
     check(ndims(data) == 3, "Input `data` has $(ndims(data)) dimensions, but expected 3")
     Nᵐ, Nᵗ, Nᵈ = size(data)
     L = isqrt(Nᵐ)
@@ -24,10 +31,18 @@ function validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
         Nᵈ == ncomponents(dc),
         "Input `data` has $Nᵈ components, but `dc` has $(ncomponents(dc))",
     )
+    check(all(isfinite, αᵢₙ), "Input `αᵢₙ` has a non-finite element")
+    check(
+        isqrt(length(αᵢₙ))^2 == length(αᵢₙ),
+        "Input `αᵢₙ` has $(length(αᵢₙ)) modes, which is not a perfect square",
+    )
     check(
         length(αᵢₙ) ≤ Nᵐ, "Input `αᵢₙ` has $(length(αᵢₙ)) modes, but expected at most $Nᵐ"
     )
     ℓₘₐₓ = L - 1
+    # Both functions evaluate ð²α, of spin weight 2, whatever the data components are, and
+    # the strain and the shear have spin weight ±2 themselves.
+    check(ℓₘₐₓ ≥ 2, "Input `data` has ℓₘₐₓ=$ℓₘₐₓ, but the transformation needs ℓₘₐₓ ≥ 2")
     if !isnothing(ℓₘₐₓ₀)
         check(0 ≤ ℓₘₐₓ₀ ≤ ℓₘₐₓ, "ℓₘₐₓ₀=$ℓₘₐₓ₀ must be between 0 and ℓₘₐₓ=$ℓₘₐₓ")
         check(
@@ -39,6 +54,44 @@ function validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
     N₀ = isnothing(ℓₘₐₓ₀) ? Nᵐ : (ℓₘₐₓ₀ + 1)^2
     return (Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀)
 end
+
+"""
+    widen_parameters(v⃗, R, αᵢₙ, TP)
+
+Convert the BMS parameters `v⃗`, `R`, and `αᵢₙ` so that each element type is at least as
+wide as the real type `TP`, and return them as a tuple.  [`transform!`](@ref) and
+[`transform_objective`](@ref) pass the primal float type of the data and the times as `TP`,
+so that, for example, `Float32` parameters with `Float64` data have their geometry computed
+in `Float64`.  A parameter that is already wide enough is returned unchanged; in particular,
+the promotion turns no primal parameter into a dual number.
+"""
+function widen_parameters(
+    v⃗::QuatVec{T3}, R::Rotor{T4}, αᵢₙ::Vector{Complex{T5}}, ::Type{TP}
+) where {T3,T4,T5,TP}
+    return (
+        QuatVec{promote_type(T3, TP)}(v⃗),
+        Rotor{promote_type(T4, TP)}(R),
+        convert(Vector{Complex{promote_type(T5, TP)}}, αᵢₙ),
+    )
+end
+
+@doc raw"""
+    rotor_argument(R)
+
+The rotor meant by a rotation argument given as something other than a `Rotor`, for the
+generic-argument methods of [`transform!`](@ref) and [`transform_objective`](@ref).  Three
+components, as a `QuatVec`, a vector, or a tuple, are a rotation vector ``𝐮``: the
+right-handed rotation by the angle ``|𝐮|`` about the axis ``𝐮``, which is the rotor
+``\exp(𝐮/2)``.  So the zero vector is the identity, and slices of an optimizer's parameter
+vector can start there.  Anything else goes to the `Rotor` constructor, which reads four
+components as ``(w, x, y, z)`` and normalizes them.
+"""
+rotor_argument(R::Rotor) = R
+rotor_argument(𝐮::QuatVec) = exp(𝐮 / 2)
+function rotor_argument(R::Union{AbstractVector,Tuple})
+    return length(R) == 3 ? rotor_argument(QuatVec(R...)) : Rotor(R)
+end
+rotor_argument(R) = Rotor(R)
 
 """
     transform_pixel!(d′ᵢ, dᵢ, d̈ᵢ, cubic_spline_cache, t, t′,
@@ -174,7 +227,9 @@ as `ℓₘₐₓ = √Nᵐ - 1`.  The array must have complex type, with the und
 at least as wide as the types of the other inputs.
 
 The `t` array is expected to have length `Nᵗ`, matching the second dimension of `data`.  The
-`v⃗` and `R` inputs are expected to be of types `QuatVec` and `Rotor`.
+`v⃗` and `R` inputs are expected to be of types `QuatVec` and `Rotor`; other methods convert
+anything those constructors accept, such as plain vectors.  A rotation given as three
+components is read as a rotation vector, and four as a rotor; see [`rotor_argument`](@ref).
 
 The `αᵢₙ` array must be a complex vector, and must be ordered as described above for the
 final dimension of `data`, though it may have a smaller `ℓₘₐₓ`.  (A larger `ℓₘₐₓ` cannot be
@@ -255,6 +310,16 @@ function transform!(
         end
     end
 
+    # Compute the geometry at no lower precision than the data: with Float32 parameters and
+    # Float64 data, the grid, the harmonics, and the factorizations would otherwise all be
+    # Float32.  The branch is decided by the types alone, so it compiles away.
+    let TP = promote_type(primal_float(T1), primal_float(T2))
+        widened = (promote_type(T3, TP), promote_type(T4, TP), promote_type(T5, TP))
+        if widened !== (T3, T4, T5)
+            return transform!(data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc; t′, ℓₘₐₓ₀)
+        end
+    end
+
     # Check that the input data has the expected dimensions and properties.
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
     Nᵖ = Nᵐ
@@ -269,8 +334,7 @@ function transform!(
     ### Stage 0: Precompute various quantities needed for the transformation
     ###
 
-    β = absvec(v⃗)
-    γ = 1 / √(1 - β^2)
+    γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
     Λ = Boost(I * v⃗) * R
 
@@ -356,31 +420,33 @@ function transform!(
     # Same reasoning: spin-2 modes start at ℓ=2, so skip the first 2² = 4 leading zeros.
     task_ð²αₚ = OhMyThreads.@spawn 𝒯[2] * (ð(1, 0, ℓₘₐₓ, T5) * ð(0, 0, ℓₘₐₓ, T5) * α)[5:end]
 
-    # Compute t′ — unless the caller supplied a grid, in which case just validate it here,
-    # synchronously, so that a bad grid throws a plain ArgumentError rather than a
-    # TaskFailedException.
-    αₚ = fetch(task_αₚ)  # αₚ is also needed elsewhere, so fetch it before the task
-    task_t′ = if isnothing(t′)
-        # `compute_t′` returns the vector and the crossover time tᵪ, but we don't need the
-        # latter, so just take the first element of the tuple.
-        OhMyThreads.@spawn first(compute_t′(t, αₚ, Rₚ, v⃗, I))
-    else
-        # `transform!` writes the result back into `data` in place, so — unlike
-        # `transform_objective` and `pixel_waveform` — its output grid must have exactly
-        # as many samples as the input grid.
-        if length(t′) != length(t)
-            throw(
-                ArgumentError(
-                    "Supplied `t′` has $(length(t′)) samples, but `t` has $(length(t)).  " *
-                    "Because `transform!` writes the result back into `data` in place, " *
-                    "its output grid must have the same length as `t`.  For an output " *
-                    "grid of a different length, see `transform_objective` and " *
-                    "`pixel_waveform`.",
-                ),
-            )
+    # Compute t′ — or, if the caller supplied a grid, validate it.  Either way this runs
+    # synchronously, so that a bad grid, or a transformation that leaves no complete slice,
+    # throws a plain ArgumentError rather than a TaskFailedException.  Both branches produce
+    # the same element type, keeping the loop below type-stable; `convert` is a no-op when
+    # the supplied grid already has that type.
+    αₚ = fetch(task_αₚ)
+    t′ = let Tt = promote_type(eltype(t), eltype(αₚ), typeof(γ))
+        if isnothing(t′)
+            compute_t′(t, αₚ, Rₚ, v⃗, I)::Vector{Tt}
+        else
+            # `transform!` writes the result back into `data` in place, so — unlike
+            # `transform_objective` and `pixel_waveform` — its output grid must have
+            # exactly as many samples as the input grid.
+            if length(t′) != length(t)
+                throw(
+                    ArgumentError(
+                        "Supplied `t′` has $(length(t′)) samples, but `t` has " *
+                        "$(length(t)).  Because `transform!` writes the result back " *
+                        "into `data` in place, its output grid must have the same " *
+                        "length as `t`.  For an output grid of a different length, see " *
+                        "`transform_objective` and `pixel_waveform`.",
+                    ),
+                )
+            end
+            validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
+            convert(Vector{Tt}, t′)
         end
-        validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
-        nothing
     end
 
     # Compute ðt′/2κ parts.
@@ -427,11 +493,6 @@ function transform!(
     ###
 
     cubic_spline_cache = fetch(task_cubic_spline_cache)
-    # Both branches produce the same eltype that `compute_t′` would, keeping the loop below
-    # type-stable; `convert` is a no-op when the supplied grid already has that type.
-    t′ = let Tt = promote_type(eltype(t), eltype(αₚ), typeof(γ))
-        isnothing(task_t′) ? convert(Vector{Tt}, t′) : fetch(task_t′)::Vector{Tt}
-    end
     ðt′╱2κₚ = fetch(task_ðt′╱2κₚ)
     ð²αₚ = fetch(task_ð²αₚ)
 
@@ -548,8 +609,35 @@ function transform!(
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 )
     return transform!(
-        data, t, QuatVec(v⃗), Rotor(R), αᵢₙ; data_components, ℐ, conventions, t′, ℓₘₐₓ₀
+        data,
+        t,
+        QuatVec(v⃗),
+        rotor_argument(R),
+        αᵢₙ;
+        data_components,
+        ℐ,
+        conventions,
+        t′,
+        ℓₘₐₓ₀,
     )
+end
+
+# Generic-argument convenience: accept anything `QuatVec`/`Rotor` can convert — plain
+# vectors, tuples, quaternions, slices of an optimizer's parameter vector, … — so callers
+# never need to load Quaternionic or know its constructors.  A three-component rotation is
+# a rotation vector (see `rotor_argument`).  The fully-typed main method is strictly more
+# specific, so this cannot recurse.
+function transform!(
+    data::Array{<:Complex},
+    t::Vector{<:Real},
+    v⃗,
+    R,
+    αᵢₙ::Vector{<:Complex},
+    dc::DataComponents;
+    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+)
+    return transform!(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc; t′, ℓₘₐₓ₀)
 end
 
 """
@@ -568,23 +656,6 @@ data conventions' `c_α` — via the [`BMS`](@ref) conversion constructor, which
 exactly for whatever conventions (`A`, `I`) `g` was constructed with.  Returns `(data, t′)`,
 as the main method does.
 """
-# Generic-argument convenience: accept anything `QuatVec`/`Rotor` can convert — plain
-# vectors, tuples, quaternions, slices of an optimizer's parameter vector, … — so callers
-# never need to load Quaternionic or know its constructors.  The fully-typed main method
-# is strictly more specific, so this cannot recurse.
-function transform!(
-    data::Array{<:Complex},
-    t::Vector{<:Real},
-    v⃗,
-    R,
-    αᵢₙ::Vector{<:Complex},
-    dc::DataComponents;
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
-    ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
-)
-    return transform!(data, t, QuatVec(v⃗), Rotor(R), αᵢₙ, dc; t′, ℓₘₐₓ₀)
-end
-
 function transform!(
     data::Array{<:Complex},
     t::Vector{<:Real},
@@ -722,7 +793,8 @@ Dual numbers are confined to per-pixel scalars and a few task-local buffers of s
 reused across optimizer iterations without copying.  A `BMS`-valued transformation may be
 passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may be anything the `QuatVec` and
 `Rotor` constructors accept — e.g., plain vectors, such as slices of an optimizer's
-parameter vector.
+parameter vector.  A rotation given as three components is read as a rotation vector, and
+four as a rotor; see [`rotor_argument`](@ref).
 
 The keyword `t′` is **required**: it is the fixed output time grid on which the
 transformed waveform is compared to `target`, and holding it fixed across parameter
@@ -768,6 +840,17 @@ function transform_objective(
     weights::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I}
+    # As in `transform!`, compute the geometry at no lower precision than the data and the
+    # times.  The branch is decided by the types alone, so it compiles away.
+    let TP = promote_type(primal_float(T1), primal_float(T2))
+        widened = (promote_type(T3, TP), promote_type(T4, TP), promote_type(T5, TP))
+        if widened !== (T3, T4, T5)
+            return transform_objective(
+                data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc, target; t′, weights, ℓₘₐₓ₀
+            )
+        end
+    end
+
     ###
     ### Stage A: Validation and parameter-independent setup
     ###
@@ -797,8 +880,7 @@ function transform_objective(
     TR = promote_type(T1, T2, TΘ)
 
     c_α = dc.conventions.c_α
-    β = absvec(v⃗)
-    γ = 1 / √(1 - β^2)
+    γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
     Λ = Boost(I * v⃗) * R
 
@@ -962,7 +1044,7 @@ function transform_objective(
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 )
     return transform_objective(
-        data, t, QuatVec(v⃗), Rotor(R), αᵢₙ, dc, target; t′, weights, ℓₘₐₓ₀
+        data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc, target; t′, weights, ℓₘₐₓ₀
     )
 end
 
