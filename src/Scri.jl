@@ -54,12 +54,15 @@ include("signs.jl")
 include("conventions.jl")
 include("data_components.jl")
 include("utilities.jl")
+include("quadrature.jl")
+include("objective_plan.jl")
 include("aberration.jl")
 include("bms.jl")
 include("transform.jl")
 
 export transform!,
     transform_objective,
+    ObjectivePlan,
     compute_t′,
     pixel_waveform,
     diagnostics,

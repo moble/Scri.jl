@@ -673,53 +673,51 @@ function transform!(
 end
 
 @doc raw"""
-    pixel_waveform(data, t, dc, t′)
+    pixel_waveform(data, t, dc, t′, [R′ₚ])
 
-Synthesize the mode weights in `data` onto the standard pixel grid and interpolate to the
-time samples `t′`, returning an array of pixel values of size `(Nᵖ, length(t′), Nᵈ)` with
-`Nᵖ = Nᵐ`.  This is the *un*-transformed waveform, evaluated exactly where
-[`transform_objective`](@ref) evaluates the transformed one: pixel `i` corresponds to the
-direction of the `i`-th rotor of `golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)`, and the values
-are spline-interpolated from `t` to `t′` with the same natural cubic spline used by
-[`transform!`](@ref).
+Synthesize the mode weights in `data` at the rotors `R′ₚ` and interpolate to the time
+samples `t′`, returning an array of pixel values of size `(length(R′ₚ), length(t′), Nᵈ)`.
+This is the *un*-transformed waveform, evaluated on a grid in the frame of the transformed
+data: pixel `i` is the direction of `R′ₚ[i]`, and the values are spline-interpolated from
+`t` to `t′` with the same natural cubic spline used by [`transform!`](@ref).  Without
+`R′ₚ`, the grid is `golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)`, the `Nᵐ` pixels on which
+`transform!` evaluates the transformed waveform.
 
 The `data`, `t`, and `dc` arguments are exactly as in
 [`transform!`](@ref); in particular `data` must have size `(Nᵐ,
 length(t), Nᵈ)`, with `Nᵐ` a perfect square setting `ℓₘₐₓ = √Nᵐ - 1`.
-If the target waveform is known at a smaller band limit than the data
-to be transformed, zero-pad its modes up to the same `Nᵐ` before
-calling this function (the pad-first workflow of [Choosing
-``ℓ_\mathrm{max}``](@ref choosing_ell_max)) — the pixel grid, and
-hence the pixel correspondence with `transform_objective`, is set by
-`Nᵐ`.
 
 The output grid `t′` must be strictly increasing and contained in `[t[begin], t[end]]`,
 but — unlike the `t′` keyword of `transform!` — it may have **any** length ≥ 1.  In
-particular it may be much coarser than `t`, which makes the optimization objective
-correspondingly cheaper.
-
-This function is entirely independent of any BMS parameters, so in an optimization loop
-it should be called **once**, up front, to build the `target` argument of
-[`transform_objective`](@ref); every optimizer iteration then reuses the result.
+particular it may be much coarser than `t`.
 """
 function pixel_waveform(
-    data::Array{Complex{T1},3}, t::Vector{T2}, dc::DataComponents{C,I}, t′::Vector{<:Real}
+    data::Array{Complex{T1},3}, t::Vector{T2}, dc::DataComponents, t′::Vector{<:Real}
+) where {T1<:Real,T2<:Real}
+    ℓₘₐₓ = isqrt(size(data, 1)) - 1
+    T′ = primal_float(promote_type(T1, T2, eltype(t′)))
+    return pixel_waveform(data, t, dc, t′, golden_ratio_spiral_rotors(0, ℓₘₐₓ, T′))
+end
+function pixel_waveform(
+    data::Array{Complex{T1},3},
+    t::Vector{T2},
+    dc::DataComponents{C,I},
+    t′::Vector{<:Real},
+    R′ₚ::AbstractVector{<:Rotor},
 ) where {T1<:Real,T2<:Real,C,I}
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, _ = validate_transform_inputs(
         data, t, zero(QuatVec{T2}), Complex{T1}[], dc, nothing
     )
-    Nᵖ = Nᵐ
+    Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
     # Validate `t′` against the trivial transformation (no boost, no supertranslation),
     # for which the valid span is exactly [t[begin], t[end]].
     validate_t′(t′, t, zeros(T2, 1), [one(Rotor{T2})], zero(QuatVec{T2}), I)
 
-    TP = promote_type(T1, T2, eltype(t′))
-    TP′ = primal_float(TP)
+    TP = promote_type(T1, T2, eltype(t′), basetype(eltype(R′ₚ)))
 
-    # Synthesize modes → pixels on the uniform grid, one GEMM per unique spin weight,
-    # exactly as in stage 1 of `transform!` — but out of place, into `P`.
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, TP′)
+    # Synthesize modes → pixels on the grid, one GEMM per unique spin weight, as in stage 1
+    # of `transform!` — but out of place, into `P`.
     spins = Int[spin_weight(Val(c)) for c ∈ C]
     P = Array{Complex{TP},3}(undef, Nᵖ, Nᵗ, Nᵈ)
     for s ∈ unique(spins)
@@ -765,22 +763,25 @@ function pixel_waveform(
 end
 
 @doc raw"""
-    transform_objective(data, t, v⃗, R, αᵢₙ, dc, target; t′, weights=nothing, ℓₘₐₓ₀=nothing)
+    transform_objective(data, t, v⃗, R, αᵢₙ, dc, plan; ℓₘₐₓ₀=nothing)
 
-Compute the weighted L² difference between the BMS-transformed `data` and a fixed
-`target`, as a single real scalar:
+Compute the objective of the [`ObjectivePlan`](@ref) `plan`, the weighted ``L²``
+difference between the BMS-transformed `data` and the plan's target, as a single real
+scalar:
 
 ```math
-\mathrm{obj} = ∑_i w_i ∑_j ∑_k \left| d′_{ijk} - \mathrm{target}_{ijk} \right|^2,
+J = \frac{1}{𝒩} ∑_i w_i ∑_j v_j ∑_k c_k \left| d'_{ijk} - d_{\mathrm{t};ijk} \right|^2,
 ```
 
-where ``d′_{ijk}`` is the transformed waveform at pixel `i`, output time `t′[j]`, and
-component `k` — exactly the pixel values that [`transform!`](@ref) would compute in its
-interpolation stage, before its final analysis back to modes.  This is the natural
-objective for optimizing the BMS parameters `(v⃗, R, αᵢₙ)` to align `data` with a target
-waveform, and it is designed for use with
-[ForwardDiff](https://juliadiff.org/ForwardDiff.jl/): see the [Automatic
-Differentiation](@ref) documentation page for a complete recipe.
+where ``d'_{ijk}`` is the transformed waveform at the plan's pixel `i`, output time
+`plan.t′[j]`, and component `k`, and the target ``d_\mathrm{t}``, the weights ``w``, ``v``,
+and ``c``, and the normalization ``𝒩`` are the plan's.  With the plan's default grid and
+time weights, ``J`` is a quadrature of the integral of ``|d' - d_\mathrm{t}|²`` over the
+sphere and the time window, exact over the sphere for band-limited fields.  This is the
+natural objective for optimizing the BMS parameters `(v⃗, R, αᵢₙ)` to align `data` with a
+target waveform, and it is designed for use with
+[ForwardDiff](https://juliadiff.org/ForwardDiff.jl/): see the
+[Automatic Differentiation](@ref) documentation page for a complete recipe.
 
 The `data`, `t`, `v⃗`, `R`, `αᵢₙ`, `dc`, and `ℓₘₐₓ₀` arguments are exactly as in
 [`transform!`](@ref) — except that `data` is **never modified**, and its element type
@@ -796,27 +797,11 @@ passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may be anything the
 parameter vector.  A rotation given as three components is read as a rotation vector, and
 four as a rotor; see [`rotor_argument`](@ref).
 
-The keyword `t′` is **required**: it is the fixed output time grid on which the
-transformed waveform is compared to `target`, and holding it fixed across parameter
-values is what makes objective values (and derivatives) comparable across optimizer
-iterations.  Use [`compute_t′(t, β, δt)`](@ref compute_t′(::Any, ::Real, ::Real)) to
-construct a grid valid for every transformation the optimizer may try.  Unlike the `t′`
-keyword of `transform!`, it may have **any** length ≥ 1 — a coarse grid makes the
-objective correspondingly cheaper — but it must be strictly increasing and remain within
-the valid span ([`validate_t′`](@ref)) at every parameter value.
-
-The `target` array must have size `(Nᵖ, length(t′), Nᵈ)`, with `Nᵖ = Nᵐ`, holding the
-target waveform's *pixel* values on the standard grid — build it once with
-[`pixel_waveform`](@ref) (zero-padding the target's modes up to `Nᵐ` first, if needed).
-The optional `weights` vector supplies the per-pixel weights ``w_i`` (length `Nᵖ`,
-default: uniform weight 1); any time- or component-dependent weighting can be folded into
-the preprocessing that builds `target`.
-
-Note that this is a *pixel-domain* L² norm.  Because the pixel grid has exactly as many
-points as modes and the synthesis matrices are full rank, it vanishes exactly when the
-mode-domain difference vanishes and defines an equivalent norm — but it is **not**
-numerically equal to `sum(abs2, ...)` over mode weights, so objective values are
-comparable to each other, not to mode-space norms.
+The plan's output grid `t′` is held fixed across parameter values, which is what makes
+objective values (and derivatives) comparable across optimizer iterations.  It must remain
+within the valid span ([`validate_t′`](@ref)) at every parameter value; build it with
+[`compute_t′(t, β, δt)`](@ref compute_t′(::Any, ::Real, ::Real)) for the largest boost and
+supertranslation the optimizer may try.  `dc` must have the same components as the plan.
 
 Two fine points.  First, the spline-interval selection inside the interpolation is
 discontinuous on a measure-zero set of parameter values (where a transformed time
@@ -835,18 +820,16 @@ function transform_objective(
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}},
     dc::DataComponents{C,I},
-    target::AbstractArray{<:Complex,3};
-    t′::Vector{<:Real},
-    weights::Union{Nothing,AbstractVector{<:Real}}=nothing,
+    plan::ObjectivePlan{TQ};
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
-) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I}
-    # As in `transform!`, compute the geometry at no lower precision than the data and the
-    # times.  The branch is decided by the types alone, so it compiles away.
-    let TP = promote_type(primal_float(T1), primal_float(T2))
+) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I,TQ<:AbstractFloat}
+    # As in `transform!`, compute the geometry at no lower precision than the data, the
+    # times, and the plan.  The branch is decided by the types alone, so it compiles away.
+    let TP = promote_type(primal_float(T1), primal_float(T2), TQ)
         widened = (promote_type(T3, TP), promote_type(T4, TP), promote_type(T5, TP))
         if widened !== (T3, T4, T5)
             return transform_objective(
-                data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc, target; t′, weights, ℓₘₐₓ₀
+                data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc, plan; ℓₘₐₓ₀
             )
         end
     end
@@ -856,38 +839,31 @@ function transform_objective(
     ###
 
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
-    Nᵖ = Nᵐ
+    spins = Int[spin_weight(Val(c)) for c ∈ C]
+    if spins != plan.spins
+        throw(
+            ArgumentError(
+                "`dc` has components of spin weights $spins, but the plan was built " *
+                "for spin weights $(plan.spins)",
+            ),
+        )
+    end
+    R′ₚ, w, t′, v, c, target = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
+    Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
-    if size(target) != (Nᵖ, Nᵗ′, Nᵈ)
-        throw(
-            ArgumentError(
-                "Input `target` has size $(size(target)), but expected " *
-                "(Nᵖ, length(t′), Nᵈ) = $((Nᵖ, Nᵗ′, Nᵈ))",
-            ),
-        )
-    end
-    if !isnothing(weights) && length(weights) != Nᵖ
-        throw(
-            ArgumentError(
-                "Input `weights` has length $(length(weights)), but expected Nᵖ=$Nᵖ"
-            ),
-        )
-    end
 
     # TΘ is the (possibly dual) common type of the BMS parameters; TR is the common type
     # of everything, in which the accumulation runs.
     TΘ = promote_type(T3, T4, T5)
-    TR = promote_type(T1, T2, TΘ)
+    TR = promote_type(T1, T2, TΘ, TQ)
 
     c_α = dc.conventions.c_α
     γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
     Λ = Boost(I * v⃗) * R
 
-    # The uniform output pixel grid is parameter-independent, so build it at the primal
-    # float type (see `primal_float`), as in `transform!`.  The same goes for the ð
-    # operator matrices, which depend only on the band limit.
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, primal_float(T4))
+    # The ð operator matrices depend only on the band limit, so build them at the primal
+    # float type (see `primal_float`), as in `transform!`; the plan's grid is primal too.
     T5′ = primal_float(T5)
 
     # As in `transform!`: from here on, `α` is the c_α-corrected supertranslation, so it
@@ -938,60 +914,100 @@ function transform_objective(
 
     # Components sharing a spin weight reuse a single ₛYₗₘ evaluation per pixel, and one
     # calculator evaluates every spin weight in the range from a single recurrence.
-    spins = Int[spin_weight(Val(c)) for c ∈ C]
     unique_spins = unique(spins)
     spin_components = [findall(==(s), spins) for s ∈ unique_spins]
     spin_range = minimum(spins):maximum(spins)
 
-    return OhMyThreads.tmapreduce(
-        +, OhMyThreads.index_chunks(1:Nᵖ; n=nthreads()); chunking=false
-    ) do chunk
-        # Task-local storage and buffers, allocated once per chunk; these are the only
-        # dual-typed arrays of the whole computation.
-        calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range)
-        Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range))
-        dᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ)
-        d̈ᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ)
-        d′ᵢ = Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′)
-        acc = zero(TR)
-        for i ∈ chunk
-            # Synthesize this pixel's time series directly from the (primal, read-only)
-            # mode data: dᵢ[k, j] = Σₘ Yₘ data[m, j, k], over the modes with ℓ ≥ |s| and
-            # within any declared input band limit (m ≤ N₀).  The inner loop over m walks
-            # a contiguous column of `data`.
-            sYlm_rows!(Y, calc, Rₚ[i])
-            for (s, ks) ∈ zip(unique_spins, spin_components)
-                Yˢ = view(Y, :, s - first(spin_range) + 1)
-                for k ∈ ks
-                    @inbounds for j ∈ 1:Nᵗ
-                        dᵢ[k, j] = pixel_dot(Yˢ, view(data, :, j, k), s ^ 2 + 1, N₀)
+    # Fill `d′ᵢ` with the transformed time series of pixel `i`.  The pixel's rest-frame
+    # time series is synthesized directly from the (primal, read-only) mode data:
+    # dᵢ[k, j] = Σₘ Yₘ data[m, j, k], over the modes with ℓ ≥ |s| and within any declared
+    # input band limit (m ≤ N₀); the inner loop over m walks a contiguous column of `data`.
+    function transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
+        sYlm_rows!(Y, calc, Rₚ[i])
+        for (s, ks) ∈ zip(unique_spins, spin_components)
+            Yˢ = view(Y, :, s - first(spin_range) + 1)
+            for k ∈ ks
+                @inbounds for j ∈ 1:Nᵗ
+                    dᵢ[k, j] = pixel_dot(Yˢ, view(data, :, j, k), s ^ 2 + 1, N₀)
+                end
+            end
+        end
+        κ⁻¹ᵢ = γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ))
+        return transform_pixel!(
+            d′ᵢ,
+            dᵢ,
+            d̈ᵢ,
+            cubic_spline_cache,
+            t,
+            t′,
+            κ⁻¹ᵢ,
+            αₚ[i],
+            ðt′╱2κₚ[1, i],
+            ðt′╱2κₚ[2, i],
+            ð²αₚ[i],
+            dc,
+        )
+    end
+    # Task-local storage and buffers, allocated once per chunk; these are the only
+    # dual-typed arrays of the whole computation.
+    function buffers()
+        return (
+            sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range),
+            Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range)),
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′),
+        )
+    end
+    chunks = OhMyThreads.index_chunks(1:Nᵖ; n=nthreads())
+
+    J = if plan.ℓ_fit < 0
+        OhMyThreads.tmapreduce(+, chunks; chunking=false) do chunk
+            calc, Y, dᵢ, d̈ᵢ, d′ᵢ = buffers()
+            acc = zero(TR)
+            for i ∈ chunk
+                transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
+                objᵢ = zero(TR)
+                @inbounds for j ∈ 1:Nᵗ′
+                    objᵢⱼ = zero(TR)
+                    for k ∈ 1:Nᵈ
+                        objᵢⱼ += c[k] * abs2(d′ᵢ[k, j] - target[i, j, k])
+                    end
+                    objᵢ += v[j] * objᵢⱼ
+                end
+                acc += w[i] * objᵢ
+            end
+            acc
+        end
+    else
+        # The band-limited objective: project the transformed waveform onto the modes with
+        # ℓ ≤ ℓ_fit by the quadrature, Pₖ[n, j] = Σᵢ wᵢ conj(ₛYₙ(Rᵢ)) d′ᵢⱼₖ, whose weighted
+        # conjugate harmonics the plan holds as the columns of Ȳ[k], and compare with the
+        # target's projection.  The partial projections of the chunks add up.
+        P = OhMyThreads.tmapreduce(+, chunks; chunking=false) do chunk
+            calc, Y, dᵢ, d̈ᵢ, d′ᵢ = buffers()
+            Pc = [zeros(Complex{TR}, size(plan.Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
+            for i ∈ chunk
+                transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
+                @inbounds for k ∈ 1:Nᵈ
+                    Ȳₖ, Pₖ = plan.Ȳ[k], Pc[k]
+                    for j ∈ 1:Nᵗ′
+                        d = d′ᵢ[k, j]
+                        for n ∈ axes(Ȳₖ, 1)
+                            Pₖ[n, j] = muladd(Ȳₖ[n, i], d, Pₖ[n, j])
+                        end
                     end
                 end
             end
-            κ⁻¹ᵢ = γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ))
-            transform_pixel!(
-                d′ᵢ,
-                dᵢ,
-                d̈ᵢ,
-                cubic_spline_cache,
-                t,
-                t′,
-                κ⁻¹ᵢ,
-                αₚ[i],
-                ðt′╱2κₚ[1, i],
-                ðt′╱2κₚ[2, i],
-                ð²αₚ[i],
-                dc,
-            )
-            objᵢ = zero(TR)
-            @inbounds for j ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
-                objᵢ += abs2(d′ᵢ[k, j] - target[i, j, k])
-            end
-            wᵢ = isnothing(weights) ? one(TR) : TR(weights[i])
-            acc += wᵢ * objᵢ
+            Pc
         end
-        acc
+        sum(
+            c[k] * sum(
+                v[j] * sum(abs2, view(P[k], :, j) .- view(plan.T̂[k], :, j)) for j ∈ 1:Nᵗ′
+            ) for k ∈ 1:Nᵈ
+        )
     end
+    return plan.normalize ? J / plan.norm² : J
 end
 
 """
@@ -1038,18 +1054,14 @@ function transform_objective(
     R,
     αᵢₙ::Vector{<:Complex},
     dc::DataComponents,
-    target::AbstractArray{<:Complex,3};
-    t′::Vector{<:Real},
-    weights::Union{Nothing,AbstractVector{<:Real}}=nothing,
+    plan::ObjectivePlan;
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 )
-    return transform_objective(
-        data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc, target; t′, weights, ℓₘₐₓ₀
-    )
+    return transform_objective(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc, plan; ℓₘₐₓ₀)
 end
 
 """
-    transform_objective(data, t, g::BMS, dc, target; t′, weights=nothing, ℓₘₐₓ₀=nothing)
+    transform_objective(data, t, g::BMS, dc, plan; ℓₘₐₓ₀=nothing)
 
 Convenience method taking a BMS element `g` in place of `(v⃗, R, αᵢₙ)`, unpacked exactly
 as in the corresponding [`transform!`](@ref) method — including re-expressing `g` in the
@@ -1061,9 +1073,7 @@ function transform_objective(
     t::Vector{<:Real},
     g::BMS,
     dc::DataComponents{C,I},
-    target::AbstractArray{<:Complex,3};
-    t′::Vector{<:Real},
-    weights::Union{Nothing,AbstractVector{<:Real}}=nothing,
+    plan::ObjectivePlan;
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 ) where {C,I}
     # Re-express `g` with the supertranslation sign matching the data conventions' `c_α`,
@@ -1076,9 +1086,7 @@ function transform_objective(
         frame_rotation(gᴵ),
         supertranslation(gᴵ),
         dc,
-        target;
-        t′,
-        weights,
+        plan;
         ℓₘₐₓ₀,
     )
 end

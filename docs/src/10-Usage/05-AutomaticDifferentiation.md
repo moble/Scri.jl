@@ -69,10 +69,10 @@ scaled-and-shifted version of it.
 
     For `transform!` itself, `t′` is required to have as many samples
     as `t`, because the result is written back into `data` in place.
-    The optimization-oriented [`transform_objective`](@ref) and
-    [`pixel_waveform`](@ref) described below have no such restriction:
-    their `t′` may have any length, so a coarse (and correspondingly
-    cheap) output grid is a one-line choice there.
+    The optimization-oriented [`transform_objective`](@ref) and its
+    [`ObjectivePlan`](@ref), described below, have no such
+    restriction: the plan's `t′` may have any length, so a coarse (and
+    correspondingly cheap) output grid can be chosen instead.
 
 ## Load `ForwardDiff`
 
@@ -149,20 +149,28 @@ a single scalar at the end.
 [`transform_objective`](@ref) computes that scalar directly:
 
 ```math
-\mathrm{obj}(θ) = ∑_i w_i ∑_j ∑_k \left| d'_{ijk}(θ) -
-\mathrm{target}_{ijk} \right|^2,
+J(θ) = \frac{1}{𝒩} ∑_i w_i ∑_j v_j ∑_k c_k
+       \left| d'_{ijk}(θ) - d_{\mathrm{t};ijk} \right|^2,
 ```
 
-with `i` running over pixels, `j` over the fixed output times `t′`,
-and `k` over the data components.  It fuses the ``L²`` accumulation
-into the per-pixel transformation loop, so the transformed waveform is
-never materialized, `data` is never modified (it is reused across
-optimizer iterations), and dual numbers are confined to per-pixel
-scalars and small task-local buffers.  The analysis stage (converting
-back to waveform modes) is skipped entirely.
+with `i` running over the pixels of a grid on the sphere, `j` over the
+fixed output times `t′`, and `k` over the data components.  It fuses
+the ``L²`` accumulation into the per-pixel transformation loop, so the
+transformed waveform is never materialized, `data` is never modified
+(it is reused across optimizer iterations), and dual numbers are
+confined to per-pixel scalars and small task-local buffers.  The
+analysis stage (converting back to waveform modes) is skipped
+entirely.
 
-An optimization routine typically needs the objective and possibly its
-gradient.
+Everything in ``J`` that does not depend on ``θ`` is stored in an
+[`ObjectivePlan`](@ref), which is built once: the grid and its weights
+``w_i``, the output times and their weights ``v_j``, the component
+weights ``c_k``, the target's values ``d_{\mathrm{t};ijk}`` on the
+grid, and the normalization ``𝒩``.  The grid is an exact quadrature
+on the sphere for band-limited fields, and the time weights are the
+trapezoid rule on `t′`, so ``J`` approximates the integral of ``|d' -
+d_\mathrm{t}|^2`` over the sphere and the time window — a true ``L²``
+norm.
 
 The recipe has three steps — the first two run *once*, outside the
 optimization loop:
@@ -176,24 +184,26 @@ using Scri, ForwardDiff
 #    makes each iteration correspondingly cheaper.
 t′ = compute_t′(t, β_max, δt_max)
 
-# 2. Compute the target waveform's pixel values on that grid.  This is
-#    θ-independent, so we build it once and reuse it on every iteration.
-#    (If the target has a smaller band limit than `data`, zero-pad its
-#    modes up to the same Nᵐ first — the pad-first workflow.)
-target = pixel_waveform(h_target_modes, t_target, dc, t′)
+# 2. Everything that does not depend on the parameters, from the
+#    target's modes and its own time samples.  (If the target has a
+#    smaller band limit than `data`, zero-pad its modes up to the same
+#    Nᵐ first.)
+plan = ObjectivePlan(target_modes, t_target, dc, t′)
 
 # 3. The differentiable objective.  Note that `v⃗` and `𝔯` accept
 #    plain vectors, so slices of the parameter vector pass straight
 #    through.  Three rotation components are a rotation vector; see
 #    below.
-objective(θ) = transform_objective(
-    data, t, θ[1:3], θ[4:6], α(θ[7:end]), dc, target; t′=t′
-)
+objective(θ) = transform_objective(data, t, θ[1:3], θ[4:6], α(θ[7:end]), dc, plan)
 
 # Compute the gradient at the starting point θ₀.  The identity
 # transformation is θ = 0.
 g = ForwardDiff.gradient(objective, θ₀)
 ```
+
+Any optimizer that takes a function and its gradient will do, such as
+a quasi-Newton method like L-BFGS, with the gradient from ForwardDiff
+as above.
 
 A few things to know:
 
@@ -204,13 +214,14 @@ A few things to know:
   `(w, x, y, z)` and normalized, which also works but leaves one
   redundant parameter; see [`rotor_argument`](@ref Scri.rotor_argument).
 
-- **Norm equivalence.**  The objective is a *pixel-domain* ``L²``
-  norm.  The pixel grid has exactly as many points as modes and the
-  synthesis matrices are full rank, so it vanishes exactly when the
-  mode-domain difference vanishes, and defines an equivalent norm —
-  but its numerical value differs from `sum(abs2, ...)` over mode
-  weights.  Objective values are comparable across iterations, which
-  is all an optimizer needs.
+- **Weights and noise.**  The plan's keywords set the weights:
+  `time_weights` for the ``v_j``, `component_weights` for the
+  ``c_k``, and `weights` for per-pixel factors that multiply the
+  quadrature weights, for example to down-weight part of the sky.
+  `normalize=true` divides by the target's norm.  `ℓ_fit=L` compares
+  only the modes with ``ℓ ≤ L`` of the difference, projected exactly by
+  the quadrature, which leaves out high-``ℓ`` noise in the data or the
+  target.
 
 - **Memory.**  Per thread, the dual-typed storage is a few buffers of
   size `O(Nᵈ Nᵗ)` — with `ntasks` threads and `N` parameters, roughly
@@ -224,7 +235,11 @@ A few things to know:
   formulation behind: `Complex{Dual}` is not a BLAS type, so a dual
   `transform!` already runs on generic matrix multiplication.  The
   per-pixel dot products do the same work, and the analysis stage is
-  eliminated entirely.
+  eliminated entirely.  The default grid has about twice as many
+  points as there are modes, so an evaluation costs about twice what a
+  sum over `transform!`'s own pixels would, but this is essential to
+  ensure that the *squared* difference is integrated correctly,
+  without aliasing.
 
 - **Stability.**  The spline knots and Thomas factors stay primal
   (duals enter only because the values being interpolated are dual, so

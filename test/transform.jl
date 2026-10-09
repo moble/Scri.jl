@@ -1119,6 +1119,17 @@ end
         end
         return pixels
     end
+
+    # A plan reproducing the objective as it was before the sphere quadrature: the pixels
+    # of `transform!` with unit weights, and unit time weights, so that the objective is
+    # exactly Σ|pixels − target|² over those pixels and the output times.
+    function golden_plan(modes, t, dc, t′)
+        ℓₘₐₓ = isqrt(size(modes, 1)) - 1
+        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, Float64)
+        return Scri.ObjectivePlan(
+            modes, t, dc, t′; grid=(R′ₚ, ones(length(R′ₚ))), time_weights=ones(length(t′))
+        )
+    end
 end
 
 @testitem "transform_objective: matches exact pixel reconstruction of transform!" tags = [
@@ -1143,15 +1154,17 @@ end
 
     d′, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
     pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′)
-    expected = sum(abs2, pixels .- target)
+    plan = PixelReconstruction.golden_plan(
+        Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′
+    )
+    expected = sum(abs2, pixels .- plan.target)
 
-    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
     @test obj ≈ expected rtol = 1e-11
 
     # `data` is read-only for the objective.
     data₀ = copy(data)
-    Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
+    Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
     @test data == data₀
 end
 
@@ -1179,26 +1192,17 @@ end
     )
     tc = (t′₀[begin] + t′₀[end]) / 2
     t′fix = tc .+ 0.9 .* (t′₀ .- tc)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+    plan = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
 
     function by_boost(β::T) where {T}
         return Scri.transform_objective(
-            data₀,
-            t,
-            QuatVec(zero(β), zero(β), β),
-            R₀,
-            zeros(Complex{T}, 4),
-            dc,
-            target;
-            t′=t′fix,
+            data₀, t, QuatVec(zero(β), zero(β), β), R₀, zeros(Complex{T}, 4), dc, plan
         )
     end
     function by_δt(δt::T) where {T}
         α = zeros(Complex{T}, 4)
         α[1] = 2 * √T(π) * δt
-        return Scri.transform_objective(
-            data₀, t, QuatVec(0.0, 0.0, 1e-3), R₀, α, dc, target; t′=t′fix
-        )
+        return Scri.transform_objective(data₀, t, QuatVec(0.0, 0.0, 1e-3), R₀, α, dc, plan)
     end
     function by_rotation(θ::T) where {T}
         Rθ = Rotor{T}(R₀) * Rotor(cos(θ / 2), sin(θ / 2), zero(θ), zero(θ))
@@ -1209,8 +1213,7 @@ end
             Rθ,
             zeros(Complex{T}, 4),
             dc,
-            target;
-            t′=t′fix,
+            plan,
         )
     end
 
@@ -1243,10 +1246,10 @@ end
     data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
     data₀[1:4, :, :] .= 0
     t′fix = Scri.compute_t′(t, 0.05, 0.5)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+    plan = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
 
     parts(θ) = (QuatVec(θ[1:3]...), Rotor(θ[4:7]...), complex.(θ[8:11], θ[12:15]))
-    objective(θ) = Scri.transform_objective(data₀, t, parts(θ)..., dc, target; t′=t′fix)
+    objective(θ) = Scri.transform_objective(data₀, t, parts(θ)..., dc, plan)
     function transformed(θ)
         data = Complex{eltype(θ)}.(data₀)
         d, _ = Scri.transform!(data, copy(t), parts(θ)..., dc; t′=t′fix)
@@ -1306,7 +1309,9 @@ end
     )
     tc = (t′₀[begin] + t′₀[end]) / 2
     t′fix = tc .+ 0.9 .* (t′₀ .- tc)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix)
+    plan = PixelReconstruction.golden_plan(
+        Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix
+    )
 
     function heavy(β::T) where {T}
         data = Complex{T}.(data₀)
@@ -1320,18 +1325,11 @@ end
             t′=t′fix,
         )
         pixels = PixelReconstruction.reconstruct_pixels(d, dc)
-        return sum(abs2, pixels .- target)
+        return sum(abs2, pixels .- plan.target)
     end
     function lean(β::T) where {T}
         return Scri.transform_objective(
-            data₀,
-            t,
-            QuatVec(zero(β), zero(β), β),
-            R₀,
-            zeros(Complex{T}, 4),
-            dc,
-            target;
-            t′=t′fix,
+            data₀, t, QuatVec(zero(β), zero(β), β), R₀, zeros(Complex{T}, 4), dc, plan
         )
     end
 
@@ -1405,22 +1403,20 @@ end
     data = zeros(ComplexF64, N, Nᵗ, 2)
     data[5:((ℓ₀ + 1) ^ 2), :, :] .= Random.randn(rng, ComplexF64, (ℓ₀ + 1)^2 - 4, Nᵗ, 2)
 
-    _, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
+    t′ = Scri.compute_t′(t, 0.1, 0.5)
+    plan = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
 
-    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
-    obj₀ = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ₀)
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
+    obj₀ = Scri.transform_objective(data, t, v⃗, R, α, dc, plan; ℓₘₐₓ₀=ℓ₀)
     @test obj₀ ≈ obj rtol = 1e-13
 
     # Out-of-range and violated declarations throw.
     @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ + 1
+        data, t, v⃗, R, α, dc, plan; ℓₘₐₓ₀=ℓ + 1
     )
     bad = copy(data)
     bad[(ℓ₀ + 1) ^ 2 + 3, 1, 1] = 1.0
-    @test_throws ArgumentError Scri.transform_objective(
-        bad, t, v⃗, R, α, dc, target; t′=t′, ℓₘₐₓ₀=ℓ₀
-    )
+    @test_throws ArgumentError Scri.transform_objective(bad, t, v⃗, R, α, dc, plan; ℓₘₐₓ₀=ℓ₀)
 end
 
 @testitem "transform_objective: determinism, weights, and input validation" tags = [
@@ -1439,50 +1435,48 @@ end
     α = 1e-2 * Random.randn(rng, ComplexF64, 4)
     dc = Scri.DataComponents(:h, :ψ₄)
     data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    modes = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
 
-    _, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
-    function obj(; weights=nothing, t′grid=t′)
-        return Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′grid, weights)
-    end
+    t′ = Scri.compute_t′(t, 0.05, 0.5)  # valid for every transformation used here
+    plan(; kw...) = Scri.ObjectivePlan(modes, t, dc, t′; kw...)
+    obj(p) = Scri.transform_objective(data, t, v⃗, R, α, dc, p)
+    p₀ = plan()
+    Nᵖ = length(p₀.R′ₚ)
 
-    # Deterministic: repeated calls are bitwise identical, and unit weights match the
-    # default exactly.
-    @test obj() == obj()
-    @test obj(; weights=ones(N)) == obj()
+    # Deterministic: repeated calls are bitwise identical, and unit factors change nothing.
+    @test obj(p₀) == obj(p₀)
+    @test obj(plan(; weights=ones(Nᵖ), component_weights=ones(2))) == obj(p₀)
 
-    # Nontrivial weights match the manually weighted sum of per-pixel objectives.
-    w = rand(rng, N)
-    onehot(i) = [j == i ? 1.0 : 0.0 for j ∈ 1:N]
-    per_pixel = [obj(; weights=onehot(i)) for i ∈ 1:N]
-    @test obj(; weights=w) ≈ sum(w .* per_pixel) rtol = 1e-13
+    # Each kind of weight enters linearly: the objective with weights is the weighted sum
+    # of the objectives that keep a single pixel, time, or component.
+    onehot(i, n) = [j == i ? 1.0 : 0.0 for j ∈ 1:n]
+    w = rand(rng, Nᵖ)
+    @test obj(plan(; weights=w)) ≈
+        sum(w[i] * obj(plan(; weights=onehot(i, Nᵖ))) for i ∈ 1:Nᵖ) rtol = 1e-12
+    v = rand(rng, Nᵗ)
+    @test obj(plan(; time_weights=v)) ≈
+        sum(v[j] * obj(plan(; time_weights=onehot(j, Nᵗ))) for j ∈ 1:Nᵗ) rtol = 1e-12
+    c = rand(rng, 2)
+    @test obj(plan(; component_weights=c)) ≈
+        sum(c[k] * obj(plan(; component_weights=onehot(k, 2))) for k ∈ 1:2) rtol = 1e-12
 
-    # Bad shapes and grids throw.
-    @test_throws ArgumentError obj(; weights=ones(N - 1))
+    # Normalization divides by the target's weighted norm.
+    pn = plan(; normalize=true)
+    @test obj(pn) ≈ obj(p₀) / p₀.norm² rtol = 1e-14
+
+    # A plan for other components, or a grid that a larger transformation would push past
+    # the data, is rejected.
     @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target[:, :, 1:1]; t′=t′
+        data, t, v⃗, R, α, Scri.DataComponents(:ψ₂, :ψ₃, :ψ₄), p₀
     )
     @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target[:, 1:(Nᵗ - 1), :]; t′=t′
+        data, t, QuatVec(0.0, 0.0, 0.3), R, α, dc, p₀
     )
-    @test_throws ArgumentError obj(; t′grid=reverse(t′))
+    @test_throws ArgumentError Scri.transform_objective(data[1:4, :, :], t, v⃗, R, α, dc, p₀)  # ℓₘₐₓ = 1 is too low for the spin-weight-2 harmonics
+    @test_throws ArgumentError Scri.transform_objective(data, reverse(t), v⃗, R, α, dc, p₀)
+    @test_throws ArgumentError Scri.transform_objective(data, t, v⃗, R, [α; 0.0im], dc, p₀)
     @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target[:, 1:0, :]; t′=t′[1:0]
-    )
-    @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target; t′=t′ .+ 1000.0
-    )
-    @test_throws ArgumentError Scri.transform_objective(
-        data[1:4, :, :], t, v⃗, R, α, dc, target[1:4, :, :]; t′=t′
-    )  # ℓₘₐₓ = 1 is too low for the spin-weight-2 harmonics
-    @test_throws ArgumentError Scri.transform_objective(
-        data, reverse(t), v⃗, R, α, dc, target; t′=t′
-    )
-    @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, [α; 0.0im], dc, target; t′=t′
-    )  # non-square α
-    @test_throws ArgumentError Scri.transform_objective(
-        data, t, v⃗, R, [NaN + 0im; α[2:end]], dc, target; t′=t′
+        data, t, v⃗, R, [NaN + 0im; α[2:end]], dc, p₀
     )
 end
 
@@ -1523,6 +1517,16 @@ end
         @test out[:, :, k] ≈ direct rtol = 1e-13
     end
 
+    # Any grid of rotors may be given instead of the default one; here the exact sphere
+    # quadrature, which has about twice as many points as there are modes.
+    R, _ = Scri.sphere_quadrature(ℓ)
+    out = Scri.pixel_waveform(data, t, dc, t, R)
+    @test size(out) == (length(R), Nᵗ, 4)
+    for (k, s) ∈ enumerate((-2, -2, -1, 0))
+        direct = sYlm_matrix(R, ℓ, s) * data[(s ^ 2 + 1):end, :, k]
+        @test out[:, :, k] ≈ direct rtol = 1e-13
+    end
+
     # Grids outside the span of `t`, or non-increasing, or empty, are rejected.
     @test_throws ArgumentError Scri.pixel_waveform(data, t, dc, t .- 1.0)
     @test_throws ArgumentError Scri.pixel_waveform(data, t, dc, reverse(t))
@@ -1551,18 +1555,18 @@ end
 
     d′, t′f = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
     pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
-    target_f = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′f)
+    modes = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
 
     sub = 1:3:Nᵗ
-    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target_f[:, sub, :]; t′=t′f[sub])
-    expected = sum(abs2, pixels[:, sub, :] .- target_f[:, sub, :])
+    plan = PixelReconstruction.golden_plan(modes, t, dc, t′f[sub])
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
+    expected = sum(abs2, pixels[:, sub, :] .- plan.target)
     @test obj ≈ expected rtol = 1e-11
 
     # A single-sample grid also works.
-    obj₁ = Scri.transform_objective(
-        data, t, v⃗, R, α, dc, target_f[:, 12:12, :]; t′=t′f[12:12]
-    )
-    @test obj₁ ≈ sum(abs2, pixels[:, 12, :] .- target_f[:, 12, :]) rtol = 1e-11
+    plan₁ = PixelReconstruction.golden_plan(modes, t, dc, t′f[12:12])
+    obj₁ = Scri.transform_objective(data, t, v⃗, R, α, dc, plan₁)
+    @test obj₁ ≈ sum(abs2, pixels[:, 12:12, :] .- plan₁.target) rtol = 1e-11
 
     # `transform!` still rejects grids of the wrong length.
     @test_throws ArgumentError Scri.transform!(
@@ -1597,10 +1601,12 @@ end
     @test d₁ == d₂
     @test t′ == t′₂
 
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′)
-    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, target; t′=t′)
-    @test Scri.transform_objective(data, t, v⃗vec, Rvec, α, dc, target; t′=t′) == obj
-    @test Scri.transform_objective(data, t, v⃗vec, R, α, dc, target; t′=t′) == obj
+    plan = Scri.ObjectivePlan(
+        Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, Scri.compute_t′(t, 0.1, 0.5)
+    )
+    obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
+    @test Scri.transform_objective(data, t, v⃗vec, Rvec, α, dc, plan) == obj
+    @test Scri.transform_objective(data, t, v⃗vec, R, α, dc, plan) == obj
 
     # Three rotation components are a rotation vector 𝐮, meaning the rotor exp(𝐮/2), so
     # zero is the identity; four are a rotor, as before.
@@ -1610,8 +1616,8 @@ end
     @test d₃ == d₄
     @test Scri.transform!(copy(data), copy(t), v⃗vec, zeros(3), copy(α), dc)[1] ==
         Scri.transform!(copy(data), copy(t), v⃗, one(Rotor{Float64}), copy(α), dc)[1]
-    @test Scri.transform_objective(data, t, v⃗vec, QuatVec(𝐮...), α, dc, target; t′=t′) ==
-        Scri.transform_objective(data, t, v⃗, exp(QuatVec(𝐮...) / 2), α, dc, target; t′=t′)
+    @test Scri.transform_objective(data, t, v⃗vec, QuatVec(𝐮...), α, dc, plan) ==
+        Scri.transform_objective(data, t, v⃗, exp(QuatVec(𝐮...) / 2), α, dc, plan)
     @test Scri.rotor_argument((0.3, -0.2, 0.5)) == exp(QuatVec(𝐮...) / 2)
     @test Scri.rotor_argument(Rvec) == Rotor(Rvec)
 
@@ -1620,7 +1626,7 @@ end
     # (v⃗, R) above, so use a worst-case grid valid for both, and a matching target.
     g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R)
     t′w = Scri.compute_t′(t, 0.1, 0.5)
-    target_w = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′w)
+    plan_w = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′w)
     expected = Scri.transform_objective(
         data,
         t,
@@ -1628,10 +1634,9 @@ end
         Scri.frame_rotation(g),
         Scri.supertranslation(g),
         dc,
-        target_w;
-        t′=t′w,
+        plan_w,
     )
-    @test Scri.transform_objective(data, t, g, dc, target_w; t′=t′w) == expected
+    @test Scri.transform_objective(data, t, g, dc, plan_w) == expected
 
     # No method ambiguities are introduced by the convenience methods.  (A blanket
     # `detect_ambiguities(Scri)` would also pick up a pre-existing, unrelated clash
@@ -1672,9 +1677,9 @@ end
     @test d₃₂ == d₆₄
     @test t′₃₂ == t′₆₄
 
-    target = Scri.pixel_waveform(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′₆₄)
-    obj₃₂ = Scri.transform_objective(data, t, v⃗₃₂, R₃₂, α₃₂, dc, target; t′=t′₆₄)
-    obj₆₄ = Scri.transform_objective(data, t, v⃗₆₄, R₆₄, α₆₄, dc, target; t′=t′₆₄)
+    plan = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′₆₄)
+    obj₃₂ = Scri.transform_objective(data, t, v⃗₃₂, R₃₂, α₃₂, dc, plan)
+    obj₆₄ = Scri.transform_objective(data, t, v⃗₆₄, R₆₄, α₆₄, dc, plan)
     @test obj₃₂ isa Float64
     @test obj₃₂ == obj₆₄
 
