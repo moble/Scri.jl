@@ -74,6 +74,29 @@ usually want to *pad first* — embed the data in a larger array before
 transforming — as described under [Choosing
 ``ℓ_\mathrm{max}``](@ref choosing_ell_max).
 
+## Reusing the setup across calls
+
+Part of every call to `transform!` depends on no BMS parameter: the
+uniform grid on which the transformed data are analyzed back into
+modes, and the factorization of the analysis matrix there for each
+spin weight in the data.  At high ``ℓ_\mathrm{max}`` those
+factorizations are a large share of the cost.  When transforming many
+times at one band limit, precision, and set of components, as in a
+scan over parameters, build a [`TransformPlan`](@ref) once and pass it
+along:
+
+```julia
+plan = TransformPlan(data, dc)
+for (v⃗, R, α) ∈ parameters
+    data′, t′ = transform!(copy(data), t, v⃗, R, α, dc; plan)
+    # ...
+end
+```
+
+The result is identical to what the call would compute without the
+plan.  At ``ℓ_\mathrm{max} = 32`` with strain alone, a call takes
+about a third as long with the plan as without it.
+
 ## Signatures
 
 The fully explicit form takes the transformation as separate parts —

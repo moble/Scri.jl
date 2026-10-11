@@ -8,8 +8,9 @@
 # e.g., `julia --project=. -t auto benchmark/benchmarks.jl 2000 8 16 32`.
 #
 # Times are best-of-3 wall-clock seconds per call, with a warm-up call excluded (the
-# warm-up also covers compilation for shapes outside the precompile workload).  Keep the
-# machine otherwise idle for stable numbers, and record results before and after any
+# warm-up also covers compilation for shapes outside the precompile workload).  The last
+# column reuses one `TransformPlan` across calls, as a scan over parameters would.  Keep
+# the machine otherwise idle for stable numbers, and record results before and after any
 # performance change.
 
 using Printf: @printf
@@ -34,16 +35,19 @@ function bench(ℓₘₐₓ::Int, Nᵈ::Int, Nᵗ::Int; samples::Int=3)
     α = 1e-2 * randn(rng, ComplexF64, 9)
     dc = DataComponents(COMPONENT_SETS[Nᵈ]...)
     mkdata() = randn(rng, ComplexF64, Nᵐ, Nᵗ, Nᵈ)
+    plan = TransformPlan(ℓₘₐₓ, dc)
     transform!(mkdata(), copy(t), v⃗, R, copy(α), dc)  # warm-up / compile
-    best_time = Inf
+    transform!(mkdata(), copy(t), v⃗, R, copy(α), dc; plan)
+    best_time, best_planned = Inf, Inf
     allocs = 0
     for _ ∈ 1:samples
-        data = mkdata()
-        stats = @timed transform!(data, copy(t), v⃗, R, copy(α), dc)
+        stats = @timed transform!(mkdata(), copy(t), v⃗, R, copy(α), dc)
         best_time = min(best_time, stats.time)
         allocs = stats.bytes
+        planned = @timed transform!(mkdata(), copy(t), v⃗, R, copy(α), dc; plan)
+        best_planned = min(best_planned, planned.time)
     end
-    return best_time, allocs
+    return best_time, allocs, best_planned
 end
 
 function main()
@@ -51,11 +55,20 @@ function main()
     ℓs = length(ARGS) ≥ 2 ? parse.(Int, ARGS[2:end]) : [4, 8, 12, 16, 24, 32]
     Nᵈs = sort(collect(keys(COMPONENT_SETS)))
     println("transform! benchmarks: Nᵗ = $Nᵗ, threads = $(Threads.nthreads())")
-    @printf("%6s │ %4s │ %12s │ %12s\n", "ℓₘₐₓ", "Nᵈ", "time [s]", "alloc [MiB]")
-    println("───────┼──────┼──────────────┼─────────────")
+    @printf(
+        "%6s │ %4s │ %12s │ %12s │ %12s\n",
+        "ℓₘₐₓ",
+        "Nᵈ",
+        "time [s]",
+        "alloc [MiB]",
+        "plan [s]"
+    )
+    println("───────┼──────┼──────────────┼──────────────┼─────────────")
     for ℓₘₐₓ ∈ ℓs, Nᵈ ∈ Nᵈs
-        time, bytes = bench(ℓₘₐₓ, Nᵈ, Nᵗ)
-        @printf("%6d │ %4d │ %12.4f │ %12.1f\n", ℓₘₐₓ, Nᵈ, time, bytes / 2^20)
+        time, bytes, planned = bench(ℓₘₐₓ, Nᵈ, Nᵗ)
+        @printf(
+            "%6d │ %4d │ %12.4f │ %12.1f │ %12.4f\n", ℓₘₐₓ, Nᵈ, time, bytes / 2^20, planned
+        )
     end
 end
 

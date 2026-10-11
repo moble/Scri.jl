@@ -410,3 +410,12 @@ end
     t = collect(range(-1.0, 1.0; length=51))
     @test_throws ArgumentError Scri.compute_t′(t, 0.0, 5.0)
 end
+
+@testitem "The cache size is read when the package loads" tags = [:unit, :fast] begin
+    # `__init__` reads it, so it is this machine's, not the build machine's.
+    @test Scri.cachesize_L2[] > 0
+    l2 = Scri.cachesize_L2[]
+    Scri.cachesize_L2[] = 0
+    Scri.read_cache_size!()
+    @test Scri.cachesize_L2[] == l2
+end

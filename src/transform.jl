@@ -94,6 +94,79 @@ end
 rotor_argument(R) = Rotor(R)
 
 """
+    augmented_factorization(R′ₚ, ℓₘₐₓ, s)
+
+The LU factorization of the square analysis matrix of spin weight `s` on the grid `R′ₚ`,
+which has as many points as there are modes up to `ℓₘₐₓ`.  For `s = 0` that matrix is the
+synthesis matrix itself.  Otherwise the synthesis matrix lacks the `s²` columns of the modes
+with `ℓ < |s|`, and is augmented with `s²` columns spanning the null space of its
+transpose, from a full QR factorization; see the documentation page "Augmented Direct
+SSHT".  Solving with the result gives the modes, preceded by `s²` coefficients that measure
+what no band-limited field of that spin weight can represent.
+"""
+function augmented_factorization(R′ₚ, ℓₘₐₓ, s)
+    ₛY = sYlm_matrix(R′ₚ, ℓₘₐₓ, s)
+    s == 0 && return lu(ₛY)
+    Nᵐ = size(ₛY, 1)
+    Q = qr(ₛY).Q * Matrix{Bool}(LinearAlgebra.I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
+    Q⊥ = Q[:, (Nᵐ - s ^ 2 + 1):end]  # Nᵐ × s² null-space columns
+    return lu([Q⊥ ₛY])  # Nᵐ × Nᵐ, square
+end
+
+"""
+    supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+
+Return the distorted grid `Rₚ`, the rotors in the rest frame of the pixels `R′ₚ` of the
+transformed frame under the Lorentz transformation `Λ`, together with the supertranslation
+`αₚ`, its eth derivative `ðαₚ`, and its second eth derivative `ð²αₚ` at those rotors.
+Either `Λ` or `αᵢₙ` may hold dual numbers, and the types of the results follow from
+theirs: the rotors are those that [`aberration`](@ref) returns, and the values have the
+real type of `Λ` promoted with that of `αᵢₙ`.
+
+The reality condition is imposed on the modes, and they are multiplied by `c_α`, so that
+from here on `α` enters the time law as `t′ = κ(t − α)`.  Each pixel's values are three dot
+products of the mode vectors with the harmonics of spin weights 0, 1, and 2 there, from a
+calculator stepped pixel by pixel.  The calculator works at the supertranslation's own band
+limit (at least 2, the largest spin weight needed), which is usually far below that of the
+data, so this costs much less than synthesis matrices at the data's band limit would.
+"""
+function supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    TΛ, Tᵅ = real(basetype(Λ)), real(eltype(αᵢₙ))
+    TΘ = promote_type(TΛ, Tᵅ)
+    Tₚ = Rotor{TΛ}
+    T5′ = primal_float(Tᵅ)
+    ℓᵅ = max(2, isqrt(length(αᵢₙ)) - 1)
+    Nᵅ = (ℓᵅ + 1)^2
+    # `ðα` and `ð²α` are full mode vectors whose leading (ℓ < s) entries are zero.
+    α = impose_reality(αᵢₙ, ℓᵅ, c_α)
+    ðα = ð(0, 0, ℓᵅ, T5′) * α
+    ð²α = ð(1, 0, ℓᵅ, T5′) * ðα
+    Nᵖ = length(R′ₚ)
+    Rₚ = Vector{Tₚ}(undef, Nᵖ)
+    αₚ = Vector{TΘ}(undef, Nᵖ)
+    ðαₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
+    ð²αₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
+    OhMyThreads.@tasks for i ∈ 1:Nᵖ
+        OhMyThreads.@set scheduler = :static
+        OhMyThreads.@set ntasks = nthreads()
+        OhMyThreads.@local begin
+            calc = sYlmCalculator(one(Tₚ), ℓᵅ, 0:2)
+            Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵅ, 3)
+        end
+        # `ℐ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map; see the
+        # `aberration` docstring and the "Future and past null infinity" conventions.
+        Rₚ[i] = aberration(R′ₚ[i], Λ)
+        # The columns of `Y` hold spins 0, 1, and 2; the sums run over the modes with ℓ ≥ s,
+        # and `α` is real on the sphere by construction.
+        sYlm_rows!(Y, calc, Rₚ[i])
+        αₚ[i] = real(pixel_dot(view(Y, :, 1), α, 1, Nᵅ))
+        ðαₚ[i] = pixel_dot(view(Y, :, 2), ðα, 2, Nᵅ)
+        ð²αₚ[i] = pixel_dot(view(Y, :, 3), ð²α, 5, Nᵅ)
+    end
+    return Rₚ, αₚ, ðαₚ, ð²αₚ
+end
+
+"""
     transform_pixel!(d′ᵢ, dᵢ, d̈ᵢ, cubic_spline_cache, t, t′,
                      κ⁻¹ᵢ, αₚᵢ, ðt′╱2κₚ₀ᵢ, ðt′╱2κₚ₁ᵢ, ð²αₚᵢ, dc)
 
@@ -210,7 +283,7 @@ function transform_pixel!(
 end
 
 """
-    transform!(data, t, v⃗, R, αᵢₙ, dc; t′=nothing, ℓₘₐₓ₀=nothing)
+    transform!(data, t, v⃗, R, αᵢₙ, dc; t′=nothing, ℓₘₐₓ₀=nothing, plan=nothing)
 
 Transform the mode weights in `data` — sampled at times `t` — from the rest frame to the
 BMS-transformed frame.  The BMS transformation is specified by the boost velocity `v⃗`, the
@@ -270,6 +343,10 @@ the nonzero modes, reducing its cost by roughly the factor
 `(ℓₘₐₓ₀+1)²/Nᵐ`.  The promise is verified, and an `ArgumentError` is
 thrown if any declared-zero mode is nonzero.
 
+The optional keyword `plan` supplies a [`TransformPlan`](@ref) for the band limit, precision,
+and spin weights of `data`, so that the uniform grid and its analysis factorizations, which
+depend on no BMS parameter, are not rebuilt on every call.
+
 Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, if given).
 
 The transformation is differentiable end-to-end with ForwardDiff with respect to the BMS
@@ -291,6 +368,7 @@ function transform!(
     dc::DataComponents{C,I};
     t′::Union{Nothing,Vector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+    plan::Union{Nothing,TransformPlan}=nothing,
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I}
     # Use this `let` block to ensure that we don't accidentally use `T` below, because that
     # could lead to type instability.
@@ -316,14 +394,17 @@ function transform!(
     let TP = promote_type(primal_float(T1), primal_float(T2))
         widened = (promote_type(T3, TP), promote_type(T4, TP), promote_type(T5, TP))
         if widened !== (T3, T4, T5)
-            return transform!(data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc; t′, ℓₘₐₓ₀)
+            return transform!(
+                data, t, widen_parameters(v⃗, R, αᵢₙ, TP)..., dc; t′, ℓₘₐₓ₀, plan
+            )
         end
     end
 
     # Check that the input data has the expected dimensions and properties.
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
     Nᵖ = Nᵐ
-    block_size = max(1, min(Nᵗ, cachesize_L2 ÷ (Nᵐ * sizeof(Complex{T1}))))
+    cachesize_L2[] > 0 || read_cache_size!()
+    block_size = max(1, min(Nᵗ, cachesize_L2[] ÷ (Nᵐ * sizeof(Complex{T1}))))
 
     # The time-law sign in t′ = κ(t − c_α α) comes from the data conventions; the remaining
     # convention factors (dyad rescaling of the mixing parameter and the F_σ/F_h shift
@@ -350,82 +431,48 @@ function transform!(
     # numbers out of the constant `qr`/`lu` factorizations, whose Householder steps would
     # otherwise turn the (identically zero) perturbations into NaNs.
     T4′ = primal_float(T4)
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T4′)
-
-    # That uniformly spaced grid will be as seen in the transformed frame; here we compute
-    # the corresponding rotors in the rest frame, on which we will evaluate the input data.
-    # This is the boosted or distorted grid.
-    Tₚ = promote_type(Rotor{T4}, T3)
-    Rₚ = similar(R′ₚ, Tₚ)
-    # `ℐ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map;
-    # see the `aberration` docstring and the "Future and past null infinity" conventions.
-    Polyester.@batch for i ∈ eachindex(Rₚ)
-        Rₚ[i] = aberration(R′ₚ[i], Λ)
+    spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
+    if isnothing(plan)
+        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T4′)
+        # The analysis factorization on the uniform grid, for each spin weight that the
+        # data have, and no others; it overlaps with the setup below.
+        task_augmented_lu = OhMyThreads.@spawn Dict(
+            s => augmented_factorization(R′ₚ, ℓₘₐₓ, s) for s ∈ spins
+        )
+    else
+        check_plan(plan, ℓₘₐₓ, T4′, spins)
+        R′ₚ = plan.R′ₚ
+        task_augmented_lu = nothing
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
     task_cubic_spline_cache = OhMyThreads.@spawn CubicSplineCache(t)
 
-    # Impose the reality condition on the input supertranslation, and pad with zeros up to
-    # `ℓₘₐₓ` if necessary.  We always impose reality on the modes, rather than just taking
-    # the real part of the result after evaluation, because we also need ðα and ð²α, which
-    # need to be consistent with the reality condition.  This is done in a separate thread
-    # to overlap with the computation of the SSHTs.
-    task_α = OhMyThreads.@spawn impose_reality(αᵢₙ, ℓₘₐₓ, c_α)
+    # That uniformly spaced grid will be as seen in the transformed frame; here we compute
+    # the corresponding rotors in the rest frame, on which we will evaluate the input data
+    # (the boosted or distorted grid), together with the supertranslation and its eth
+    # derivatives there.  See `supertranslation_on_grid`.
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    Tₚ = eltype(Rₚ)
 
-    # Construct the set of spin-spherical-harmonic transforms, for each spin weight.  Here
-    # we use `OffsetVector` so that they can be indexed by their spin weight.
-    𝒯 = OffsetVector(
-        OhMyThreads.tmap(
-            s -> sYlm_matrix(Rₚ, ℓₘₐₓ, s),
-            Matrix{Complex{basetype(Tₚ)}},
-            -2:2;
-            chunking=false,
+    # The synthesis matrix on the distorted grid, for each spin weight that the data have.
+    𝒯 = Dict(
+        zip(
+            spins,
+            OhMyThreads.tmap(
+                s -> sYlm_matrix(Rₚ, ℓₘₐₓ, s),
+                Matrix{Complex{basetype(Tₚ)}},
+                spins;
+                chunking=false,
+            ),
         ),
-        -3,
     )
-    task_augmented_lu = OhMyThreads.@spawn begin
-        # Build augmented square analysis matrices.  See the documentation page "Augmented
-        # direct SSHT" for details.
-        OffsetVector(
-            map(-2:2) do s
-                ₛY = sYlm_matrix(R′ₚ, ℓₘₐₓ, s)
-                if s == 0
-                    lu(ₛY)
-                else
-                    F = qr(ₛY)
-                    Q = F.Q * Matrix{Bool}(LinearAlgebra.I, Nᵐ, Nᵐ)  # full Nᵐ×Nᵐ unitary
-                    Q⊥ = Q[:, (Nᵐ - s ^ 2 + 1):end]  # Nᵐ × s² null-space columns
-                    lu([Q⊥ ₛY])  # Nᵐ × Nᵐ, square
-                end
-            end,
-            -3,
-        )
-    end
-
-    # NOTE: From this point on, `α` will represent the corrected version that accounts for
-    # `c_α`.  That is, we can now interpret `α` as being involved in the time translation as
-    # t' = κ(t - α), rather than trying to keep that factor of c_α around.
-    α = fetch(task_α)
-
-    # Evaluate α on the boosted grid.  Make a copy because the 𝒯 act in place.
-    task_αₚ = OhMyThreads.@spawn real.(𝒯[0] * copy(α))
-
-    # Compute ðα, which is needed for ðt′/2κ in the Weyl transformation laws.
-    # ð returns a full Nᵐ-element vector, but spin-1 modes start at ℓ=1, so skip the first
-    # 1² = 1 leading zero entry before passing to 𝒯[1] (which expects Nᵐ − 1² modes).
-    task_ðαₚ = OhMyThreads.@spawn 𝒯[1] * (ð(0, 0, ℓₘₐₓ, T5) * α)[2:end]
-
-    # Compute ð²α, which is needed for σ or h data.
-    # Same reasoning: spin-2 modes start at ℓ=2, so skip the first 2² = 4 leading zeros.
-    task_ð²αₚ = OhMyThreads.@spawn 𝒯[2] * (ð(1, 0, ℓₘₐₓ, T5) * ð(0, 0, ℓₘₐₓ, T5) * α)[5:end]
 
     # Compute t′ — or, if the caller supplied a grid, validate it.  Either way this runs
     # synchronously, so that a bad grid, or a transformation that leaves no complete slice,
     # throws a plain ArgumentError rather than a TaskFailedException.  Both branches produce
     # the same element type, keeping the loop below type-stable; `convert` is a no-op when
     # the supplied grid already has that type.
-    αₚ = fetch(task_αₚ)
     t′ = let Tt = promote_type(eltype(t), eltype(αₚ), typeof(γ))
         if isnothing(t′)
             compute_t′(t, αₚ, Rₚ, v⃗, I)::Vector{Tt}
@@ -450,7 +497,6 @@ function transform!(
     end
 
     # Compute ðt′/2κ parts.
-    ðαₚ = fetch(task_ðαₚ)
     task_ðt′╱2κₚ = OhMyThreads.@spawn compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
     ###
@@ -494,7 +540,6 @@ function transform!(
 
     cubic_spline_cache = fetch(task_cubic_spline_cache)
     ðt′╱2κₚ = fetch(task_ðt′╱2κₚ)
-    ð²αₚ = fetch(task_ð²αₚ)
 
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
         OhMyThreads.@set scheduler = :static
@@ -536,7 +581,8 @@ function transform!(
     ### Stage 3: Transform back to modes of the transformed data
     ###
 
-    augmented_lu = fetch(task_augmented_lu)
+    augmented_lu =
+        isnothing(task_augmented_lu) ? plan.factorizations : fetch(task_augmented_lu)
     let
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
@@ -553,7 +599,7 @@ end
 """
     transform!(data, t, v⃗, R, αᵢₙ;
                data_components=nothing, ℐ=+1, conventions=Conventions(),
-               t′=nothing, ℓₘₐₓ₀=nothing)
+               t′=nothing, ℓₘₐₓ₀=nothing, plan=nothing)
 
 Keyword-argument convenience form.  See the main docstring for details.
 
@@ -578,6 +624,7 @@ function transform!(
     conventions::Conventions=Conventions(),
     t′::Union{Nothing,Vector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+    plan::Union{Nothing,TransformPlan}=nothing,
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}
     Nᵈ = size(data, 3)
     dc = if data_components isa DataComponents
@@ -593,7 +640,7 @@ function transform!(
     else
         DataComponents(data_components...; ℐ, conventions)
     end
-    return transform!(data, t, v⃗, R, αᵢₙ, dc; t′, ℓₘₐₓ₀)
+    return transform!(data, t, v⃗, R, αᵢₙ, dc; t′, ℓₘₐₓ₀, plan)
 end
 
 function transform!(
@@ -607,6 +654,7 @@ function transform!(
     conventions::Conventions=Conventions(),
     t′::Union{Nothing,Vector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+    plan::Union{Nothing,TransformPlan}=nothing,
 )
     return transform!(
         data,
@@ -619,6 +667,7 @@ function transform!(
         conventions,
         t′,
         ℓₘₐₓ₀,
+        plan,
     )
 end
 
@@ -636,12 +685,13 @@ function transform!(
     dc::DataComponents;
     t′::Union{Nothing,Vector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+    plan::Union{Nothing,TransformPlan}=nothing,
 )
-    return transform!(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc; t′, ℓₘₐₓ₀)
+    return transform!(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc; t′, ℓₘₐₓ₀, plan)
 end
 
 """
-    transform!(data, t, g::BMS, dc::DataComponents; t′=nothing, ℓₘₐₓ₀=nothing)
+    transform!(data, t, g::BMS, dc::DataComponents; t′=nothing, ℓₘₐₓ₀=nothing, plan=nothing)
 
 Apply the BMS element `g` to `data` in place.  This convenience wrapper unpacks the boost
 velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity`](@ref),
@@ -663,12 +713,21 @@ function transform!(
     dc::DataComponents{C,I};
     t′::Union{Nothing,Vector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
+    plan::Union{Nothing,TransformPlan}=nothing,
 ) where {C,I}
     # Re-express `g` with the supertranslation sign matching the data conventions' `c_α`,
     # since the main method will interpret α through that sign.
     gᴵ = BMS(g; c_α=dc.conventions.c_α * 1, ℐ=I)
     return transform!(
-        data, t, boost_velocity(gᴵ), frame_rotation(gᴵ), supertranslation(gᴵ), dc; t′, ℓₘₐₓ₀
+        data,
+        t,
+        boost_velocity(gᴵ),
+        frame_rotation(gᴵ),
+        supertranslation(gᴵ),
+        dc;
+        t′,
+        ℓₘₐₓ₀,
+        plan,
     )
 end
 
@@ -862,17 +921,6 @@ function transform_objective(
     vˣ, vʸ, vᶻ = vec(v⃗)
     Λ = Boost(I * v⃗) * R
 
-    # The ð operator matrices depend only on the band limit, so build them at the primal
-    # float type (see `primal_float`), as in `transform!`; the plan's grid is primal too.
-    T5′ = primal_float(T5)
-
-    # As in `transform!`: from here on, `α` is the c_α-corrected supertranslation, so it
-    # enters the time law as t′ = κ(t − α).  `ðα` and `ð²α` are full Nᵐ-length mode
-    # vectors whose leading (ℓ < s) entries are ignored below.
-    α = impose_reality(αᵢₙ, ℓₘₐₓ, c_α)
-    ðα = ð(0, 0, ℓₘₐₓ, T5′) * α
-    ð²α = ð(1, 0, ℓₘₐₓ, T5′) * ðα
-
     cubic_spline_cache = CubicSplineCache(t)
 
     ###
@@ -881,27 +929,8 @@ function transform_objective(
 
     # These per-pixel values must all exist before the main loop, because the grid
     # validation and `compute_ðt′╱2κ` consume them whole.
-    Tₚ = promote_type(Rotor{T4}, T3)
-    Rₚ = Vector{Tₚ}(undef, Nᵖ)
-    αₚ = Vector{TΘ}(undef, Nᵖ)
-    ðαₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
-    ð²αₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
-    OhMyThreads.@tasks for i ∈ 1:Nᵖ
-        OhMyThreads.@set scheduler = :static
-        OhMyThreads.@set ntasks = nthreads()
-        OhMyThreads.@local begin
-            calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, 0:2)
-            Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, 3)
-        end
-        Rₚ[i] = aberration(R′ₚ[i], Λ)
-        # Evaluate α, ðα, and ð²α at this pixel by dotting each mode vector with the
-        # matching ₛYₗₘ row; the columns of `Y` hold spins 0, 1, and 2.  The sums run over
-        # the modes with ℓ ≥ s; `α` is real on the sphere by construction.
-        sYlm_rows!(Y, calc, Rₚ[i])
-        αₚ[i] = real(pixel_dot(view(Y, :, 1), α, 1, Nᵐ))
-        ðαₚ[i] = pixel_dot(view(Y, :, 2), ðα, 2, Nᵐ)
-        ð²αₚ[i] = pixel_dot(view(Y, :, 3), ð²α, 5, Nᵐ)
-    end
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    Tₚ = eltype(Rₚ)
 
     # Validate the output grid at these parameter values (synchronously, so a bad grid
     # throws a plain ArgumentError), then assemble the null-rotation parameter parts.

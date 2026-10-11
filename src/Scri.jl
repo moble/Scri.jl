@@ -22,10 +22,8 @@ import SphericalFunctions:
     golden_ratio_spiral_rotors,
     D
 import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
-import OffsetArrays: OffsetVector
 import Logging
 import Hwloc
-import Polyester
 import OhMyThreads
 import Base.Threads: nthreads
 import TestItems: @testitem, @testmodule
@@ -34,20 +32,26 @@ import TestItems: @testitem, @testmodule
 using PrecompileTools: @setup_workload, @compile_workload
 using Random: Xoshiro
 
-const cachesize_L2 = Logging.with_logger(Logging.NullLogger()) do
-    return Hwloc.cachesize(:L2)
-end
-const cachesize_L3 = Logging.with_logger(Logging.NullLogger()) do
-    try
-        try
-            Hwloc.cachesize(:L3)
-        catch
-            Hwloc.gettopology().mem
-        end
-    catch
-        cachesize_L2
+# The L2 cache size of the machine running the code, in bytes, which sets how many time
+# samples `transform!` handles in each block.  It is read when the package loads, in
+# `__init__`, not when it is precompiled, so that a depot shared between machines does not
+# carry the build machine's value.  The precompile workload runs before `__init__`, so
+# `transform!` also reads it if it is still unset.
+const cachesize_L2 = Ref(0)
+
+"""
+    read_cache_size!()
+
+Read the L2 cache size of this machine from Hwloc into `cachesize_L2[]`.
+"""
+function read_cache_size!()
+    Logging.with_logger(Logging.NullLogger()) do
+        return cachesize_L2[] = Hwloc.cachesize(:L2)
     end
+    return nothing
 end
+
+__init__() = read_cache_size!()
 
 include("cubic_spline.jl")
 include("signs.jl")
@@ -56,6 +60,7 @@ include("data_components.jl")
 include("utilities.jl")
 include("quadrature.jl")
 include("objective_plan.jl")
+include("transform_plan.jl")
 include("aberration.jl")
 include("bms.jl")
 include("transform.jl")
@@ -63,6 +68,7 @@ include("transform.jl")
 export transform!,
     transform_objective,
     ObjectivePlan,
+    TransformPlan,
     compute_t′,
     pixel_waveform,
     diagnostics,

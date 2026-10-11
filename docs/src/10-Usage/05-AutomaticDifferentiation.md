@@ -141,7 +141,7 @@ the BMS parameters `θ = (v⃗, 𝔯, α)` that minimize the L² difference
 between the transformed waveform and a fixed target.  Differentiating
 `transform!` for this purpose is needlessly expensive.  With `N`
 parameters, the dual copy of `data` is `(1+N)×` the size of an already
-huge array; and because the distorted grid depends on `θ`, the five
+huge array; and because the distorted grid depends on `θ`, the
 synthesis matrices and the entire analysis stage are dragged into dual
 arithmetic as well — only for all of that structure to be collapsed to
 a single scalar at the end.

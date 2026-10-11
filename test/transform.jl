@@ -1820,3 +1820,79 @@ end
         @test maximum(abs, ψ₁′ .- (-3M .* ðδn̂ ./ 2)) < 1e-12 * M
     end
 end
+
+@testitem "TransformPlan: reusing the grid and factorizations changes nothing" tags = [
+    :unit, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import ForwardDiff
+    import Random
+
+    rng = Random.Xoshiro(8181)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    v⃗ = QuatVec(1e-2, -2e-2, 3e-2)
+    R = randn(rng, Rotor{Float64})
+    α = 0.1 * Random.randn(rng, ComplexF64, 9)
+
+    # The result with a plan is identical to the result without one, for several sets of
+    # components, on both null infinities, and through the BMS-element form.
+    for dc ∈ (
+        Scri.DataComponents(:h),
+        Scri.DataComponents(:h, :ψ₄, :ψ₃, :ψ₂),
+        Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; ℐ=-1),
+    )
+        data = Random.randn(rng, ComplexF64, N, Nᵗ, Scri.ncomponents(dc))
+        plan = Scri.TransformPlan(data, dc)
+        @test Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc; plan) ==
+            Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+        g = Scri.BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R)
+        @test Scri.transform!(copy(data), copy(t), g, dc; plan) ==
+            Scri.transform!(copy(data), copy(t), g, dc)
+    end
+
+    # A plan for more spin weights serves fewer, and derivatives through `transform!`
+    # with a plan match those without.
+    dc = Scri.DataComponents(:h, :ψ₄)
+    big = Scri.TransformPlan(ℓ, Scri.DataComponents(:σ, :h, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀))
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
+    @test Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc; plan=big) ==
+        Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
+    t′ = Scri.compute_t′(t, 0.1, 0.5)
+    f(β, plan) = sum(
+        abs2,
+        first(
+            Scri.transform!(
+                Complex{typeof(β)}.(data),
+                copy(t),
+                QuatVec(zero(β), zero(β), β),
+                R,
+                zeros(Complex{typeof(β)}, 1),
+                dc;
+                t′,
+                plan,
+            ),
+        ),
+    )
+    @test ForwardDiff.derivative(β -> f(β, big), 0.01) ==
+        ForwardDiff.derivative(β -> f(β, nothing), 0.01)
+
+    # A plan for another band limit, precision, or spin weights is rejected.
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; plan=Scri.TransformPlan(ℓ + 1, dc)
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data), copy(t), v⃗, R, copy(α), dc; plan=Scri.TransformPlan(ℓ, dc, Float32)
+    )
+    @test_throws ArgumentError Scri.transform!(
+        copy(data),
+        copy(t),
+        v⃗,
+        R,
+        copy(α),
+        dc;
+        plan=Scri.TransformPlan(ℓ, Scri.DataComponents(:ψ₂, :ψ₁, :ψ₀; ℐ=-1)),  # no s = −2
+    )
+end
