@@ -220,8 +220,8 @@ therefore
 ```
 
 The graded regularization exactly cancels the boost grading, and every
-leg acquires the same factor ``1/κ``.  This is the uniform Weyl factor
-of the previous page, obtained there from the relation ``ĝ' = κ²ĝ``
+leg acquires the same factor ``1/κ``, the inverse of the conformal
+factor.  This is the common factor ``1/κ`` of the previous page, obtained there from the relation ``ĝ' = κ²ĝ``
 between the two conformal metrics; the two accounts are equivalent, but
 the present one exhibits the cancellation rather than the result.  The
 spin phase involves no power of ``ω`` and so survives untouched.  Hence,
@@ -456,7 +456,7 @@ structural reason the mixing parameter cannot be a factor of a rotor.
 
 ## The assembled law
 
-Collecting the uniform Weyl factor, the spin phase, and the shear:
+Collecting the common factor ``1/κ``, the spin phase, and the shear:
 
 ```math
 \begin{aligned}

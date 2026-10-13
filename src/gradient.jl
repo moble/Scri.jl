@@ -12,14 +12,14 @@ ForwardDiff's costs about one evaluation per parameter.
 
 The parameters are
 ```math
-θ = (u_x, u_y, u_z,\; b_x, b_y, b_z,\; a_1, a_2, …, a_{(ℓ_α+1)^2}),
+θ = (r_x, r_y, r_z,\; η_x, η_y, η_z,\; a_1, a_2, …, a_{(ℓ_α+1)^2}),
 ```
-read by [`bms_from_parameters`](@ref): the rotation vector ``𝐮`` gives the frame rotation
-``R = \exp(𝐮/2)``, the rapidity vector ``𝐛`` gives the boost velocity
-``v⃗ = \tanh(|𝐛|)\, 𝐛/|𝐛|``, and the ``a`` are the real degrees of freedom of the
-supertranslation's modes up to ``ℓ_α``.  Every ``θ`` is a valid transformation, the
-identity is ``θ = 0``, and nothing is singular there, so an optimizer may start at zero and
-move freely.  Use [`parameters_from_bms`](@ref) to start elsewhere.
+read by [`bms_from_parameters`](@ref): the rotation vector ``\vec{r}`` gives the frame
+rotation ``R = \exp(\vec{r}/2)``, the rapidity vector ``\vec{η}`` gives the boost velocity
+``v⃗ = \tanh(|\vec{η}|)\, \vec{η}/|\vec{η}|``, and the ``a`` are the real degrees of
+freedom of the supertranslation's modes up to ``ℓ_α``.  Every ``θ`` is a valid
+transformation, the identity is ``θ = 0``, and nothing is singular there, so an optimizer
+may start at zero and move freely.  Use [`parameters_from_bms`](@ref) to start elsewhere.
 
 The arguments `data`, `t`, `dc`, and `plan` are as for `transform_objective`, including
 plans with `ℓ_fit`, which cost one more pass over the pixels.  The shape of `∇` must match
@@ -39,9 +39,9 @@ function objective_and_gradient!(
     T = promote_type(float(eltype(θ)), T1, T2, TQ)
     θᵈ = [seeded(ParameterTag, T(θ[p]), p, Val(P)) for p ∈ 1:P]
     v⃗, R, αᵢₙ = bms_from_parameters(θᵈ)
-    J, g = gradient_core(data, t, v⃗, R, αᵢₙ, dc, plan, ℓₘₐₓ₀, T, Val(P))
-    ∇ .= g
-    return J
+    Φ, Ωθ = gradient_core(data, t, v⃗, R, αᵢₙ, dc, plan, ℓₘₐₓ₀, T, Val(P))
+    ∇ .= Ωθ
+    return Φ
 end
 
 # Tags for the two kinds of dual number below: one holds derivatives with respect to the
@@ -90,7 +90,7 @@ function gradient_core(
             "for spin weights $(plan.spins)",
         ),
     )
-    R′ₚ, w, t′, v, c, target = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
+    R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
 
@@ -105,34 +105,34 @@ function gradient_core(
     Tₚ = eltype(Rₚ)
     validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
     ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
-    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ)) for i ∈ 1:Nᵖ]
+    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[j], vˣ, vʸ, vᶻ)) for j ∈ 1:Nᵖ]
 
     unique_spins = unique(spins)
     spin_components = [findall(==(s), spins) for s ∈ unique_spins]
     spin_range = minimum(spins):maximum(spins)
-    Dσ = ForwardDiff.Dual{PixelTag,T,8}
+    Dg = ForwardDiff.Dual{PixelTag,T,8}
 
-    # Fill `xᵢ` with pixel i's time series, synthesized from the modes with plain numbers,
+    # Fill `xⱼ` with pixel j's time series, synthesized from the modes with plain numbers,
     # leaving the harmonics there, with their derivatives, in `Yᵈ`.
-    function synthesize!(xᵢ, Y, Yᵈ, calc, i)
-        sYlm_rows!(Yᵈ, calc, Rₚ[i])
+    function synthesize!(xⱼ, Y, Yᵈ, calc, j)
+        sYlm_rows!(Yᵈ, calc, Rₚ[j])
         Y .= valueof.(Yᵈ)
         for (s, ks) ∈ zip(unique_spins, spin_components)
             Yˢ = view(Y, :, s - first(spin_range) + 1)
             for k ∈ ks
-                @inbounds for j ∈ 1:Nᵗ
-                    xᵢ[k, j] = pixel_dot(Yˢ, view(data, :, j, k), s ^ 2 + 1, N₀)
+                @inbounds for h ∈ 1:Nᵗ
+                    xⱼ[k, h] = pixel_dot(Yˢ, view(data, :, h, k), s ^ 2 + 1, N₀)
                 end
             end
         end
-        return xᵢ
+        return xⱼ
     end
-    scalars(i) = (
-        valueof(κ⁻¹ₚ[i]),
-        valueof(αₚ[i]),
-        valueof(ðt′╱2κₚ[1, i]),
-        valueof(ðt′╱2κₚ[2, i]),
-        valueof(ð²αₚ[i]),
+    scalars(j) = (
+        valueof(κ⁻¹ₚ[j]),
+        valueof(αₚ[j]),
+        valueof(ðt′╱2κₚ[1, j]),
+        valueof(ðt′╱2κₚ[2, j]),
+        valueof(ð²αₚ[j]),
     )
     chunks = OhMyThreads.index_chunks(1:Nᵖ; n=nthreads())
 
@@ -145,16 +145,16 @@ function gradient_core(
             calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range)
             Yᵈ = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range))
             Y = Matrix{Complex{T}}(undef, Nᵐ, length(spin_range))
-            xᵢ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
-            ẍᵢ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
-            d′ᵢ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)
+            xⱼ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
+            ẍⱼ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
+            d′ⱼ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)
             Pc = [zeros(Complex{T}, size(plan.Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
-            for i ∈ chunk
-                synthesize!(xᵢ, Y, Yᵈ, calc, i)
-                transform_pixel!(d′ᵢ, xᵢ, ẍᵢ, cubic_spline_cache, t, t′, scalars(i)..., dc)
-                for k ∈ 1:Nᵈ, j ∈ 1:Nᵗ′
+            for j ∈ chunk
+                synthesize!(xⱼ, Y, Yᵈ, calc, j)
+                transform_pixel!(d′ⱼ, xⱼ, ẍⱼ, cubic_spline_cache, t, t′, scalars(j)..., dc)
+                for k ∈ 1:Nᵈ, i ∈ 1:Nᵗ′
                     @inbounds @simd for n ∈ axes(plan.Ȳ[k], 1)
-                        Pc[k][n, j] = muladd(plan.Ȳ[k][n, i], d′ᵢ[k, j], Pc[k][n, j])
+                        Pc[k][n, i] = muladd(plan.Ȳ[k][n, j], d′ⱼ[k, i], Pc[k][n, i])
                     end
                 end
             end
@@ -165,34 +165,36 @@ function gradient_core(
         nothing
     end
 
-    J, ∇ = OhMyThreads.tmapreduce(
-        ((J₁, g₁), (J₂, g₂)) -> (J₁ + J₂, g₁ .+ g₂), chunks; chunking=false
+    Φ, Ωθ = OhMyThreads.tmapreduce(
+        ((Φ₁, Ω₁), (Φ₂, Ω₂)) -> (Φ₁ + Φ₂, Ω₁ .+ Ω₂), chunks; chunking=false
     ) do chunk
         calc = sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range)
         Yᵈ = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range))
         Y = Matrix{Complex{T}}(undef, Nᵐ, length(spin_range))
-        G = Matrix{Complex{T}}(undef, Nᵐ, length(spin_range))
-        xᵢ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
-        ẍᵢ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
-        d′ᵢ = Matrix{Complex{Dσ}}(undef, Nᵈ, Nᵗ′)
-        # A name such as ∇x holds 2∂J/∂x*: the gradient with respect to the real and
-        # imaginary parts of x, packed into one complex number.
-        ∇d′ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)  # adjoint of the transformed series
-        ∇y = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)
-        ∇x = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)  # adjoint of the synthesized series
+        ΩY = Matrix{Complex{T}}(undef, Nᵐ, length(spin_range))  # cotangent of the harmonics
+        xⱼ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
+        ẍⱼ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)
+        d′ⱼ = Matrix{Complex{Dg}}(undef, Nᵈ, Nᵗ′)
+        # Cotangents, in the canonical representation of the gradient page: a name such as
+        # Ωx holds ∂/∂(Re x) − i ∂/∂(Im x) of the objective, so that a change δx changes it
+        # by Re Σ Ωx δx.  Each is a covector, and each backward step applies the transpose
+        # of its forward step's Jacobian, with no conjugation.
+        Ωd′ = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)  # cotangent of the transformed series
+        Ωy = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′)  # cotangent of the interpolated series
+        Ωx = Matrix{Complex{T}}(undef, Nᵈ, Nᵗ)  # cotangent of the synthesized series
         M = Matrix{Complex{T}}(undef, Nᵈ, Nᵈ)
         e, z = Vector{Complex{T}}(undef, Nᵈ), Vector{Complex{T}}(undef, Nᵈ)
-        ∇ẍ, ẑ = Vector{Complex{T}}(undef, Nᵗ), Vector{Complex{T}}(undef, Nᵗ)
+        Ωẍ, ẑ = Vector{Complex{T}}(undef, Nᵗ), Vector{Complex{T}}(undef, Nᵗ)
         τ = Vector{T}(undef, Nᵗ′)
-        ∇σ = Vector{T}(undef, 8)
-        Jc = zero(T)
-        gc = zeros(T, P)
-        for i ∈ chunk
-            synthesize!(xᵢ, Y, Yᵈ, calc, i)
+        Ωg = Vector{T}(undef, 8)  # cotangent of the eight real numbers
+        Φc = zero(T)
+        Ωθc = zeros(T, P)  # the cotangent of θ: ∂Φ/∂θᵖ, a covector
+        for j ∈ chunk
+            synthesize!(xⱼ, Y, Yᵈ, calc, j)
 
             # Interpolate and mix with dual numbers in the pixel's eight real scalars.
-            κ⁻¹, α, ð₀, ð₁, ð² = scalars(i)
-            σ = (
+            κ⁻¹, α, ð₀, ð₁, ð² = scalars(j)
+            g = (
                 seeded(PixelTag, T(κ⁻¹), 1, Val(8)),
                 seeded(PixelTag, T(α), 2, Val(8)),
                 complex(
@@ -208,95 +210,98 @@ function gradient_core(
                     seeded(PixelTag, T(imag(ð²)), 8, Val(8)),
                 ),
             )
-            transform_pixel!(d′ᵢ, xᵢ, ẍᵢ, cubic_spline_cache, t, t′, σ..., dc)
+            transform_pixel!(d′ⱼ, xⱼ, ẍⱼ, cubic_spline_cache, t, t′, g..., dc)
 
-            # The adjoint of the transformed series, so that a change δd′ changes J by
-            # Re Σ conj(∇d′) δd′.  For the full objective it is the pixel's own weighted
-            # residual; with ℓ_fit it is the projection's residual pulled back to the
-            # pixel through the weighted harmonics.
-            @inbounds for j ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
+            # The cotangent of the transformed series.  For the full objective it is the
+            # pixel's own weighted residual, conjugated; with ℓ_fit it is the conjugated
+            # residual of the projections, pulled back to the pixel through the weighted
+            # harmonics.
+            @inbounds for i ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
                 if isnothing(R̂)
-                    r = valueof(d′ᵢ[k, j]) - target[i, j, k]
-                    Jc += w[i] * v[j] * c[k] * abs2(r)
-                    ∇d′[k, j] = 2 * w[i] * v[j] * c[k] * r
+                    r = valueof(d′ⱼ[k, i]) - c[j, i, k]
+                    Φc += w[j] * v[i] * u[k] * abs2(r)
+                    Ωd′[k, i] = 2 * w[j] * v[i] * u[k] * conj(r)
                 else
                     acc = zero(Complex{T})
                     for n ∈ axes(plan.Ȳ[k], 1)
-                        acc = muladd(R̂[k][n, j], conj(plan.Ȳ[k][n, i]), acc)
+                        acc = muladd(conj(R̂[k][n, i]), plan.Ȳ[k][n, j], acc)
                     end
-                    ∇d′[k, j] = 2 * v[j] * c[k] * acc
+                    Ωd′[k, i] = 2 * v[i] * u[k] * acc
                 end
             end
 
             # The parameters reach the pixel's scalars through the geometry.
-            fill!(∇σ, 0)
-            @inbounds for j ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
-                ∂re, ∂im = reim_partials(d′ᵢ[k, j])
+            # Each is Re Σ Ωd′ ∂d′/∂g, contracting the cotangent with a column of the
+            # forward-mode Jacobian of the interpolation and mixing.
+            fill!(Ωg, 0)
+            @inbounds for i ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
+                ∂re, ∂im = reim_partials(d′ⱼ[k, i])
                 for n ∈ 1:8
-                    ∇σ[n] += real(∇d′[k, j]) * ∂re[n] + imag(∇d′[k, j]) * ∂im[n]
+                    Ωg[n] += real(Ωd′[k, i]) * ∂re[n] - imag(Ωd′[k, i]) * ∂im[n]
                 end
             end
             for (n, q) ∈ enumerate((
-                κ⁻¹ₚ[i],
-                αₚ[i],
-                real(ðt′╱2κₚ[1, i]),
-                imag(ðt′╱2κₚ[1, i]),
-                real(ðt′╱2κₚ[2, i]),
-                imag(ðt′╱2κₚ[2, i]),
-                real(ð²αₚ[i]),
-                imag(ð²αₚ[i]),
+                κ⁻¹ₚ[j],
+                αₚ[j],
+                real(ðt′╱2κₚ[1, j]),
+                imag(ðt′╱2κₚ[1, j]),
+                real(ðt′╱2κₚ[2, j]),
+                imag(ðt′╱2κₚ[2, j]),
+                real(ð²αₚ[j]),
+                imag(ð²αₚ[j]),
             ))
                 ∂q = ForwardDiff.partials(q)
                 for p ∈ 1:P
-                    gc[p] += ∇σ[n] * ∂q[p]
+                    Ωθc[p] += Ωg[n] * ∂q[p]
                 end
             end
 
             # They also reach it through the harmonics at the pixel's rotor, which enter
-            # the synthesis.  Propagate the adjoint back to the synthesized time series:
-            # through the mixing of each output time by its matrix, then through the
-            # spline by its transpose.
-            for j ∈ 1:Nᵗ′
-                τ[j] = t′[j] * κ⁻¹ + α
-                mixing_matrix!(M, κ⁻¹, ð₀ + τ[j] * ð₁, ð², dc; e, z)
-                mul!(view(∇y, :, j), M', view(∇d′, :, j))
+            # the synthesis.  Pull the cotangent back to the synthesized time series:
+            # through the mixing at each output time by the transpose of its matrix, then
+            # through the spline by its transpose.
+            for i ∈ 1:Nᵗ′
+                τ[i] = t′[i] * κ⁻¹ + α
+                mixing_matrix!(M, κ⁻¹, ð₀ + τ[i] * ð₁, ð², dc; e, z)
+                mul!(view(Ωy, :, i), transpose(M), view(Ωd′, :, i))
             end
-            fill!(∇x, 0)
+            fill!(Ωx, 0)
             for k ∈ 1:Nᵈ
                 @views spline_transpose!(
-                    ∇x[k, :], ∇y[k, :], cubic_spline_cache, t, τ; ∇ẍ, z=ẑ
+                    Ωx[k, :], Ωy[k, :], cubic_spline_cache, t, τ; Ωẍ, z=ẑ
                 )
             end
-            # Through the synthesis, xᵢ[k, j] = Σₘ Yₘ data[m, j, k], so for each spin weight
-            # the derivative of J with respect to Yₘ is Gₘ = Σ data[m, j, k] conj(∇x[k, j]).
-            fill!(G, 0)
+            # Through the synthesis, xⱼ[k, h] = Σₘ Yₘ data[m, h, k], so for each spin weight
+            # the cotangent of the harmonic Yₘ is ΩYₘ = Σ data[m, h, k] Ωx[k, h], and the
+            # parameters' share is Re Σ ΩYₘ ∂Yₘ/∂θ.
+            fill!(ΩY, 0)
             for (s, ks) ∈ zip(unique_spins, spin_components)
                 col = s - first(spin_range) + 1
-                for k ∈ ks, j ∈ 1:Nᵗ
-                    conj∇x = conj(∇x[k, j])
+                for k ∈ ks, h ∈ 1:Nᵗ
+                    Ωxₖₕ = Ωx[k, h]
                     @inbounds @simd for m ∈ (s ^ 2 + 1):N₀
-                        G[m, col] = muladd(data[m, j, k], conj∇x, G[m, col])
+                        ΩY[m, col] = muladd(data[m, h, k], Ωxₖₕ, ΩY[m, col])
                     end
                 end
                 for m ∈ (s ^ 2 + 1):N₀
                     ∂re, ∂im = reim_partials(Yᵈ[m, col])
-                    Gᵐ = G[m, col]
+                    ΩYᵐ = ΩY[m, col]
                     for p ∈ 1:P
-                        gc[p] += ∂re[p] * real(Gᵐ) - ∂im[p] * imag(Gᵐ)
+                        Ωθc[p] += ∂re[p] * real(ΩYᵐ) - ∂im[p] * imag(ΩYᵐ)
                     end
                 end
             end
         end
-        return (Jc, gc)
+        return (Φc, Ωθc)
     end
     if !isnothing(R̂)
-        J = sum(c[k] * sum(v[j] * sum(abs2, view(R̂[k], :, j)) for j ∈ 1:Nᵗ′) for k ∈ 1:Nᵈ)
+        Φ = sum(u[k] * sum(v[i] * sum(abs2, view(R̂[k], :, i)) for i ∈ 1:Nᵗ′) for k ∈ 1:Nᵈ)
     end
     if plan.normalize
-        J /= plan.norm²
-        ∇ ./= plan.norm²
+        Φ /= plan.norm²
+        Ωθ ./= plan.norm²
     end
-    return J, ∇
+    return Φ, Ωθ
 end
 
 """
@@ -339,7 +344,7 @@ function bms_from_parameters(θ::AbstractVector)
             "supertranslation parameters",
         ),
     )
-    𝐮 = QuatVec(θ[1], θ[2], θ[3])
+    r⃗ = QuatVec(θ[1], θ[2], θ[3])
     f = tanhc_sqrt(θ[4]^2 + θ[5]^2 + θ[6]^2)
     v⃗ = QuatVec(f * θ[4], f * θ[5], f * θ[6])
     a = view(θ, 7:length(θ))
@@ -353,7 +358,7 @@ function bms_from_parameters(θ::AbstractVector)
             α[i₀ - m] = (-1)^m * conj(αₘ)
         end
     end
-    return v⃗, exp(𝐮 / 2), α
+    return v⃗, exp(r⃗ / 2), α
 end
 
 """
@@ -376,7 +381,7 @@ function parameters_from_bms(v⃗, R, α::AbstractVector)
     else
         atanh(sqrt(β²)) / sqrt(β²)
     end
-    𝐮 = 2 * log(rotor_argument(R))
+    r⃗ = 2 * log(rotor_argument(R))
     L = isqrt(length(α))
     L^2 == length(α) || throw(ArgumentError("α must have a perfect-square length"))
     a = zeros(real(eltype(float.(α))), length(α))
@@ -389,64 +394,64 @@ function parameters_from_bms(v⃗, R, α::AbstractVector)
             a[i₀ - m] = imag(αʳ[i₀ + m])
         end
     end
-    𝐛 = g .* vec(v⃗)
-    return [vec(𝐮)..., 𝐛..., a...]
+    η⃗ = g .* vec(v⃗)
+    return [vec(r⃗)..., η⃗..., a...]
 end
 
 """
-    spline_transpose!(∇x, ∇y, cubic_spline_cache, t, τ; ∇ẍ, z)
+    spline_transpose!(Ωx, Ωy, cubic_spline_cache, t, τ; Ωẍ, z)
 
-Add to `∇x` (length `Nᵗ`) the transpose of natural-cubic-spline interpolation applied to
-`∇y`: if `S` is the linear map from the values `x` at the knots `t` to the values `y` of
+Add to `Ωx` (length `Nᵗ`) the transpose of natural-cubic-spline interpolation applied to
+`Ωy`: if `S` is the linear map from the values `x` at the knots `t` to the values `y` of
 the spline at the times `τ` (length `Nᵗ′`), as `transform_pixel!` evaluates them, this
-adds `Sᵀ ∇y`.
-Interpolation is real-linear, so for complex values the transpose is the adjoint.  The
+adds `Sᵀ Ωy`, which pulls a cotangent of `y` back to one of `x`.  `S` is real, so it acts
+alike on real and imaginary parts.  The
 interval of each time is chosen exactly as in `transform_pixel!`, and the weights of the
 knot values and second derivatives come from `spline_eval` itself, so the transpose matches
 the evaluation to roundoff.  The second derivatives solve a symmetric tridiagonal system,
-so their transpose is another solve with the same Thomas factors.  The keywords `∇ẍ` and
+so their transpose is another solve with the same Thomas factors.  The keywords `Ωẍ` and
 `z` are work vectors of length `Nᵗ`, for callers that want to avoid allocating them.
 """
 function spline_transpose!(
-    ∇x,
-    ∇y,
+    Ωx,
+    Ωy,
     cubic_spline_cache::CubicSplineCache,
     t,
     τ;
-    ∇ẍ=zeros(eltype(∇x), length(t)),
-    z=similar(∇ẍ),
+    Ωẍ=zeros(eltype(Ωx), length(t)),
+    z=similar(Ωẍ),
 )
     Nᵗ = length(t)
     h, h⁻¹, l, u⁻¹ = cubic_spline_cache.h,
     cubic_spline_cache.h⁻¹, cubic_spline_cache.l,
     cubic_spline_cache.u⁻¹
-    fill!(∇ẍ, 0)  # adjoint of the second derivatives
-    for j′ ∈ eachindex(τ, ∇y)
+    fill!(Ωẍ, 0)  # adjoint of the second derivatives
+    for j′ ∈ eachindex(τ, Ωy)
         j = clamp(searchsortedlast(t, τ[j′]), 1, Nᵗ - 1)
         Δ = τ[j′] - t[j]
         𝟙, 𝟘 = one(eltype(h)), zero(eltype(h))
-        ∇x[j] += spline_eval(𝟙, 𝟘, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * ∇y[j′]
-        ∇x[j + 1] += spline_eval(𝟘, 𝟙, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * ∇y[j′]
-        ∇ẍ[j] += spline_eval(𝟘, 𝟘, 𝟙, 𝟘, h[j], h⁻¹[j], Δ) * ∇y[j′]
-        ∇ẍ[j + 1] += spline_eval(𝟘, 𝟘, 𝟘, 𝟙, h[j], h⁻¹[j], Δ) * ∇y[j′]
+        Ωx[j] += spline_eval(𝟙, 𝟘, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
+        Ωx[j + 1] += spline_eval(𝟘, 𝟙, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
+        Ωẍ[j] += spline_eval(𝟘, 𝟘, 𝟙, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
+        Ωẍ[j + 1] += spline_eval(𝟘, 𝟘, 𝟘, 𝟙, h[j], h⁻¹[j], Δ) * Ωy[j′]
     end
     # The end second derivatives are fixed at zero, so only the interior ones have
-    # adjoints; solve A z = ∇ẍ on the interior with the Thomas factors, as the forward
+    # adjoints; solve A z = Ωẍ on the interior with the Thomas factors, as the forward
     # sweep of `transform_pixel!` does, since A is symmetric.
-    z[2] = ∇ẍ[2] * u⁻¹[1]
+    z[2] = Ωẍ[2] * u⁻¹[1]
     for j ∈ 3:(Nᵗ - 1)
-        z[j] = (∇ẍ[j] - h[j - 1] * z[j - 1]) * u⁻¹[j - 1]
+        z[j] = (Ωẍ[j] - h[j - 1] * z[j - 1]) * u⁻¹[j - 1]
     end
     for j ∈ (Nᵗ - 2):-1:2
         z[j] -= l[j - 1] * z[j + 1]
     end
     # Transpose of r[j] = 6(h⁻¹[j](x[j+1] − x[j]) − h⁻¹[j-1](x[j] − x[j-1])), j = 2..Nᵗ-1.
     for j ∈ 2:(Nᵗ - 1)
-        ∇x[j + 1] += 6 * h⁻¹[j] * z[j]
-        ∇x[j] -= 6 * (h⁻¹[j] + h⁻¹[j - 1]) * z[j]
-        ∇x[j - 1] += 6 * h⁻¹[j - 1] * z[j]
+        Ωx[j + 1] += 6 * h⁻¹[j] * z[j]
+        Ωx[j] -= 6 * (h⁻¹[j] + h⁻¹[j - 1]) * z[j]
+        Ωx[j - 1] += 6 * h⁻¹[j - 1] * z[j]
     end
-    return ∇x
+    return Ωx
 end
 
 """

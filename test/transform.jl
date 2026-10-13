@@ -1607,17 +1607,17 @@ end
     @test Scri.transform_objective(data, t, v⃗vec, Rvec, α, dc, plan) == obj
     @test Scri.transform_objective(data, t, v⃗vec, R, α, dc, plan) == obj
 
-    # Three rotation components are a rotation vector 𝐮, meaning the rotor exp(𝐮/2), so
+    # Three rotation components are a rotation vector r⃗, meaning the rotor exp(r⃗/2), so
     # zero is the identity; four are a rotor, as before.
-    𝐮 = [0.3, -0.2, 0.5]
-    d₃, _ = Scri.transform!(copy(data), copy(t), v⃗vec, 𝐮, copy(α), dc)
-    d₄, _ = Scri.transform!(copy(data), copy(t), v⃗, exp(QuatVec(𝐮...) / 2), copy(α), dc)
+    r⃗ = [0.3, -0.2, 0.5]
+    d₃, _ = Scri.transform!(copy(data), copy(t), v⃗vec, r⃗, copy(α), dc)
+    d₄, _ = Scri.transform!(copy(data), copy(t), v⃗, exp(QuatVec(r⃗...) / 2), copy(α), dc)
     @test d₃ == d₄
     @test Scri.transform!(copy(data), copy(t), v⃗vec, zeros(3), copy(α), dc)[1] ==
         Scri.transform!(copy(data), copy(t), v⃗, one(Rotor{Float64}), copy(α), dc)[1]
-    @test Scri.transform_objective(data, t, v⃗vec, QuatVec(𝐮...), α, dc, plan) ==
-        Scri.transform_objective(data, t, v⃗, exp(QuatVec(𝐮...) / 2), α, dc, plan)
-    @test Scri.rotor_argument((0.3, -0.2, 0.5)) == exp(QuatVec(𝐮...) / 2)
+    @test Scri.transform_objective(data, t, v⃗vec, QuatVec(r⃗...), α, dc, plan) ==
+        Scri.transform_objective(data, t, v⃗, exp(QuatVec(r⃗...) / 2), α, dc, plan)
+    @test Scri.rotor_argument((0.3, -0.2, 0.5)) == exp(QuatVec(r⃗...) / 2)
     @test Scri.rotor_argument(Rvec) == Rotor(Rvec)
 
     # The BMS convenience method matches the unpacked call, exactly as for `transform!`.

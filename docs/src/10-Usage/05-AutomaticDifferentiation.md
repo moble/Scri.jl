@@ -145,12 +145,13 @@ a single scalar at the end.
 [`transform_objective`](@ref) computes that scalar directly:
 
 ```math
-J(θ) = \frac{1}{𝒩} ∑_i w_i ∑_j v_j ∑_k c_k
-       \left| d'_{ijk}(θ) - d_{\mathrm{t};ijk} \right|^2,
+Φ(θ) = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
+       \left| {}^{k}d'^{i}_{j}(θ) - {}^{k}c^{i}_{j} \right|^2,
 ```
 
-with `i` running over the pixels of a grid on the sphere, `j` over the
-fixed output times `t′`, and `k` over the data components.  It fuses
+with `j` running over the pixels of a grid on the sphere, `i` over the
+fixed output times `t′`, and `k` over the data components, and with
+``c`` the target.  It fuses
 the ``L²`` accumulation into the per-pixel transformation loop, so the
 transformed waveform is never materialized, `data` is never modified
 (it is reused across optimizer iterations), and dual numbers are
@@ -158,14 +159,14 @@ confined to per-pixel scalars and small task-local buffers.  The
 analysis stage (converting back to waveform modes) is skipped
 entirely.
 
-Everything in ``J`` that does not depend on ``θ`` is stored in an
+Everything in ``Φ`` that does not depend on ``θ`` is stored in an
 [`ObjectivePlan`](@ref), which is built once: the grid and its weights
-``w_i``, the output times and their weights ``v_j``, the component
-weights ``c_k``, the target's values ``d_{\mathrm{t};ijk}`` on the
-grid, and the normalization ``𝒩``.  The grid is an exact quadrature
+``w_j``, the output times and their weights ``v_i``, the component
+weights ``u_k``, the target's values ``{}^{k}c^{i}_{j}`` on the grid,
+and the normalization ``𝒩``.  The grid is an exact quadrature
 on the sphere for band-limited fields, and the time weights are the
-trapezoid rule on `t′`, so ``J`` approximates the integral of ``|d' -
-d_\mathrm{t}|^2`` over the sphere and the time window — a true ``L²``
+trapezoid rule on `t′`, so ``Φ`` approximates the integral of
+``|d' - c|^2`` over the sphere and the time window — a true ``L²``
 norm.
 
 The recipe has three steps — the first two run *once*, outside the
@@ -204,15 +205,15 @@ as above.
 A few things to know:
 
 - **Rotation parameters.**  Three components are read as a rotation
-  vector ``𝐮``, the rotation by the angle ``|𝐮|`` about the axis
-  ``𝐮``, which is the rotor ``\exp(𝐮/2)``; so the identity is zero,
+  vector ``\vec{r}``, the rotation by the angle ``|\vec{r}|`` about the axis
+  ``\vec{r}``, which is the rotor ``\exp(\vec{r}/2)``; so the identity is zero,
   and every parameter is used.  Four components are read as a rotor
   `(w, x, y, z)` and normalized, which also works but leaves one
   redundant parameter; see [`rotor_argument`](@ref Scri.rotor_argument).
 
 - **Weights and noise.**  The plan's keywords set the weights:
-  `time_weights` for the ``v_j``, `component_weights` for the
-  ``c_k``, and `weights` for per-pixel factors that multiply the
+  `time_weights` for the ``v_i``, `component_weights` for the
+  ``u_k``, and `weights` for per-pixel factors that multiply the
   quadrature weights, for example to down-weight part of the sky.
   `normalize=true` divides by the target's norm.  `ℓ_fit=L` compares
   only the modes with ``ℓ ≤ L`` of the difference, projected exactly by
@@ -254,12 +255,12 @@ objective alone, whatever the number of parameters: 2.5 evaluations at
 the transformation as one parameter vector,
 
 ```math
-θ = (𝐮,\; 𝐛,\; a_1, …, a_{(ℓ_α+1)^2}),
+θ = (\vec{r},\; \vec{η},\; a_1, …, a_{(ℓ_α+1)^2}),
 ```
 
-a rotation vector ``𝐮`` (the frame rotation is ``\exp(𝐮/2)``), a
-rapidity vector ``𝐛`` (the boost velocity is ``\tanh|𝐛|`` along
-``𝐛``), and the real degrees of freedom of the supertranslation's
+a rotation vector ``\vec{r}`` (the frame rotation is ``\exp(\vec{r}/2)``), a
+rapidity vector ``\vec{η}`` (the boost velocity is ``\tanh|\vec{η}|`` along
+``\vec{η}``), and the real degrees of freedom of the supertranslation's
 modes up to ``ℓ_α``.  Every ``θ`` is a valid transformation, so an
 optimizer needs no bounds, and the identity is ``θ = 0``.
 

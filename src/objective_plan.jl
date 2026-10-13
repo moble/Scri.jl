@@ -6,11 +6,13 @@ Everything about the objective of [`transform_objective`](@ref) that does not de
 BMS parameters, computed once and reused at every evaluation:
 
 ```math
-J = \frac{1}{𝒩} ∑_i w_i ∑_j v_j ∑_k c_k \left| d'_{ijk} - d_{\mathrm{t};ijk} \right|^2,
+Φ = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
+    \left| {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right|^2,
 ```
 
-where ``d'_{ijk}`` is the transformed waveform at pixel `i`, output time `t′[j]`, and
-component `k`, and ``d_{\mathrm{t};ijk}`` is the target there.
+where ``{}^{k}d'^{i}_{j}`` is the transformed waveform at pixel `j`, output time `t′[i]`,
+and component `k`, and ``{}^{k}c^{i}_{j}`` is the target there.  The notation is that of
+the page [The gradient of the objective](@ref objective_gradient).
 
 The arguments `target`, `t`, and `dc` are the target waveform's mode weights, its time
 samples, and its [`DataComponents`](@ref), as for [`transform!`](@ref); `t′` is the fixed
@@ -20,27 +22,29 @@ every transformation an optimizer may try.  It may have any length ≥ 1.
 
 The keywords are:
 
-- `grid`: a pair `(R′ₚ, w)` of rotors and sphere weights ``w_i``.  The default is
+- `grid`: a pair `(R′ₚ, w)` of rotors and sphere weights ``w_j``.  The default is
   [`sphere_quadrature`](@ref Scri.sphere_quadrature)`(ℓₘₐₓ)`, at the target's band limit,
   which makes the sum over pixels an exact integral over the sphere for band-limited
-  fields, so that ``J`` is a true ``L²`` norm.
-- `weights`: per-pixel factors multiplying ``w_i``, for example to down-weight a region of
+  fields, so that ``Φ`` is a true ``L²`` norm.
+- `weights`: per-pixel factors multiplying ``w_j``, for example to down-weight a region of
   the sphere.  The default is one.
-- `time_weights`: the ``v_j``.  The default is the trapezoid rule on `t′`, so that the sum
+- `time_weights`: the ``v_i``.  The default is the trapezoid rule on `t′`, so that the sum
   over time is an integral even on a non-uniform grid; a single time has weight 1.
-- `component_weights`: the ``c_k``, one per component of `dc`.  The default is one.
-- `normalize`: if `true`, ``𝒩`` is the same sum with ``d'`` set to zero, so that ``J`` is
+- `component_weights`: the ``u_k``, one per component of `dc`.  The default is one.
+- `normalize`: if `true`, ``𝒩`` is the same sum with ``d'`` set to zero, so that ``Φ`` is
   relative to the target's norm; otherwise ``𝒩 = 1``.
 - `ℓ_fit`: if given, compare only the modes with ``ℓ ≤ ℓ_\mathrm{fit}`` of the difference,
   which leaves out high-``ℓ`` noise in the data or the target:
 
   ```math
-  J = \frac{1}{𝒩} ∑_j v_j ∑_k c_k ∑_{ℓ=|s_k|}^{ℓ_\mathrm{fit}} ∑_m
-      \left| (d' - d_\mathrm{t})_{ℓ,m;jk} \right|^2,
+  Φ = \frac{1}{𝒩} ∑_i v_i ∑_k u_k ∑_{(ℓ,m):\, |s_k| ≤ ℓ ≤ ℓ_\mathrm{fit}}
+      \left| {}^{k}Π^{i}{}_{(ℓ,m)} - {}^{k}Π_{c}{}^{i}{}_{(ℓ,m)} \right|^2,
   \qquad
-  (d' - d_\mathrm{t})_{ℓ,m;jk}
-  = ∑_i w_i\, {}_{s_k}Y_{ℓ,m}(R'_i)^*\, (d'_{ijk} - d_{\mathrm{t};ijk}).
+  {}^{k}Π^{i}{}_{(ℓ,m)}
+  = ∑_j w_j \left({}_{s_k}Y^{(ℓ,m)}(R'_j)\right)^* {}^{k}d'^{i}_{j},
   ```
+
+  where ``Π_{c}`` is the same projection of the target.
 
   The projection is the quadrature's, so with the default grid it is exact for
   band-limited fields; `ℓ_fit` must then be at most the target's band limit.  It must be at

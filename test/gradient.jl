@@ -70,8 +70,8 @@ end
     rng = Random.Xoshiro(6363)
     θ = [0.1, -0.2, 0.3, 0.2, 0.1, -0.15, Random.randn(rng, 9)...]
     v⃗, R, α = Scri.bms_from_parameters(θ)
-    𝐛 = θ[4:6]
-    @test collect(vec(v⃗)) ≈ tanh(sqrt(sum(abs2, 𝐛))) .* 𝐛 ./ sqrt(sum(abs2, 𝐛)) rtol = 1e-15
+    η⃗ = θ[4:6]
+    @test collect(vec(v⃗)) ≈ tanh(sqrt(sum(abs2, η⃗))) .* η⃗ ./ sqrt(sum(abs2, η⃗)) rtol = 1e-15
     @test R ≈ exp(QuatVec(θ[1:3]...) / 2)
     @test α ≈ Scri.impose_reality(α, 2, 1) rtol = 1e-15  # already real on the sphere
     @test Scri.parameters_from_bms(v⃗, R, α) ≈ θ rtol = 1e-14

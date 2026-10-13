@@ -62,8 +62,8 @@ conformal weight ``κ^{-3}``.
 
 In spinor form ``ψ_n`` is the Weyl spinor ``ψ_{ABCD}`` contracted with
 four basis spinors (the spinor "square roots" of ``ℓ`` and ``n``).
-Because *every* tetrad leg varies by the uniform Weyl weight ``1/κ``
-(the result ``ĝ' = κ²ĝ`` from [the tetrad page](@ref "BMS Action on
+Because *every* tetrad leg varies by the same factor ``1/κ``, the
+inverse of the conformal factor (the result ``ĝ' = κ²ĝ`` from [the tetrad page](@ref "BMS Action on
 the Tetrad")), each basis spinor varies by ``κ^{-1/2}``, and the four
 of them contribute ``κ^{-2}``.  The asymptotic Weyl spinor itself is
 the rescaled, finite-at-``ℐ`` field ``ψ = Ψ/ω`` built from the
@@ -180,7 +180,7 @@ here is precisely the transformation of the SpECTRE/SXS shear.
 
 The spin–boost prefactors of the three legs, together with ``∇'``,
 combine into the single boost weight the shear has as a connection
-coefficient at ``ℐ`` — the uniform Weyl factor ``κ^{-1}`` of [the
+coefficient at ``ℐ`` — the common factor ``κ^{-1}`` of [the
 tetrad page](@ref "BMS Action on the Tetrad"), not the naïve three-leg
 ``κ^{-3}``, the difference being exactly the conformal rescaling
 absorbed by ``∇'`` — and the spin-weight-``+2`` phase ``e^{2iγ}``

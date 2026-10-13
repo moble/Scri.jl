@@ -75,7 +75,8 @@ the Lorentz boost, and the two contributions combine to the same
 | ``ñ`` | ``κ⁰``     | ``κ⁻¹`` | ``1/κ`` |
 
 The differing regularization powers ``κ⁻⁽¹⁺ᵇ⁾`` are exactly cancelled
-by the boost weights ``κᵇ``, leaving the uniform Weyl factor ``1/κ``.
+by the boost weights ``κᵇ``, leaving the same factor ``1/κ``, the
+inverse of the conformal factor, on every leg.
 
 Another important set of relations is the action of the vectors on the
 coordinates, such as
@@ -234,7 +235,7 @@ power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
 the boost acting alone.  The dyad is different: the boost leaves the
 spacetime multivector ``𝐦`` fixed, up to the reinterpretation of
 ``𝐈₃``, so its ``1/κ`` comes instead from regularizing with ``ω' =
-κω``.  Both routes are just the one uniform Weyl factor above, so
+κω``.  Both routes give the common factor ``1/κ`` found above, so
 ``|d| = 1/κ``.  That conformal origin is why the factor can't be
 derived from the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the
 primed frame and would give the incorrect value ``|d| = 1`` in the
@@ -302,7 +303,7 @@ This is exactly the ``\boldsymbol{ℓ} ↔ 𝐧`` image of the null rotation
 screen vector ``\boldsymbol{ξ} = \tfrac{\overline{ðu'}}{2κ}m̃ +
 \tfrac{ðu'}{2κ}m̄̃`` (so that ``\tfrac12 ξ² = |ðu'|²/4κ²``), the transverse
 leg picks up a linear screen term and a quadratic ``ñ`` term — and, like
-every other leg, the uniform Weyl factor ``1/κ`` out front.
+every other leg, the common factor ``1/κ`` out front.
 
 ### [Convention dependence](@id convention_dependence_tetrad_future)
 
@@ -333,7 +334,7 @@ with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
 ``c_ð`` rescales how one *writes* ``b`` in terms of ``ð`` — ``b =
 ð_{\mathrm{GHP}}u'/κ`` in GHP, say — but not the geometric value of
 ``b`` itself).  The signature ``c_s`` enters only the inner-product
-normalizations, which already gave the uniform Weyl factor ``1/κ``
+normalizations, which already gave the common factor ``1/κ``
 independent of ``c_s``, so it does not touch ``b``.  This single
 factor ``c_l c_m`` is the *only* convention dependence that survives
 into the [component-mixing law](@ref "BMS Action on Fields"); the

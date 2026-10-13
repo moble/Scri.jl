@@ -80,14 +80,14 @@ end
 
 The rotor meant by a rotation argument given as something other than a `Rotor`, for the
 generic-argument methods of [`transform!`](@ref) and [`transform_objective`](@ref).  Three
-components, as a `QuatVec`, a vector, or a tuple, are a rotation vector ``𝐮``: the
-right-handed rotation by the angle ``|𝐮|`` about the axis ``𝐮``, which is the rotor
-``\exp(𝐮/2)``.  So the zero vector is the identity, and slices of an optimizer's parameter
-vector can start there.  Anything else goes to the `Rotor` constructor, which reads four
-components as ``(w, x, y, z)`` and normalizes them.
+components, as a `QuatVec`, a vector, or a tuple, are a rotation vector ``\vec{r}``: the
+right-handed rotation by the angle ``|\vec{r}|`` about the axis ``\vec{r}``, which is the
+rotor ``\exp(\vec{r}/2)``.  So the zero vector is the identity, and slices of an
+optimizer's parameter vector can start there.  Anything else goes to the `Rotor`
+constructor, which reads four components as ``(w, x, y, z)`` and normalizes them.
 """
 rotor_argument(R::Rotor) = R
-rotor_argument(𝐮::QuatVec) = exp(𝐮 / 2)
+rotor_argument(r⃗::QuatVec) = exp(r⃗ / 2)
 function rotor_argument(R::Union{AbstractVector,Tuple})
     return length(R) == 3 ? rotor_argument(QuatVec(R...)) : Rotor(R)
 end
@@ -828,13 +828,14 @@ difference between the BMS-transformed `data` and the plan's target, as a single
 scalar:
 
 ```math
-J = \frac{1}{𝒩} ∑_i w_i ∑_j v_j ∑_k c_k \left| d'_{ijk} - d_{\mathrm{t};ijk} \right|^2,
+Φ = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
+    \left| {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right|^2,
 ```
 
-where ``d'_{ijk}`` is the transformed waveform at the plan's pixel `i`, output time
-`plan.t′[j]`, and component `k`, and the target ``d_\mathrm{t}``, the weights ``w``, ``v``,
-and ``c``, and the normalization ``𝒩`` are the plan's.  With the plan's default grid and
-time weights, ``J`` is a quadrature of the integral of ``|d' - d_\mathrm{t}|²`` over the
+where ``{}^{k}d'^{i}_{j}`` is the transformed waveform at the plan's pixel `j`, output time
+`plan.t′[i]`, and component `k`, and the target ``c``, the weights ``w``, ``v``, and ``u``,
+and the normalization ``𝒩`` are the plan's.  With the plan's default grid and time
+weights, ``Φ`` is a quadrature of the integral of ``|d' - c|²`` over the
 sphere and the time window, exact over the sphere for band-limited fields.  This is the
 natural objective for optimizing the BMS parameters `(v⃗, R, αᵢₙ)` to align `data` with a
 target waveform, and it is designed for use with
@@ -989,7 +990,7 @@ function transform_objective(
     end
     chunks = OhMyThreads.index_chunks(1:Nᵖ; n=nthreads())
 
-    J = if plan.ℓ_fit < 0
+    Φ = if plan.ℓ_fit < 0
         OhMyThreads.tmapreduce(+, chunks; chunking=false) do chunk
             calc, Y, dᵢ, d̈ᵢ, d′ᵢ = buffers()
             acc = zero(TR)
@@ -1035,7 +1036,7 @@ function transform_objective(
             ) for k ∈ 1:Nᵈ
         )
     end
-    return plan.normalize ? J / plan.norm² : J
+    return plan.normalize ? Φ / plan.norm² : Φ
 end
 
 """
