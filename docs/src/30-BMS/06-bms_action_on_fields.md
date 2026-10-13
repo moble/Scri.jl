@@ -297,7 +297,7 @@ so ``ψ_0' = κ^{-3}ψ_0`` and ``ψ_4' = κ^{-3}(ψ_4 + 4\bar b\,ψ_3 +
 6\bar b^2 ψ_2 + 4\bar b^3 ψ_1 + \bar b^4 ψ_0)``.  The Faraday tower
 reverses the same way (``φ_0`` unmixed, parameter ``\bar b``).  These
 reproduce the ``I = -1`` branch of `Scri.mix_components!` — which
-applies ``conj(ðt′╱2κ)`` — term for term.
+applies ``conj(ðt'╱2κ)`` — term for term.
 
 The radiative shear on ``ℐ⁻`` is ``λ = c_λ\, m̄̃^a m̄̃^b ∇_a ñ_b`` (spin
 weight ``-2``; see [Tensor Components](@ref)).  Repeating the ``ℐ⁺``

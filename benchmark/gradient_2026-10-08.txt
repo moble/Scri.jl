@@ -1,0 +1,13 @@
+# objective_and_gradient! after Stage 3 (2026-10-08), with and without ℓ_fit, Apple M-series, 8 threads
+# Command: julia --project=test -t 8 benchmark/gradient.jl
+# P is the number of parameters; the ratios are times relative to the objective alone.
+objective_and_gradient! benchmarks, threads = 8
+ ℓₘₐₓ │ ℓ_fit │    Nᵗ │   P │      J [s] │     ∇J [s] │  ratio │     FD [s] │  ratio
+    8 │     — │   400 │   7 │     0.0023 │     0.0056 │   2.37 │     0.0225 │   9.57
+    8 │     — │   400 │  22 │     0.0025 │     0.0058 │   2.36 │     0.0535 │  21.65
+    8 │     4 │   400 │   7 │     0.0030 │     0.0090 │   3.00 │     0.0307 │  10.23
+    8 │     4 │   400 │  22 │     0.0030 │     0.0093 │   3.07 │     0.0899 │  29.75
+   16 │     — │   400 │   7 │     0.0382 │     0.0599 │   1.57 │     0.2503 │   6.56
+   16 │     — │   400 │  22 │     0.0380 │     0.0620 │   1.63 │     0.5466 │  14.38
+   16 │     8 │   400 │   7 │     0.0461 │     0.1151 │   2.50 │     0.3288 │   7.14
+   16 │     8 │   400 │  22 │     0.0436 │     0.1182 │   2.71 │     0.7856 │  18.00

@@ -21,6 +21,7 @@ import SphericalFunctions:
     ð,
     golden_ratio_spiral_rotors,
     D
+import ForwardDiff
 import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
 import Logging
 import Hwloc
@@ -64,9 +65,13 @@ include("transform_plan.jl")
 include("aberration.jl")
 include("bms.jl")
 include("transform.jl")
+include("gradient.jl")
 
 export transform!,
     transform_objective,
+    objective_and_gradient!,
+    bms_from_parameters,
+    parameters_from_bms,
     ObjectivePlan,
     TransformPlan,
     compute_t′,

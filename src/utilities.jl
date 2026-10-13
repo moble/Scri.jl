@@ -9,7 +9,7 @@ is ordered in the same way, and has length `(ℓₘₐₓ + 1)^2`.
 
 The final argument `c_α` multiplies the symmetrized modes, folding the [supertranslation
 sign convention](@ref conventions-overview) into the output so that downstream code can
-uniformly interpret the result through ``t′ = κ(t - α)``.  Pass `1` when no sign
+uniformly interpret the result through ``t' = κ(t - α)``.  Pass `1` when no sign
 adjustment is wanted.
 """
 function impose_reality(αᵢₙ, ℓₘₐₓ, c_α)
@@ -349,12 +349,12 @@ end
     rotate_modes(α, Q, ℓₘₐₓ)
 
 Rigidly rotate the spin-weight-0 mode weights `α` by the rotor `Q`: if the input modes
-represent the function ``f``, the output modes represent ``f′(k̂) = f(Q⁻¹ k̂)`` — that is,
+represent the function ``f``, the output modes represent ``f'(k̂) = f(Q⁻¹ k̂)`` — that is,
 the function actively rotated by `Q`.  In terms of Wigner's ``𝔇`` matrices, in the
 convention of SphericalFunctions.jl (version 3 and later),
 
 ```math
-f′_{ℓ,m′} = \sum_m 𝔇^ℓ_{m′,m}(Q)\, f_{ℓ,m}.
+f'_{ℓ,m'} = \sum_m 𝔇^ℓ_{m',m}(Q)\, f_{ℓ,m}.
 ```
 
 A rigid rotation preserves the band limit, so this is exact (up to roundoff) at the input
@@ -382,9 +382,10 @@ end
 
 The floating-point type underlying `T`, used to build *parameter-independent* objects —
 the output pixel grid and its analysis factorizations in [`transform!`](@ref).  For
-ordinary real types this is `T` itself.  The ForwardDiff package extension peels
+ordinary real types this is `T` itself.  For ForwardDiff's dual numbers it peels the
 dual-number types down to their value type, so that automatic differentiation does not
 propagate (identically zero) perturbations into `qr`/`lu` factorizations of constant
 matrices — which would poison every derivative with NaNs.
 """
 primal_float(::Type{T}) where {T<:Real} = T
+primal_float(::Type{ForwardDiff.Dual{T,V,N}}) where {T,V,N} = primal_float(V)

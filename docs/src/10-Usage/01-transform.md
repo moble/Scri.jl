@@ -140,7 +140,7 @@ of ``t'`` will be earlier than the last slice of ``t``.  This is a
 necessary feature of any transformation with a nonzero boost or
 supertranslation.  `transform!` therefore constructs a new time grid
 `t′` by *scaling* the input `t` to cover the largest possible span.
-In particular, `t'` has the same number of samples as `t`.  This `t′`
+In particular, `t′` has the same number of samples as `t`.  This `t′`
 is returned along with the data:
 
 ```julia

@@ -7,6 +7,7 @@ authors = ["Michael Boyle <michael.oliver.boyle@gmail.com>"]
 projects = ["test", "docs", "examples"]
 
 [deps]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Hwloc = "0e44f5e4-bd66-52a0-8798-143a42290a1d"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -19,11 +20,9 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [weakdeps]
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
-ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [extensions]
-ScriForwardDiffExt = "ForwardDiff"
 ScriPlotsExt = ["Plots", "Colors"]
 
 [compat]

@@ -1019,12 +1019,11 @@ end
     import ForwardDiff
     import Random
 
-    # `transform!` is differentiable end-to-end with ForwardDiff, provided (a) the output
-    # grid is held fixed via the `t′` keyword (otherwise the default grid moves with the
-    # parameters, and the derivative mixes in grid motion), and (b) ForwardDiff is loaded,
-    # which activates the ScriForwardDiffExt extension: it peels dual types off the
-    # parameter-independent pixel grid and analysis factorizations (`primal_float`), whose
-    # `qr` would otherwise turn identically-zero perturbations into NaN partials.
+    # `transform!` is differentiable end-to-end with ForwardDiff, provided the output grid
+    # is held fixed via the `t′` keyword (otherwise the default grid moves with the
+    # parameters, and the derivative mixes in grid motion).  `primal_float` peels dual types
+    # off the parameter-independent pixel grid and analysis factorizations, whose `qr` would
+    # otherwise turn identically-zero perturbations into NaN partials.
     rng = Random.Xoshiro(7070)
     ℓ = 3
     N = (ℓ + 1)^2

@@ -216,8 +216,8 @@ pixel; and `dc`, the [`DataComponents`](@ref) descriptor.
 
 The convention factors come from the `Conventions` contained in `dc`, and appear in the laws
 exactly as in the ["Convention dependence" documentation](@ref
-convention_dependence_fields): the towers run on ``c_l c_m\\, ðu′/2κ`` (on ``ℐ⁺``; the
-parameter is ``ð̄v′/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the shifts
+convention_dependence_fields): the towers run on ``c_l c_m\\, ðu'/2κ`` (on ``ℐ⁺``; the
+parameter is ``ð̄v'/2κ / (c_l c_m)`` on ``ℐ⁻``, whose tower mixes downward), and the shifts
 use ``F_σ`` from [`shear_factor`](@ref), ``F_λ`` from [`lambda_factor`](@ref), and ``F_h``
 from [`strain_factor`](@ref).  At the default conventions every factor is a `One` singleton
 and compiles away.

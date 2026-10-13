@@ -350,9 +350,8 @@ depend on no BMS parameter, are not rebuilt on every call.
 Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, if given).
 
 The transformation is differentiable end-to-end with ForwardDiff with respect to the BMS
-parameters, provided the output grid is held fixed with `t′` and ForwardDiff is loaded
-(activating a package extension); see the [Automatic Differentiation](@ref)
-documentation page.  Note, however, that differentiating through `transform!` requires a
+parameters, provided the output grid is held fixed with `t′`; see the [Automatic
+Differentiation](@ref) documentation page.  Note, however, that differentiating through `transform!` requires a
 dual-typed copy of the entire `data` array; when the goal is to optimize the BMS
 parameters against a fixed target waveform, the memory-lean
 [`transform_objective`](@ref) computes the L² objective directly, leaving `data` primal

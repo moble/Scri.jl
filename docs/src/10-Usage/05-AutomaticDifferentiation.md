@@ -12,11 +12,8 @@ drop a transformation directly into an optimization loop — for
 example, minimizing some functional of the transformed data over the
 BMS group — and let the autodiff machinery supply exact gradients.
 
-There are two things to know before differentiating, described in
-detail below:
-
-  1. you *should* **fix the output time grid**, and
-  2. you *must* **load `ForwardDiff`**.
+Before differentiating, you *should* **fix the output time grid**, as
+described below.
 
 ## Fix the output time grid
 
@@ -74,28 +71,27 @@ scaled-and-shifted version of it.
     restriction: the plan's `t′` may have any length, so a coarse (and
     correspondingly cheap) output grid can be chosen instead.
 
-## Load `ForwardDiff`
+## Using `ForwardDiff`
 
-You *must* load `ForwardDiff` in your session.  Loading it activates a
-package extension that keeps dual numbers out of the
-parameter-independent pixel grid and its matrix factorizations.  These
-quantities depend only on the band limit, not on the BMS parameters,
-so their derivatives are identically zero; computing them with dual
-numbers is not only wasteful but numerically fragile.  Without the
-extension, derivatives with respect to the rotation come out as `NaN`.
+`ForwardDiff` is a dependency of `Scri`, which keeps dual numbers out
+of the parameter-independent pixel grid and its matrix factorizations.
+These quantities depend only on the band limit, not on the BMS
+parameters, so their derivatives are identically zero; computing them
+with dual numbers would be not only wasteful but numerically fragile,
+and derivatives with respect to the rotation would come out as `NaN`.
 
-This means that you must add `ForwardDiff` to the same project you're
-using for `Scri`, and you must run `using ForwardDiff` in the same
-session as you want to use it.  That is, do something like this once
-in whichever project you will want to use autodiff with `Scri`:
+[`objective_and_gradient!`](@ref), described below, needs nothing more
+than `using Scri`.  To call `ForwardDiff` yourself, as in the examples
+that differentiate [`transform!`](@ref) and
+[`transform_objective`](@ref), add it to your own project, as for any
+package you use directly:
 
 ```julia
 using Pkg
 Pkg.add("ForwardDiff")
 ```
 
-And do something like this in every session where you want to actually
-do that differentiation:
+and load it in the session:
 
 ```julia
 using ForwardDiff
@@ -246,6 +242,56 @@ A few things to know:
   the conditioning of the interpolation is unchanged), and the results
   accumulate per-pixel → per-task → across tasks.  The result is
   deterministic for a fixed number of threads.
+
+## Gradients at about twice the cost of the objective
+
+ForwardDiff's gradient costs about one evaluation of the objective per
+parameter: with a supertranslation up to ``ℓ = 4``, that is 31
+evaluations.  [`objective_and_gradient!`](@ref) computes the objective
+and its exact gradient together, at about twice the cost of the
+objective alone, whatever the number of parameters: 2.5 evaluations at
+``ℓ_\mathrm{max} = 8``, and 1.7 at ``ℓ_\mathrm{max} = 16``.  It takes
+the transformation as one parameter vector,
+
+```math
+θ = (𝐮,\; 𝐛,\; a_1, …, a_{(ℓ_α+1)^2}),
+```
+
+a rotation vector ``𝐮`` (the frame rotation is ``\exp(𝐮/2)``), a
+rapidity vector ``𝐛`` (the boost velocity is ``\tanh|𝐛|`` along
+``𝐛``), and the real degrees of freedom of the supertranslation's
+modes up to ``ℓ_α``.  Every ``θ`` is a valid transformation, so an
+optimizer needs no bounds, and the identity is ``θ = 0``.
+
+```julia
+using Scri
+
+t′ = compute_t′(t, β_max, δt_max)
+plan = ObjectivePlan(target_modes, t_target, dc, t′)
+
+# The objective and its gradient, in the form optimizers usually take.
+fg!(∇, θ) = objective_and_gradient!(∇, θ, data, t, dc, plan)
+
+θ₀ = zeros(6 + 9)  # the identity, with a supertranslation up to ℓ = 2
+# ... minimize with any method that uses the value and the gradient ...
+v⃗, R, α = bms_from_parameters(θ_best)
+```
+
+[`bms_from_parameters`](@ref) turns the result back into the boost
+velocity, rotation, and supertranslation that [`transform!`](@ref)
+takes, and [`parameters_from_bms`](@ref) gives the ``θ`` of a known
+transformation, to start from it.  Plans with `ℓ_fit` work as well, at
+the cost of one more pass over the pixels to project the transformed
+waveform before the gradient is computed.
+
+The gradient is computed by running the expensive part of each pixel's
+transformation backwards: the residual is propagated through the
+mixing of the components, the spline interpolation in time, and the
+synthesis from the modes, which costs one more pass as expensive as the
+synthesis.  The geometry of each pixel, which depends on the
+parameters but costs only a few operations per pixel, is differentiated
+with dual numbers.  The derivation is on the page [The gradient of the
+objective](@ref objective_gradient).
 
 ## Accuracy
 

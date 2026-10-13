@@ -213,7 +213,8 @@ the dyad's own ``i``.  A quantity of spin weight ``s`` thus acquires a
 phase ``e^{s𝐱𝐲γ}``.
 
 The ``A`` factor is the boost ``R_{φₐ} = \exp\left[\tfrac{φₐ}{2}
-𝐭𝐳\right]`` along the radial null direction.  It rescales the generators,
+𝐭𝐳\right]`` along the radial null direction.  It rescales the
+generators,
 
 ```math
 R_{φₐ}\, \boldsymbol{ℓ}\, R̃_{φₐ} = e^{φₐ}\, \boldsymbol{ℓ},
@@ -221,22 +222,23 @@ R_{φₐ}\, \boldsymbol{ℓ}\, R̃_{φₐ} = e^{φₐ}\, \boldsymbol{ℓ},
 R_{φₐ}\, 𝐧\, R̃_{φₐ} = e^{-φₐ}\, 𝐧.
 ```
 
-This is the very rescaling behind ``ñ' = ñ/κ``, which identifies the
-conformal factor as
+This is the same rescaling leading to ``ñ' = ñ/κ``, which identifies
+the conformal factor as
 
 ```math
 κ = e^{φₐ}.
 ```
 
-For the generator this boost is the whole story — ``ñ`` involves no
+For the generator, this boost is all that matters — ``ñ`` involves no
 power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
 the boost acting alone.  The dyad is different: the boost leaves the
 spacetime multivector ``𝐦`` fixed, up to the reinterpretation of
 ``𝐈₃``, so its ``1/κ`` comes instead from regularizing with ``ω' =
 κω``.  Both routes are just the one uniform Weyl factor above, so
-``|d| = 1/κ``.  That conformal origin is why the factor is invisible
-to the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the primed
-frame and would wrongly give ``|d| = 1`` in the unprimed metric.
+``|d| = 1/κ``.  That conformal origin is why the factor can't be
+derived from the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the
+primed frame and would give the incorrect value ``|d| = 1`` in the
+unprimed metric.
 
 Collecting the boost and the spin,
 
@@ -244,12 +246,18 @@ Collecting the boost and the spin,
 d = \frac{e^{𝐱𝐲γ}}{κ} = e^{-φₐ + 𝐱𝐲γ},
 ```
 
-whose exponent ``-φₐ + 𝐱𝐲γ`` is precisely the spin-boost weight of the dyad.
-Three checks: a pure supertranslation has ``L = 1``, so ``φₐ = γ = 0`` and
-``d = 1``, leaving only the null-rotation shift; a spatial rotation has ``φₐ =
-0``, so ``κ = 1`` and ``d = e^{𝐱𝐲γ}`` is a pure phase — the dyad simply
-spins; and a boost along the line of sight has ``γ = 0``, giving the real ``d
-= 1/κ`` of aberration.  The dyad therefore transforms as
+whose exponent ``-φₐ + 𝐱𝐲γ`` is precisely the spin-boost weight of
+the dyad.
+
+We can check that this is consistent with the three special cases of
+BMS transformations.  The null-rotation parameter ``b = f/d`` is
+invariant under the spin-boost, so it is enough to check the three
+special cases with ``d = 1``.  First, a pure supertranslation has ``L
+= 1``, so ``φₐ = γ = 0`` and ``d = 1``, leaving only the null-rotation
+shift.  Second, a spatial rotation has ``φₐ = 0``, so ``κ = 1`` and
+``d = e^{𝐱𝐲γ}`` is a pure phase — the dyad simply spins.  And third,
+a boost along the line of sight has ``γ = 0``, giving the real ``d =
+1/κ`` of aberration.  The dyad therefore transforms as
 
 ```math
 m̃' = \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðu'}{2 κ}\, ñ\right).

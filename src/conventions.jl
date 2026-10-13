@@ -135,9 +135,9 @@ The dyad scaling ``c_l c_m`` — the only convention combination that enters the
 components, the mixing parameter converts between conventions by the ratio of neighboring
 conversion factors — a purely multiplicative rule; no convention factor is ever conjugated.
 On ``ℐ⁺`` the tower mixes *upward* (``ψₙ`` picks up ``ψₙ₊ₖ``), and ``Fₙ/Fₙ₊ₖ = (c_l c_m)^k``
-gives ``b^{[c]} = (c_l c_m) b^{[SXS]}``, where ``b^{[SXS]} = ðu′/2κ``.  On ``ℐ⁻`` the tower
+gives ``b^{[c]} = (c_l c_m) b^{[SXS]}``, where ``b^{[SXS]} = ðu'/2κ``.  On ``ℐ⁻`` the tower
 mixes *downward* (``ψₙ`` picks up ``ψₙ₋ₖ``), and ``Fₙ/Fₙ₋ₖ = (c_l c_m)^{-k}`` gives
-``b̄^{[c]} = b̄^{[SXS]} / (c_l c_m)``, where ``b̄^{[SXS]} = ð̄v′/2κ``.  The bar is part of
+``b̄^{[c]} = b̄^{[SXS]} / (c_l c_m)``, where ``b̄^{[SXS]} = ð̄v'/2κ``.  The bar is part of
 the *name* of the ``ℐ⁻`` parameter: its SXS value is the conjugate of the SXS ``ℐ⁺`` value,
 but ``b̄^{[c]}`` is **not** the conjugate of ``b^{[c]}`` — conjugating ``c_l c_m`` would
 leave ``c_l`` upstairs.  See the "Convention dependence" section of the "BMS action on
