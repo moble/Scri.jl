@@ -72,6 +72,10 @@ different grid or other weights.  So ``Φ`` is a weighted and squared
     \left| {}^{k}d' - {}^{k}c \right|^2.
 ```
 
+Note that by approximating as we have above, we integrate over the
+sphere directly in terms of the pixel values.  This allows us to skip
+the expensive step of synthesizing the modes of ``|d' - c|^2``.
+
 ### What has to be computed
 
 ``Φ`` depends on ``θ`` only through the transformed values.  Splitting
@@ -79,7 +83,7 @@ each of them into its real and imaginary parts, the chain rule gives
 
 ```math
 \frac{∂Φ}{∂θ^p}
-= \sum_{j,i,k} \left[
+= \sum_{i,j,k} \left[
     \frac{∂Φ}{∂\left(\operatorname{Re} {}^{k}d'^{i}_{j}\right)}
     \frac{∂\left(\operatorname{Re} {}^{k}d'^{i}_{j}\right)}{∂θ^p}
   + \frac{∂Φ}{∂\left(\operatorname{Im} {}^{k}d'^{i}_{j}\right)}
@@ -99,13 +103,28 @@ The first factor of each term is immediate:
   \operatorname{Im}\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right).
 ```
 
-All of the work is in the second factor: how the transformed waveform
-at every pixel and time responds to each parameter.  Computing that
-response one parameter at a time, as forward-mode automatic
-differentiation does, costs about one evaluation of the objective per
-parameter.  The rest of this page shows how to obtain the whole sum for
-about two evaluations, by carrying the first factor backward through
-the computation of ``d'``.
+So we can rewrite the gradient as
+
+```math
+\frac{∂Φ}{∂θ^p}
+= \frac{2}{𝒩}\, \sum_{i,j,k} \left[
+  w_j\, v_i\, u_k\,
+  \operatorname{Re}\left\{
+  \overline{\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right)}
+  \ \frac{∂\,{{}^{k}d'^{i}_{j}}}{∂θ^p}
+  \right\} \right].
+```
+
+The factor ``\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right)`` is
+computed directly when ``Φ`` is evaluated; this page is concerned more
+with the next factor: how the transformed data at every pixel and time
+responds to each parameter.  Computing that response one parameter at
+a time, as forward-mode automatic differentiation does, costs about
+one evaluation of the objective per parameter.  The rest of this page
+shows how to obtain the whole sum for about two evaluations,
+essentially regardless of the number of parameters, by carrying the
+first factor backward through the computation of the transformed data
+``d'``.
 
 ## Derivatives with respect to complex quantities
 
@@ -399,15 +418,15 @@ eight numbers.
 
 ## The structure of the computation
 
-In each pixel, the expensive work is the synthesis, the one step that
-sums over every mode at every input time.  The parameters enter only
-through the geometry, ``{}_{s}Y^{(ℓ,m)}_{j}`` and ``g^{n}_{j}``, which is
-cheap.  So the chain ``ν ∘ μ ∘ ι ∘ σ`` is differentiated in reverse,
-pulling a cotangent back through the transpose of each Jacobian, which
-costs one more pass of the same size.  The geometry is differentiated
-forward, with ForwardDiff's dual numbers carrying tangents through the
-Jacobian of ``Γ_j``.  The diagram shows the flow for one pixel and
-omits its label ``j``.
+In each pixel, the expensive work is the synthesis, the step that sums
+over every mode at every input time.  The parameters enter only
+through the geometry, ``{}_{s}Y^{(ℓ,m)}_{j}`` and ``g^{n}_{j}``, which
+is relatively cheap.  So the chain ``ν ∘ μ ∘ ι ∘ σ`` is differentiated
+in reverse, pulling a cotangent back through the transpose of each
+Jacobian, which costs one more pass of the same size.  The geometry is
+differentiated forward, with ForwardDiff's dual numbers carrying
+tangents through the Jacobian of ``Γ_j``.  The diagram shows the flow
+for one pixel and omits its label ``j``.
 
 ```@raw html
 <div class="gradient-flow-diagram" style="text-align: center; margin: 1.5em 0;">
