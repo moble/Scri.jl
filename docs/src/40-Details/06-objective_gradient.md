@@ -4,14 +4,14 @@ CurrentModule = Scri
 
 # [The gradient of the objective](@id objective_gradient)
 
-[`objective_and_gradient!`](@ref) returns the objective of
+The function [`objective_and_gradient!`](@ref) returns the value of
 [`transform_objective`](@ref) together with its gradient with respect
-to every parameter of the BMS transformation.  It costs about two
-evaluations of the objective, however many parameters there are,
-whereas forward-mode automatic differentiation costs about one
-evaluation per parameter.  This page states the problem, sets up the
-notation, shows the structure of the computation in a diagram, and
-then derives each piece.
+to every parameter of the BMS transformation.  It costs about twice as
+many evaluations as the objective along, regardless of how many
+parameters there are; forward-mode automatic differentiation costs
+about one extra evaluation per parameter.  This page states the
+problem, sets up the notation, shows the structure of the computation
+in a diagram, and then derives each piece.
 
 ## The problem
 
@@ -76,7 +76,7 @@ Note that by approximating as we have above, we integrate over the
 sphere directly in terms of the pixel values.  This allows us to skip
 the expensive step of synthesizing the modes of ``|d' - c|^2``.
 
-### What has to be computed
+### The derivative
 
 ``Φ`` depends on ``θ`` only through the transformed values.  Splitting
 each of them into its real and imaginary parts, the chain rule gives
@@ -117,10 +117,11 @@ So we can rewrite the gradient as
 
 The factor ``\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right)`` is
 computed directly when ``Φ`` is evaluated; this page is concerned more
-with the next factor: how the transformed data at every pixel and time
-responds to each parameter.  Computing that response one parameter at
-a time, as forward-mode automatic differentiation does, costs about
-one evaluation of the objective per parameter.  The rest of this page
+with the next factor: the factor ``{∂\,{{}^{k}d'^{i}_{j}}} / {∂θ^p}``,
+representing how the transformed data at every pixel and time depends
+on each parameter.  Computing that response one parameter at a time,
+as forward-mode automatic differentiation does, costs about one
+evaluation of the objective per parameter.  The rest of this page
 shows how to obtain the whole sum for about two evaluations,
 essentially regardless of the number of parameters, by carrying the
 first factor backward through the computation of the transformed data
