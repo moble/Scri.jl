@@ -69,6 +69,35 @@ infinity, so we transform to systems using the inverse radial
 coordinate ``ω = 1/r`` and retarded or advanced time coordinates ``u =
 t - r`` or ``v = t + r``.
 
+Null infinity itself is reached by rescaling the metric.  The physical
+spacetime is modeled as embedded in a manifold with boundary, the
+boundary being ``ℐ`` itself, on which the rescaled metric extends
+smoothly; the conformal factor vanishes there, with nonvanishing
+gradient, which is what makes it a good coordinate transverse to the
+boundary and the rescaled tetrad finite on it.  Section III.A of
+[Boyle_2015](@citet) gives that construction in more detail.  The
+factor is not unique, and throughout this documentation it is fixed to
+be the inverse radial coordinate ``ω`` already introduced, so the
+conformal metric is
+
+```math
+ĝ_{ab} = ω^2 g_{ab}.
+```
+
+In Minkowski space, with the default signature, the two asymptotic
+coordinate systems give
+
+```math
+ĝ = -ω^2\, du^2 + 2\, du\, dω + dΩ^2
+\qquad \text{and} \qquad
+ĝ = -ω^2\, dv^2 - 2\, dv\, dω + dΩ^2,
+```
+
+so at either null infinity the angular part is the unit round sphere,
+and the only surviving cross term is ``ĝ_{uω} = 1`` at ``ℐ⁺`` or
+``ĝ_{vω} = -1`` at ``ℐ⁻``.  Every inner product taken at null
+infinity, and every index lowered there, uses ``ĝ``.
+
 In the ``u`` coordinate system relevant to ``ℐ⁺``, we have
 
 ```math
@@ -110,6 +139,18 @@ while ``l̃ᵃ`` is transverse to it.  Still, with the *conformal*
 metric, the inner products of the tetrad at ``ℐ⁺`` retain their usual,
 convenient values.
 
+Lowering ``l̃ᵃ`` with ``ĝ`` gives the covector whose derivative
+defines the shear on the next page,
+
+```math
+l̃_a = -\frac{c_s c_l}{\sqrt{2}} (du)_a,
+```
+
+from which the normalization ``l̃ ⋅ ñ = -c_s`` is immediate.  The
+signature factor appears because one power of the metric survives this
+lowering, and that is the same ``c_s`` that appears in the shear's
+conversion factor on the next page but not in the Weyl components'.
+
 In the ``v`` coordinate system relevant to ``ℐ⁻``, we have
 
 ```math
@@ -147,3 +188,10 @@ spacetime.  (Here it is the ``l`` leg that needed no rescaling, and
 whose ``ω² ∂_ω`` term vanishes at ``ℐ⁻``.) Importantly, note that
 ``l̃ᵃ``, ``m̃ᵃ``, and ``m̃̄ᵃ`` are all in the tangent space of ``ℐ⁻``,
 while ``ñᵃ`` is transverse to it.
+
+Here it is the ``n`` leg whose lowered form is differentiated to
+compute the radiative shear:
+
+```math
+ñ_a = -\frac{c_s}{c_l \sqrt{2}} (dv)_a.
+```
