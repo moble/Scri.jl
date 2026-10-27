@@ -51,3 +51,23 @@ end
     end
     @test_throws ArgumentError Scri.sphere_quadrature(-1)
 end
+
+@testitem "sphere_quadrature: rotors are accurate near the poles" tags = [:unit, :fast] begin
+    using Quaternionic: components
+
+    # A colatitude computed as arccos x has a relative error of about ε/θ² near a pole, and
+    # the small components of the rotors there would inherit it: about 26ε at ℓₘₐₓ = 32.
+    # Likewise in azimuth, sin(φ/2) or cos(φ/2) formed from a rounded φ loses digits where it
+    # is small.  Every component must instead match the BigFloat rotors to a few ulps of its
+    # own size.
+    for ℓₘₐₓ ∈ (32, 200)
+        R, _ = Scri.sphere_quadrature(ℓₘₐₓ, Float64)
+        Rᵇ, _ = Scri.sphere_quadrature(ℓₘₐₓ, BigFloat)
+        worst = maximum(zip(R, Rᵇ)) do (r, rᵇ)
+            maximum(zip(components(r), components(rᵇ))) do (c, cᵇ)
+                iszero(cᵇ) ? Float64(abs(c)) : Float64(abs(c - cᵇ) / abs(cᵇ))
+            end
+        end
+        @test worst < 4eps(Float64)
+    end
+end
