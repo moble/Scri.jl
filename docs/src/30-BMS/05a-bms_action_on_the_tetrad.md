@@ -53,12 +53,13 @@ The second half of the plan requires knowing how BMS relates the
 distinguished cuts of different elements, and the semidirect-product
 structure answers this.
 
-Recall from [the BMS page](@ref bms_group) that ``\text{BMS} = ℒ ⋉_ρ 𝒮``
-with ``ρ(Λ)α = α/κ``, that ``𝒮`` is a normal subgroup, and that ``ℒ``
-is not.  The failure of ``ℒ`` to be normal is precisely what we need:
-conjugating a Lorentz transformation by a supertranslation produces an
-element that is not a Lorentz transformation.  Explicitly, using the
-group law of that page,
+Recall from [the BMS page](@ref bms_group) that
+``\text{BMS} = ℒ ⋉_{\mathrm{Ad}} 𝒮``, with
+``\mathrm{Ad}(Λ)(α)(𝐤) = α(Λ^{-1}𝐤)/κ(Λ^{-1}, 𝐤)``, that ``𝒮`` is a
+normal subgroup, and that ``ℒ`` is not.  The failure of ``ℒ`` to be
+normal is precisely what we need: conjugating a Lorentz transformation
+by a supertranslation produces an element that is not a Lorentz
+transformation.  Explicitly, using the group law of that page,
 
 ```math
 \left(1, β\right)\left(Λ, 0\right)\left(1, β\right)^{-1}
@@ -256,15 +257,16 @@ what quantity is the difference measured?  The first is settled by the
 geometry of the surface, the second by an elementary slope.
 
 Both tetrads are adapted to ``ℐ``, meaning that each has its generator
-leg tangent to the generators of the surface, and the screen of each is
-the tangent plane to that observer's own cut.  Two cross-sections of a
-single null hypersurface can differ only by a displacement along its
-generators, since that is the one direction the surface itself
+leg tangent to the generators of the surface, and the screen of each
+is the tangent plane to that observer's own cut.  Two cross-sections
+of a single null hypersurface can differ only by a displacement along
+its generators, since that is the one direction the surface itself
 distinguishes.  Their tangent planes therefore differ by a **shear
-along the generator**, by which we mean the following linear map of the
-three-dimensional tangent space of ``ℐ``.  It fixes the generator, and
-it sends each screen vector to itself plus a multiple of the generator,
-that multiple being a linear functional of the screen vector:
+along the generator**, by which we mean the following linear map of
+the three-dimensional tangent space of ``ℐ``.  It fixes the generator,
+and it sends each screen vector to itself plus a multiple of the
+generator, that multiple being a linear functional of the screen
+vector:
 
 ```math
 ñ \;\longmapsto\; ñ,
@@ -276,17 +278,17 @@ that multiple being a linear functional of the screen vector:
 The map is thus the identity modulo the generator, and the nilpotent
 piece added to it takes the screen into the generator line and
 annihilates the generator.  This is a shear in the ordinary sense —
-each screen vector slides along the generator by an amount proportional
-to itself, as the cards of a deck slide by an amount proportional to
-their height — rather than a uniform displacement, which would add the
-same multiple of the generator to every vector and would not be linear.
-The functional ``λ`` has two real components, or one complex component
-on the dyad, so the shear has two parameters.
+each screen vector slides along the generator by an amount
+proportional to itself, as the cards of a deck slide by an amount
+proportional to their height — rather than a uniform displacement,
+which would add the same multiple of the generator to every vector and
+would not be linear.  The functional ``λ`` has two real components, or
+one complex component on the dyad, so the shear has two parameters.
 
 A shear of the screen along a null direction is, by definition, a null
-rotation about that direction.  At ``ℐ⁺`` the generator is ``ñ``, so the
-transition lies in the four-parameter stabilizer ``M A N_{𝐧}``, and
-applying the map to the dyad gives
+rotation about that direction.  At ``ℐ⁺`` the generator is ``ñ``, so
+the transition lies in the four-parameter stabilizer ``M A N_{𝐧}``,
+and applying the map to the dyad gives
 
 ```math
 m̃ \;\longmapsto\; m̃ + b\, ñ,
@@ -423,16 +425,17 @@ derivative is then
 ```
 
 The null-rotation parameter is therefore proportional to the *offset
-between the cut carrying the data and the cut the transformation
-distinguishes*.  It vanishes on the distinguished cut and grows linearly
-away from it, and the growth rate is fixed by ``ðκ`` alone.  Nothing
-here was computed from the coordinates; the linear growth is the twist
-``ρ(Λ)α = α/κ`` of the semidirect product, evaluated on the offset.
+between the cut with the original data and the cut the transformation
+distinguishes*.  It vanishes on the distinguished cut and grows
+linearly away from it, and the growth rate is fixed by ``ðκ`` alone.
+Nothing here was computed from the coordinates; the linear growth is
+given by the map ``α ↦ α ∘ Λ / κ`` of the group law, which is just
+``\mathrm{Ad}(Λ^{-1})``, evaluated on the constant offset ``c``.
 
-Repeating the conjugation with a general ``β`` produces the second term
-of the general formula, and it is more compact simply to quote the
-result.  For an arbitrary element ``(Λ, α)``, with ``t' = κ(t - c_α
-α)``,
+Repeating the conjugation with a general ``β`` produces the second
+term of the general formula, and it is more compact simply to quote
+the result.  For an arbitrary element ``(Λ, α)``, with ``t' = κ(t -
+c_α α)``,
 
 ```math
 ð t' = \left(ðκ\right)\left[t - c_α α\right] - κ\, c_α\, ðα ,

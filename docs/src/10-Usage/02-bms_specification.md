@@ -62,7 +62,7 @@ t' = κ(Λ, 𝐤)\,\bigl[t - c_α α(𝐤)\bigr],
 𝐤' = \frac{Λ𝐤}{(Λ𝐤)^0},
 ```
 
-where ``κ(Λ, 𝐤) = n⁰/(Λ𝐤)⁰`` is the conformal factor of the combined
+where ``κ(Λ, 𝐤) = k⁰/(Λ𝐤)⁰`` is the conformal factor of the combined
 Lorentz transformation on the null ray ``𝐤 = (1, ℐ k̂)``.
 
 ## Calling `transform!`
