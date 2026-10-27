@@ -496,16 +496,16 @@ function transform!(
     ### Stage 1: Evaluate all input data on the distorted grid
     ###
 
-    # For each field component d, apply its SWSH synthesis matrix 𝒯[s] (Nᵐ×Nᵐ) to convert
-    # mode weights → pixel values in-place.  The view `view(data, :, :, d)` is a fully
+    # For each field component k, apply its SWSH synthesis matrix 𝒯[s] (Nᵐ×Nᵐ) to convert
+    # mode weights → pixel values in-place.  The view `view(data, :, :, k)` is a fully
     # contiguous (Nᵐ × Nᵗ) matrix (leading dimension Nᵐ), so BLAS operates at full bandwidth
     # for this component slice.
     #
-    # Each Julia task processes a contiguous column-chunk of time samples and further
-    # subdivides it into (Nᵐ × block_size) sub-blocks sized to fit in L2 cache.  The
-    # sub-block loop is necessary because each task's column-count (≈ Nᵗ/nthreads()) is
-    # far larger than block_size — without it the task-local buffer would require
-    # ~Nᵐ × Nᵗ/nthreads() × 16 B ≈ 69 MB, comparable to a full out-of-place copy.
+    # The product cannot overwrite its own input, so the modes of each block of `block_size`
+    # time samples are first copied to a workspace sized to fit in L2 cache, and the product
+    # then writes the pixel values over them in `data`.  Copying all the samples at once
+    # would take as much memory as an out-of-place result.  The loop over blocks is serial;
+    # any parallelism within a product comes from BLAS's own threads.
     let
         cols = axes(data, 2)
         # If the caller declares an input band limit ℓₘₐₓ₀ (asserting that all higher
