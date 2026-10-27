@@ -47,12 +47,17 @@
             transform!(data, t, v⃗, R, αᵢₙ; data_components)
         end
 
-        # A small primal `transform_objective` call, for the most common component sets.
+        # A small primal `transform_objective` call, for the most common component sets,
+        # and its gradient.  The gradient specializes on the number of parameters, so it is
+        # compiled for a supertranslation up to ℓ = 2, as in the documentation's example;
+        # other numbers of parameters still compile on their first call.
         for dcsymbols ∈ ((:h,), (:ψ₄,))
             dc = DataComponents(dcsymbols...)
             data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, length(dcsymbols))
             plan = ObjectivePlan(data, t, dc, compute_t′(t, 1e-4, 1e-4))
             transform_objective(data, t, v⃗, R, αᵢₙ, dc, plan)
+            θ = zeros(6 + 9)
+            objective_and_gradient!(similar(θ), θ, data, t, dc, plan)
         end
     end
 end
