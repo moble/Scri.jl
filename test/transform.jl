@@ -1692,18 +1692,18 @@ end
 @testitem "transform!: boosted Schwarzschild has the boosted Bondi four-momentum" tags = [
     :validation, :integration, :fast
 ] begin
-    using Quaternionic: QuatVec, Rotor, imz
-    using SphericalFunctions:
-        sYlm_matrix, from_spherical_coordinates, golden_ratio_spiral_rotors
+    using Quaternionic: QuatVec, Rotor, imz, from_spherical_coordinates
+    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
 
     # Schwarzschild in its own Bondi frame is ψ₂ = −M, constant over the sphere and in time,
     # with every other component zero (the value follows from the tetrad and Weyl-component
     # definitions of the "Tensor Components" documentation page).  Boosting it exercises the
     # conformal factor, the aberrated output grid, and the κ⁻³ Weyl weight against physical
-    # oracles rather than against the transformation laws themselves.  The mass aspect must
-    # become the boosted Coulomb aspect −Mκ⁻³, and its ℓ ≤ 1 part must assemble into the
-    # four-momentum Mγ(1, −v⃗) of a hole moving at −v⃗ in the new frame.  (The transformation
-    # is active on the frame, so the source moves the other way.)
+    # oracles rather than against the transformation laws themselves.  The Weyl component
+    # must become the boosted Coulomb value ψ₂′ = −Mκ⁻³, and the ℓ ≤ 1 part of the mass
+    # aspect −ψ₂′ must assemble into the four-momentum Mγ(1, −v⃗) of a hole moving at −v⃗ in
+    # the new frame.  (The new frame moves at +v⃗ relative to the hole's rest frame, so in
+    # the new frame the hole moves at −v⃗.)
     ℓₘₐₓ = 8
     N = (ℓₘₐₓ + 1)^2
     M = 1.3
@@ -1728,13 +1728,13 @@ end
     κ = [γ * (1 + v * (R * imz * conj(R)).z) for R ∈ Rs]
     @test maximum(abs, ψ₂′ .- (-M .* κ .^ -3)) < 1e-10 * M
 
-    # Integrated: ∮ψ₂′(1, n̂′)dΩ/4π is the Bondi four-momentum, which must be the boosted
+    # Integrated: the Bondi four-momentum is ∮−ψ₂′(1, n̂′)dΩ/4π, which must be the boosted
     # one.  The ℓ ≤ 1 modes carry it, since ∮Y₀,₀dΩ = √(4π) and cosθ = √(4π/3) Y₁,₀.  The
     # residual is set by the ℓₘₐₓ truncation of κ⁻³, whose modes fall off like vᐟ.
-    E = real(data′[1, j, iψ₂]) / sqrt(4π)
-    Pᶻ = real(data′[3, j, iψ₂]) / sqrt(12π)
-    @test E ≈ -M * γ rtol = 1e-7
-    @test Pᶻ ≈ M * γ * v rtol = 1e-7
+    E = -real(data′[1, j, iψ₂]) / sqrt(4π)
+    Pᶻ = -real(data′[3, j, iψ₂]) / sqrt(12π)
+    @test E ≈ M * γ rtol = 1e-7
+    @test Pᶻ ≈ -M * γ * v rtol = 1e-7
     @test abs(data′[2, j, iψ₂]) < 1e-7 && abs(data′[4, j, iψ₂]) < 1e-7  # no transverse Pˣ, Pʸ
 
     # The null-rotation piece of a boost has an independent geometric limit.  To first order
@@ -1762,8 +1762,8 @@ end
 @testitem "transform!: translated Schwarzschild pins the null rotation against the light cone" tags = [
     :validation, :integration, :fast
 ] begin
-    using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: sYlm_matrix, from_spherical_coordinates
+    using Quaternionic: QuatVec, Rotor, from_spherical_coordinates
+    using SphericalFunctions: sYlm_matrix
 
     # A pure ℓ = 1 supertranslation is an ordinary spatial translation, and for Schwarzschild
     # the exact answer is available from geometry alone.  Moving the origin to +δ⃗ relabels
