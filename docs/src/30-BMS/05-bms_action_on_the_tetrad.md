@@ -75,17 +75,20 @@ the Lorentz boost, and the two contributions combine to the same
 | ``ñ`` | ``κ⁰``     | ``κ⁻¹`` | ``1/κ`` |
 
 The differing regularization powers ``κ⁻⁽¹⁺ᵇ⁾`` are exactly cancelled
-by the boost weights ``κᵇ``, leaving the uniform Weyl factor ``1/κ``.
+by the boost weights ``κᵇ``, leaving the same factor ``1/κ``, the
+inverse of the conformal factor, on every leg.
 
-Another important set of relations is the action of the vectors on
-their coordinates, such as
+Another important set of relations is the action of the vectors on the
+coordinates, such as
 
 ```math
 \begin{aligned}
 ñ(u) &= \sqrt{2} &\qquad\qquad
 ñ'(u') &= \sqrt{2} \\
 m̃(u) &= 0 &\qquad\qquad
-m̃'(u') &= 0,
+m̃'(u') &= 0 \\
+ñ(θ) &= 0 &\qquad\qquad
+ñ'(θ') &= 0,
 \end{aligned}
 ```
 
@@ -124,9 +127,10 @@ ñ'(u) &= a ñ(u) + b m̃(u) + b̄ m̄̃(u) \\
 \end{aligned}
 ```
 
-But since ``u = u' / κ + c_αα``, we know that ``ñ'(u) = \sqrt{2} /
-κ``, so we have ``a = 1/κ``.  We can similarly apply both sides to
-``θ`` and ``ϕ`` to determine that ``b = b̄ = 0``, so that
+But since ``u = u' / κ + c_αα`` and ``κ`` and ``α`` are independent of
+time, we know that ``ñ'(u) = \sqrt{2} / κ``, so we have ``a = 1/κ``.
+We can similarly apply both sides to ``θ`` and ``ϕ`` to determine that
+``b = b̄ = 0``, so that
 
 ```math
 ñ' = \frac{1}{κ} ñ.
@@ -162,20 +166,38 @@ We can write
 m̃' = d \left(m̃ + \frac{ðu'}{2 κ} ñ\right).
 ```
 
-It remains to fix ``d``.  The Lorentz part of the BMS transformation
-is a single rotor ``L ∈ \mathrm{Spin}⁺(3,1)``.  Carried to the pole
-and factored [as for the Lorentz group](@ref "Iwasawa and Hopf"), its
-three pieces act on ``𝐦`` one at a time.  The null rotation ``N``
-fixes ``ñ`` and reproduces the shift ``m̃ ↦ m̃ + (ðu'/2κ)\,ñ`` found
-above, and is just the [null rotation worked out earlier](@ref "Null
-rotations") with the roles of ``\boldsymbol{ℓ}`` and ``𝐧`` exchanged.
-Its coefficient is linear in ``u`` because ``m̃`` and ``m̃'`` are
+It remains to fix ``d`` — but first, note what kind of object the
+mixing we just found is.  Both tetrads are adapted to ``ℐ⁺``: each has
+its ``ñ`` tangent to the generators.  A transformation relating two
+frames adapted to a null hypersurface must preserve the one null
+direction the surface itself singles out, and [the stabilizer of a
+null direction](@ref which_null_direction) — here ``𝐧`` — is exactly
+the four-parameter subgroup ``MAN_{𝐧}``: a spin about it, a boost
+along it, and the null rotations ``N_{𝐧}`` fixing it.  The shift ``m̃
+↦ m̃ + (ðu'/2κ)\,ñ`` found above is the ``N_{𝐧}`` piece: it is the
+[null rotation worked out earlier](@ref "Null rotations") with the
+roles of ``\boldsymbol{ℓ}`` and ``𝐧`` exchanged.  It is *not*,
+however, a factor of the Lorentz rotor ``L`` itself.  Expanding
+
+```math
+ðu' = (ðκ)\left[u - c_α α\right] - κ\, c_α\, ðα,
+```
+
+the parameter collects two separate contributions.  The first is the
+*tilt of the cuts*, linear in ``u`` because ``m̃`` and ``m̃'`` are
 tangent to *different* cuts — of constant ``u`` and of constant ``u'``
 — and the angle-dependent rescaling ``u' = κu`` tilts those cuts apart
-at a rate set by the lever arm ``u``.  The shift therefore vanishes on
-the boost's fixed cut ``u = 0`` and grows linearly up the generator,
-as the null rotation's shear should.  That leaves the boost ``A`` and
-the spin ``K`` to supply ``d``, and each is a one-line computation.
+at a rate set by the lever arm ``u``; it vanishes on the boost's fixed
+cut ``u = 0`` and grows linearly up the generator, as a null
+rotation's shear should.  The second is the *shear a supertranslation
+imprints*, proportional to ``ðα`` and present even when ``L = 1``.  A
+fixed rotor could reproduce neither the ``u``-dependence nor the ``L =
+1`` case, so the honest definition of the null-rotation parameter is
+the coordinate derivative ``ðu'`` itself.  What the Lorentz rotor
+*does* supply — carried to the pole and factored [as for the Lorentz
+group](@ref "IwasawaHopfLevi") — is the spin–boost part, which the
+[two parabolics share](@ref which_null_direction): the boost ``A`` and
+the spin ``K`` fix ``d``, each by a one-line computation.
 
 The ``K`` factor is the Hopf-fiber rotor ``R_γ =
 \exp\left[\tfrac{γ}{2} 𝐱𝐲\right]``, a rotation about the null
@@ -189,10 +211,13 @@ R_γ\, 𝐦\, R̃_γ = e^{𝐱𝐲γ}\, 𝐦,
 because ``𝐈₃𝐦 = 𝐱𝐲𝐦``: on the dyad the spatial pseudoscalar
 ``𝐈₃`` and the screen pseudoscalar ``𝐱𝐲`` coincide, so ``𝐱𝐲`` is
 the dyad's own ``i``.  A quantity of spin weight ``s`` thus acquires a
-phase ``e^{s𝐱𝐲γ}``.
+phase ``e^{s𝐱𝐲γ}``.  Note that this generator is the negative of the
+one written for ``M`` on [the Lorentz page](@ref IwasawaHopfLevi); the
+sign chosen here is conventional in the definition of spin weight.
 
 The ``A`` factor is the boost ``R_{φₐ} = \exp\left[\tfrac{φₐ}{2}
-𝐭𝐳\right]`` along the radial null direction.  It rescales the generators,
+𝐭𝐳\right]`` along the radial null direction.  It rescales the
+generators,
 
 ```math
 R_{φₐ}\, \boldsymbol{ℓ}\, R̃_{φₐ} = e^{φₐ}\, \boldsymbol{ℓ},
@@ -200,22 +225,23 @@ R_{φₐ}\, \boldsymbol{ℓ}\, R̃_{φₐ} = e^{φₐ}\, \boldsymbol{ℓ},
 R_{φₐ}\, 𝐧\, R̃_{φₐ} = e^{-φₐ}\, 𝐧.
 ```
 
-This is the very rescaling behind ``ñ' = ñ/κ``, which identifies the
-conformal factor as
+This is the same rescaling leading to ``ñ' = ñ/κ``, which identifies
+the conformal factor as
 
 ```math
 κ = e^{φₐ}.
 ```
 
-For the generator this boost is the whole story — ``ñ`` involves no
+For the generator, this boost is all that matters — ``ñ`` involves no
 power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
 the boost acting alone.  The dyad is different: the boost leaves the
 spacetime multivector ``𝐦`` fixed, up to the reinterpretation of
 ``𝐈₃``, so its ``1/κ`` comes instead from regularizing with ``ω' =
-κω``.  Both routes are just the one uniform Weyl factor above, so
-``|d| = 1/κ``.  That conformal origin is why the factor is invisible
-to the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the primed
-frame and would wrongly give ``|d| = 1`` in the unprimed metric.
+κω``.  Both routes give the common factor ``1/κ`` found above, so
+``|d| = 1/κ``.  That conformal origin is why the factor can't be
+derived from the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the
+primed frame and would give the incorrect value ``|d| = 1`` in the
+unprimed metric.
 
 Collecting the boost and the spin,
 
@@ -223,12 +249,18 @@ Collecting the boost and the spin,
 d = \frac{e^{𝐱𝐲γ}}{κ} = e^{-φₐ + 𝐱𝐲γ},
 ```
 
-whose exponent ``-φₐ + 𝐱𝐲γ`` is precisely the spin-boost weight of the dyad.
-Three checks: a pure supertranslation has ``L = 1``, so ``φₐ = γ = 0`` and
-``d = 1``, leaving only the null-rotation shift; a spatial rotation has ``φₐ =
-0``, so ``κ = 1`` and ``d = e^{𝐱𝐲γ}`` is a pure phase — the dyad simply
-spins; and a boost along the line of sight has ``γ = 0``, giving the real ``d
-= 1/κ`` of aberration.  The dyad therefore transforms as
+whose exponent ``-φₐ + 𝐱𝐲γ`` is precisely the spin-boost weight of
+the dyad.
+
+We can check that this is consistent with the three special cases of
+BMS transformations.  The null-rotation parameter ``b = f/d`` is
+invariant under the spin-boost, so it is enough to check the three
+special cases with ``d = 1``.  First, a pure supertranslation has ``L
+= 1``, so ``φₐ = γ = 0`` and ``d = 1``, leaving only the null-rotation
+shift.  Second, a spatial rotation has ``φₐ = 0``, so ``κ = 1`` and
+``d = e^{𝐱𝐲γ}`` is a pure phase — the dyad simply spins.  And third,
+a boost along the line of sight has ``γ = 0``, giving the real ``d =
+1/κ`` of aberration.  The dyad therefore transforms as
 
 ```math
 m̃' = \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðu'}{2 κ}\, ñ\right).
@@ -273,7 +305,7 @@ This is exactly the ``\boldsymbol{ℓ} ↔ 𝐧`` image of the null rotation
 screen vector ``\boldsymbol{ξ} = \tfrac{\overline{ðu'}}{2κ}m̃ +
 \tfrac{ðu'}{2κ}m̄̃`` (so that ``\tfrac12 ξ² = |ðu'|²/4κ²``), the transverse
 leg picks up a linear screen term and a quadratic ``ñ`` term — and, like
-every other leg, the uniform Weyl factor ``1/κ`` out front.
+every other leg, the common factor ``1/κ`` out front.
 
 ### [Convention dependence](@id convention_dependence_tetrad_future)
 
@@ -304,7 +336,7 @@ with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
 ``c_ð`` rescales how one *writes* ``b`` in terms of ``ð`` — ``b =
 ð_{\mathrm{GHP}}u'/κ`` in GHP, say — but not the geometric value of
 ``b`` itself).  The signature ``c_s`` enters only the inner-product
-normalizations, which already gave the uniform Weyl factor ``1/κ``
+normalizations, which already gave the common factor ``1/κ``
 independent of ``c_s``, so it does not touch ``b``.  This single
 factor ``c_l c_m`` is the *only* convention dependence that survives
 into the [component-mixing law](@ref "BMS Action on Fields"); the
@@ -331,16 +363,16 @@ shape,
 ```math
 v' = κ(θ, ϕ)\left[v - c_α α(θ, ϕ)\right],
 \qquad
-κ = \frac{1}{γ(1 + v⃗ ⋅ n̂)},
+κ = \frac{1}{γ(1 + v⃗ ⋅ k̂)},
 ```
 
 with two points of convention worth flagging:
 
 - **Antipodal labeling.**  Following [PenroseRindler_1984](@citet),
   ``ℐ⁻`` is labeled by the observer's past light cone — the directions
-  radiation *arrives from* — so its section is ``𝐧 = (1, -n̂)``,
+  radiation *arrives from* — so its section is ``𝐧 = (1, -k̂)``,
   antipodal to ``ℐ⁺``.  This is the single sign ``ℐ = -1``, and it is
-  why ``κ`` includes ``1 + v⃗⋅n̂`` rather than ``1 - v⃗⋅n̂`` (see
+  why ``κ`` includes ``1 + v⃗⋅k̂`` rather than ``1 - v⃗⋅k̂`` (see
   [Future and past null infinity](@ref scri_pm_conventions)).
 - **Same uniform weight.**  The conformal frames still satisfy ``ĝ' =
   κ²ĝ``, so every leg again picks up ``1/κ``; nothing in the weight
@@ -358,7 +390,10 @@ m̃' &= \frac{e^{iγ}}{κ}\left(m̃ + \frac{ðv'}{2κ}\, l̃\right), \\
 ```
 
 The only structural change is that the null rotation now fixes ``l̃``
-(the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it.  That
+(the ``ℐ⁻`` generator) and shears ``m̃`` and ``ñ`` *along* it: the
+mixing lives in ``N_{\boldsymbol{ℓ}}`` rather than ``N_{𝐧}``, as
+befits the [future light cone of ``i⁻``](@ref from_cone_to_scri),
+which is ruled like an emission cone.  That
 same exchange reverses the peeling tower of the [field
 components](@ref "BMS Action on Fields"): the component left unmixed by
 the null rotation is the one assembled from the most factors of the

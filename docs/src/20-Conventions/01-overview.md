@@ -44,6 +44,11 @@ A), which describes the CCE evolution implemented in the SpECTRE code.
 [Iozzo_2021](@citet) constructed a framework for comparing conventions
 across the literature, which is extended here.
 
+Conventions for spin weight, the spin-weighted spherical harmonics,
+and the rotation operators from which ``ð`` is built follow the
+[conventions summary](@extref SphericalFunctions
+:std:label:`summary_spin_weight`) of `SphericalFunctions.jl`.
+
 Conventions for Geometric Algebra are described in the documentation
 of `Quaternionic.jl`, [here for the
 fundamentals](https://moble.github.io/Quaternionic.jl/stable/geometric_algebra/)
@@ -90,6 +95,18 @@ zero.
 A user can make choices about these conventions, and implement them by
 creating a `Conventions` object with the desired values, then passing
 that object to the relevant functions.
+
+Note two points about the values themselves.  First, ``c_m`` is the
+spin-phase *factor* ``e^{iΘ}`` of the ``m`` leg, not the angle ``Θ``:
+a phase of ``Θ = π`` is set with ``c_m = -1``.  Because ``m ⋅ m̄`` is
+fixed, ``c_m`` must have unit modulus, and because ``ℓ`` is a real
+null vector, ``c_l`` must be real; the constructor validates both.
+Second, the common conventions sit at exactly ``±1``, which `Scri.jl`
+stores as the type-level singletons `One` and `MinusOne`, so that a
+convention factor of ``±1`` compiles away — to at most a negation —
+wherever a convention enters a formula.  A ``c_m`` of any other
+unit-modulus complex number is still allowed for an exotic convention;
+it simply does not compile away.
 
 ```@docs; canonical=false
 Scri.Conventions

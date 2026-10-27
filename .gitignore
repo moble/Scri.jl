@@ -29,6 +29,7 @@ JuliaLocalPreferences.toml
 
 # My changes
 *.rej
+.diffreview
 .DS_Store
 .benchmarkci
 benchmark/*.json

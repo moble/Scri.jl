@@ -1,6 +1,13 @@
 # Run `julia --project=docs docs/make.jl` from the top directory to execute this script.
 # Run `julia --project=docs docs/serve.jl` to build and serve the docs locally.
 
+# Pretty-print the current time
+using Dates
+println("\n")
+@info """Building docs starting at $(Dates.format(Dates.now(), "HH:MM:SS"))."""
+
+start = time()  # We'll display the total after everything has finished
+
 using Scri
 using Documenter
 using DocumenterCitations
@@ -10,8 +17,6 @@ using Revise
 # When run via `docs/serve.jl`, this ensures that any changes in the docstrings are picked
 # up without needing to restart the server.
 Revise.revise()
-
-DocMeta.setdocmeta!(Scri, :DocTestSetup, :(using Scri); recursive=true)
 
 include("local_notes.jl")
 
@@ -98,10 +103,20 @@ makedocs(;
         edit_link="main",  # Link out to "main" branch on github
         canonical="https://moble.github.io/Scri.jl",
         assets=String["assets/citations.css", "assets/custom.css"],
+        size_threshold_ignore=["50-api.md"],  # the API page is deliberately one long page
+        size_threshold=400 * 2^10, # 400 KiB
+        size_threshold_warn=200 * 2^10, # 200 KiB
+        search_size_threshold_warn=1 * 2^20, # 1 MiB
     ),
     remotes=notes_remotes,
     pages=[list_pages()..., notes_pages...],
     plugins=[bibliography, links],
 )
 
-deploydocs(; repo="github.com/moble/Scri.jl", devbranch="main", push_preview=true)
+if get(ENV, "CI", "false") == "true"
+    deploydocs(; repo="github.com/moble/Scri.jl", devbranch="main", push_preview=true)
+else
+    @info "Skipping docs deployment because CI environment variable is not set."
+end
+
+println("Docs built in ", time() - start, " seconds.\n")

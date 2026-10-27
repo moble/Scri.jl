@@ -35,7 +35,7 @@
     @test dc isa DataComponents{(:ψ₄, :σ)}
 end
 
-@testitem "DataComponents: carries its Conventions" tags = [:unit, :fast] begin
+@testitem "DataComponents: includes its Conventions" tags = [:unit, :fast] begin
     import Scri: DataComponents, Conventions
 
     # Defaults to the package-native conventions, stored as compile-time singletons.
@@ -56,27 +56,27 @@ end
     import Scri: DataComponents
 
     # ψₙ (n < 4) without its required upper neighbours.
-    @test_throws AssertionError DataComponents(:ψ₃)           # missing ψ₄
-    @test_throws AssertionError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
-    @test_throws AssertionError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
-    @test_throws AssertionError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₃)           # missing ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₂)           # missing ψ₃, ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₁)           # missing ψ₂..ψ₄
+    @test_throws ArgumentError DataComponents(:ψ₀)           # missing ψ₁..ψ₄
 
     # Gaps in the chain.
-    @test_throws AssertionError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
-    @test_throws AssertionError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₂, :ψ₄)           # missing ψ₃
+    @test_throws ArgumentError DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₄) # missing ψ₃
 
     # The radiative-shear slots are ℐ-locked: σ is ℐ⁺-only, λ is ℐ⁻-only.
-    @test_throws AssertionError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
-    @test_throws AssertionError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
-    @test_throws AssertionError DataComponents(:λ; ℐ=1)
+    @test_throws ArgumentError DataComponents(:σ; ℐ=-1)   # σ is the ℐ⁺ shear
+    @test_throws ArgumentError DataComponents(:λ)          # λ is the ℐ⁻ shear (ℐ=+1 here)
+    @test_throws ArgumentError DataComponents(:λ; ℐ=1)
 end
 
 @testitem "DataComponents: invalid symbols are rejected" tags = [:unit, :fast] begin
     import Scri: DataComponents
 
-    @test_throws AssertionError DataComponents(:foo)
-    @test_throws AssertionError DataComponents(:Weyl₀)
-    @test_throws AssertionError DataComponents(:ψ₄, :bad_component)
+    @test_throws ArgumentError DataComponents(:foo)
+    @test_throws ArgumentError DataComponents(:Weyl₀)
+    @test_throws ArgumentError DataComponents(:ψ₄, :bad_component)
 end
 
 # ── Accessors ─────────────────────────────────────────────────────────────────
@@ -244,9 +244,10 @@ end
     import Random
     import Scri: DataComponents
 
-    # ℐ⁺: σ' = κ⁻¹·(σ + ½ð²α),  h' = κ⁻¹·(h + ½conj(ð²α))
-    # ℐ⁻: λ' = κ⁻¹·(λ + ½conj(ð²α)),  h' = κ⁻¹·(h − ½conj(ð²α))
-    # (λ is the ℐ⁻ radiative shear; its shift carries + conj(ð²α), opposite the strain.)
+    # ℐ⁺: σ' = κ⁻¹·(σ − ð²α/2√2),  h' = κ⁻¹·(h − conj(ð²α))
+    # ℐ⁻: λ' = κ⁻¹·(λ + conj(ð²α)/2√2),  h' = κ⁻¹·(h + conj(ð²α))
+    # (λ = m̄m̄∇n has no minus sign in its definition, unlike σ, so its shift has the opposite
+    # sign; the strain shift flips with it.)
     rng = Random.Xoshiro(99)
     dc⁺ = DataComponents(:σ, :h)
     dc⁻ = DataComponents(:λ, :h; ℐ=-1)
@@ -259,13 +260,13 @@ end
 
         data = ComplexF64[σ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc⁺)
-        @test data[1] ≈ κ⁻¹ * (σ_v + ð²α / 2)
-        @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α) / 2)
+        @test data[1] ≈ κ⁻¹ * (σ_v - ð²α / (2√2))
+        @test data[2] ≈ κ⁻¹ * (h_v - conj(ð²α))
 
         data = ComplexF64[λ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, 0.0 + 0im, ð²α, dc⁻)
-        @test data[1] ≈ κ⁻¹ * (λ_v + conj(ð²α) / 2)
-        @test data[2] ≈ κ⁻¹ * (h_v - conj(ð²α) / 2)
+        @test data[1] ≈ κ⁻¹ * (λ_v + conj(ð²α) / (2√2))
+        @test data[2] ≈ κ⁻¹ * (h_v + conj(ð²α))
     end
 end
 
@@ -276,10 +277,10 @@ end
     import Scri:
         DataComponents, Conventions, dyad_factor, shear_factor, lambda_factor, strain_factor
 
-    # With a generic convention carried by `dc`, the laws read (docs, "Convention
-    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻;
-    # ℐ⁺ shifts σ by F_σ·ð²α/2 and h by F_h·ð̄²α/2; ℐ⁻ shifts λ by F_λ·ð̄²α/2 and h by
-    # −F_h·ð̄²α/2.
+    # With a generic convention contained in `dc`, the laws read (docs, "Convention
+    # dependence"): towers on c_l c_m·ðu′/2κ at ℐ⁺ and conj(ðt′/2κ)/(c_l c_m) at ℐ⁻; ℐ⁺
+    # shifts σ by −F_σ·ð²α/2√2 and h by −F_h·ð̄²α; ℐ⁻ shifts λ by +F_λ·ð̄²α/2√2 and h by
+    # +F_h·ð̄²α.
     rng = Random.Xoshiro(17)
     X = Conventions(; c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2)
     q = dyad_factor(X)
@@ -297,17 +298,17 @@ end
         data = ComplexF64[ψs[1], ψs[2], σ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁺)
         @test data[2] ≈ κ⁻¹^3 * (ψs[2] + q * f * ψs[1])
-        @test data[3] ≈ κ⁻¹ * (σ_v + shear_factor(X) * ð²α / 2)
-        @test data[4] ≈ κ⁻¹ * (h_v + strain_factor(X) * conj(ð²α) / 2)
+        @test data[3] ≈ κ⁻¹ * (σ_v - shear_factor(X) * ð²α / (2√2))
+        @test data[4] ≈ κ⁻¹ * (h_v - strain_factor(X) * conj(ð²α))
 
-        # ℐ⁻: the tower mixes downward on conj(ðt′/2κ)/(c_l c_m); λ shifts by +F_λ·conj(ð²α),
-        # h by −F_h·conj(ð²α).
+        # ℐ⁻: the tower mixes downward on conj(ðt′/2κ)/(c_l c_m); λ shifts by
+        # +F_λ·conj(ð²α)/2√2, h by +F_h·conj(ð²α).
         dc⁻ = DataComponents(:ψ₀, :ψ₁, :λ, :h; ℐ=-1, conventions=X)
         data = ComplexF64[ψs[1], ψs[2], λ_v, h_v]
         Scri.mix_components!(data, κ⁻¹, f, ð²α, dc⁻)
         @test data[2] ≈ κ⁻¹^3 * (ψs[2] + (conj(f) / q) * ψs[1])
-        @test data[3] ≈ κ⁻¹ * (λ_v + lambda_factor(X) * conj(ð²α) / 2)
-        @test data[4] ≈ κ⁻¹ * (h_v - strain_factor(X) * conj(ð²α) / 2)
+        @test data[3] ≈ κ⁻¹ * (λ_v + lambda_factor(X) * conj(ð²α) / (2√2))
+        @test data[4] ≈ κ⁻¹ * (h_v + strain_factor(X) * conj(ð²α))
     end
 end
 
@@ -354,7 +355,7 @@ end
 
     # Component-count mismatch is caught.
     dc2 = DataComponents(:ψ₄, :h)
-    @test_throws AssertionError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
+    @test_throws ArgumentError represent!(zeros(ComplexF64, 4, 2, 3), dc2, X)
 end
 
 @testitem "mix_components!: News scales by κ⁻² with no mixing" tags = [:unit, :fast] begin

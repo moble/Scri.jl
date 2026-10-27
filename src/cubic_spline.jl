@@ -15,7 +15,7 @@ sweep to compute the second derivatives `d̈ₖ`, plus O(1) per evaluation point
 - `l`:   Thomas sub-diagonal factors `lᵢ = h[i+1]/uᵢ` for i=1..N−3
 - `u⁻¹`: reciprocals of the modified diagonal `1/uᵢ` for i=1..N−2
 """
-struct CubicSplineCache{T<:AbstractFloat}
+struct CubicSplineCache{T<:Real}
     h::Vector{T}
     h⁻¹::Vector{T}
     l::Vector{T}
@@ -66,7 +66,7 @@ On interval [t[j], t[j+1]] at offset τ = t_query − t[j]:
     a = h⁻¹[j]*(d[j+1]−d[j]) − h[j]/6*(2d̈[j]+d̈[j+1])
     S = d[j] + τ*(a + τ*(b + τ*c))
 """
-function CubicSplineCache(t::AbstractVector{T}) where {T<:AbstractFloat}
+function CubicSplineCache(t::AbstractVector{T}) where {T<:Real}
     N = length(t)
     N ≥ 4 || throw(ArgumentError("CubicSplineCache requires at least 4 knots, got $N"))
     h = Vector{T}(undef, N - 1)

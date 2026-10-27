@@ -48,12 +48,13 @@ single BMS group.
 
 ## [Future and past null infinity](@id scri_pm_conventions)
 
-The data that we manipulate, and the various transformations live on a
-chosen piece of ``ℐ`` — the two pieces of which are future null
+The data that we manipulate *and* the various transformations exist on
+a chosen piece of ``ℐ`` — the two pieces of which are future null
 infinity ``ℐ⁺`` and past null infinity ``ℐ⁻``.  Knowing which piece we
 are working on is important, and we will frequently need to retain a
-sign to track that information in a variable which we will denote
-simply as ``ℐ``.  The sign is defined as
+sign to track that information.  By mild abuse of notation, we will
+denote this variable simply as ``ℐ`` — or `ℐ` in the code.  The sign
+is defined as
 
 ```math
 ℐ = \begin{cases}
@@ -72,22 +73,22 @@ that is also important.
 The subtlety is how the celestial sphere ``𝕊²`` is *labeled* in each
 case.  At ``ℐ⁺`` we label a point by the direction in which outgoing
 radiation *propagates*, so we use the future-pointing null ray ``𝐤 =
-(1, n̂)``.  At ``ℐ⁻`` we work on the observer's past light cone — the
+(1, k̂)``.  At ``ℐ⁻`` we work on the observer's past light cone — the
 sphere of directions from which light *arrives* (the astronomer's
 sky).  To see a source you look *opposite* to the light's direction of
-travel, so the ``ℐ⁻`` ray is ``𝐤 = (1, -n̂)``.  That is, the labeling
+travel, so the ``ℐ⁻`` ray is ``𝐤 = (1, -k̂)``.  That is, the labeling
 of ``ℐ⁻`` is __antipodal__ to the ``ℐ⁺`` labeling.  Equivalently, a
-single free null geodesic of Minkowski space joins a point ``n̂`` of
-``ℐ⁺`` to the antipodal point ``-n̂`` of ``ℐ⁻``.  Identifying the two
+single free null geodesic of Minkowski space joins a point ``k̂`` of
+``ℐ⁺`` to the antipodal point ``-k̂`` of ``ℐ⁻``.  Identifying the two
 spheres this way is the *antipodal matching* used, e.g., in the
 analysis of gravitational scattering and soft theorems
 [Strominger_2014, Strominger_2017](@cite).  Both choices are captured
-by writing the null ray as ``𝐤 = (1, ℐ n̂)``.
+by writing the null ray as ``𝐤 = (1, ℐ k̂)``.
 
 A supertranslation must be represented as a function on the sphere, so
 it is important to know which sphere is being used.  For example, it
 would be reasonable to define a supertranslation acting on ``ℐ⁻`` via
-its isomorphic BMS⁺ element.  Therefore each `BMS` object must carry a
+its isomorphic BMS⁺ element.  Therefore each `BMS` object must track a
 sign ``ℐ`` to indicate which piece of ``ℐ`` the supertranslation
 should be interpreted as acting on.
 

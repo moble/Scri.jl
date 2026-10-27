@@ -1,5 +1,5 @@
 """
-    Conventions{S,R,L,M,Ψ,Σ,H,Φ,Ð,A}
+    Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
 
 Sign and scale factors setting conventions.  The parameters are
 
@@ -15,20 +15,12 @@ Sign and scale factors setting conventions.  The parameters are
   - `c_ð` for the ð operator
   - `c_α` for the supertranslation law
 
-For precise definitions of each of these factors, see the [documentation](@ref
-conventions-overview).  The default values are all 1, corresponding to the SXS conventions.
-
-We constrain the possible values of these factors.  The signature `c_s`, Riemann definition
-`c_R`, and supertranslation law `c_α` only ever differ by signs, so they must be ±1.  The
-tetrad vector `l` is real, so `c_l` must be real.  The tetrad vector `m` is complex, but
-must obey ``m ⋅ m̄ = c_s``, so `c_m` must have unit modulus (approximately).  And all of
-these factors must be nonzero, but there are so many bizarre conventions that we permit them
-to be complex if desired — though they will also usually just be signs.
-
-Note that we *do* assume various structural conventions, such as ``l`` being the outgoing
-null vector (so that ``ψ₄`` is the radiative field at future null infinity), ``m`` having a
-certain handedness, and ``h`` having spin weight ``-2``.  Any users wishing to use different
-structural conventions will have to handle the conversions themselves.
+For precise definitions of each of these factors, their allowed values, and the structural
+conventions this package fixes once and for all (e.g., ``l`` outgoing, ``m``'s handedness,
+``h`` of spin weight ``-2``), see the [documentation](@ref conventions-overview).  The
+default values are all 1, corresponding to the SXS conventions.  The constructor validates
+the values: `c_s`, `c_R`, and `c_α` must be ``±1``; `c_l` must be real; `c_m` must have
+unit modulus; and every factor must be nonzero.
 
 The types of all of these factors are retained as the type parameters of `Conventions`
 listed above — `S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A` — to allow for type stability and compile-time
@@ -95,7 +87,7 @@ function Conventions(;
     end
     # Exact ±1 → singleton (so common conventions elide); every other value is kept in its input
     # type verbatim, with no float conversion — extended-precision inputs stay exact, and it is
-    # the caller's job to combine them only through precision-preserving operations (e.g. `x / y`
+    # the caller's job to combine them only through precision-preserving operations (e.g., `x / y`
     # rather than `x * y^-1`, since an integer base to a negative power throws a `DomainError`).
     return Conventions(
         signify(c_s),
@@ -112,22 +104,38 @@ function Conventions(;
     )
 end
 
-"""
+@doc raw"""
     Conventions(name::Symbol; T=Float64)
 
 Named presets.  Available: `:SXS` (the package default) and `:MB` (Moreschi/Boyle).  `T`
-sets the type used for inexact values such as `√2`; exact values (`±1`, `2`) are stored
+sets the type of every value other than ``±1``, such as `√2` and `1/2`; the signs are stored
 exactly regardless.  Values that are not clear from the references are left at the default.
+
+The `:MB` preset is the convention of [Boyle_2015](@citet) and of the Python package `scri`,
+which converts SXS data into it.  Its tetrad has ``c_s = -1``, ``c_l = \sqrt{2}``, and
+``c_m = -1``, as explained in a footnote of the "Tetrad" page.  The remaining values are fixed
+by three statements: the conversion factors of `scri`, ``ψₙ^{[MB]} = (-\sqrt{2})^{2-n}
+ψₙ^{[SXS]}`` and ``σ^{[MB]} = \tfrac{1}{2} h̄^{[SXS]}``, and the relation ``h = σ̄`` of
+that paper.  They give ``c_ψ = -1``, ``c_σ = -1``, and ``c_h = -1/2``; the last is negative
+because the metric perturbation itself changes sign with the signature.  The paper's ``ð``
+is that of Geroch, Held, and Penrose, which is ``1/\sqrt{2}`` times the one used here, so
+``c_ð = 1/\sqrt{2}``.  These values make the Schwarzschild ``ψ₂`` equal to ``-M``, as in
+the SXS convention and in the mass aspect of `scri`.  The convention table of
+[Iozzo_2021](@citet) lists the opposite sign for the Weyl components and the strain of this
+convention, which is inconsistent with that mass aspect.
 """
 function Conventions(name::Symbol; T::Type{<:Real}=Float64)
     s2 = sqrt(T(2))
     return if name === :SXS
         Conventions()
     elseif name === :MB
-        # See the footnote on the "Tetrad" conventions page: lowering the cotetrad of
-        # Boyle (2015) identifies c_s = -1 and c_l = +√2 exactly, with the sign of the
-        # m leg (relative to the polar spin frame) booked as c_m = -1.
-        Conventions(; c_s=-1, c_l=s2, c_m=-1, c_h=2)
+        # The tetrad comes from the footnote on the "Tetrad" conventions page: lowering the
+        # cotetrad of Boyle (2015) identifies c_s = -1 and c_l = +√2 exactly, with the sign
+        # of the m leg (relative to the polar spin frame) booked as c_m = -1.  The field
+        # definitions reproduce the SXS → MB factors of scri's `create_abd_from_h5`, which
+        # are ψₙ: (2, -√2, 1, -1/√2, 1/2) for n = 0, …, 4 and σ = conj(h)/2, together with
+        # the paper's h = σ̄.  The paper's ð is the GHP ð = ð_NP/√2.
+        Conventions(; c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_ð=inv(s2))
     else
         throw(
             ArgumentError("Unknown convention preset :$name; expected either :SXS or :MB")
@@ -143,9 +151,9 @@ The dyad scaling ``c_l c_m`` — the only convention combination that enters the
 components, the mixing parameter converts between conventions by the ratio of neighboring
 conversion factors — a purely multiplicative rule; no convention factor is ever conjugated.
 On ``ℐ⁺`` the tower mixes *upward* (``ψₙ`` picks up ``ψₙ₊ₖ``), and ``Fₙ/Fₙ₊ₖ = (c_l c_m)^k``
-gives ``b^{[c]} = (c_l c_m) b^{[SXS]}``, where ``b^{[SXS]} = ðu′/2κ``.  On ``ℐ⁻`` the tower
+gives ``b^{[c]} = (c_l c_m) b^{[SXS]}``, where ``b^{[SXS]} = ðu'/2κ``.  On ``ℐ⁻`` the tower
 mixes *downward* (``ψₙ`` picks up ``ψₙ₋ₖ``), and ``Fₙ/Fₙ₋ₖ = (c_l c_m)^{-k}`` gives
-``b̄^{[c]} = b̄^{[SXS]} / (c_l c_m)``, where ``b̄^{[SXS]} = ð̄v′/2κ``.  The bar is part of
+``b̄^{[c]} = b̄^{[SXS]} / (c_l c_m)``, where ``b̄^{[SXS]} = ð̄v'/2κ``.  The bar is part of
 the *name* of the ``ℐ⁻`` parameter: its SXS value is the conjugate of the SXS ``ℐ⁺`` value,
 but ``b̄^{[c]}`` is **not** the conjugate of ``b^{[c]}`` — conjugating ``c_l c_m`` would
 leave ``c_l`` upstairs.  See the "Convention dependence" section of the "BMS action on
@@ -222,7 +230,7 @@ Factor taking the ``ℐ⁻`` radiative shear ``λ`` from the SXS convention to c
 Just as the radiative Weyl component switches from ``ψ₄`` (on ``ℐ⁺``) to ``ψ₀`` (on
 ``ℐ⁻``), the radiative shear switches from ``σ`` to the NP coefficient ``λ`` — the shear of
 the incoming ``n`` congruence, which is the one transverse to ``ℐ⁻``.  Following Moxon (and
-thus SXS), it is defined *without* the minus sign that ``σ`` carries,
+thus SXS), it is defined *without* the minus sign that ``σ`` has,
 
 ```math
 λ = c_λ m̄ᵃm̄ᵇ∇ₐn_b        (spin weight -2).

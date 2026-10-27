@@ -232,3 +232,66 @@ end
             d[j + 1]
     end
 end
+
+@testitem "transform_pixel!: matches a dense natural-spline solve" tags = [
+    :unit, :fast, :validation
+] begin
+    import Random
+
+    # The other spline tests check a copy of the Thomas sweep; this one checks the kernel
+    # that `transform!` and `transform_objective` actually call.  The oracle solves the full
+    # natural-spline system for the second derivatives densely and evaluates the textbook
+    # piecewise cubic, then applies the same mixing at the same transformed times.
+    function dense_natural_spline(t, y, x)
+        N = length(t)
+        h = diff(t)
+        A = zeros(N, N)
+        b = zeros(eltype(y), N)
+        A[1, 1] = A[N, N] = 1
+        for j ∈ 2:(N - 1)
+            A[j, j - 1], A[j, j], A[j, j + 1] = h[j - 1], 2(h[j - 1] + h[j]), h[j]
+            b[j] = 6 * ((y[j + 1] - y[j]) / h[j] - (y[j] - y[j - 1]) / h[j - 1])
+        end
+        M = A \ b
+        j = clamp(searchsortedlast(t, x), 1, N - 1)
+        a = (t[j + 1] - x) / h[j]
+        c = (x - t[j]) / h[j]
+        return a * y[j] +
+               c * y[j + 1] +
+               ((a^3 - a) * M[j] + (c^3 - c) * M[j + 1]) * h[j]^2 / 6
+    end
+
+    rng = Random.Xoshiro(8484)
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃)
+    κ⁻¹, αₚ, ð₀, ð₁, ð²α = 1.1, 0.05, 0.02 - 0.01im, -0.03 + 0.02im, 0.04 + 0.03im
+    # The smallest allowed input (four knots) with a single output time, then a longer
+    # non-uniform grid with outputs in several intervals.
+    for (t, t′) ∈ (
+        ([-1.0, -0.3, 0.4, 2.0], [0.2]),
+        ([-2.0, -1.6, -0.7, 0.0, 0.3, 1.5, 2.2], [-1.6, -1.0, -0.2, 0.6, 1.4]),
+    )
+        Nᵗ, Nᵗ′ = length(t), length(t′)
+        dᵢ = Random.randn(rng, ComplexF64, 3, Nᵗ)
+        d′ᵢ = Matrix{ComplexF64}(undef, 3, Nᵗ′)
+        Scri.transform_pixel!(
+            d′ᵢ,
+            copy(dᵢ),
+            similar(dᵢ),
+            Scri.CubicSplineCache(t),
+            t,
+            t′,
+            κ⁻¹,
+            αₚ,
+            ð₀,
+            ð₁,
+            ð²α,
+            dc,
+        )
+        for j′ ∈ 1:Nᵗ′
+            τ = t′[j′] * κ⁻¹ + αₚ
+            expected = [dense_natural_spline(t, dᵢ[k, :], τ) for k ∈ 1:3]
+            Scri.mix_components!(expected, κ⁻¹, ð₀ + τ * ð₁, ð²α, dc)
+            @test d′ᵢ[:, j′] ≈ expected rtol = 1e-13
+        end
+    end
+end
