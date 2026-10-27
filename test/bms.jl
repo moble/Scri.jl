@@ -432,6 +432,10 @@ end
     @test errs[3] < errs[2]
     @test errs[3] < errs[1] / 100
 
+    # A working bandwidth below the inputs' band limits would alias silently, so it is
+    # refused.
+    @test_throws ArgumentError Scri.compose(g₂, g₁; ℓₘₐₓ=1, ℓʷ=1)
+
     # Rotation-only composition is exact already at the minimal working bandwidth.
     h₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
     h₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)

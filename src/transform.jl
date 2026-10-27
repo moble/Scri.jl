@@ -89,7 +89,7 @@ constructor, which reads four components as ``(w, x, y, z)`` and normalizes them
 rotor_argument(R::Rotor) = R
 rotor_argument(r⃗::QuatVec) = exp(r⃗ / 2)
 function rotor_argument(R::Union{AbstractVector,Tuple})
-    return length(R) == 3 ? rotor_argument(QuatVec(R...)) : Rotor(R)
+    return length(R) == 3 ? rotor_argument(QuatVec(R...)) : Rotor(collect(R))
 end
 rotor_argument(R) = Rotor(R)
 

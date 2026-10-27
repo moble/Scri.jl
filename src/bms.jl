@@ -74,17 +74,19 @@ BMS(g; c_α, ℐ)        # convert an element between representations; see its o
 The keyword constructor accepts any combination of
 
 - `supertranslation`: mode weights as above (any perfect-square length);
-- `frame_rotation`: a `Rotor`;
-- `boost_velocity`: a `QuatVec` or 3-vector with `|v⃗| < 1`;
+- `frame_rotation`: a `Rotor`, or anything that [`rotor_argument`](@ref Scri.rotor_argument)
+  reads as one: a `Quaternion`, which is normalized, four components `(w, x, y, z)`, which
+  are normalized, or three components, which are a rotation vector;
+- `boost_velocity`: a `QuatVec`, 3-vector, or 3-tuple with `|v⃗| < 1`;
 - `time_translation`: a real `δt`;
-- `space_translation`: a `QuatVec` or 3-vector `δx⃗`;
+- `space_translation`: a `QuatVec`, 3-vector, or 3-tuple `δx⃗`;
 - `c_α`, `ℐ`: the conventions described above (both default `+1`);
 - `ℓₘₐₓ`: the resolution of the stored `α` (defaults to the smallest that fits).
 
 The internal representations are `Vector{Complex{T}}`, `Rotor{T}`, and `QuatVec{T}`, but any
 input convertible to those is accepted — real or lower-precision mode vectors, plain
 3-vectors for velocities and translations, and so on; the float type `T` is promoted to
-accommodate all the parts.
+accommodate all the parts.  A part of any other kind throws an `ArgumentError`.
 
 The Lorentz part is assembled as the *passive* version of "rotate, then boost": `Λ =
 inv(Boost(v⃗) * Lorentz(R))`, so that `frame_rotation` and `boost_velocity` have exactly the
@@ -258,10 +260,12 @@ function BMS{T}(;
     ℐ::Int=1,
     ℓₘₐₓ::Union{Nothing,Int}=nothing,
 ) where {T<:Real}
-    R = isnothing(frame_rotation) ? one(Rotor{T}) : Rotor{T}(frame_rotation)
+    R = isnothing(frame_rotation) ? one(Rotor{T}) : Rotor{T}(rotor_argument(frame_rotation))
     v⃗ = as_quatvec(T, boost_velocity)
     if absvec(v⃗) ≥ 1
-        throw(DomainError(absvec(v⃗), "boost speed must satisfy |v⃗| < 1 (c = 1)"))
+        throw(
+            ArgumentError("The boost speed |v⃗| = $(absvec(v⃗)) must be less than 1 (c = 1)")
+        )
     end
     # Passive version of "rotate by R, then boost by v⃗" — the same meaning these
     # parameters have in `transform!`.  (Rotor products renormalize, perturbing the last
@@ -308,12 +312,21 @@ end
 # Helpers for the keyword constructors
 kwarg_basetype(::Nothing) = Bool
 kwarg_basetype(x::Real) = typeof(x)
-kwarg_basetype(q::Rotor{T}) where {T} = real(T)
-kwarg_basetype(q::QuatVec{T}) where {T} = T
+kwarg_basetype(q::Quaternionic.AbstractQuaternion{T}) where {T} = real(T)
 kwarg_basetype(v::AbstractVector) = real(eltype(v))
+kwarg_basetype(v::Tuple) = real(promote_type(map(typeof, v)...))
 kwarg_basetype(::Int) = Bool  # ℓₘₐₓ should not influence the float type
+function kwarg_basetype(x)
+    return throw(
+        ArgumentError(
+            "A part of a BMS transformation was given as a $(typeof(x)), but each part " *
+            "must be a number, a vector, a tuple, or a quaternion",
+        ),
+    )
+end
 as_quatvec(::Type{T}, ::Nothing) where {T} = QuatVec{T}(0, 0, 0)
 as_quatvec(::Type{T}, v⃗::QuatVec) where {T} = QuatVec{T}(v⃗)
+as_quatvec(::Type{T}, v⃗::Tuple) where {T} = as_quatvec(T, collect(v⃗))
 function as_quatvec(::Type{T}, v⃗::AbstractVector) where {T}
     length(v⃗) == 3 || throw(ArgumentError("Expected a 3-vector; got length $(length(v⃗))"))
     return QuatVec{T}(v⃗[begin], v⃗[begin + 1], v⃗[begin + 2])
@@ -764,12 +777,27 @@ end
     end
 
     # Speeds at or above c are rejected.
-    @test_throws DomainError BMS{Float64}(; boost_velocity=[0.0, 0.0, 1.0])
-    @test_throws DomainError BMS{Float64}(; boost_velocity=[0.8, 0.8, 0.0])
+    @test_throws ArgumentError BMS{Float64}(; boost_velocity=[0.0, 0.0, 1.0])
+    @test_throws ArgumentError BMS{Float64}(; boost_velocity=[0.8, 0.8, 0.0])
     # A too-small ℓₘₐₓ is rejected.
     @test_throws ArgumentError BMS{Float64}(; supertranslation=zeros(9), ℓₘₐₓ=1)
     # Zero velocity gives the identity Lorentz element exactly.
     @test isone(BMS{Float64}(; boost_velocity=QuatVec(0.0, 0.0, 0.0)))
+
+    # Tuples, quaternions, and rotation vectors are read as `transform!` reads them, and
+    # anything else is an ArgumentError rather than a MethodError.
+    R = Rotor(1.0, 2.0, 3.0, 4.0)
+    for r ∈
+        (R, Quaternionic.Quaternion(1.0, 2.0, 3.0, 4.0), (1.0, 2.0, 3.0, 4.0), [1, 2, 3, 4])
+        @test frame_rotation(BMS(; frame_rotation=r)) ≈ R
+    end
+    r⃗ = (0.1, -0.2, 0.3)
+    @test frame_rotation(BMS(; frame_rotation=r⃗)) ≈ exp(QuatVec(r⃗...) / 2)
+    @test frame_rotation(BMS(; frame_rotation=collect(r⃗))) ≈ exp(QuatVec(r⃗...) / 2)
+    @test boost_velocity(BMS(; boost_velocity=(0.0, 0.1, 0.2))) ≈ QuatVec(0.0, 0.1, 0.2)
+    @test BMS(; space_translation=(1, 2, 3)) == BMS(; space_translation=[1.0, 2.0, 3.0])
+    @test_throws ArgumentError BMS(; boost_velocity="fast")
+    @test_throws ArgumentError BMS(; boost_velocity=(0.0, 0.0, 1.0))
 
     # The un-parameterized constructor infers the float type.
     @test BMS(; time_translation=1.5) isa BMS{Float64}
@@ -1315,7 +1343,8 @@ its own bandwidth, while `α₂/κ₁` gains one — the factor `1/κ₁` is exa
 !!! note "Band limits"
     The factor `1/κ₁` is *exactly* band-limited to `ℓ ≤ 1`, and for pure rotations
     `α₂∘Λ₁` has the same bandwidth as `α₂` — so when `Λ₁` involves no boost, the result
-    is exact (up to roundoff) whenever `ℓʷ ≥ max(ℓ₁, ℓ₂)`, which the defaults guarantee.
+    is exact (up to roundoff) whenever `ℓʷ ≥ max(ℓ₁, ℓ₂)`, which the defaults guarantee,
+    and a smaller `ℓʷ` throws an `ArgumentError`.
     When `Λ₁` involves a boost, however, `α₂∘Λ₁` has unbounded bandwidth (with an
     exponentially decaying tail), so the result is *convergent in `ℓʷ`* rather than
     exact, and the modes above `ℓₘₐₓ` are simply discarded.  For large rapidities,
@@ -1335,6 +1364,14 @@ function compose(
 ) where {T<:Real,A,I}
     ℓʷ ≥ ℓₘₐₓ ||
         throw(ArgumentError("Working bandwidth ℓʷ=$ℓʷ must be at least ℓₘₐₓ=$ℓₘₐₓ"))
+    # A grid below the inputs' own band limits cannot represent even them, so the result
+    # would alias without any sign of it.
+    ℓʷ ≥ max(ell_max(g₁), ell_max(g₂)) || throw(
+        ArgumentError(
+            "Working bandwidth ℓʷ=$ℓʷ must be at least the band limits " *
+            "$(ell_max(g₁)) and $(ell_max(g₂)) of the inputs",
+        ),
+    )
     # Quaternionic's rotor products renormalize (by the spinor norm), which perturbs the
     # last ulps even when multiplying by the identity; short-circuiting ±1 factors keeps
     # the group identities exact.
