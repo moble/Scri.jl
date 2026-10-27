@@ -411,11 +411,10 @@ end
     @test_throws ArgumentError Scri.compute_t′(t, 0.0, 5.0)
 end
 
-@testitem "The cache size is read when the package loads" tags = [:unit, :fast] begin
-    # `__init__` reads it, so it is this machine's, not the build machine's.
-    @test Scri.cachesize_L2[] > 0
-    l2 = Scri.cachesize_L2[]
-    Scri.cachesize_L2[] = 0
-    Scri.read_cache_size!()
-    @test Scri.cachesize_L2[] == l2
+@testitem "The cache size is this machine's" tags = [:unit, :fast] begin
+    # It is read in this process, so it is this machine's, not the build machine's.
+    l2 = Scri.Logging.with_logger(Scri.Logging.NullLogger()) do
+        Scri.Hwloc.cachesize(:L2)
+    end
+    @test Scri.cachesize_L2() == l2 > 0
 end

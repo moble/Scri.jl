@@ -400,8 +400,7 @@ function transform!(
     # Check that the input data has the expected dimensions and properties.
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
     Nᵖ = Nᵐ
-    cachesize_L2[] > 0 || read_cache_size!()
-    block_size = max(1, min(Nᵗ, cachesize_L2[] ÷ (Nᵐ * sizeof(Complex{T1}))))
+    block_size = max(1, min(Nᵗ, cachesize_L2() ÷ (Nᵐ * sizeof(Complex{T1}))))
 
     # The time-law sign in t′ = κ(t − c_α α) comes from the data conventions; the remaining
     # convention factors (dyad rescaling of the mixing parameter and the F_σ/F_h shift
