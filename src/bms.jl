@@ -331,6 +331,12 @@ function as_quatvec(::Type{T}, v⃗::AbstractVector) where {T}
     length(v⃗) == 3 || throw(ArgumentError("Expected a 3-vector; got length $(length(v⃗))"))
     return QuatVec{T}(v⃗[begin], v⃗[begin + 1], v⃗[begin + 2])
 end
+function as_quatvec(::Type{T}, v⃗) where {T}
+    return throw(ArgumentError("Expected a 3-vector; got a $(typeof(v⃗))"))
+end
+# The generic-argument methods of `transform!` and `transform_objective` keep each part's
+# own float type here, and widen the parts to a common type later.
+as_quatvec(v⃗) = as_quatvec(kwarg_basetype(v⃗), v⃗)
 
 ###
 ### Accessors
@@ -798,6 +804,12 @@ end
     @test BMS(; space_translation=(1, 2, 3)) == BMS(; space_translation=[1.0, 2.0, 3.0])
     @test_throws ArgumentError BMS(; boost_velocity="fast")
     @test_throws ArgumentError BMS(; boost_velocity=(0.0, 0.0, 1.0))
+    @test_throws ArgumentError BMS(; boost_velocity=0.3)
+    @test_throws ArgumentError BMS(; frame_rotation=0.3)
+    @test_throws ArgumentError BMS(; frame_rotation=[1.0, 2.0])
+    @test_throws ArgumentError BMS(;
+        boost_velocity=Quaternionic.Quaternion(0.0, 0.1, 0.0, 0.0)
+    )
 
     # The un-parameterized constructor infers the float type.
     @test BMS(; time_translation=1.5) isa BMS{Float64}

@@ -83,15 +83,30 @@ generic-argument methods of [`transform!`](@ref) and [`transform_objective`](@re
 components, as a `QuatVec`, a vector, or a tuple, are a rotation vector ``\vec{r}``: the
 right-handed rotation by the angle ``|\vec{r}|`` about the axis ``\vec{r}``, which is the
 rotor ``\exp(\vec{r}/2)``.  So the zero vector is the identity, and slices of an
-optimizer's parameter vector can start there.  Anything else goes to the `Rotor`
-constructor, which reads four components as ``(w, x, y, z)`` and normalizes them.
+optimizer's parameter vector can start there.  Four components, or a quaternion, go to the
+`Rotor` constructor, which reads them as ``(w, x, y, z)`` and normalizes them.  Anything
+else, including a scalar, throws an `ArgumentError`.
 """
 rotor_argument(R::Rotor) = R
 rotor_argument(r⃗::QuatVec) = exp(r⃗ / 2)
+rotor_argument(R::Quaternionic.AbstractQuaternion) = Rotor(R)
 function rotor_argument(R::Union{AbstractVector,Tuple})
-    return length(R) == 3 ? rotor_argument(QuatVec(R...)) : Rotor(collect(R))
+    length(R) == 3 && return rotor_argument(QuatVec(R...))
+    length(R) == 4 && return Rotor(collect(R))
+    return throw(
+        ArgumentError(
+            "A rotation must have three components (a rotation vector) or four (a rotor); " *
+            "got $(length(R))",
+        ),
+    )
 end
-rotor_argument(R) = Rotor(R)
+function rotor_argument(R)
+    return throw(
+        ArgumentError(
+            "A rotation must be a rotor, a quaternion, a vector, or a tuple; got a $(typeof(R))",
+        ),
+    )
+end
 
 """
     augmented_factorization(R′ₚ, ℓₘₐₓ, s)
@@ -298,9 +313,10 @@ as `ℓₘₐₓ = √Nᵐ - 1`.  The array must have complex type, with the und
 at least as wide as the types of the other inputs.
 
 The `t` array is expected to have length `Nᵗ`, matching the second dimension of `data`.  The
-`v⃗` and `R` inputs are expected to be of types `QuatVec` and `Rotor`; other methods convert
-anything those constructors accept, such as plain vectors.  A rotation given as three
-components is read as a rotation vector, and four as a rotor; see [`rotor_argument`](@ref).
+`v⃗` and `R` inputs are expected to be of types `QuatVec` and `Rotor`; other methods also
+accept plain vectors, tuples, and, for `R`, quaternions.  A velocity must have three
+components.  A rotation given as three components is read as a rotation vector, and four as
+a rotor; see [`rotor_argument`](@ref).
 
 The `αᵢₙ` array must be a complex vector, and must be ordered as described above for the
 final dimension of `data`, though it may have a smaller `ℓₘₐₓ`.  (A larger `ℓₘₐₓ` cannot be
@@ -650,7 +666,7 @@ function transform!(
     return transform!(
         data,
         t,
-        QuatVec(v⃗),
+        as_quatvec(v⃗),
         rotor_argument(R),
         αᵢₙ;
         data_components,
@@ -662,9 +678,9 @@ function transform!(
     )
 end
 
-# Generic-argument convenience: accept anything `QuatVec`/`Rotor` can convert — plain
-# vectors, tuples, quaternions, slices of an optimizer's parameter vector, … — so callers
-# never need to load Quaternionic or know its constructors.  A three-component rotation is
+# Generic-argument convenience: accept plain vectors and tuples — slices of an optimizer's
+# parameter vector, for example — so callers never need to load Quaternionic or know its
+# constructors.  A velocity must have three components, and a three-component rotation is
 # a rotation vector (see `rotor_argument`).  The fully-typed main method is strictly more
 # specific, so this cannot recurse.
 function transform!(
@@ -678,7 +694,7 @@ function transform!(
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 )
-    return transform!(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc; t′, ℓₘₐₓ₀, plan)
+    return transform!(data, t, as_quatvec(v⃗), rotor_argument(R), αᵢₙ, dc; t′, ℓₘₐₓ₀, plan)
 end
 
 """
@@ -841,10 +857,10 @@ synthesis matrices are built, and the analysis stage of `transform!` is skipped 
 Dual numbers are confined to per-pixel scalars and a few task-local buffers of size
 `O(Nᵈ × Nᵗ)`, so the memory overhead of differentiation is negligible, and `data` can be
 reused across optimizer iterations without copying.  A `BMS`-valued transformation may be
-passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may be anything the `QuatVec` and
-`Rotor` constructors accept — e.g., plain vectors, such as slices of an optimizer's
-parameter vector.  A rotation given as three components is read as a rotation vector, and
-four as a rotor; see [`rotor_argument`](@ref).
+passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may also be plain vectors or tuples, such
+as slices of an optimizer's parameter vector.  A velocity must have three components.  A
+rotation given as three components is read as a rotation vector, and four as a rotor; see
+[`rotor_argument`](@ref).
 
 The plan's output grid `t′` is held fixed across parameter values, which is what makes
 objective values (and derivatives) comparable across optimizer iterations.  It must remain
@@ -1063,9 +1079,8 @@ Both arguments may hold dual numbers.
     return acc
 end
 
-# Generic-argument convenience, exactly as for `transform!`: accept anything
-# `QuatVec`/`Rotor` can convert.  The fully-typed main method is strictly more specific,
-# so this cannot recurse.
+# Generic-argument convenience, exactly as for `transform!`: accept plain vectors and
+# tuples.  The fully-typed main method is strictly more specific, so this cannot recurse.
 function transform_objective(
     data::Array{<:Complex},
     t::Vector{<:Real},
@@ -1076,7 +1091,9 @@ function transform_objective(
     plan::ObjectivePlan;
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
 )
-    return transform_objective(data, t, QuatVec(v⃗), rotor_argument(R), αᵢₙ, dc, plan; ℓₘₐₓ₀)
+    return transform_objective(
+        data, t, as_quatvec(v⃗), rotor_argument(R), αᵢₙ, dc, plan; ℓₘₐₓ₀
+    )
 end
 
 """

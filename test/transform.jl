@@ -1673,6 +1673,23 @@ end
     @test Scri.rotor_argument((0.3, -0.2, 0.5)) == exp(QuatVec(r⃗...) / 2)
     @test Scri.rotor_argument(Rvec) == Rotor(Rvec)
 
+    # A rotation must have three or four components.  A scalar or a single component is not
+    # read as the identity, and two or five components do not reach Quaternionic's own error.
+    for Rbad ∈ (0.3, [0.3], [0.1, 0.2], ones(5))
+        @test_throws ArgumentError Scri.rotor_argument(Rbad)
+    end
+    @test_throws ArgumentError Scri.transform!(copy(data), copy(t), v⃗, [0.3], copy(α), dc)
+
+    # A velocity may be a tuple, but it must have exactly three components; a scalar or a
+    # vector of another length is not truncated or padded into some other boost.
+    @test Scri.transform!(copy(data), copy(t), Tuple(v⃗vec), R, copy(α), dc)[1] == d₁
+    for v⃗bad ∈ (0.01, [0.01], [0.0, 0.01, 0.0, 0.0])
+        @test_throws ArgumentError Scri.transform!(
+            copy(data), copy(t), v⃗bad, R, copy(α), dc
+        )
+        @test_throws ArgumentError Scri.transform_objective(data, t, v⃗bad, R, α, dc, plan)
+    end
+
     # The BMS convenience method matches the unpacked call, exactly as for `transform!`.
     # The element's accessors describe a (slightly) different transformation than the raw
     # (v⃗, R) above, so use a worst-case grid valid for both, and a matching target.

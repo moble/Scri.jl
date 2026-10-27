@@ -370,7 +370,7 @@ frame rotation `R`, and supertranslation modes `α`; the inverse of
 The modes are made real first, as everywhere else, by averaging each with its partner.
 """
 function parameters_from_bms(v⃗, R, α::AbstractVector)
-    v⃗ = QuatVec(v⃗)
+    v⃗ = as_quatvec(v⃗)
     β² = abs2vec(v⃗)
     β² < 1 || throw(ArgumentError("The boost speed must be less than 1"))
     # atanh(β)/β, the inverse of `tanhc_sqrt`, by its series near zero, which is used below

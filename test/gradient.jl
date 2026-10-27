@@ -75,6 +75,7 @@ end
     @test R ≈ exp(QuatVec(θ[1:3]...) / 2)
     @test α ≈ Scri.impose_reality(α, 2, 1) rtol = 1e-15  # already real on the sphere
     @test Scri.parameters_from_bms(v⃗, R, α) ≈ θ rtol = 1e-14
+    @test_throws ArgumentError Scri.parameters_from_bms([0.1], R, α)
 
     # Zero is the identity, and nothing is singular there or at small rapidities, where
     # the series and the closed form of tanh(√x)/√x meet.
