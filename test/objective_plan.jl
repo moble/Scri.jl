@@ -35,9 +35,10 @@
     )
     @test p2.w ≈ w .* pw && p2.v == ones(Nᵗ) && p2.c == [2.0, 0.5]
 
-    # A grid may be given, here the golden-ratio pixels with unit weights.
-    golden = Scri.golden_ratio_spiral_rotors(0, ℓ, Float64)
-    p3 = Scri.ObjectivePlan(target, t, dc, t[2:5]; grid=(golden, ones(N)))
+    # A grid may be given, here the pixels of `transform!` with unit weights, which are also
+    # the default grid of `pixel_waveform`.
+    pixels = Scri.transform_grid(ℓ, Float64)
+    p3 = Scri.ObjectivePlan(target, t, dc, t[2:5]; grid=(pixels, ones(N)))
     @test length(p3.R′ₚ) == N && p3.target ≈ Scri.pixel_waveform(target, t, dc, t[2:5])
 
     # Bad weights and shapes are rejected.
@@ -45,7 +46,7 @@
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; weights=(-pw))
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; time_weights=ones(2))
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; component_weights=[1.0])
-    @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; grid=(golden, ones(3)))
+    @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; grid=(pixels, ones(3)))
     @test_throws ArgumentError Scri.ObjectivePlan(0 * target, t, dc, t; normalize=true)
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t .+ 100)
 end
@@ -78,8 +79,8 @@ end
     end
     t′ = t[6:(end - 5)]  # knots, so the target needs no interpolation
     plan = Scri.ObjectivePlan(target, t, dc, t′)
-    golden = Scri.golden_ratio_spiral_rotors(0, ℓ, Float64)
-    old = Scri.ObjectivePlan(target, t, dc, t′; grid=(golden, fill(4π / N, N)))
+    pixels = Scri.transform_grid(ℓ, Float64)
+    old = Scri.ObjectivePlan(target, t, dc, t′; grid=(pixels, fill(4π / N, N)))
     # A time translation by δ is the supertranslation α = δ, whose only mode is ℓ = 0.
     J(p, δ) = Scri.transform_objective(
         data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), [complex(2√π * δ)], dc, p
@@ -134,7 +135,7 @@ end
     end
     δᵐ = minimizer(Jmodes)
     @test minimizer(δ -> J(plan, δ)) ≈ δᵐ atol = 1e-10
-    # Measured: the old objective's minimum is off by 0.012, about 2% of δ₂ − δ₃.
+    # Measured: the old objective's minimum is off by 0.014, about 2.5% of δ₂ − δ₃.
     @test abs(minimizer(δ -> J(old, δ)) - δᵐ) > 5e-3
 end
 

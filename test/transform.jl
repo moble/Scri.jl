@@ -5,7 +5,7 @@
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, Boost, 𝐤, vec, absvec
-    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix
     using LinearAlgebra: lu, dot
 
     # For a pure boost (no rotation, no supertranslation) acting on a spin-0 ψ₂ field with
@@ -16,7 +16,7 @@
     # at both null infinities.  At ℐ = +1 this is also a regression guard for ℐ⁺.
     ℓ = 8
     N = (ℓ + 1)^2
-    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)   # the uniform B-frame grid transform! uses
+    Rs = Scri.transform_grid(ℓ, Float64)   # the B-frame grid that transform! uses
     # A smooth, band-limited, real spin-0 field.
     f = [1.0 + 0.3 * vec(R(𝐤))[3] + 0.2 * vec(R(𝐤))[1]^2 for R ∈ Rs]
     α0 = lu(sYlm_matrix(Rs, ℓ, 0)) \ complex(f)
@@ -54,12 +54,12 @@ end
 
 @testitem "transform!: BMS-element bridge" tags = [:validation, :fast] begin
     using Quaternionic: QuatVec, rotor
-    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, leja_rotors
     using LinearAlgebra: lu
 
     ℓ = 6
     N = (ℓ + 1)^2
-    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    Rs = leja_rotors(0, ℓ, Float64)
     α0 = lu(sYlm_matrix(Rs, ℓ, 0)) \ complex([cospi(0.3) + 0.2 * R[1] for R ∈ Rs])
     t = [0.0, 1.0, 2.0, 3.0]
     mkdata() = (d=zeros(ComplexF64, N, 4, 3); foreach(j -> (d[:, j, 1] .= α0), 1:4); d)
@@ -160,7 +160,7 @@ end
 ] begin
     import Random
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð
     using LinearAlgebra: lu
 
     # A pure supertranslation (no boost, no rotation) with time-independent data isolates the
@@ -171,7 +171,7 @@ end
     # cannot.
     ℓ = 8
     N = (ℓ + 1)^2
-    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    Rs = Scri.transform_grid(ℓ, Float64)
     rng = Random.Xoshiro(20260625)
 
     # A real supertranslation α restricted to ℓ ≤ 2 (so the mixing products b·ψ stay within
@@ -199,9 +199,10 @@ end
     for k ∈ 1:4, j ∈ 1:Nᵗ
         data[:, j, k] .= modes[k]
     end
-    Scri.transform!(
-        data, collect(0.0:(Nᵗ - 1)), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
-    )
+    # The data are constant in time, so a window much wider than the values of α leaves
+    # complete output slices whatever pixels the grid of `transform!` has.
+    t = collect(LinRange(-8.0, 8.0, Nᵗ))
+    Scri.transform!(data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc)
     out_pix = [
         sYlm_matrix(Rs, ℓ, spins[k]) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
     ]
@@ -220,14 +221,14 @@ end
 ] begin
     import Random
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð
 
     # The ℐ⁻ mirror of the previous test.  The generator is l̃, so the peeling tower must use
     # the *conjugate* parameter b̄ = ð̄v'/2κ (spin −1), running ψ₀(s=+2) → ψ₄(s=−2); the shear
     # shift is λ' = λ + ð̄²α/2√2.  Pins the conjugation in the I=−1 branch.
     ℓ = 8
     N = (ℓ + 1)^2
-    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    Rs = Scri.transform_grid(ℓ, Float64)
     rng = Random.Xoshiro(20260626)
 
     αmodes = zeros(ComplexF64, N)
@@ -253,9 +254,10 @@ end
     for k ∈ 1:4, j ∈ 1:Nᵗ
         data[:, j, k] .= modes[k]
     end
-    Scri.transform!(
-        data, collect(0.0:(Nᵗ - 1)), QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc
-    )
+    # The data are constant in time, so a window much wider than the values of α leaves
+    # complete output slices whatever pixels the grid of `transform!` has.
+    t = collect(LinRange(-8.0, 8.0, Nᵗ))
+    Scri.transform!(data, t, QuatVec(0.0, 0.0, 0.0), one(Rotor{Float64}), α, dc)
     out_pix = [
         sYlm_matrix(Rs, ℓ, spins[k]) * data[(spins[k] ^ 2 + 1):end, 1, k] for k ∈ 1:4
     ]
@@ -332,7 +334,7 @@ end
 ] begin
     import Scri: compute_ðt′╱2κ
     using Quaternionic: QuatVec, Rotor, vec
-    using SphericalFunctions: golden_ratio_spiral_rotors
+    using SphericalFunctions: leja_rotors
     import Random
 
     # Direct, alias-free unit test of the helper extracted from `transform!`.  This is the
@@ -341,7 +343,7 @@ end
     # every full-`transform!` test zeroes one of the two, so a sign error there is invisible.
     rng = Random.Xoshiro(42)
     ℓ = 5
-    Rₚ = golden_ratio_spiral_rotors(0, ℓ, Float64)   # arbitrary grid; only the rotors matter
+    Rₚ = leja_rotors(0, ℓ, Float64)   # arbitrary grid; only the rotors matter
     Nₚ = length(Rₚ)
     v⃗ = QuatVec(0.1, -0.2, 0.3)
 
@@ -381,7 +383,7 @@ end
 ] begin
     import Scri: compute_ðt′╱2κ
     using Quaternionic: QuatVec, Rotor, 𝐤, vec
-    using SphericalFunctions: sYlm_matrix, ð, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, ð, leja_rotors
     using LinearAlgebra: dot
     using DoubleFloats: Double64
     import Random
@@ -408,7 +410,7 @@ end
         γ = 1 / √(1 - sum(abs2, vec(v⃗)))
         for ℓₘₐₓ ∈ (12, 16), I ∈ (1, -1)
             N = (ℓₘₐₓ + 1)^2
-            Rₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)
+            Rₚ = leja_rotors(0, ℓₘₐₓ, T)
 
             # A low-ℓ real supertranslation α (ℓ ≤ 2), so κ·α stays well within the band.
             αmodes = zeros(Complex{T}, N)
@@ -675,7 +677,7 @@ end
     :validation, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, randn
-    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix, leja_rotors
     import Random
 
     # For a pure rotation (no boost, no supertranslation) κ ≡ 1 and the mixing parameter
@@ -708,8 +710,8 @@ end
     # The time array is unchanged (up to roundoff in the affine regrid).
     @test maximum(abs, t′ .- t) ≤ 4 * eps() * maximum(abs, t)
 
-    # Pointwise check on the golden-ratio grid, per component and spin weight.
-    Rs = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    # Pointwise check on the Leja points, per component and spin weight.
+    Rs = leja_rotors(0, ℓ, Float64)
     Rs_rot = [R * R′ₚ for R′ₚ ∈ Rs]
     for (k, s) ∈ ((1, -2), (2, -2))
         Y = sYlm_matrix(Rs, ℓ, s)
@@ -1089,7 +1091,7 @@ end
 @testmodule PixelReconstruction begin
     import Scri
     import LinearAlgebra
-    import SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    import SphericalFunctions: sYlm_matrix
     using LinearAlgebra: qr
 
     # Reconstruct the stage-2 pixel values from `transform!` output, exactly.  The
@@ -1101,7 +1103,7 @@ end
         Nᵐ, Nᵗ, Nᵈ = size(d′)
         ℓₘₐₓ = isqrt(Nᵐ) - 1
         T′ = Scri.primal_float(T)
-        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T′)
+        R′ₚ = Scri.transform_grid(ℓₘₐₓ, T′)
         components = typeof(dc).parameters[1]
         pixels = Array{Complex{T},3}(undef, Nᵐ, Nᵗ, Nᵈ)
         for k ∈ 1:Nᵈ
@@ -1122,9 +1124,9 @@ end
     # A plan reproducing the objective as it was before the sphere quadrature: the pixels
     # of `transform!` with unit weights, and unit time weights, so that the objective is
     # exactly Σ|pixels − target|² over those pixels and the output times.
-    function golden_plan(modes, t, dc, t′)
+    function grid_plan(modes, t, dc, t′)
         ℓₘₐₓ = isqrt(size(modes, 1)) - 1
-        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, Float64)
+        R′ₚ = Scri.transform_grid(ℓₘₐₓ, Float64)
         return Scri.ObjectivePlan(
             modes, t, dc, t′; grid=(R′ₚ, ones(length(R′ₚ))), time_weights=ones(length(t′))
         )
@@ -1153,9 +1155,7 @@ end
 
     d′, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
     pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
-    plan = PixelReconstruction.golden_plan(
-        Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′
-    )
+    plan = PixelReconstruction.grid_plan(Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′)
     expected = sum(abs2, pixels .- plan.target)
 
     obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
@@ -1229,7 +1229,6 @@ end
     :unit, :validation
 ] begin
     using Quaternionic: QuatVec, Rotor
-    using SphericalFunctions: golden_ratio_spiral_rotors
     import ForwardDiff
     import Random
 
@@ -1259,7 +1258,7 @@ end
     # has azimuth zero, keeps azimuth zero after aberration.  SphericalFunctions 2 gave NaN
     # derivatives of the harmonics there; version 3 does not.  The rotation R₁ moves that
     # pixel onto the pole itself, and a boost along z keeps it there.
-    R₁ = conj(first(golden_ratio_spiral_rotors(0, ℓ, Float64)))
+    R₁ = conj(first(Scri.transform_grid(ℓ, Float64)))
     R₁⃗ = [R₁.w, R₁.x, R₁.y, R₁.z]
     h = 1e-6
     for (v⃗, R⃗) ∈ (
@@ -1308,7 +1307,7 @@ end
     )
     tc = (t′₀[begin] + t′₀[end]) / 2
     t′fix = tc .+ 0.9 .* (t′₀ .- tc)
-    plan = PixelReconstruction.golden_plan(
+    plan = PixelReconstruction.grid_plan(
         Random.randn(rng, ComplexF64, N, Nᵗ, 2), t, dc, t′fix
     )
 
@@ -1357,7 +1356,7 @@ end
     dc = Scri.DataComponents(:h, :ψ₄, :ψ₃)  # spin weights -2, -2, and -1
     data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 3)
     t′fix = Scri.compute_t′(t, 0.05, 1.0)
-    plan = PixelReconstruction.golden_plan(
+    plan = PixelReconstruction.grid_plan(
         Random.randn(rng, ComplexF64, N, Nᵗ, 3), t, dc, t′fix
     )
 
@@ -1536,7 +1535,7 @@ end
 @testitem "pixel_waveform: direct synthesis and interpolation-free grids" tags = [
     :unit, :fast
 ] begin
-    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix
     import Random
 
     rng = Random.Xoshiro(7676)
@@ -1545,7 +1544,7 @@ end
     Nᵗ = 16
     t = collect(LinRange(-8.0, 8.0, Nᵗ))
     dc = Scri.DataComponents(:h, :ψ₄, :ψ₃, :ψ₂)  # spins -2, -2, -1, 0
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓ, Float64)
+    R′ₚ = Scri.transform_grid(ℓ, Float64)
 
     # Time-constant modes: splining a constant is exact, so every output slice must be
     # the direct synthesis `sYlm_matrix * modes`, at every t′ — including a coarse, offset grid.
@@ -1611,13 +1610,13 @@ end
     modes = Random.randn(rng, ComplexF64, N, Nᵗ, 2)
 
     sub = 1:3:Nᵗ
-    plan = PixelReconstruction.golden_plan(modes, t, dc, t′f[sub])
+    plan = PixelReconstruction.grid_plan(modes, t, dc, t′f[sub])
     obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
     expected = sum(abs2, pixels[:, sub, :] .- plan.target)
     @test obj ≈ expected rtol = 1e-11
 
     # A single-sample grid also works.
-    plan₁ = PixelReconstruction.golden_plan(modes, t, dc, t′f[12:12])
+    plan₁ = PixelReconstruction.grid_plan(modes, t, dc, t′f[12:12])
     obj₁ = Scri.transform_objective(data, t, v⃗, R, α, dc, plan₁)
     @test obj₁ ≈ sum(abs2, pixels[:, 12:12, :] .- plan₁.target) rtol = 1e-11
 
@@ -1747,7 +1746,7 @@ end
     :validation, :integration, :fast
 ] begin
     using Quaternionic: QuatVec, Rotor, imz, from_spherical_coordinates
-    using SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors
+    using SphericalFunctions: sYlm_matrix
 
     # Schwarzschild in its own Bondi frame is ψ₂ = −M, constant over the sphere and in time,
     # with every other component zero (the value follows from the tetrad and Weyl-component
@@ -1775,9 +1774,11 @@ end
     )
 
     # Pointwise: the transformed mass aspect is the Coulomb aspect of a boosted hole, with
-    # the conformal factor on the *output* grid given by κ = γ(1 + v⃗⋅n̂′).
+    # the conformal factor on the *output* grid given by κ = γ(1 + v⃗⋅n̂′).  The check is made
+    # on the pixels of `transform!`, where synthesizing its output modes recovers its pixel
+    # values exactly; elsewhere the truncation of κ⁻³ at ℓₘₐₓ would show.
     j = 5
-    Rs = golden_ratio_spiral_rotors(0, ℓₘₐₓ, Float64)
+    Rs = Scri.transform_grid(ℓₘₐₓ, Float64)
     ψ₂′ = sYlm_matrix(Rs, ℓₘₐₓ, 0) * data′[:, j, iψ₂]
     κ = [γ * (1 + v * (R * imz * conj(R)).z) for R ∈ Rs]
     @test maximum(abs, ψ₂′ .- (-M .* κ .^ -3)) < 1e-10 * M

@@ -344,8 +344,8 @@ the nonzero modes, reducing its cost by roughly the factor
 thrown if any declared-zero mode is nonzero.
 
 The optional keyword `plan` supplies a [`TransformPlan`](@ref) for the band limit, precision,
-and spin weights of `data`, so that the uniform grid and its analysis factorizations, which
-depend on no BMS parameter, are not rebuilt on every call.
+and spin weights of `data`, so that the grid and its analysis factorizations, which depend
+on no BMS parameter, are not rebuilt on every call.
 
 Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, if given).
 
@@ -418,13 +418,10 @@ function transform!(
     vˣ, vʸ, vᶻ = vec(v⃗)
     Λ = Boost(I * v⃗) * R
 
-    # Compute uniformly spaced rotors that are simple to produce, but close to ideal for
-    # sampling the sphere.  Use spin weight 0 to accommodate all fields on the same grid.
-    # Normally, when using `SSHTDirect`, we would just let it choose the grid for us, but
-    # this would usually depend on the spin weight, and we need the same grid for all
-    # components.  Moreover, we actually want the grid to be uniformly spaced in the
-    # transformed frame, which means that we have to evaluate on a non-uniform grid in the
-    # rest frame.
+    # The grid of the transformed frame, on which the transformed data are analyzed back
+    # into modes; see `transform_grid`.  It is chosen for spin weight 0, because all the
+    # components must share one grid, and it is a grid in the *transformed* frame, so the
+    # data are evaluated on its image in the rest frame below.
     # The grid is parameter-independent, so build it (and, below, the analysis
     # factorizations) at the primal float type — see `primal_float`; this keeps AD dual
     # numbers out of the constant `qr`/`lu` factorizations, whose Householder steps would
@@ -432,8 +429,8 @@ function transform!(
     T4′ = primal_float(T4)
     spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
     if isnothing(plan)
-        R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T4′)
-        # The analysis factorization on the uniform grid, for each spin weight that the
+        R′ₚ = transform_grid(ℓₘₐₓ, T4′)
+        # The analysis factorization on the grid, for each spin weight that the
         # data have, and no others; it overlaps with the setup below.
         task_augmented_lu = OhMyThreads.@spawn Dict(
             s => augmented_factorization(R′ₚ, ℓₘₐₓ, s) for s ∈ spins
@@ -447,7 +444,7 @@ function transform!(
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
     task_cubic_spline_cache = OhMyThreads.@spawn CubicSplineCache(t)
 
-    # That uniformly spaced grid will be as seen in the transformed frame; here we compute
+    # That grid is the one seen in the transformed frame; here we compute
     # the corresponding rotors in the rest frame, on which we will evaluate the input data
     # (the boosted or distorted grid), together with the supertranslation and its eth
     # derivatives there.  See `supertranslation_on_grid`.
@@ -738,8 +735,8 @@ samples `t′`, returning an array of pixel values of size `(length(R′ₚ), le
 This is the *un*-transformed waveform, evaluated on a grid in the frame of the transformed
 data: pixel `i` is the direction of `R′ₚ[i]`, and the values are spline-interpolated from
 `t` to `t′` with the same natural cubic spline used by [`transform!`](@ref).  Without
-`R′ₚ`, the grid is `golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)`, the `Nᵐ` pixels on which
-`transform!` evaluates the transformed waveform.
+`R′ₚ`, the grid is [`transform_grid`](@ref Scri.transform_grid)`(ℓₘₐₓ, T)`, the `Nᵐ`
+pixels on which `transform!` evaluates the transformed waveform.
 
 The `data`, `t`, and `dc` arguments are exactly as in
 [`transform!`](@ref); in particular `data` must have size `(Nᵐ,
@@ -754,7 +751,7 @@ function pixel_waveform(
 ) where {T1<:Real,T2<:Real}
     ℓₘₐₓ = isqrt(size(data, 1)) - 1
     T′ = primal_float(promote_type(T1, T2, eltype(t′)))
-    return pixel_waveform(data, t, dc, t′, golden_ratio_spiral_rotors(0, ℓₘₐₓ, T′))
+    return pixel_waveform(data, t, dc, t′, transform_grid(ℓₘₐₓ, T′))
 end
 function pixel_waveform(
     data::Array{Complex{T1},3},

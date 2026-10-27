@@ -1,9 +1,28 @@
+"""
+    transform_grid(ℓₘₐₓ, T)
+
+The rotors, of element type `T`, of the pixels on which [`transform!`](@ref) evaluates the
+transformed data and analyzes them back into modes of band limit `ℓₘₐₓ`.  There are as many
+pixels as modes, `(ℓₘₐₓ + 1)^2`, and one grid serves every spin weight, because the
+transformation laws mix the components pixel by pixel.  This is also the default grid of
+[`pixel_waveform`](@ref).
+
+The pixels are the Leja points of spin weight 0 from SphericalFunctions' `leja_rotors`,
+chosen so that the matrix of harmonics on them is well conditioned.  The augmented analysis
+of nonzero spin weights (see [`augmented_factorization`](@ref Scri.augmented_factorization))
+inherits that conditioning: at ``ℓₘₐₓ = 32``, the condition numbers of the analysis matrices
+of spin weights 0, 1, and 2 are about 70, 110, and 80, where on the golden-ratio spiral they
+were about 10⁵, 7 × 10⁴, and 10⁴.  Choosing the points costs less than the factorizations
+that `transform!` makes on them, about 0.06 seconds at ``ℓₘₐₓ = 32``.
+"""
+transform_grid(ℓₘₐₓ, ::Type{T}) where {T} = leja_rotors(0, ℓₘₐₓ, T)
+
 @doc raw"""
     TransformPlan(ℓₘₐₓ, dc, T=Float64)
     TransformPlan(data, dc)
 
 The part of [`transform!`](@ref) that depends on no BMS parameter, computed once for reuse
-across calls: the uniform grid `golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)` on which the
+across calls: the grid [`transform_grid`](@ref Scri.transform_grid)`(ℓₘₐₓ, T)` on which the
 transformed data are analyzed back into modes, and the factorization of the analysis matrix
 on that grid for each spin weight among the components of `dc`.
 
@@ -25,7 +44,7 @@ function TransformPlan(
 ) where {C,T<:AbstractFloat}
     ℓₘₐₓ ≥ 2 || throw(ArgumentError("ℓₘₐₓ=$ℓₘₐₓ, but the transformation needs ℓₘₐₓ ≥ 2"))
     spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
-    R′ₚ = golden_ratio_spiral_rotors(0, ℓₘₐₓ, T)
+    R′ₚ = transform_grid(ℓₘₐₓ, T)
     factorizations = OhMyThreads.tmap(s -> augmented_factorization(R′ₚ, ℓₘₐₓ, s), spins)
     return TransformPlan{T,eltype(factorizations)}(
         ℓₘₐₓ, R′ₚ, Dict(zip(spins, factorizations))

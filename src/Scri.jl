@@ -14,13 +14,7 @@ import Quaternionic:
     from_spherical_coordinates,
     ℂreal
 import SphericalFunctions:
-    SphericalFunctions,
-    sYlm_matrix,
-    sYlmCalculator,
-    set_R!,
-    ð,
-    golden_ratio_spiral_rotors,
-    D
+    SphericalFunctions, sYlm_matrix, sYlmCalculator, set_R!, ð, leja_rotors, SSHTMatrix, D
 import ForwardDiff
 import LinearAlgebra: LinearAlgebra, mul!, ldiv!, lu, qr
 import Logging

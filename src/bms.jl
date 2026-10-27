@@ -554,14 +554,14 @@ end
         absvec,
         𝐤,
         from_spherical_coordinates
-    import SphericalFunctions: sYlm_matrix, golden_ratio_spiral_rotors, D
+    import SphericalFunctions: sYlm_matrix, D
     using Scri: BMS, impose_reality
     using DoubleFloats: Double64
 
     const FloatTypes = (Float32, Float64, Double64, BigFloat)
 
     # Conditioning-scaled tolerance for band-limited synthesis/analysis round-trips on
-    # the golden-ratio grid at working bandwidth ℓʷ.
+    # the grid of `compose` at working bandwidth ℓʷ.
     tol(::Type{T}, ℓʷ; c=100) where {T} = c * (ℓʷ + 1)^2 * eps(real(T))
 
     function random_direction(rng, ::Type{T}) where {T}
@@ -1333,8 +1333,9 @@ convention the two inputs *share* is kept for the result, and each convention on
 *disagree* is resolved by converting both inputs — exactly — to the default (`+1`).  `c_α`
 does not otherwise enter the group law.
 
-The composed supertranslation is computed pointwise on a spherical grid of bandwidth `ℓʷ`
-and then re-expanded in spherical harmonics, keeping modes up to `ℓₘₐₓ`.  The default is
+The composed supertranslation is computed pointwise on a spherical grid of bandwidth `ℓʷ`,
+the Leja points of SphericalFunctions' `SSHTMatrix`, and then re-expanded in spherical
+harmonics, keeping modes up to `ℓₘₐₓ`.  The default is
 `ℓₘₐₓ = max(ℓ₂ + 1, ℓ₁)`, where `ℓᵢ` are the two inputs' resolutions: the term `α₁` keeps
 its own bandwidth, while `α₂/κ₁` gains one — the factor `1/κ₁` is exactly band-limited to
 `ℓ ≤ 1`, so the product has bandwidth `ℓ₂ + 1`.  `ℓʷ` defaults to
@@ -1395,7 +1396,10 @@ function compose(
         # hence exact (up to roundoff) with no grid round trip.
         resize_modes(g₁.α, ℓₘₐₓ) .+ rotate_modes(g₂.α, conj(Q₁), ℓₘₐₓ)
     else
-        Rₚ = golden_ratio_spiral_rotors(0, ℓʷ, T)
+        # The transform is built in the primal type, so that any dual numbers in the
+        # inputs pass through its solve rather than into its factorization.
+        𝒯 = SSHTMatrix(0, ℓʷ, primal_float(T); inplace=false)
+        Rₚ = Rotor{T}.(SphericalFunctions.rotors(𝒯))
         α₁ₚ = real.(sYlm_matrix(Rₚ, ell_max(g₁), 0) * g₁.α)
         R′ₚ = similar(Rₚ)
         κ₁ₚ = Vector{T}(undef, length(Rₚ))
@@ -1406,7 +1410,7 @@ function compose(
         end
         α₂ₚ = real.(sYlm_matrix(R′ₚ, ell_max(g₂), 0) * g₂.α)
         f = @. complex(α₁ₚ + α₂ₚ / κ₁ₚ)
-        modes = lu(sYlm_matrix(Rₚ, ℓʷ, 0)) \ f
+        modes = 𝒯 \ f
         modes[1:((ℓₘₐₓ + 1) ^ 2)]
     end
     return BMS{T,A,I}(Λ, α)
