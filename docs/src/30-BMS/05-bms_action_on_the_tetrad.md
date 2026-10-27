@@ -87,7 +87,7 @@ ñ(u) &= \sqrt{2} &\qquad\qquad
 ñ'(u') &= \sqrt{2} \\
 m̃(u) &= 0 &\qquad\qquad
 m̃'(u') &= 0 \\
-n(θ) &= 0 &\qquad\qquad
+ñ(θ) &= 0 &\qquad\qquad
 ñ'(θ') &= 0,
 \end{aligned}
 ```
@@ -211,7 +211,9 @@ R_γ\, 𝐦\, R̃_γ = e^{𝐱𝐲γ}\, 𝐦,
 because ``𝐈₃𝐦 = 𝐱𝐲𝐦``: on the dyad the spatial pseudoscalar
 ``𝐈₃`` and the screen pseudoscalar ``𝐱𝐲`` coincide, so ``𝐱𝐲`` is
 the dyad's own ``i``.  A quantity of spin weight ``s`` thus acquires a
-phase ``e^{s𝐱𝐲γ}``.
+phase ``e^{s𝐱𝐲γ}``.  Note that this generator is the negative of the
+one written for ``M`` on [the Lorentz page](@ref IwasawaHopfLevi); the
+sign chosen here is conventional in the definition of spin weight.
 
 The ``A`` factor is the boost ``R_{φₐ} = \exp\left[\tfrac{φₐ}{2}
 𝐭𝐳\right]`` along the radial null direction.  It rescales the

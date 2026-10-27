@@ -146,6 +146,12 @@ Compute ``v⃗ ⋅ k̂`` for the direction ``k̂ = Rₚᵢ 𝐤 R̃ₚᵢ`` sing
 velocity components.  This is the angular dependence entering the inverse conformal factor
 ``1/κ = γ(1 - ℐ v⃗⋅k̂)``.  Generic over the component types, so `Rₚᵢ` and the velocity may
 carry dual numbers.
+
+The difference ``1 - ℐ v⃗⋅k̂`` loses accuracy on the blue-shifted side of a fast boost,
+where ``ℐ v⃗⋅k̂`` approaches the speed ``β = |v⃗|``: the relative error of ``1/κ`` there is
+about ``ε/(1 - β)`` for the machine epsilon ``ε``, which is ``2.5 × 10^{-12}`` at ``β =
+0.9999`` and ``8 × 10^{-9}`` at ``β = 1 - 10^{-8}`` in `Float64`, and is negligible at the
+speeds of recoiling black holes.
 """
 @inline function v⃗dotk̂(Rₚᵢ, vˣ, vʸ, vᶻ)
     (Rʷ, Rˣ, Rʸ, Rᶻ) = components(Rₚᵢ)
@@ -274,6 +280,11 @@ eth-derivative `ðαₚ`:
 See the documentation page ["Computing ``ðt'/κ``"](@ref computing_eth_tprime_over_2kappa) for
 the derivation.  Note in particular that the boost × supertranslation cross term ``ðt'╱2κ[2,
 i]·αₚ[i]`` enters with a **minus** sign.
+
+The denominator ``λᶻ - ℐ`` is the difference that sets ``1/κ``, since ``λᶻ = v⃗⋅k̂``, and it
+loses accuracy in the same way on the blue-shifted side of a fast boost: the relative error
+of ``ðκ/2κ`` there is about ``ε/(1 - β)`` for the speed ``β = |v⃗|`` and the machine epsilon
+``ε``, which is negligible at the speeds of recoiling black holes.
 """
 function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, ℐ=One())
     vˣ, vʸ, vᶻ = vec(v⃗)
