@@ -147,8 +147,6 @@ function supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
     ðαₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
     ð²αₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
-        OhMyThreads.@set scheduler = :static
-        OhMyThreads.@set ntasks = nthreads()
         OhMyThreads.@local begin
             calc = sYlmCalculator(one(Tₚ), ℓᵅ, 0:2)
             Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵅ, 3)
@@ -538,8 +536,6 @@ function transform!(
     ðt′╱2κₚ = fetch(task_ðt′╱2κₚ)
 
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
-        OhMyThreads.@set scheduler = :static
-        OhMyThreads.@set ntasks = nthreads()
         OhMyThreads.@local begin
             dᵢ = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
             d̈ᵢ = Matrix{Complex{T1}}(undef, Nᵈ, Nᵗ)
@@ -790,8 +786,6 @@ function pixel_waveform(
     cubic_spline_cache = CubicSplineCache(t)
     out = Array{Complex{TP},3}(undef, Nᵖ, Nᵗ′, Nᵈ)
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
-        OhMyThreads.@set scheduler = :static
-        OhMyThreads.@set ntasks = nthreads()
         OhMyThreads.@local begin
             dᵢ = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
             d̈ᵢ = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
