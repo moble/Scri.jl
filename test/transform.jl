@@ -1337,6 +1337,60 @@ end
     @test ForwardDiff.derivative(lean, β₀) ≈ ForwardDiff.derivative(heavy, β₀) rtol = 1e-9
 end
 
+@testitem "transform! and transform_objective: derivatives at a generic point" tags = [
+    :unit, :validation
+] setup = [PixelReconstruction] begin
+    using Quaternionic: QuatVec
+    import ForwardDiff
+    import Random
+
+    # The other derivative tests vary one parameter at a time, about points with α = 0 and
+    # boosts along z.  Here every parameter varies at once, about a point with a boost in a
+    # general direction, a general rotation, and a supertranslation with all modes up to
+    # ℓ = 2.  The boost × supertranslation cross term of ðt′/2κ is nonzero only when both
+    # are, so only a point like this one tests its derivatives.
+    rng = Random.Xoshiro(7474)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    Nᵗ = 20
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃)  # spin weights -2, -2, and -1
+    data₀ = Random.randn(rng, ComplexF64, N, Nᵗ, 3)
+    t′fix = Scri.compute_t′(t, 0.05, 1.0)
+    plan = PixelReconstruction.golden_plan(
+        Random.randn(rng, ComplexF64, N, Nᵗ, 3), t, dc, t′fix
+    )
+
+    # θ holds the boost velocity, a rotation vector, and the real and imaginary parts of
+    # the nine supertranslation modes with ℓ ≤ 2.
+    parts(θ) = (θ[1:3], θ[4:6], complex.(θ[7:15], θ[16:24]))
+    θ₀ = [0.02, -0.015, 0.01, 0.3, -0.2, 0.5, (0.1 .* Random.randn(rng, 18))...]
+
+    # The lean objective, and the same objective computed the memory-heavy way, through a
+    # dual-typed copy of `data` and an exact reconstruction of the pixels of `transform!`.
+    lean(θ) = Scri.transform_objective(data₀, t, parts(θ)..., dc, plan)
+    function heavy(θ)
+        data = Complex{eltype(θ)}.(data₀)
+        d, _ = Scri.transform!(data, copy(t), parts(θ)..., dc; t′=t′fix)
+        pixels = PixelReconstruction.reconstruct_pixels(d, dc)
+        return sum(abs2, pixels .- plan.target)
+    end
+
+    ∇lean = ForwardDiff.gradient(lean, θ₀)
+    ∇heavy = ForwardDiff.gradient(heavy, θ₀)
+    @test lean(θ₀) ≈ heavy(θ₀) rtol = 1e-11
+    @test all(isfinite, ∇lean)
+    @test ∇lean ≈ ∇heavy rtol = 1e-9
+
+    # Both against central finite differences, one parameter at a time.
+    h = 1e-6
+    for i ∈ eachindex(θ₀)
+        e = [j == i ? h : 0.0 for j ∈ eachindex(θ₀)]
+        fd = (lean(θ₀ + e) - lean(θ₀ - e)) / 2h
+        @test abs(∇lean[i] - fd) < 1e-6 * max(1.0, abs(fd))
+    end
+end
+
 @testitem "sYlm_rows!: values, and ForwardDiff duals through sYlmCalculator" tags = [
     :unit, :fast
 ] begin
