@@ -54,15 +54,38 @@ end
     # cotetrad gives c_s = -1 and c_l = +√2 exactly, with the m-leg sign (relative to
     # the polar spin frame) booked as c_m = -1.
     c = Conventions(:MB)
-    @test c.c_s === MinusOne() && c.c_l === √2 && c.c_m === MinusOne() && c.c_h === 2
-    @test c.c_R === One() && c.c_ψ === One() && c.c_σ === One()
+    @test c.c_s === MinusOne() && c.c_l === √2 && c.c_m === MinusOne()
+    @test c.c_R === One() && c.c_ψ === MinusOne() && c.c_σ === MinusOne()
+    @test c.c_h === -0.5 && c.c_ð === 1 / √2 && c.c_λ === One() && c.c_φ === One()
 
-    # The precision keyword controls the type of inexact entries.
+    # The precision keyword controls the type of every entry other than ±1.
     using DoubleFloats: Double64
-    @test Conventions(:MB; T=Double64).c_l === sqrt(Double64(2))
+    c64 = Conventions(:MB; T=Double64)
+    @test c64.c_l === sqrt(Double64(2)) && c64.c_h === -inv(Double64(2))
+    @test c64.c_ð === inv(sqrt(Double64(2)))
 
     # Unknown names are rejected.
     @test_throws ArgumentError Conventions(:nope)
+end
+
+@testitem "Conventions: the :MB preset converts as scri does" tags = [:unit, :fast] begin
+    import Scri: Conventions, weyl_factor, shear_factor, strain_factor
+
+    # The Python package scri converts SXS data into the Moreschi/Boyle convention in
+    # `create_abd_from_h5`, multiplying ψ₀, …, ψ₄ by 2, -√2, 1, -1/√2, and 1/2, and setting
+    # σ = conj(h)/2.  The SXS shear is σ = h̄/2√2, so the MB shear is √2 times the SXS one.
+    # Boyle (2015) defines the MB strain as h = σ̄, which is then half the SXS strain.
+    c = Conventions(:MB)
+    for (n, factor) ∈ zip(0:4, (2, -√2, 1, -1 / √2, 1 / 2))
+        @test weyl_factor(c, n) ≈ factor
+    end
+    @test shear_factor(c) ≈ √2
+    @test strain_factor(c) ≈ 1 / 2
+
+    # Hence ψ₄ = -ḧ in both conventions, as Boyle (2015) has with ψ₄ = -∂²σ̄/∂u², and the
+    # Schwarzschild ψ₂ = -M is the same in both, as the mass aspect -Re ψ₂ of scri needs.
+    @test weyl_factor(c, 4) ≈ strain_factor(c)
+    @test weyl_factor(c, 2) == 1
 end
 
 @testitem "Conventions: conversion factors (values and One-elision)" tags = [:unit, :fast] begin

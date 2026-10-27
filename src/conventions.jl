@@ -104,22 +104,38 @@ function Conventions(;
     )
 end
 
-"""
+@doc raw"""
     Conventions(name::Symbol; T=Float64)
 
 Named presets.  Available: `:SXS` (the package default) and `:MB` (Moreschi/Boyle).  `T`
-sets the type used for inexact values such as `√2`; exact values (`±1`, `2`) are stored
+sets the type of every value other than ``±1``, such as `√2` and `1/2`; the signs are stored
 exactly regardless.  Values that are not clear from the references are left at the default.
+
+The `:MB` preset is the convention of [Boyle_2015](@citet) and of the Python package `scri`,
+which converts SXS data into it.  Its tetrad has ``c_s = -1``, ``c_l = \sqrt{2}``, and
+``c_m = -1``, as explained in a footnote of the "Tetrad" page.  The remaining values are fixed
+by three statements: the conversion factors of `scri`, ``ψₙ^{[MB]} = (-\sqrt{2})^{2-n}
+ψₙ^{[SXS]}`` and ``σ^{[MB]} = \tfrac{1}{2} h̄^{[SXS]}``, and the relation ``h = σ̄`` of
+that paper.  They give ``c_ψ = -1``, ``c_σ = -1``, and ``c_h = -1/2``; the last is negative
+because the metric perturbation itself changes sign with the signature.  The paper's ``ð``
+is that of Geroch, Held, and Penrose, which is ``1/\sqrt{2}`` times the one used here, so
+``c_ð = 1/\sqrt{2}``.  These values make the Schwarzschild ``ψ₂`` equal to ``-M``, as in
+the SXS convention and in the mass aspect of `scri`.  The convention table of
+[Iozzo_2021](@citet) lists the opposite sign for the Weyl components and the strain of this
+convention, which is inconsistent with that mass aspect.
 """
 function Conventions(name::Symbol; T::Type{<:Real}=Float64)
     s2 = sqrt(T(2))
     return if name === :SXS
         Conventions()
     elseif name === :MB
-        # See the footnote on the "Tetrad" conventions page: lowering the cotetrad of
-        # Boyle (2015) identifies c_s = -1 and c_l = +√2 exactly, with the sign of the
-        # m leg (relative to the polar spin frame) booked as c_m = -1.
-        Conventions(; c_s=-1, c_l=s2, c_m=-1, c_h=2)
+        # The tetrad comes from the footnote on the "Tetrad" conventions page: lowering the
+        # cotetrad of Boyle (2015) identifies c_s = -1 and c_l = +√2 exactly, with the sign
+        # of the m leg (relative to the polar spin frame) booked as c_m = -1.  The field
+        # definitions reproduce the SXS → MB factors of scri's `create_abd_from_h5`, which
+        # are ψₙ: (2, -√2, 1, -1/√2, 1/2) for n = 0, …, 4 and σ = conj(h)/2, together with
+        # the paper's h = σ̄.  The paper's ð is the GHP ð = ð_NP/√2.
+        Conventions(; c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_ð=inv(s2))
     else
         throw(
             ArgumentError("Unknown convention preset :$name; expected either :SXS or :MB")
