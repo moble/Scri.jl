@@ -16,7 +16,11 @@ Return the nodes `x` (ascending) and weights `w` of the `n`-point Gauss–Legend
 The nodes are found by Newton's method on the Legendre polynomial ``P_n``, evaluated by its
 three-term recurrence, starting from Tricomi's approximation ``\cos(π(4i-1)/(4n+2))``.  This
 works in any floating-point type `T`, such as `Double64` or `BigFloat`, where an eigenvalue
-method would need a generic eigensolver.  The weights are ``2/((1-x_i^2) P_n'(x_i)^2)``.
+method would need a generic eigensolver.  The weights are ``2/((1-x_i^2) P_n'(x_i)^2)``;
+for the outer nodes, ``1 - x_i^2`` and ``P_n'`` are computed from ``1 - |x_i|`` as in
+[`one_minus_node`](@ref Scri.one_minus_node).  Computed directly from ``x_i``, they would
+have a relative error of about ``ε/(1 - |x_i|)``, as large as ``500ε`` at ``n = 100``;
+computed this way, they are as accurate as the weights near the equator.
 """
 function gauss_legendre(n::Int, ::Type{T}=Float64) where {T<:AbstractFloat}
     if n < 1
@@ -36,8 +40,16 @@ function gauss_legendre(n::Int, ::Type{T}=Float64) where {T<:AbstractFloat}
         end
         p, dp = legendre_and_derivative(n, z)
         z -= p / dp
-        _, dp = legendre_and_derivative(n, z)
-        wᵢ = 2 / ((1 - z^2) * dp^2)
+        wᵢ = if z < 1 / 2
+            _, dp = legendre_and_derivative(n, z)
+            2 / ((1 - z^2) * dp^2)
+        else
+            # Near z = 1 both 1 - z² and the derivative lose digits when computed in z, so
+            # they are computed in v = 1 - z, as for the nodes of `sphere_quadrature`.
+            v = one_minus_node(n, z)
+            pᵥ, dᵥ = legendre_reinsch(n, v)
+            2v * (2 - v) / (n * (dᵥ - v * pᵥ))^2
+        end
         x[i], x[n + 1 - i] = -z, z
         w[i], w[n + 1 - i] = wᵢ, wᵢ
     end
@@ -93,15 +105,27 @@ function one_minus_node(n::Int, z::T) where {T}
     # Newton's method converges quadratically from an error of about ε, so two steps
     # suffice; the third makes the last digits as good as they can be.
     for _ ∈ 1:3
-        d = -v              # d₁ = P₁ - P₀
-        p = one(T) + d      # P₁
-        for k ∈ 2:n
-            d = ((k - 1) * d - (2k - 1) * v * p) / k
-            p += d
-        end
+        p, d = legendre_reinsch(n, v)
         v -= p * v * (2 - v) / (n * (d - v * p))
     end
     return v
+end
+
+"""
+    legendre_reinsch(n, v)
+
+Return ``P_n(1 - v)`` and ``d_n = P_n(1 - v) - P_{n-1}(1 - v)``, from Reinsch's form of the
+recurrence described in [`one_minus_node`](@ref Scri.one_minus_node), which loses nothing to
+cancellation near ``v = 0``.
+"""
+function legendre_reinsch(n::Int, v::T) where {T}
+    d = -v              # d₁ = P₁ - P₀
+    p = one(T) + d      # P₁
+    for k ∈ 2:n
+        d = ((k - 1) * d - (2k - 1) * v * p) / k
+        p += d
+    end
+    return p, d
 end
 
 @doc raw"""

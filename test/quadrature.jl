@@ -20,6 +20,16 @@
     @test x ≈ [-1, 1] / sqrt(BigFloat(3)) atol = 10eps(BigFloat)
     @test w ≈ [1, 1] atol = 10eps(BigFloat)
     @test_throws ArgumentError Scri.gauss_legendre(0)
+
+    # Every weight, including the tiny ones at the outermost nodes, has a small relative
+    # error.  Computed directly from the nodes, the outermost lost about 500ε at n = 100.
+    for n ∈ (33, 100, 300)
+        w = Scri.gauss_legendre(n)[2]
+        wᵇ = setprecision(BigFloat, 256) do
+            Scri.gauss_legendre(n, BigFloat)[2]
+        end
+        @test maximum(abs.(big.(w) .- wᵇ) ./ wᵇ) < n * eps(Float64) / 4
+    end
 end
 
 @testitem "sphere_quadrature: Parseval for band-limited fields of every spin" tags = [
