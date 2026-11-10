@@ -341,6 +341,14 @@ X{→}\mathrm{SXS}``, then the SXS law above, then ``\text{convert
 back}``.  Whether a parameter survives that round trip depends on
 whether the law is homogeneous or inhomogeneous.
 
+Convention ``X`` may also use its own eth, ``ð^{[X]} = c_ð\, ð``,
+whose conjugate is ``ð̄^{[X]} = \bar c_ð\, ð̄`` (see [the eth
+page](@ref the-operator-eth)).  The laws below are derived with the
+Newman–Penrose ``ð``, and their final forms are then rewritten with
+``ð^{[X]}``, so that they can be compared directly with formulas
+written in convention ``X``.  Each ``ð`` becomes ``ð^{[X]}/c_ð``, and
+each ``ð̄`` becomes ``ð̄^{[X]}/\bar c_ð``.
+
 **Homogeneous laws — the peeling towers.**  For the Weyl tower,
 
 ```math
@@ -356,7 +364,8 @@ parameter**
 
 ```math
 b^{[X]} = c_l\, c_m\, b^{[\mathrm{SXS}]}
-= c_l\, c_m\, \frac{ðu'}{2κ},
+= c_l\, c_m\, \frac{ðu'}{2κ}
+= \frac{c_l\, c_m}{c_ð}\, \frac{ð^{[X]}u'}{2κ},
 ```
 
 precisely the dyad scaling found on the [tetrad page](@ref
@@ -370,7 +379,8 @@ On ``ℐ⁻`` the tower mixes *downward* (the parameter is ``\bar b =
 inverts: ``F_n/F_{n-k} = (c_l c_m)^{-k}``, and
 
 ```math
-\bar b^{[X]} = \frac{\bar b^{[\mathrm{SXS}]}}{c_l\, c_m}.
+\bar b^{[X]} = \frac{\bar b^{[\mathrm{SXS}]}}{c_l\, c_m}
+= \frac{ð̄^{[X]}v'}{2κ\, \bar c_ð\, c_l\, c_m}.
 ```
 
 Equivalently, from the tetrad: the ``ℐ⁻`` case mixes the ``l̃`` leg
@@ -386,17 +396,21 @@ weight ``-2``), exactly as the radiative Weyl component switches from
 ``ψ_4`` to ``ψ_0``:
 
 ```math
-σ'^{[X]} = κ^{-1}\!\left(σ^{[X]} - F_σ\,\frac{ð^2 α}{2\sqrt2}\right)
-\quad\text{on } ℐ⁺,
-\qquad
-λ'^{[X]} = κ^{-1}\!\left(λ^{[X]} + F_λ\,\frac{ð̄^2 α}{2\sqrt2}\right)
-\quad\text{on } ℐ⁻,
+\begin{aligned}
+σ'^{[X]} &= κ^{-1}\!\left(σ^{[X]} - F_σ\,\frac{ð^2 α}{2\sqrt2}\right)
+= κ^{-1}\!\left(σ^{[X]} - \frac{F_σ}{c_ð^2}\,\frac{(ð^{[X]})^2 α}{2\sqrt2}\right)
+&&\text{on } ℐ⁺,
+\\
+λ'^{[X]} &= κ^{-1}\!\left(λ^{[X]} + F_λ\,\frac{ð̄^2 α}{2\sqrt2}\right)
+= κ^{-1}\!\left(λ^{[X]} + \frac{F_λ}{\bar c_ð^2}\,\frac{(ð̄^{[X]})^2 α}{2\sqrt2}\right)
+&&\text{on } ℐ⁻,
+\end{aligned}
 ```
 
-and the strain shift on either infinity is ``h'^{[X]} =
-κ^{-1}(h^{[X]} ∓ F_h\, ð̄^2 α)`` (``-`` on ``ℐ⁺``, ``+`` on ``ℐ⁻``).
-The homogeneous pieces ride through untouched; only the inhomogeneous
-term picks up a factor.
+and the strain shift on either infinity is ``h'^{[X]} = κ^{-1}(h^{[X]}
+∓ F_h\, ð̄^2 α) = κ^{-1}(h^{[X]} ∓ F_h\, (ð̄^{[X]})^2 α/\bar c_ð^2)``
+(``-`` on ``ℐ⁺``, ``+`` on ``ℐ⁻``).  The homogeneous pieces ride
+through untouched; only the inhomogeneous term picks up a factor.
 
 From ``σ = -c_σ\,m^a m^b ∇_a l_b``: the tetrad legs are defined as
 *vectors* (``m^{a\,[X]} = c_m m^a``, ``l^{a\,[X]} = c_l l^a``; see the
@@ -409,8 +423,8 @@ one power of the metric survives:
 F_σ = c_s\, c_σ\, c_l\, c_m^2.
 ```
 
-On ``ℐ⁻``, ``λ = c_λ\,m̄^a m̄^b ∇_a n_b`` (Moxon/SXS, *no* minus
-sign, so ``c_λ`` is independent of ``c_σ``).  The two ``m̄`` legs give
+On ``ℐ⁻``, ``λ = c_λ\,m̄^a m̄^b ∇_a n_b`` (Moxon/SXS, *no* minus sign,
+so ``c_λ`` is independent of ``c_σ``).  The two ``m̄`` legs give
 ``c̄_m^2 = 1/c_m^2``, and the lowered ``n_b = g_{bc} n^c`` gives
 ``c_s/c_l`` (the ``n`` leg scales as ``1/c_l``), so
 
@@ -428,33 +442,38 @@ convention-independent up to its ``κ^{-2}`` weight; its *conversion*
 factor is exactly the strain's, ``F_N = F_h``, because ``N = ∂_u h``
 and the coordinates (including ``u``) are shared by every convention.
 
-**The eth coefficient ``c_ð`` does not appear.**  The geometric ``b``
-and the geometric shift ``ð^2 α/2\sqrt2 = m̃^A m̃^B D_A D_B α/\sqrt2``
-are computed with the Newman–Penrose ``ð`` natively (and the
-supertranslation ``α`` is just a function on the sphere); ``c_ð`` only
-changes how those *same* quantities would be *written* in another eth
-normalization.
+**The eth coefficient ``c_ð``.**  The geometric ``b`` and the
+geometric shift ``ð^2 α/2\sqrt2 = m̃^A m̃^B D_A D_B α/\sqrt2`` do not
+depend on how ``ð`` is normalized, and the supertranslation ``α`` is
+just a function on the sphere.  The factors of ``c_ð`` above therefore
+change how these quantities are written with ``ð^{[X]}``, but not
+their values.  For example, the GHP eth has ``c_ð = 1/\sqrt{2}``, so
+that ``ð^2 α = 2(ð_{\mathrm{GHP}})^2 α``, and the shear shift on
+``ℐ⁺`` becomes ``-F_σ (ð_{\mathrm{GHP}})^2 α/\sqrt{2}``.
 
 **Summary.**  The same-convention laws and their surviving convention
-factors, collected in one place (upper sign on ``ℐ⁺``, lower on
-``ℐ⁻``; the towers use ``b^{[X]}`` on ``ℐ⁺`` and ``\bar b^{[X]}`` on
-``ℐ⁻``):
+factors, written with the eth ``ð^{[X]}`` of convention ``X``, are
+collected in one place (upper sign on ``ℐ⁺``, lower on ``ℐ⁻``; the
+towers use ``b^{[X]}`` on ``ℐ⁺`` and ``\bar b^{[X]}`` on ``ℐ⁻``):
 
-| quantity       | same-convention law                                   | surviving factors                                                                |
-|:---------------|:------------------------------------------------------|:---------------------------------------------------------------------------------|
-| ``ψ_n``        | ``κ^{-3} ×`` binomial tower                           | ``b^{[X]} = c_l c_m\,\frac{ðu'}{2κ}``, ``\bar b^{[X]} = \frac{ð̄v'/2κ}{c_l c_m}`` |
-| ``φ_n``        | ``κ^{-2} ×`` binomial tower                           | same mixing parameters                                                           |
-| ``σ`` (``ℐ⁺``) | ``κ^{-1}(σ - F_σ\, ð^2α/2\sqrt2)``                    | ``F_σ = c_s c_σ c_l c_m^2``                                                      |
-| ``λ`` (``ℐ⁻``) | ``κ^{-1}(λ + F_λ\, ð̄^2α/2\sqrt2)``                    | ``F_λ = c_s c_λ/(c_l c_m^2)``                                                    |
-| ``h``          | ``κ^{-1}(h ∓ F_h\, ð̄^2α)``                            | ``F_h = c_s c_h``                                                                |
-| ``N``          | ``κ^{-2} N``                                          | none                                                                             |
-| time law       | ``t' = κ(t - c_α α)``                                 | ``c_α``                                                                          |
+| quantity       | same-convention law                                   | surviving factors                                                                                               |
+|:---------------|:------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------|
+| ``ψ_n``        | ``κ^{-3} ×`` binomial tower                           | ``b^{[X]} = \frac{c_l c_m}{c_ð}\frac{ð^{[X]}u'}{2κ}``, ``\bar b^{[X]} = \frac{ð̄^{[X]}v'/2κ}{\bar c_ð c_l c_m}`` |
+| ``φ_n``        | ``κ^{-2} ×`` binomial tower                           | same mixing parameters                                                                                          |
+| ``σ`` (``ℐ⁺``) | ``κ^{-1}(σ - F_σ\, (ð^{[X]})^2α/2\sqrt2 c_ð^2)``      | ``F_σ = c_s c_σ c_l c_m^2``, ``c_ð``                                                                            |
+| ``λ`` (``ℐ⁻``) | ``κ^{-1}(λ + F_λ\, (ð̄^{[X]})^2α/2\sqrt2 \bar c_ð^2)`` | ``F_λ = c_s c_λ/(c_l c_m^2)``, ``c_ð``                                                                          |
+| ``h``          | ``κ^{-1}(h ∓ F_h\, (ð̄^{[X]})^2α/\bar c_ð^2)``         | ``F_h = c_s c_h``, ``c_ð``                                                                                      |
+| ``N``          | ``κ^{-2} N``                                          | none                                                                                                            |
+| time law       | ``t' = κ(t - c_α α)``                                 | ``c_α``                                                                                                         |
 
 **What the code does.**  Collecting the survivors, a same-convention
 transform requires exactly three convention insertions on top of the
 default computation.  All three are included in `mix_components!`,
 written exactly as in the laws above, with the factors read from the
-`Conventions` included in the `DataComponents` descriptor:
+`Conventions` included in the `DataComponents` descriptor.  The code
+computes ``ð`` internally with the Newman–Penrose normalization,
+whatever value of ``c_ð`` the `Conventions` records, so ``c_ð`` does
+not enter into any of these insertions:
 
 1. the peeling parameter is rescaled by `Scri.dyad_factor` — the
    towers are generated by ``c_l c_m\, ðu'/2κ`` on ``ℐ⁺`` and by
@@ -469,7 +488,7 @@ written exactly as in the laws above, with the factors read from the
 The time-law sign is read from the conventions in `transform!` itself:
 ``c_α`` is folded into ``α`` up front, exactly as the former sign
 argument was.  At the defaults ``c_l = 1, c_m = 1, c_σ = c_λ = c_s =
-1, c_h = 1, c_α = 1`` every factor is the `One` singleton, and the insertions
-compile away to the laws above.  Conversion *between* conventions —
-the full ``F``-factors, not just the transform survivors — is
-`Scri.represent!`, built on `Scri.conversion_factor`.
+1, c_h = 1, c_α = 1`` every factor is the `One` singleton, and the
+insertions compile away to the laws above.  Conversion *between*
+conventions — the full ``F``-factors, not just the transform survivors
+— is `Scri.represent!`, built on `Scri.conversion_factor`.

@@ -22,9 +22,17 @@ default values are all 1, corresponding to the SXS conventions.  The constructor
 the values: `c_s`, `c_R`, and `c_α` must be ``±1``; `c_l` must be real; `c_m` must have
 unit modulus; and every factor must be nonzero.
 
+Internally, the code always computes ``ð`` with the Newman–Penrose normalization, ``c_ð =
+1``, so the value of `c_ð` doesn't currently affect any result.  It is recorded so that a
+`Conventions` describes a convention completely, and so that formulas in the documentation
+can be compared with formulas written in that convention.  So that this is not missed, the
+keyword constructor warns whenever `c_ð ≠ 1`, though the named presets do not issue any
+warning about it.
+
 The types of all of these factors are retained as the type parameters of `Conventions`
 listed above — `S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A` — to allow for type stability and compile-time
-optimization.  Most common conventions will compile away entirely.
+optimization.  Most common conventions — or those that only use ±1 — will compile away
+entirely.
 
 Construct with keywords (validated), or by name from the table of published conventions:
 
@@ -48,6 +56,29 @@ struct Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
 end
 
 function Conventions(;
+    c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_φ=1, c_ð=1, c_α=1
+)
+    c = validated_conventions(; c_s, c_R, c_l, c_m, c_ψ, c_σ, c_λ, c_h, c_φ, c_ð, c_α)
+    if c_ð ≠ 1
+        @warn(
+            "c_ð = $c_ð has no effect: Scri always computes ð with the Newman–Penrose " *
+                "normalization, which is c_ð = 1.  The value is recorded only to " *
+                "describe the convention.",
+            maxlog = 1,
+        )
+    end
+    return c
+end
+
+"""
+    validated_conventions(; c_s=1, c_R=1, c_l=1, …, c_α=1)
+
+Check the convention factors as described in the [`Conventions`](@ref) docstring, and return
+the `Conventions` they define.  This is the keyword constructor without its warning about
+`c_ð`, so that the named presets, which record a non-unit `c_ð` deliberately, can use it
+silently.
+"""
+function validated_conventions(;
     c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_φ=1, c_ð=1, c_α=1
 )
     for (name, c) ∈ (("c_s", c_s), ("c_R", c_R), ("c_α", c_α))
@@ -135,7 +166,9 @@ function Conventions(name::Symbol; T::Type{<:Real}=Float64)
         # definitions reproduce the SXS → MB factors of scri's `create_abd_from_h5`, which
         # are ψₙ: (2, -√2, 1, -1/√2, 1/2) for n = 0, …, 4 and σ = conj(h)/2, together with
         # the paper's h = σ̄.  The paper's ð is the GHP ð = ð_NP/√2.
-        Conventions(; c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_ð=inv(s2))
+        validated_conventions(;
+            c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_ð=inv(s2)
+        )
     else
         throw(
             ArgumentError("Unknown convention preset :$name; expected either :SXS or :MB")

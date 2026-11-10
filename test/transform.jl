@@ -466,7 +466,7 @@ end
     comps⁻ = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ, :h, :News, :φ₀, :φ₁, :φ₂)
     # A maximally generic convention: every sign flipped, dyad rescaled and rotated in
     # phase, strain rescaled.  (c_ð is set too, but must not affect any transform.)
-    X = Scri.Conventions(;
+    X = @test_logs (:warn, r"c_ð") Scri.Conventions(;
         c_s=-1,
         c_R=-1,
         c_ψ=-1,

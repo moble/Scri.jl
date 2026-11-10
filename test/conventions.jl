@@ -32,6 +32,12 @@ end
     @test_throws ArgumentError Conventions(; c_h=0)
     @test_throws ArgumentError Conventions(; c_ð=0)
 
+    # The code always uses c_ð = 1, so the keyword constructor warns about any other value,
+    # but the presets, which record a non-unit c_ð on purpose, do not.
+    @test_logs (:warn, r"c_ð") Conventions(; c_ð=1 / √2)
+    @test_logs Conventions(; c_ð=1)
+    @test_logs Conventions(:MB)
+
     # ℓ is a real null vector, so c_l must be real (any nonzero real scale is fine).
     @test_throws ArgumentError Conventions(; c_l=1im)
     @test_throws ArgumentError Conventions(; c_l=1 + 1im)
