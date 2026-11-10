@@ -157,6 +157,34 @@ end
     @test Scri.conformal_weight(Val(:News)) == -2
 end
 
+@testitem "conformal_weight: matches the powers of κ in mix_components!" tags = [
+    :unit, :fast
+] begin
+    import Random
+
+    # `mix_components!` writes its powers of κ inline, so check them against
+    # `conformal_weight` with the mixing and the shifts turned off: each component is then
+    # simply multiplied by κ to its conformal weight.
+    rng = Random.Xoshiro(4242)
+    κ⁻¹ = 0.7
+    for (ℐ, comps) ∈ (
+        (1, (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)),
+        (1, (:σ, :h, :News)),
+        (1, (:φ₀, :φ₁, :φ₂)),
+        (-1, (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)),
+        (-1, (:λ, :h, :News)),
+        (-1, (:φ₀, :φ₁, :φ₂)),
+    )
+        dc = Scri.DataComponents(comps...; ℐ)
+        d = Random.randn(rng, ComplexF64, length(comps))
+        d′ = copy(d)
+        Scri.mix_components!(d′, κ⁻¹, 0.0im, 0.0im, dc)
+        for (k, c) ∈ enumerate(comps)
+            @test d′[k] ≈ κ⁻¹^(-Scri.conformal_weight(Val(c))) * d[k] rtol = 1e-15
+        end
+    end
+end
+
 # ── mix_components! ───────────────────────────────────────────────────────────
 
 @testitem "mix_components!: identity (κ⁻¹=1, ðt′╱2κ=0, ð²α=0)" tags = [:unit, :fast] begin
