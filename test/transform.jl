@@ -362,8 +362,9 @@ end
         @test all(iszero, M[1, :])
 
         # Case B — boost + a *constant* supertranslation α = δt (so ðα = 0).  Physically
-        # `ðt′/2κ|₀ = ð(κ·δt)/2κ = δt·(ðκ/2κ) = δt·b₁`, so `[1,i] = −δt·b₁`.  This pins the
-        # cross-term SIGN (minus) from a pure Leibniz identity, independent of the helper.
+        # `t′|₀ = κ(0 − δt)`, so `ðt′/2κ|₀ = −ð(κ·δt)/2κ = −δt·(ðκ/2κ) = −δt·b₁`, and
+        # `[1,i] = −δt·b₁`.  This pins the cross-term SIGN (minus) from a pure Leibniz
+        # identity, independent of the helper.
         δt = 0.7
         Mc = compute_ðt′╱2κ(Rₚ, v⃗, fill(δt, Nₚ), zeros(ComplexF64, Nₚ), I)
         @test Mc[1, :] ≈ -δt .* b₁

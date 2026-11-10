@@ -26,10 +26,13 @@ l \qquad &↔ \qquad l\sqrt{2}, \\
 which changes the transformation law for ``ψ₃`` in a nontrivial way:
 
 ```math
-ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} ψ₄\right]
+ψ₃' = \frac{e^{-iγ}}{κ³} \left[ψ₃ + b\, ψ₄\right]
 \qquad ↔ \qquad
-ψ₃' = \frac{e^{-iλ}}{κ³} \left[ψ₃ + \frac{ðα}{2κ} \frac{ψ₄}{\sqrt{2}}\right].
+ψ₃' = \frac{e^{-iγ}}{κ³} \left[ψ₃ + \sqrt{2}\, b\, ψ₄\right],
 ```
+
+where ``γ`` is a spin phase and ``b`` is the null-rotation parameter,
+which reduces to ``b = -ðα/2`` for a pure supertranslation ``α``.
 
 Assuming conventions that differ from those used to construct the
 input data can lead to incorrect results, so it is important to know

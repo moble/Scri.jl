@@ -232,16 +232,26 @@ the conformal factor as
 κ = e^{φₐ}.
 ```
 
+The rotor factored here is the one that carries the original tetrad to
+the transformed one, which is the inverse ``Λ^{-1}`` of the map ``Λ``
+from old labels to new.  The [null-cone page](@ref "Lorentz
+transformations ``ℒ`` and the conformal factor ``κ``") factors ``Λ``
+itself and finds ``κ = e^{-φₐ}``.  The two agree: if ``Λ`` rescales
+``𝐤`` by ``e^{φₐ}`` onto the image direction ``𝐤'``, then ``Λ^{-1}``
+rescales ``𝐤'`` by ``e^{-φₐ}``, so the boost of ``Λ^{-1}`` at ``𝐤'`` is
+the negative of the boost of ``Λ`` at ``𝐤``.
+
 For the generator, this boost is all that matters — ``ñ`` involves no
 power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
-the boost acting alone.  The dyad is different: the boost leaves the
-spacetime multivector ``𝐦`` fixed, up to the reinterpretation of
-``𝐈₃``, so its ``1/κ`` comes instead from regularizing with ``ω' =
-κω``.  Both routes give the common factor ``1/κ`` found above, so
-``|d| = 1/κ``.  That conformal origin is why the factor can't be
-derived from the normalization ``m̃' ⋅ m̄̃' = 1``, which holds in the
-primed frame and would give the incorrect value ``|d| = 1`` in the
-unprimed metric.
+determined entirely by the boost.  The dyad is different: the boost
+leaves the spacetime multivector ``𝐦`` fixed, up to the
+reinterpretation of ``𝐈₃``, so its ``1/κ`` comes instead from
+regularizing with ``ω' = κω``.  Both routes give the common factor
+``1/κ`` found above, so ``|d| = 1/κ``.  The normalization ``m̃' ⋅ m̄̃'
+= 1`` gives the same factor, provided we correctly use the primed
+metric ``ĝ' = κ²ĝ``, so that we find ``|d|² = 1/κ²``.  Imposing it in
+the unprimed metric instead would give the incorrect value ``|d| =
+1``.  The same care is needed for ``l̃'`` below.
 
 Collecting the boost and the spin,
 
@@ -329,20 +339,27 @@ scale, ``ñ(u') → ñ(u')/c_l``.  The parameter therefore rescales by the
 ```math
 b = \frac{ðu'}{2κ}
 \;\longrightarrow\;
-b = c_l\, c_m\, \frac{ðu'}{2κ},
+b = \frac{c_l\, c_m}{c_ð}\, \frac{ðu'}{2κ},
 ```
 
-with ``ð`` the Newman–Penrose eth throughout (the eth coefficient
-``c_ð`` rescales how one *writes* ``b`` in terms of ``ð`` — ``b =
-ð_{\mathrm{GHP}}u'/κ`` in GHP, say — but not the geometric value of
-``b`` itself).  The signature ``c_s`` enters only the inner-product
-normalizations, which already gave the common factor ``1/κ``
-independent of ``c_s``, so it does not touch ``b``.  This single
-factor ``c_l c_m`` is the *only* convention dependence that survives
-into the [component-mixing law](@ref "BMS Action on Fields"); the
-curvature-sign parameters ``c_R, c_ψ, c_σ, c_λ, c_h, c_φ`` appear only
-when the field components are built, and (as shown there) cancel out
-of a same-convention transform.
+where ``ð`` is now the operator in the chosen convention.  The factor
+``1/c_ð`` only undoes the factor in the definition ``ð = c_ð(R_x +
+iR_y)``, so it changes how ``b`` is written but not its value.  For
+example, GHP has ``c_ð = 1/\sqrt{2}``, which gives ``b = c_l c_m
+ð_{\mathrm{GHP}}u'/\sqrt{2}κ``.  The value of ``b`` depends only on
+the dyad scaling ``c_l c_m``.  The signature ``c_s`` enters only the
+inner-product normalizations, which already gave the common factor
+``1/κ`` independent of ``c_s``, so it does not affect ``b``.  This
+single factor ``c_l c_m`` is the *only* convention dependence that
+survives into the peeling towers of the [component-mixing law](@ref
+"BMS Action on Fields"); the sign parameters ``c_s, c_R, c_ψ, c_φ``
+appear only when the field components are built, and (as shown there)
+cancel out of the towers of a same-convention transform.  The
+supertranslation shifts of the shear ``σ``, its counterpart ``λ`` on
+``ℐ⁻``, and the strain ``h`` are different: an additive shift has
+nothing to cancel against, so each correction has to retain the full
+conversion factor, composed of ``c_s``, ``c_l``, ``c_m``, and one of
+``c_σ``, ``c_λ``, or ``c_h``.
 
 ## Past null infinity
 

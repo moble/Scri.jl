@@ -81,9 +81,10 @@ above:
   A — it is the propagation direction of the wave.  (Think of
   gravitational waves emitted by A; the chosen portion of the field
   travels outward in direction ``\hat{k}``.)
-- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{k}`` points **toward** A
-  — still the propagation direction of the wave.  (Think of a plane
-  wave whose source is far away in the direction ``-\hat{k}``.)
+- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{k}`` points from A
+  **toward the source**, and the wave propagates in the opposite
+  direction, ``-\hat{k}``.  (Think of a plane wave whose source is far
+  away in the direction ``\hat{k}``.)
 
 This is identical to the null section ``σ_ε: \hat{k} \mapsto (1,
 ε\hat{k})`` introduced in the [BMS group page](@ref "Lorentz
@@ -110,13 +111,13 @@ direction):
 ω' = γω(1 - εβ\cos Θ).
 ```
 
-The angle ``Θ`` is *not* an independent definition: it is the inner
-product of the spatial wavevector with the boost direction, ``\cos Θ =
-(k^i \hat{v}_i)/ω``, read off directly from the contraction ``k_μ
-(t_B)^μ``.  When ``ε = +1``, this is ``\cos Θ = \hat{k}\cdot\hat{v}``
-with ``\hat{k}`` the propagation direction; when ``ε = -1`` it is
-``\cos Θ = \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the direction toward
-the source.
+The angle ``Θ`` is *not* an independent definition; it is fixed by the
+inner product of the spatial wavevector with the boost direction,
+``\cos Θ = ε(k^i \hat{v}_i)/ω``, which comes directly from the
+contraction ``k_μ (t_B)^μ``.  When ``ε = +1``, this is ``\cos Θ =
+\hat{k}\cdot\hat{v}`` with ``\hat{k}`` the propagation direction; when
+``ε = -1`` it is ``\cos Θ = \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the
+direction toward the source.
 
 ### The conformal factor
 
@@ -154,15 +155,16 @@ boosted spatial ``z``-component is
 k'^z = γ(k^z - β k^t) = γω(ε\cos Θ - β),
 ```
 
-and dividing by ``ω' = γω(1 - εβ\cos Θ)`` gives the formula above.
+which is ``εω'\cos Θ'``.  Dividing by ``ω' = γω(1 - εβ\cos Θ)`` and
+multiplying by ``ε`` gives the formula above.
 
 ### Half-angle form
 
 The half-angle substitution ``\cos Θ = (1-t^2)/(1+t^2)``, ``t =
-\tan(Θ/2)``, turns the aberration formula into
+\tan(Θ/2)``, allows us to write the aberration formula as
 
 ```math
-\tan\!\frac{Θ'}{2} = e^{-εφ}\,\tan\!\frac{Θ}{2},
+\tan\!\frac{Θ'}{2} = e^{+εφ}\,\tan\!\frac{Θ}{2},
 \qquad φ = \operatorname{atanh}(β).
 ```
 

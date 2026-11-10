@@ -112,12 +112,16 @@ Because `transform!` works in place, the `data` array must already
 have the dual element type before you call it.  One allocation-heavy
 approach is inside the differentiated function to convert the array to
 the dual type of the parameter being differentiated — for a parameter
-`θ`, that is `typeof(θ)`:
+vector `θ`, that is `eltype(θ)`.  Here [`bms_from_parameters`](@ref)
+turns `θ` into the boost velocity, rotation, and supertranslation; its
+parameter layout is described [below](@ref "Gradients at about twice the
+cost of the objective"):
 
 ```julia
 function objective(θ)
-    data_dual = Complex{typeof(θ)}.(data)
-    data′, _ = transform!(data_dual, t, v⃗(θ), R(θ), α(θ), dc; t′=my_grid)
+    v⃗, R, α = bms_from_parameters(θ)
+    data_dual = Complex{eltype(θ)}.(data)
+    data′, _ = transform!(data_dual, t, v⃗, R, α, dc; t′=my_grid)
     # ... reduce data′ to a scalar ...
 end
 
@@ -133,7 +137,7 @@ using
 ## Optimizing BMS parameters without the memory cost
 
 The most common use of differentiation here is optimization: finding
-the BMS parameters `θ = (v⃗, 𝔯, α)` that minimize the L² difference
+the BMS parameters `θ` that minimize the L² difference
 between the transformed waveform and a fixed target.  Differentiating
 `transform!` for this purpose is needlessly expensive.  With `N`
 parameters, the dual copy of `data` is `(1+N)×` the size of an already
@@ -163,11 +167,13 @@ Everything in ``Φ`` that does not depend on ``θ`` is stored in an
 [`ObjectivePlan`](@ref), which is built once: the grid and its weights
 ``w_j``, the output times and their weights ``v_i``, the component
 weights ``u_k``, the target's values ``{}^{k}c^{i}_{j}`` on the grid,
-and the normalization ``𝒩``.  The grid is an exact quadrature
-on the sphere for band-limited fields, and the time weights are the
-trapezoid rule on `t′`, so ``Φ`` approximates the integral of
-``|d' - c|^2`` over the sphere and the time window — a true ``L²``
-norm.
+and the normalization ``𝒩``.  The grid is an exact quadrature on the
+sphere for band-limited fields, and the time weights are for the
+trapezoidal rule on `t′`, so ``Φ`` approximates the integral of
+``|d'-c|^2`` over the sphere and the time window — an ``L²`` norm.  A
+boosted field is not band-limited, so the sphere part is spectrally
+accurate rather than exact; see [`ObjectivePlan`](@ref) for the
+precise condition and for the option to pass a finer grid.
 
 The recipe has three steps — the first two run *once*, outside the
 optimization loop:
@@ -187,14 +193,14 @@ t′ = compute_t′(t, β_max, δt_max)
 #    Nᵐ first.)
 plan = ObjectivePlan(target_modes, t_target, dc, t′)
 
-# 3. The differentiable objective.  Note that `v⃗` and `𝔯` accept
-#    plain vectors, so slices of the parameter vector pass straight
-#    through.  Three rotation components are a rotation vector; see
-#    below.
-objective(θ) = transform_objective(data, t, θ[1:3], θ[4:6], α(θ[7:end]), dc, plan)
+# 3. The differentiable objective, with θ read by `bms_from_parameters`
+#    as a rotation vector, a rapidity vector, and the supertranslation's
+#    modes; see below.
+objective(θ) = transform_objective(data, t, bms_from_parameters(θ)..., dc, plan)
 
-# Compute the gradient at the starting point θ₀.  The identity
-# transformation is θ = 0.
+# Compute the gradient at a starting point.  The identity
+# transformation is θ = 0; here with a supertranslation up to ℓ = 2.
+θ₀ = zeros(6 + 9)
 g = ForwardDiff.gradient(objective, θ₀)
 ```
 
@@ -204,12 +210,14 @@ as above.
 
 A few things to know:
 
-- **Rotation parameters.**  Three components are read as a rotation
-  vector ``\vec{r}``, the rotation by the angle ``|\vec{r}|`` about the axis
-  ``\vec{r}``, which is the rotor ``\exp(\vec{r}/2)``; so the identity is zero,
-  and every parameter is used.  Four components are read as a rotor
-  `(w, x, y, z)` and normalized, which also works but leaves one
-  redundant parameter; see [`rotor_argument`](@ref Scri.rotor_argument).
+- **Parameters.**  The parameter vector ``θ`` is laid out as for
+  [`objective_and_gradient!`](@ref), described below: a rotation vector
+  ``\vec{r}``, a rapidity vector ``\vec{η}``, and the supertranslation's
+  modes.  So the same starting point and the same result serve both
+  ways of computing the gradient.  `transform_objective` also accepts
+  the transformation directly; there, three rotation components are
+  read as a rotation vector, and four as a rotor `(w, x, y, z)`, which
+  is normalized; see [`rotor_argument`](@ref Scri.rotor_argument).
 
 - **Weights and noise.**  The plan's keywords set the weights:
   `time_weights` for the ``v_i``, `component_weights` for the
@@ -261,8 +269,15 @@ the transformation as one parameter vector,
 a rotation vector ``\vec{r}`` (the frame rotation is ``\exp(\vec{r}/2)``), a
 rapidity vector ``\vec{η}`` (the boost velocity is ``\tanh|\vec{η}|`` along
 ``\vec{η}``), and the real degrees of freedom of the supertranslation's
-modes up to ``ℓ_α``.  Every ``θ`` is a valid transformation, so an
-optimizer needs no bounds, and the identity is ``θ = 0``.
+modes up to ``ℓ_α``.  Every ``θ`` describes a valid BMS
+transformation, and the identity is ``θ = 0``.  The plan's fixed output
+grid `t′` is valid only for the transformations it was built for,
+though: those with a boost speed up to `β_max` and a supertranslation
+up to `δt_max`, as [above](@ref "Fix the output time grid").  Past
+those bounds, the call throws an `ArgumentError`, which stops most
+optimizers.  So either build `t′` with a generous margin, or bound the
+optimizer, for example by keeping the rapidity below
+``\operatorname{atanh}(β_\mathrm{max})``.
 
 ```julia
 using Scri

@@ -24,11 +24,13 @@ exec julia ${JULIA_SYSIMAGE:-} --threads=auto "${BASH_SOURCE[0]}" "$@"
 The purpose of this script is to demonstrate the fundamental errors that arise from using
 splines to interpolate waveforms during the BMS transformation.  We generate a simple test
 waveform with a known analytic form, apply a boost to it (no rotation or supertranslation),
-and look at the "energy" in the transformed modes as functions of time.  Near zero, we see
-clean exponential convergence to zero with increasing ℓ, but as we approach the critical
-time samples at ±1/2β, we see a plateau of large errors that does not significantly improve
-with increasing ℓ.  This is a fundamental feature of using interpolants with finite
-smoothness, even when using extremely high-precision numerics.
+and look at the square root of the power in each ℓ of the transformed modes, ``√E(ℓ)``, as
+functions of time.  Near zero, we see clean exponential convergence to zero with increasing
+ℓ, but as we approach the critical time samples at ±1/2β, we see a plateau of large errors
+that does not significantly improve with increasing ℓ.  This is a fundamental feature of
+using interpolants with finite smoothness, even when using extremely high-precision
+numerics.  The plateau is about the size of the cubic spline's pointwise error bound,
+`5M₄δt⁴/384`, which is drawn as a horizontal line.
 
 To run this script, change to this directory, set up the project by running
 
@@ -38,7 +40,10 @@ and then run something like
 
     julia --threads=auto spline_errors.jl Float64 16
 
-The raw data and plot will be saved to this directory.
+The raw data and plot will be saved to this directory.  To remake only the plot from data
+saved earlier, add `--replot`:
+
+    julia spline_errors.jl Float64 16 --replot
 
 To submit to `slurm`, run something like
 
@@ -115,14 +120,13 @@ function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     end
 
     M₄ = maximum(ℓ -> v^ℓ * (ℓ * Ω)^4, 2:ℓₘₐₓ)
-    ϵₜ = M₄ * δt^4 * ℓₘₐₓ^BigFloat(-3//2)
 
-    return (; data, t=T.(t), v⃗=QuatVec{T}(v⃗), R, αᵢₙ, M₄=T(M₄), ϵₜ=T(ϵₜ))
+    return (; data, t=T.(t), v⃗=QuatVec{T}(v⃗), R, αᵢₙ, M₄=T(M₄))
 end
 
 function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, β::Rational{Int}=1//1000)
     parameters = generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
-    data, t, v⃗, R, αᵢₙ, M₄, ϵₜ = parameters
+    data, t, v⃗, R, αᵢₙ, M₄ = parameters
     dc = Scri.DataComponents(:σ)
 
     N = floor(Int, 1/2β)  # Time samples away from 0 where plateau begins
@@ -135,22 +139,31 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     data′, t′ = Scri.transform!(copy(data), t, v⃗, R, αᵢₙ; data_components=(:σ,))
     t2 = time_ns()
     println("Transformation took $((t2-t1)/1e9) seconds")
-    JLD2.@save "spline_errors_$T.jld2" data t v⃗ data′ t′ M₄ ϵₜ t₋ t₊
-    return (; data, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊)
+    JLD2.@save "spline_errors_$T.jld2" data t v⃗ data′ t′ M₄ t₋ t₊
+    return (; data, t, v⃗, data′, t′, M₄, t₋, t₊)
 end
 
-function plot_example(data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, ϵₜ, t₋, t₊, β) where {T}
+# Read the results that `compute_example` saved, so that the plot can be remade without
+# repeating the transformation.  Files saved before the plateau line changed also hold an
+# `ϵₜ`, which is not read.
+function load_example(T)
+    return JLD2.jldopen("spline_errors_$T.jld2") do f
+        return (;
+            (k => f[string(k)] for k ∈ (:data, :t, :v⃗, :data′, :t′, :M₄, :t₋, :t₊))...
+        )
+    end
+end
+
+function plot_example(data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, t₋, t₊, β) where {T}
     ℓₘₐₓ = isqrt(size(data, 1)) - 1
+    δt = t[2] - t[1]
+    spline_bound = 5M₄ * δt^4 / 384  # the cubic spline's pointwise error bound
     beta = Float64(round(β; sigdigits=3))
     dc = Scri.DataComponents(:σ)
     plt = Scri.diagnostics(t′, data′, dc)[:σ]
     hline!(plt, [ℓₘₐₓ * eps(T)]; color=:grey, ls=:dot, z_order=:back, label="")
     hline!(
-        plt,
-        [ϵₜ];
-        color=:purple,
-        z_order=:back,
-        label=L"|\sigma^{(4)}| δt^4 ℓ_\mathrm{max}^{-3/2}",
+        plt, [spline_bound]; color=:purple, z_order=:back, label=L"\frac{5}{384} M_4\, δt^4"
     )
     vline!(plt, [t₋, t₊]; color=:black, z_order=:back, label=L"N = \lfloor 1/(2β) \rfloor")
     plot!(
@@ -188,6 +201,9 @@ function main(args=ARGS)
         "--beta"
         help = "Boost velocity as rational p/q (e.g., 1/1000)"
         default = "1/1000"
+        "--replot"
+        help = "Remake the plot from the saved results instead of recomputing them"
+        action = :store_true
     end
 
     parsed = ArgParse.parse_args(args, s)
@@ -205,7 +221,11 @@ function main(args=ARGS)
         end
     end
 
-    result = compute_example(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
+    result = if parsed["replot"]
+        load_example(T)
+    else
+        compute_example(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
+    end
     plot_example(result..., β)
     return 0
 end

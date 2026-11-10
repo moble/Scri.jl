@@ -69,7 +69,7 @@ fixed by ``ψ₀`` instead and runs the other way, so ``ψᵢ`` requires all
 ```julia
 DataComponents(:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)  # OK: full tower on ℐ⁺
 DataComponents(:ψ₃, :ψ₄)                 # OK: ψ₃ needs only ψ₄ above it on ℐ⁺
-DataComponents(:ψ₀, :ψ₁; ℐ=-1)           # OK: ψ₀ needs only ψ₁ above it on ℐ⁻
+DataComponents(:ψ₀, :ψ₁; ℐ=-1)           # OK: ψ₁ needs only ψ₀ above it on ℐ⁻
 DataComponents(:ψ₃)                      # ERROR: ψ₃ requires ψ₄
 ```
 

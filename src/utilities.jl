@@ -253,7 +253,8 @@ function validate_t′(t′, t, αₚ, Rₚ, v⃗, ℐ=One())
         throw(
             ArgumentError(
                 "Supplied `t′` ∈ [$(t′[begin]), ..., $(t′[end])] exceeds the valid range " *
-                "[$t′ₘᵢₙ, ..., $t′ₘₐₓ] for which every pixel maps into the input time span",
+                "[$(primal_value(t′ₘᵢₙ)), ..., $(primal_value(t′ₘₐₓ))] for which every " *
+                "pixel maps into the input time span",
             ),
         )
     end
@@ -335,7 +336,8 @@ these indicate whether a transformation was adequately resolved.  See
 interpret them.
 
 Loading `Plots` activates an extension providing `diagnostics(t, data, data_components)`,
-which returns a corresponding `Dict` of plots of these powers against time.
+which returns a corresponding `Dict` of plots of their square roots, ``\\sqrt{E(ℓ)}``,
+against time.
 """
 function diagnostics(data, data_components::DataComponents{C,ℐ}) where {C,ℐ}
     Nᵐ, Nᵗ, Nᵈ = size(data)
@@ -400,3 +402,12 @@ matrices — which would poison every derivative with NaNs.
 """
 primal_float(::Type{T}) where {T<:Real} = T
 primal_float(::Type{ForwardDiff.Dual{T,V,N}}) where {T,V,N} = primal_float(V)
+
+"""
+    primal_value(x)
+
+The value of `x` with every layer of ForwardDiff's dual numbers removed, for reporting
+numbers in error messages.  For ordinary real numbers this is `x` itself.
+"""
+primal_value(x::Real) = x
+primal_value(x::ForwardDiff.Dual) = primal_value(ForwardDiff.value(x))

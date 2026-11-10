@@ -7,8 +7,9 @@ spinor (or tensor) with some number of tetrad legs, so its
 transformation is assembled from three ingredients, each of which we
 already have:
 
-1. a **conformal weight** ``κ^w`` — one factor of ``1/κ`` for each
-   tetrad leg, plus the weight of the underlying field;
+1. a **conformal weight** ``κ^w`` — one factor of ``κ^{-1/2}`` for each
+   basis spinor in the contraction, plus the weight of the underlying
+   field;
 2. a **spin phase** ``e^{i s γ}`` for a component of spin weight
    ``s``, from the ``K`` (Hopf-fiber) rotation by ``γ`` about the null
    direction — this is the ordinary [spin-weighted
@@ -230,10 +231,12 @@ and spin already pulled out front, so at the defaults ``c_σ = c_α = 1``
 σ' = κ^{-1}\left(σ - \frac{ð^2 α}{2\sqrt2}\right).
 ```
 
-This agrees with Eqs. (40c) and (86c) of [Moxon_2020](@citet): the
-former gives ``J'^{(1)} = J^{(1)} + ð^2 u'`` for the Bondi metric
-function ``J``, and the latter gives ``σ = J^{(1)}/2\sqrt2``
-asymptotically.
+For a pure supertranslation, where ``κ = 1`` and ``u' = u - α``, this
+agrees with Eqs. (40c) and (86c) of [Moxon_2020](@citet): the former
+gives ``J'^{(1)} = J^{(1)} + ð^2 u'`` for the Bondi metric function
+``J``, and the latter gives ``σ = J^{(1)}/2\sqrt2`` asymptotically.
+Eq. (40c) has no factor of ``κ``, so it confirms only that case, not
+the general law.
 
 The convention constant ``c_σ`` and the time-law sign ``c_α`` ride
 along untouched — the former through [``F_σ``](@ref

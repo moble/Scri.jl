@@ -226,18 +226,39 @@ systematic:
 ```math
 \begin{aligned}
 R \boldsymbol{ℓ} R̄ &= \boldsymbol{ℓ}, \\
-R 𝐦 R̄ &= 𝐦 + 𝐱\boldsymbol{ξℓ}, \\
-R 𝐦̄ R̄ &= 𝐦̄ - 𝐱\boldsymbol{ξℓ}, \\
-R 𝐧 R̄ &= 𝐧 + \boldsymbol{ξ} + \frac{1}{2} ξ² \boldsymbol{ℓ}.
+R 𝐦 R̄ &= \frac{𝐱 + 𝐈₃'𝐲}{\sqrt{2}}
+  + \frac{ξˣ + 𝐈₃'ξʸ}{\sqrt{2}} \boldsymbol{ℓ}, \\
+R 𝐦̄ R̄ &= \frac{𝐱 - 𝐈₃'𝐲}{\sqrt{2}}
+  + \frac{ξˣ - 𝐈₃'ξʸ}{\sqrt{2}} \boldsymbol{ℓ}, \\
+R 𝐧 R̄ &= 𝐧 + \boldsymbol{ξ} + \frac{1}{2} ξ² \boldsymbol{ℓ},
 \end{aligned}
 ```
 
-This is just the usual conformal transformation of the tetrad, though
-exhibited in a simpler and more geometric form.  (Note that the
-factors of ``𝐱`` in the ``𝐦`` and ``𝐦̄`` expressions essentially
-make their terms "complex", like the ``𝐦`` and ``𝐦̄`` objects
-themselves — meaning that those terms are sums of vectors and
-trivectors.)
+where ``\boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲`` and ``𝐈₃' ≔ R 𝐈₃ R̄``.  The
+rotor sends the vectors ``𝐱`` and ``𝐲`` to ``𝐱'=𝐱 +
+ξˣ\boldsymbol{ℓ}`` and ``𝐲'=𝐲 + ξʸ\boldsymbol{ℓ}``.  The ``𝐦`` and
+``𝐦̄`` lines therefore contain ``𝐈₃'`` rather than ``𝐈₃``, because
+``R`` does *not* leave ``𝐈₃`` unchanged.  Since ``𝐈₃ = 𝐈𝐭`` and
+the pseudoscalar ``𝐈`` commutes with the rotor, we have
+
+```math
+𝐈₃' = 𝐈\, R 𝐭 R̄
+= 𝐈₃ + \frac{1}{\sqrt{2}}\, 𝐈 \left(\boldsymbol{ξ}
++ \frac{1}{2} ξ² \boldsymbol{ℓ}\right),
+```
+
+which is the spatial pseudoscalar of the transformed observer.  This
+is the reading described in [the primer](@ref "Reinterpreting ``i``"):
+the unit imaginary is that of whichever frame the result is written
+in.
+
+The standard Newman-Penrose formalism instead holds the unit imaginary
+``i`` fixed, so that the rotor acts only on ``𝐱`` and ``𝐲``.
+Replacing ``𝐈₃'`` by ``𝐈₃`` in the lines above gives that reading,
+``R 𝐦 R̄ = 𝐦 + \frac{ξˣ + 𝐈₃ξʸ}{\sqrt{2}} \boldsymbol{ℓ}``.  This
+is just the usual null rotation of the Newman-Penrose tetrad, with
+complex parameter ``(ξˣ + 𝐈₃ξʸ)/\sqrt{2}``, though exhibited in a
+simpler and more geometric form.
 
 !!! details "Conformal representations and the stereographic approach"
 
@@ -292,8 +313,8 @@ Nothing in this construction relies on our particular choice of
 throughout yields the family of null rotations that fix ``𝐧``
 instead, shifting ``𝐦`` along ``𝐧`` and sending ``\boldsymbol{ℓ} ↦
 \boldsymbol{ℓ} + \boldsymbol{ξ} + \tfrac{1}{2} ξ²\, 𝐧``.  When the
-distinction matters we subscript each family by the null vector it
-fixes — ``N_{\boldsymbol{ℓ}}`` versus ``N_{𝐧}``.  The question of
+distinction matters, we subscript each family by the null vector that
+is fixed — ``N_{\boldsymbol{ℓ}}`` versus ``N_{𝐧}``.  The question of
 *which* family acts on radiation data at null infinity turns out to be
 surprisingly delicate; see ["Which null direction?"](@ref
 which_null_direction) below.
@@ -615,7 +636,7 @@ where it is not, at ``-𝐳``:
 \begin{aligned}
 σ &: 𝕊² \to \mathrm{Spin}(3) \\
 σ &: k̂ \mapsto \begin{cases}
-\frac{1 - k̂𝐳}{\sqrt{2 + 2 k̂⋅𝐳}} & \text{if } k̂ \neq -𝐳, \\
+\frac{1 + k̂𝐳}{\sqrt{2 + 2 k̂⋅𝐳}} & \text{if } k̂ \neq -𝐳, \\
 \exp\left[\frac{π}{2} 𝐳𝐲 \right] & \text{if } k̂ = -𝐳.
 \end{cases}
 \end{aligned}
@@ -743,7 +764,8 @@ mapping of a sphere to a plane must be.[^3]
     that the stereographic coordinates map the sphere to the entire
     complex plane, while ``\boldsymbol{ζ}`` maps the sphere to a disk
     within a radius of ``π/2``.  Specifically, the factor of ``θ/2``
-    above becomes ``\tan(θ/2)`` for stereographic coordinates.
+    above becomes ``\cot(θ/2)`` for the stereographic coordinates used
+    above, or ``\tan(θ/2)`` for projection from the other pole.
 
     Note that the entire bound of the disk at radius ``π/2``
     corresponds to the single point ``-𝐳`` on the sphere, and the

@@ -45,41 +45,64 @@ step, regardless of the characteristics of the system being
 transformed.  This number is further reduced by any supertranslation,
 in a way that *does* depend on the time sampling.
 
-The spectral consequences of the kink are quantified by
-[Livermore_2012](@citet): a function on ``S²`` with an algebraic
-singularity of order ``p`` along a smooth curve has energy spectrum
-``E(ℓ) ∼ ℓ⁻⁽ᵖ⁺¹⁾``, where energy is defined as the sum of the squares
-of the SWSH coefficients at each ``ℓ``:
+The spectral consequences of the kink follow from the same argument as
+for Fourier series.  A function on ``S²`` whose ``p``-th derivative is
+discontinuous along a curve[^curve] has energy spectrum ``E(ℓ) ∼
+ℓ^{-2(p+1)}``, where energy is defined as the sum of the squares of
+the SWSH coefficients at each ``ℓ``:
 
 ```math
 E(ℓ) = \sum_{m=-ℓ}^ℓ |f_{ℓm}|^2.
 ```
 
-For an order-``n`` B-spline the singularity order is ``p = n-1``,
-giving
+This is the result of [Livermore_2012](@citet).  The "energy spectrum"
+there is the square root of ours, so the law ``ℓ^{-(p+1)}`` found
+there is our ``E(ℓ) ∼ ℓ^{-2(p+1)}``.  For an order-``n`` B-spline the
+jump is in the ``(n-1)``-th derivative, giving
 
 ```math
-E(ℓ) ∼ ℓ^{-n},
-\qquad ϵ_\text{trunc} ∼ Mₙ(δ t)^n ⋅ (ℓ_\text{max}')^{-(n-1)/2}.
+E(ℓ) ∼ ℓ^{-2n},
 ```
 
-For cubic splines (``n = 4``) this yields ``E(ℓ) ∼ ℓ^{-4}`` and
-``ϵ_\text{trunc} ∼ M₄ (δt)^4 (ℓ_\text{max}')^{-3/2}``, a persistent
-power-law floor analogous to the Gibbs phenomenon
-[GottliebShu_1997](@cite).  Using higher-order splines lowers the
-floor as ``Mₙ(δt)^n`` and steepens the power law, but convergence
-requires ``ω_\text{max}\,δ t < 1`` (all frequencies sampled above
-Nyquist), and for numerical-relativity waveforms the effective upper
-frequency is close to Nyquist, limiting practical improvement.
+which is ``E(ℓ) ∼ ℓ^{-8}`` for cubic splines (``n = 4``).
+
+This tail decays quickly, and it is *not* what limits the accuracy in
+practice.  The limit is the size of the interpolation error itself.
+Once the kinks appear, the high-``ℓ`` modes no longer converge to
+roundoff, but stop at a floor comparable to the pointwise error of the
+spline, which for a cubic spline is at most ``(5/384) M₄ (δt)^4``
+[HallMeyer_1976](@cite).[^ends]  This floor can't be beaten by raising
+``ℓ_\text{max}'`` or even by raising the precision of the number type
+used in the calculation; it behaves like the persistent error of the
+Gibbs phenomenon [GottliebShu_1997](@cite).  Using higher-order
+splines lowers the floor as ``Mₙ(δt)^n``, but convergence requires
+``ω_\text{max}\,δ t < 1`` (all frequencies sampled above Nyquist), and
+for numerical-relativity waveforms the effective upper frequency is
+close to Nyquist, limiting practical improvement.
+
+[^curve]: That is, the set of points at which the function is
+    discontinuous form a curve — rather than being at an isolated
+    point, for example.  The kinks here lie along curves on the
+    sphere.  A discontinuity at a single point would give a faster
+    decay, ``E(ℓ) ∼ ℓ^{-(2p+3)}``, in the notation used here
+    [Livermore_2012](@cite).
+
+[^ends]: Strictly, the bound of Hall and Meyer is for a spline that
+    matches the function's slope, or its second derivative, at the
+    ends of the interval.  The natural spline used here sets the
+    second derivative to zero at the ends instead, which adds an error
+    there that dies away within a few intervals.
 
 It is possible to test exponential convergence by using a globally
 smooth interpolant, such as a Chebyshev expansion, which is not
-piecewise-defined and thus has no knots.  However, Chebyshev
-expansions are not well suited to tabulated data because between the
-data points they can have large and unphysical oscillations.  The
-constructed functions are better thought of as *representative* of
-gravitational waveforms exclusively for testing purposes, rather than
-representing true physics.
+piecewise-defined and thus has no knots.  In fact, this has actually
+been done using a much older version of this code, obtaining
+exponential convergence throughout the entire time domain.  However,
+Chebyshev expansions are not well suited to tabulated data because
+between the data points they can have large and unphysical
+oscillations.  The constructed functions are better thought of as
+*representative* of gravitational waveforms exclusively for testing
+purposes, rather than representing true physics.
 
 ## Example
 
@@ -93,31 +116,49 @@ boosted to ``\beta = 0.001c``.  The test waveform is given by
 \end{cases}
 ```
 
-with ``Ω ≈ 0.025``, ``v = ∛Ω``, and sampling of ``δt ≈ 1``.  The
+with ``Ω ≈ 0.05``, ``v = ∛Ω``, and sampling of ``δt ≈ 1``.  The
 ``Ω^{ℓ/3}`` is chosen to *very* roughly correspond to the
 post-Newtonian scaling, and the phase corresponds to rigid rotation
 with constant frequency ``Ω`` chosen to be below the Nyquist frequency
-even up to ``ℓₘₐₓ=16``.
+even up to ``ℓₘₐₓ=16``.  Note that we can directly evaluate
 
-The "good" region is delimited with a pair of vertical bars, and the
-predicted spline plateau is shown as a horizontal bar.  The plot shows
-the energy spectrum of the transformed ``σ'`` components.  The modes
-with ``2 ≤ ℓ ≤ 8`` are roughly constant in time and converge
-exponentially with increasing ``ℓ``, as expected.  Modes with ``ℓ >
-8`` converge very quickly to machine precision at ``t=0``, but
-increase in both directions from there, roughly linearly with time.
-Again, this is the expected analytical behavior.  The modes with ``ℓ ≳
-13`` are initially below ``ℓₘₐₓ ϵ`` (where ``ϵ ≈ 10^{-16}`` is machine
-precision), but beyond ``N_\text{good} = ⌊ 1/(2β) ⌋`` they immediately
-jump up to the resolved ``ℓ=12`` mode, until they plateau at the
-predicted level.
+```math
+M₄ = \max_{ℓ} \left\{v^ℓ (ℓ Ω)^4\right\} ≈ 2.7 × 10^{-5},
+```
+
+so we can estimate the cubic spline's pointwise error bound as
+
+```math
+(5/384) M₄ (δt)^4 ≈ 3.5 × 10^{-7}.
+```
+
+The "good" region is delimited with a pair of vertical bars.  The plot
+shows the square root of the energy spectrum, ``\sqrt{E(ℓ)}``, of the
+transformed ``σ'`` components.  The modes with ``2 ≤ ℓ ≤ 8`` are
+roughly constant in time and converge exponentially with increasing
+``ℓ``, as expected.  Modes with ``ℓ > 8`` converge very quickly to
+machine precision at ``t=0,`` but increase in both directions from
+there, roughly linearly with time.  Again, this is the expected
+analytical behavior.  The modes with ``ℓ ≳ 13`` are initially below
+``ℓₘₐₓ ϵ`` (where ``ϵ ≈ 10^{-16}`` is machine precision), but beyond
+``N_\text{good} = ⌊ 1/(2β) ⌋`` they immediately jump up to the
+resolved ``ℓ=12`` mode, until they reach a plateau.  By ``|t| ≈ 4000``
+the noise is oscillating around the expected plateau of ``3.5 ×
+10^{-7}`` given by the cubic spline's pointwise error bound.
+
+The horizontal line in each plot marks that bound.  The plateau does
+not fall as ``ℓ_\text{max}'`` grows, as a power-law floor in
+``ℓ_\text{max}'`` would: a run at ``ℓ_\text{max}' = 24`` in `Double64`
+precision has a higher noise plateau in its top modes than the run
+shown here, not a lower one.
 
 Note that the ``ℓ=0`` and ``1`` modes shown in red would analytically
 be zero, but are retained for diagnostic purposes.  These are the
 ``\xi`` quantities described in [the explanation of the SSHT](@ref
 Augmenting-to-a-square,-prefactorable-system).  The fact that they are
 smaller than any other modes is a good consistency check that the
-algorithm is working as expected.
+algorithm is working as expected, even when we run into the spline
+limitation.
 
 ![Plot showing converging modes until reaching the spline plateau](spline_errors_Float64.png)
 
@@ -129,9 +170,11 @@ which have ``ϵ ≈ 10^{-77}``.  We also have to extend to ``ℓₘₐₓ = 35``
 to obtain full convergence to this new ``ℓₘₐₓ ϵ``.  As seen in the
 plot below, near ``t=0``, the modes do indeed converge nicely all the
 way down to nearly that precision.  However, exactly at the expected
-distance from ``t=0``, the modes again jump up to the *same* plateau
-as before.  There is no improvement in the plateau level, despite the
-much higher precision, because the plateau is determined by the spline
+distance from ``t=0``, the modes again jump up to a plateau of the
+same size as before: by ``t ≈ 4000`` the top modes reach about ``2 ×
+10^{-6}``, within an order of magnitude of the same bound.  There is
+no improvement in the plateau level, despite the much higher
+precision, because the plateau is determined by the spline
 interpolation error, which is independent of the numerical precision.
 
 ![Extended-precision version of the plot above, converging to 1e-72 near t=0, but still rising to the same plateau as above away from t=0](spline_errors_BigFloat.png)

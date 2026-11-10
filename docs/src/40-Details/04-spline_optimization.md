@@ -31,9 +31,9 @@ dₖ(t) &=
 \frac{d̈ₖⱼ₊₁}{6} \frac{(t - tⱼ)³}{tⱼ₊₁-tⱼ}
 + \frac{d̈ₖⱼ}{6} \frac{(tⱼ₊₁ - t)³}{tⱼ₊₁-tⱼ}
 \\ &\qquad
-+ \frac{dₖⱼ₊₁ - d̈ₖⱼ₊₁ (tⱼ₊₁-tⱼ)²}{6} \frac{t - tⱼ}{tⱼ₊₁-tⱼ}
++ \left(dₖⱼ₊₁ - \frac{d̈ₖⱼ₊₁ (tⱼ₊₁-tⱼ)²}{6}\right) \frac{t - tⱼ}{tⱼ₊₁-tⱼ}
 \\ &\qquad
-+ \frac{dₖⱼ - d̈ₖⱼ (tⱼ₊₁-tⱼ)²}{6} \frac{tⱼ₊₁ - t}{tⱼ₊₁-tⱼ},
++ \left(dₖⱼ - \frac{d̈ₖⱼ (tⱼ₊₁-tⱼ)²}{6}\right) \frac{tⱼ₊₁ - t}{tⱼ₊₁-tⱼ},
 \end{aligned}
 ```
 
@@ -41,8 +41,8 @@ where the ``d̈ₖⱼ`` are found by imposing ``C^2`` continuity between
 adjacent segments, giving rise to the tridiagonal system
 
 ```math
-(tᵢ-tᵢ₋₁) d̈ₖⱼ₋₁ + 2 (tᵢ₊₁ - tᵢ₋₁) d̈ₖⱼ + (tᵢ₊₁ - tᵢ) d̈ₖⱼ₊₁
-= 6 \left( \frac{dₖⱼ₊₁ - dₖⱼ}{tᵢ₊₁ - tᵢ} - \frac{dₖⱼ - dₖⱼ₋₁}{tᵢ - tᵢ₋₁} \right).
+(tⱼ-tⱼ₋₁) d̈ₖⱼ₋₁ + 2 (tⱼ₊₁ - tⱼ₋₁) d̈ₖⱼ + (tⱼ₊₁ - tⱼ) d̈ₖⱼ₊₁
+= 6 \left( \frac{dₖⱼ₊₁ - dₖⱼ}{tⱼ₊₁ - tⱼ} - \frac{dₖⱼ - dₖⱼ₋₁}{tⱼ - tⱼ₋₁} \right).
 ```
 
 The latter may be written in matrix form as

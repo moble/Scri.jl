@@ -162,6 +162,18 @@ end
 
     # The gradient must fit θ.
     @test_throws ArgumentError Scri.objective_and_gradient!(zeros(3), θ, data, t, dc, plan)
+
+    # A boost beyond the speed `t′` was built for is an error, and its message reports the
+    # valid range in plain numbers, not the dual numbers the gradient computes with.
+    θ_far = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, zeros(4)...]
+    err = try
+        Scri.objective_and_gradient!(∇, θ_far, data, t, dc, plan)
+    catch e
+        e
+    end
+    @test err isa ArgumentError
+    @test occursin("exceeds the valid range", err.msg)
+    @test !occursin("Dual", err.msg)
 end
 
 @testitem "objective_and_gradient!: Double64" tags = [:validation] begin

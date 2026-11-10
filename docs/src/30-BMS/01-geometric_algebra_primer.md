@@ -57,9 +57,9 @@ reflect different emphases and traditions in the literature.  GA is
 typically developed over ``ℝ``, rather than ``ℂ`` — the complex
 structures we usually encounter in physics appearing naturally within
 the algebra, rather than being introduced _ad hoc_.  GA also
-emphasizes the geometric interpretation of the algebraic structures,
-instead of what is usually an algebraic emphasis in literature using
-the name Clifford Algebra.
+emphasizes the _geometric_ interpretation of the algebraic structures,
+instead of what is usually a purely _algebraic_ emphasis in literature
+using the name Clifford Algebra.
 
 Before getting into the details of null tetrads and Lorentz
 transformations, we need to review some of the basics of Geometric
@@ -144,7 +144,7 @@ us to calculate quite general geometric products in arbitrary
 dimensions.
 
 Specifically, we can decompose the geometric product of two vectors
-into symmetric and antisymmetric parts:[^1]
+into symmetric and antisymmetric parts:
 
 ```math
 \begin{aligned}
@@ -155,41 +155,52 @@ into symmetric and antisymmetric parts:[^1]
 
 where ``𝐯 ∧ 𝐰`` is called the exterior or [wedge
 product](https://en.wikipedia.org/wiki/Wedge_product), producing a
-[bivector](https://en.wikipedia.org/wiki/Bivector).  When ``𝐯²≥0``
-and ``𝐰²≥0``, this result is a _general complex number_ associated
-with the plane spanned by ``𝐯`` and ``𝐰``, with ``𝐯⋅𝐰`` being the
-real part and ``𝐯 ∧ 𝐰`` being the imaginary part which squares to a
-negative number.  Note that the wedge product in Geometric Algebra
-acts precisely like the wedge product of differential forms and
-carries the same intuition of oriented area.  In three dimensions, it
-corresponds to the usual cross product, but generalizes to arbitrary
-dimensions and signatures.[^2]
+[bivector](https://en.wikipedia.org/wiki/Bivector).  Note that a
+bivector is essentially a rank-2 antisymmetric tensor, while ``𝐯⋅𝐰``
+is just a scalar.  In Physics, we are frequently taught that scalars
+must never be added to vectors — never mind tensors!  This is
+typically good for helping students catch elementary mistakes, but not
+truly necessary; it is actually common in pure mathematics, and is a
+foundational aspect of Clifford / Geometric Algebra.  Below, we will
+find even more general combinations called
+[multivectors](https://en.wikipedia.org/wiki/Multivector).  In fact,
+we will see that the GA of two-dimensional space produces the complex
+numbers, so the familiar combination of real and imaginary parts is
+_precisely equivalent_ to this combination of scalar and bivector.
 
-[^1]: It is remarkable that this formula actually has a scalar being
-    added to the wedge product of two vectors — which is a rank-2
-    tensor.  In Physics, we are frequently taught that scalars must
-    never be added to vectors — never mind tensors!  This is typically
-    good for helping students catch elementary mistakes, but not
-    actually necessary.  Mathematicians routinely define the tensor
-    space to allow for adding arbitrary ranks together.
+Now, the bivector squares to the scalar quantity ``(𝐯 ∧ 𝐰)² =
+(𝐯⋅𝐰)² - 𝐯²𝐰²``.  When this is negative — that is, when ``(𝐯⋅𝐰)²
+< 𝐯²𝐰²``, so that ``𝐯`` and ``𝐰`` span a spacelike plane — this
+result is a _general complex number_ associated with that plane, with
+``𝐯⋅𝐰`` being the real part and ``𝐯 ∧ 𝐰`` being the imaginary
+part.  In Euclidean space this holds for any two nonparallel vectors,
+but in Minkowski space two spacelike vectors can span a timelike
+plane, whose bivector squares to a positive number.  Note that the
+wedge product in Geometric Algebra acts precisely like the wedge
+product of differential forms and carries the same intuition of
+oriented area.  In three dimensions, it corresponds to the usual cross
+product, but generalizes to arbitrary dimensions and signatures.[^2]
 
 [^2]:   More precisely, the wedge product is the [Hodge
     dual](https://en.wikipedia.org/wiki/Hodge_star_operator) of the
-    cross product in three dimensions.  The Hodge dual appears in
-    Geometric Algebra as left-multiplication by the inverse
-    pseudoscalar, which is described later in the text.  But outside
-    of three dimensions, this duality is not usually useful, so the
-    wedge product alone is used.
+    cross product in three dimensions.  The duality appears in
+    Geometric Algebra as multiplication by the pseudoscalar ``𝐈₃ =
+    𝐱𝐲𝐳``, which is described later in the text: ``𝐚 ∧ 𝐛 = 𝐈₃(𝐚 ×
+    𝐛)``, and so ``𝐚 × 𝐛 = 𝐈₃⁻¹(𝐚 ∧ 𝐛)``.  But outside of three
+    dimensions, this duality is not usually useful, so the wedge
+    product alone is used.
 
 !!! important "Geometric Algebra generates Complex Algebra"
 
-    The geometric product of two (spacelike) vectors is precisely a
-    complex number, with the real part being the inner product of the
-    vectors, and the imaginary part being a bivector representing the
-    plane spanned by those vectors.  This is a generalization of the
-    fact that the product of two orthogonal (spacelike, unit) vectors
-    is a bivector that squares to -1, and thus can be identified with
-    the unit imaginary.
+    The geometric product of two vectors spanning a spacelike plane is
+    precisely a complex number, with the real part being the inner
+    product of the vectors, and the imaginary part being a bivector
+    representing the plane spanned by those vectors.  This is a
+    generalization of the fact that the product of two orthogonal
+    (spacelike, unit) vectors is a bivector that squares to -1, and
+    thus can be identified with the unit imaginary.  Normally, we take
+    the plane as ``𝐱``-``𝐲``, and the bivector is ``𝐱𝐲 = 𝐱∧𝐲``, which
+    is functionally equivalent to the unit imaginary ``i ∈ ℂ``.
 
 ## Reflections and rotations
 
@@ -223,16 +234,18 @@ above, we have
 ```
 
 That is, this negative conjugation by ``𝐧`` reflects the vector
-``𝐯`` through the line defined by ``𝐧``; reflections are represented
-as simple conjugations in the algebra.  We can compose reflections,
-just by applying this transformation repeatedly, which is equivalent
-to negative conjugation by the product of the vectors defining the
-reflections.  For any such ``𝐧``, the negative conjugation results in
-a reflection, and any reflection can be represented in this way for
-some choice of ``𝐧``.  But note that the choice of ``𝐧`` is not
-unique; ``-𝐧`` will achieve exactly the same reflection.  Thus, the
-multiplicative group of unit vectors is a double cover of the group of
-reflections.
+``𝐯`` along ``𝐧`` — or equivalently, across the hyperplane
+orthogonal to ``𝐧``.  In particular, reflections are represented as
+simple conjugations in the algebra.  We can compose reflections, just
+by applying this transformation repeatedly, which is equivalent to
+conjugation by the product of the vectors defining the reflections,
+with a minus sign for each reflection.  For any such ``𝐧``, the
+negative conjugation results in a reflection, and any reflection can
+be represented in this way for some choice of ``𝐧``.  But note that
+the choice of ``𝐧`` is not unique; ``-𝐧`` will achieve exactly the
+same reflection.  Thus, the unit vectors double cover the reflections,
+and the products of unit vectors, which do form a group, double cover
+the group generated by the reflections.
 
 This may seem like a trivial curiosity, but it has profound
 implications because of the Cartan-Dieudonné theorem
@@ -260,31 +273,42 @@ There is a corollary that is also important for our purposes:
 > expressed as the product of _an even number_ of at most ``p+q``
 > simple reflections.
 
-Composing two reflections is the same as conjugation by a product of two unit
-vectors — a _rotor_ ``R`` — acting as ``𝐯 ↦ R𝐯R̃``.  The tilde here
-denotes the _reverse_ operation, which swaps the order of the vectors
-in any product; for a product of unit vectors this is the inverse, so
-``RR̃ = 1``.  For a rotor ``R = \exp[θ𝐱𝐲/2]`` generated by the plane
+Composing the reflections by two unit vectors ``𝐚`` and ``𝐛`` is the
+same as conjugation by their product ``R = 𝐚𝐛``, acting as ``𝐯 ↦
+R𝐯R⁻¹``.  The reverse ``R̃ = 𝐛𝐚`` swaps the order of the vectors,
+and ``RR̃ = 𝐚²𝐛² = ±1``.  When both vectors are spacelike or both
+are timelike, ``RR̃ = 1``, so the reverse _is_ the inverse; then ``R``
+is called a _rotor_, acting as ``𝐯 ↦ R𝐯R̃``.  A timelike vector
+times a spacelike one instead gives ``RR̃ = -1``, so that ``R̃ =
+-R⁻¹``.  The two reflections then reverse the direction of time, as
+``𝐯 ↦ R𝐯R⁻¹``, while ``𝐯 ↦ R𝐯R̃`` differs from that by the
+inversion ``𝐯 ↦ -𝐯``.  For example, with ``R = 𝐭𝐱`` the
+reflections reverse ``𝐭`` and ``𝐱``, but ``R𝐯R̃`` reverses ``𝐲``
+and ``𝐳`` instead: it is a rotation by ``π`` in the ``𝐲𝐳`` plane.
+For a rotor ``R = \exp[θ𝐱𝐲/2]`` generated by the plane
 ``𝐱``-``𝐲``, any vector orthogonal to that plane anticommutes with
 both ``𝐱`` and ``𝐲``, hence _commutes_ with ``𝐱𝐲``, and is left
 unchanged by the conjugation; the components in the plane are rotated
 by the full angle ``θ`` — the same halving of the exponent familiar
 from quaternions and spinors.
 
-In fact, the even products of unit vectors form the _Spin_ group, and
-it is a _double_ cover of the special orthogonal group: just as with a
-single reflection, ``±R`` give the same transformation ``𝐯 ↦ R𝐯R̃``,
-but now the two sheets are connected, so a continuous rotation by
-``2π`` returns the transformation to the identity while returning
-``R`` to ``-R``.  This is the key to understanding how spinors arise
-in physics.  A spinor is an object the Spin group acts on _directly_ —
-by a single rotor ``R``, rather than by the two-sided conjugation
-``R\,(⋅)\,R̃`` — and so it detects the very sign that the orthogonal
-transformation forgets.  The rotors we build in the following pages
-are exactly such objects, and the spin-weighted fields we ultimately
-transform are built from spinors — the "square roots" of the null
-tetrad legs — which is why the Spin group, not merely the rotation
-group, is the right language throughout.
+In fact, the even products of unit vectors form the _Spin_ group,
+which is a _double_ cover of the special orthogonal group: just as
+with a single reflection, ``±R`` give the same transformation ``𝐯 ↦
+R𝐯R̃``, but now the two sheets are connected, so a continuous
+rotation by ``2π`` returns the transformation to the identity while
+returning ``R`` to ``-R``.  This is the key to understanding how
+spinors arise in physics.  A spinor is an object the Spin group acts
+on _directly_ — by a single rotor ``R``, rather than by the two-sided
+conjugation ``R\,(⋅)\,R̃`` — and so it is sensitive to the sign, while
+the orthogonal transformation is insensitive to it.  The rotors we
+build in the following pages are exactly such objects, and the
+spin-weighted fields we ultimately transform are built from spinors —
+the "square roots" of the null tetrad legs — which is why the Spin
+group, not merely the rotation group, is the right language
+throughout.  While the distinction doesn't matter for the integer-spin
+fields that are most common in the literature, it is actually easier
+to work with the more general _Spin_ group.
 
 ## Higher-dimensional products
 
@@ -295,41 +319,43 @@ plane they span, and it records the
 [attitude](https://en.wikipedia.org/wiki/Orientation_(geometry)) of
 that plane, the
 [orientation](https://en.wikipedia.org/wiki/Orientability) of the
-bivector, and a magnitude.  The same construction climbs through the
+bivector, and a magnitude.  The same construction exists in higher
 dimensions: the product of three orthogonal vectors is a trivector
-representing the volume they span, and so on.  In particular, the
-product of ``d`` orthogonal vectors in a ``d``-dimensional space is a
-_pseudoscalar_ representing the oriented volume of the whole space, and
-it squares to either ``+1`` or ``-1`` depending on the signature.  The
-pseudoscalar is usually denoted ``𝐈``, and it plays a central role in
-the algebra.  It is essentially the [volume
-form](https://en.wikipedia.org/wiki/Volume_form) of the space, and
-provides the [Hodge
+representing the oriented volume they span, and so on.  In particular,
+the product of ``d`` orthogonal vectors in a ``d``-dimensional space
+is a _pseudoscalar_ representing the oriented "volume" of the whole
+space, and it squares to either ``+1`` or ``-1`` depending on the
+dimension and signature.  The pseudoscalar is usually denoted ``𝐈``,
+and it plays a central role in the algebra.  It is essentially the
+[volume form](https://en.wikipedia.org/wiki/Volume_form) of the space,
+and provides the [Hodge
 dual](https://en.wikipedia.org/wiki/Hodge_star_operator) by simple
 multiplication; in each of the cases we use below — ``𝐈₂ = 𝐱𝐲``,
-``𝐈₃ = 𝐱𝐲𝐳``, and ``𝐈₄ = 𝐭𝐱𝐲𝐳`` — it happens to square to ``-1``,
-making it a complex structure for its space.
+``𝐈₃ = 𝐱𝐲𝐳``, and ``𝐈₄ = 𝐭𝐱𝐲𝐳`` — it happens to square to
+``-1``, making it a complex structure for its space.
 
-These graded products have a simple accounting.  There is — by
-definition — exactly one scalar, and linear dependence forces the wedge
-product of more than ``d`` vectors to vanish.  In between, the space of
-products of ``k`` independent vectors has dimension ``\binom{d}{k}``, so
-the whole algebra has dimension
+These "graded" products have a simple accounting.  The scalar part is
+— essentially by definition — one dimensional, and linear dependence
+forces the wedge product of more than ``d`` vectors to vanish.  In
+between, the space of products of ``k`` independent vectors has
+dimension ``\binom{d}{k}``, so the whole algebra has dimension
 
 ```math
 \sum_{k=0}^d \binom{d}{k} = 2^d.
 ```
 
-There is likewise just one pseudoscalar, the product of all ``d`` basis
-vectors.  In ``d = 2`` there is a single bivector, which _is_ the
-pseudoscalar — the unit imaginary we met above.  That complex numbers
-are then a linear combination of the scalar and that one bivector, and
-so two-dimensional, is a pure coincidence of ``d = 2``.  Hamilton was
-misled into expecting the same structure at ``d = 3``, where the
-coincidence is instead that the number of vectors ``\binom{3}{1} = 3``
-equals the number of bivectors ``\binom{3}{2} = 3``.  Chasing these
-seemingly magical coincidences caused decades of confusion that only the
-development of Geometric Algebra has fully resolved.
+In particular, for ``k=d``, there is just ``\binom{d}{d} = 1`` element
+up to scaling, called the "pseudoscalar" — which is composed of the
+product of all ``d`` basis vectors.  In ``d = 2`` the pseudoscalar is
+a bivector — the unit imaginary we saw above.  The fact that complex
+numbers are a linear combination of the scalar and that one bivector
+(and thus two-dimensional) is a pure coincidence of ``d = 2``.
+Hamilton was misled into expecting the same structure for ``d = 3``,
+where the coincidence is instead that the number of vectors
+``\binom{3}{1} = 3`` equals the number of bivectors ``\binom{3}{2} =
+3``; chasing these seemingly magical coincidences caused decades of
+confusion that only the development of Geometric Algebra has fully
+resolved.
 
 ## Structure of the algebra
 
@@ -351,20 +377,21 @@ and rotors.
 
 In ``𝒢(ℝ²)`` the single bivector ``𝐱𝐲`` is the pseudoscalar and the
 unit imaginary, so the even part — scalar plus bivector — is a copy of
-``ℂ``.  In ``𝒢(ℝ³)`` the three bivectors ``𝐢 = 𝐳𝐲``, ``𝐣 = 𝐱𝐳``,
-``𝐤 = 𝐲𝐱`` each square to ``-1`` and multiply like Hamilton's
-quaternions, so the even part — scalar plus those three bivectors — is a
-copy of ``ℍ``, whose unit-norm elements are ``\mathrm{Spin}(3)``, the
-rotors of spatial rotation.  In ``𝒢(ℝ^{3,1})`` the six bivectors split
-into three _spatial_ ones (``𝐳𝐲, 𝐱𝐳, 𝐲𝐱``, squaring to ``-1``,
-generating rotations) and three _timelike_ ones (``𝐭𝐱, 𝐭𝐲, 𝐭𝐳``,
-squaring to ``+1``, generating boosts).  The eight-dimensional even part
-— scalar, six bivectors, and pseudoscalar — contains
-``\mathrm{Spin}⁺(3,1)`` as its unit-norm elements: the rotors we use
-throughout to represent Lorentz transformations.  Finally, the spatial
-pseudoscalar ``𝐈₃ = 𝐱𝐲𝐳`` and the spacetime pseudoscalar ``𝐈₄ =
-𝐭𝐱𝐲𝐳`` are the objects that will [stand in for the unit
-imaginary](@ref "Reinterpreting ``i``") in the null tetrad.
+``ℂ``.  In ``𝒢(ℝ³)`` the three bivectors ``𝐢 = 𝐳𝐲``, ``𝐣 =
+𝐱𝐳``, ``𝐤 = 𝐲𝐱`` each square to ``-1`` and multiply like
+Hamilton's quaternions, so the even part — scalar plus those three
+bivectors — is a copy of ``ℍ``, whose unit-norm elements are
+``\mathrm{Spin}(3)``, the rotors of spatial rotation.  In
+``𝒢(ℝ^{3,1})`` the six bivectors split into three _spatial_ ones
+(``𝐳𝐲, 𝐱𝐳, 𝐲𝐱``, squaring to ``-1``, generating rotations) and
+three _timelike_ ones (``𝐭𝐱, 𝐭𝐲, 𝐭𝐳``, squaring to ``+1``,
+generating boosts).  The eight-dimensional even part — scalar, six
+bivectors, and pseudoscalar — contains ``\mathrm{Spin}⁺(3,1)`` as its
+unit-norm elements: the rotors we use throughout to represent Lorentz
+transformations.  Finally, the spatial pseudoscalar ``𝐈₃ = 𝐱𝐲𝐳``
+and the spacetime pseudoscalar ``𝐈₄ = 𝐭𝐱𝐲𝐳`` are the objects that
+will [stand in for the unit imaginary](@ref "Reinterpreting ``i``") in
+the null tetrad.
 
 ## Reinterpreting ``i``
 

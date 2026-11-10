@@ -10,8 +10,8 @@ conventions of Misner, Thorne, and Wheeler
 Christoffel symbols by
 
 ```math
-{\Gamma^a}_{bc} = \frac{1}{2} g^{ad} \bigl(
-  \partial_b g_{cd} + \partial_c g_{bd} - \partial_d g_{bc}
+{Γ^a}_{bc} = \frac{1}{2} g^{ad} \bigl(
+  ∂_b g_{cd} + ∂_c g_{bd} - ∂_d g_{bc}
 \bigr).
 ```
 
@@ -22,10 +22,10 @@ MTW's Eq. (8.44), though we include the `Conventions` parameter
 
 ```math
 {R^a}_{bcd} = c_R \left(
-  \partial_c {\Gamma^a}_{bd}
-  - \partial_d {\Gamma^a}_{bc}
-  + {\Gamma^a}_{ce} {\Gamma^e}_{bd}
-  - {\Gamma^a}_{de} {\Gamma^e}_{bc}
+  ∂_c {Γ^a}_{bd}
+  - ∂_d {Γ^a}_{bc}
+  + {Γ^a}_{ce} {Γ^e}_{bd}
+  - {Γ^a}_{de} {Γ^e}_{bc}
 \right).
 ```
 
@@ -48,21 +48,21 @@ universal agreement on the *formula* used to define the Christoffel
 symbols, so
 
 ```math
-{}^{[A]}{\Gamma^a}_{bc} = \frac{1}{2} {}^{[A]}g^{ad} \bigl(
-  \partial_b {}^{[A]}g_{cd} + \partial_c {}^{[A]}g_{bd} - \partial_d {}^{[A]}g_{bc}
+{}^{[A]}{Γ^a}_{bc} = \frac{1}{2} {}^{[A]}g^{ad} \bigl(
+  ∂_b {}^{[A]}g_{cd} + ∂_c {}^{[A]}g_{bd} - ∂_d {}^{[A]}g_{bc}
 \bigr),
 ```
 
 but due to cancellation of two factors of ``c_s`` when we substitute
-the expressions for the metrics, we have ``{}^{[A]}{\Gamma^a}_{bc} =
-{\Gamma^a}_{bc}``.  Now suppose this author defines
+the expressions for the metrics, we have ``{}^{[A]}{Γ^a}_{bc} =
+{Γ^a}_{bc}``.  Now suppose this author defines
 
 ```math
 {}^{[A]}{R^a}_{bcd} = - \left(
-  \partial_c {}^{[A]}{\Gamma^a}_{bd}
-  - \partial_d {}^{[A]}{\Gamma^a}_{bc}
-  + {}^{[A]}{\Gamma^a}_{ce} {}^{[A]}{\Gamma^e}_{bd}
-  - {}^{[A]}{\Gamma^a}_{de} {}^{[A]}{\Gamma^e}_{bc}
+  ∂_c {}^{[A]}{Γ^a}_{bd}
+  - ∂_d {}^{[A]}{Γ^a}_{bc}
+  + {}^{[A]}{Γ^a}_{ce} {}^{[A]}{Γ^e}_{bd}
+  - {}^{[A]}{Γ^a}_{de} {}^{[A]}{Γ^e}_{bc}
 \right).
 ```
 

@@ -24,8 +24,11 @@ The keywords are:
 
 - `grid`: a pair `(R′ₚ, w)` of rotors and sphere weights ``w_j``.  The default is
   [`sphere_quadrature`](@ref Scri.sphere_quadrature)`(ℓₘₐₓ)`, at the target's band limit,
-  which makes the sum over pixels an exact integral over the sphere for band-limited
-  fields, so that ``Φ`` is a true ``L²`` norm.
+  which makes the sum over pixels an exact integral over the sphere when the transformed
+  data ``d'`` are band-limited to that ``ℓₘₐₓ`` too, so that ``Φ`` is then exactly the
+  ``L²`` norm.  A boosted field is not band-limited, so in general the sum is a
+  spectrally accurate approximation of that norm rather than an exact one; a finer grid,
+  such as `sphere_quadrature(L)` with a larger `L`, can be passed to reduce the error.
 - `weights`: per-pixel factors multiplying ``w_j``, for example to down-weight a region of
   the sphere.  The default is one.
 - `time_weights`: the ``v_i``.  The default is the trapezoid rule on `t′`, so that the sum
@@ -46,8 +49,9 @@ The keywords are:
 
   where ``Π_{c}`` is the same projection of the target.
 
-  The projection is the quadrature's, so with the default grid it is exact for
-  band-limited fields; `ℓ_fit` must then be at most the target's band limit.  It must be at
+  The projection is the quadrature's, so with the default grid it is exact when ``d'`` is
+  band-limited to ``2ℓₘₐₓ - ℓ_\mathrm{fit}``; `ℓ_fit` must then be at most the target's
+  band limit.  It must be at
   least the largest ``|s|`` among the components.
 
 All weights must be finite and nonnegative.  The target's pixel values are computed with

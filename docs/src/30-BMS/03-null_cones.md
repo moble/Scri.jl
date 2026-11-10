@@ -1,10 +1,10 @@
 # Null cones
 
-!!! note "TO DO"
+!!! todo "TO DO"
 
-    Introduction.  The classical stereographic and complex-analytic
-    approach of Penrose is recovered from the geometry, rather than
-    adopted as an artificial device.
+    Introduction.  Note that the classical stereographic and
+    complex-analytic approach of Penrose is recovered from the
+    geometry, rather than adopted as an artificial device.
 
 ## The null cone and the celestial sphere
 
@@ -80,7 +80,7 @@ what a Lorentz transformation does to it.
 
 ## The plane of null rotations is the conformal plane
 
-!!! note "TO DO"
+!!! todo "TO DO"
 
     Fill this in
 
@@ -241,8 +241,8 @@ We first define the null vector
 ```math
 𝐊
 ≔ Λ \boldsymbol{ℓ} \bar{Λ}
-∝ 𝐑_K \boldsymbol{ℓ} 𝐑_K
-= 𝐑_{k̂} \boldsymbol{ℓ} 𝐑_{k̂}.
+= e^{φₐ}\, 𝐑_K \boldsymbol{ℓ} 𝐑̄_K
+= e^{φₐ}\, 𝐑_{k̂} \boldsymbol{ℓ} 𝐑̄_{k̂}.
 ```
 
 This is the direction of propagation of the field, as a full
@@ -280,10 +280,10 @@ straightforward calculation shows that the final transformed direction
 of ``𝐱`` is
 
 ```math
-x''''
+𝐋
 = Λ 𝐱 \bar{Λ}
 =  𝐑_K\, \left(𝐱 + ξˣe^{φₐ}\boldsymbol{ℓ}\right)\, 𝐑̄_K
-= 𝐋 + ξˣe^{φₐ}𝐊.
+= 𝐑_K\, 𝐱\, 𝐑̄_K + ξˣ𝐊.
 ```
 
 Now, the set
@@ -349,20 +349,20 @@ out the direction of propagation, and the flagplane picking out the
 tangent orientation that allows us to describe the polarization.  In
 the language of the equivariance condition above, the flagpole is what
 ``𝐑_{φₐ𝐭𝐳}`` rescales (boost weight) and the flagplane is what
-``𝐑_{γ𝐲𝐱}`` rotates (spin weight).  The ``AN`` factors preserve
+``𝐑_{γ𝐲𝐱}`` rotates (spin weight).  The ``AN`` factors *preserve*
 both the flagpole's direction and the flagplane, so all the
-*positional* information — which flagpole, and which flagplane through
-it — is encoded in the ``K`` factor alone.
+*positional* information — the flagpole and the flagplane through it —
+is encoded in the ``K`` factor alone.
 
 ## [From the null cone to ``ℐ⁺``](@id from_cone_to_scri)
 
 The construction so far was embedded in Minkowski space, with ``𝒩⁺``
 the null cone of a single point and the fiber ``ℝ⁺`` acting by
-dilation.  That picture is scaffolding.  A general asymptotically flat
-spacetime has no preferred origin, its interior null congruences focus
-and caustic, and it has no global null cone — yet the celestial sphere
-survives intact, because the object we actually need is not the null
-cone of a point but **future null infinity ``ℐ⁺`` itself**.
+dilation.  A general asymptotically flat spacetime has no preferred
+origin, its interior null congruences focus and caustic, and it has no
+global null cone — yet the celestial sphere survives intact, because
+the object we actually need is not the null cone of a point but
+**future null infinity ``ℐ⁺`` itself**.
 
 In the conformally compactified spacetime, ``ℐ⁺`` is a smooth null
 hypersurface with topology ``ℝ × 𝕊²``.  Its null generators are the
@@ -458,7 +458,7 @@ group; assembling the two is the business of the rest of this page.
 
 ## [Which null direction?](@id which_null_direction)
 
-!!! note "TO DO"
+!!! todo "TO DO"
 
     I need to rewrite this section entirely.  I should use
     ``ΘN_{\boldsymbol{ℓ}} = N_n``.

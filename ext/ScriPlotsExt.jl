@@ -31,7 +31,7 @@ function Scri.diagnostics(t, data, data_components)
             yscale=:log10,
             title=string(comp),
             xlabel="Time",
-            ylabel="Energy",
+            ylabel="√E(ℓ)",
         )
         plots[comp] = p
     end

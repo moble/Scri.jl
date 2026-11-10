@@ -17,9 +17,13 @@ The parameters are
 read by [`bms_from_parameters`](@ref): the rotation vector ``\vec{r}`` gives the frame
 rotation ``R = \exp(\vec{r}/2)``, the rapidity vector ``\vec{η}`` gives the boost velocity
 ``v⃗ = \tanh(|\vec{η}|)\, \vec{η}/|\vec{η}|``, and the ``a`` are the real degrees of
-freedom of the supertranslation's modes up to ``ℓ_α``.  Every ``θ`` is a valid
-transformation, the identity is ``θ = 0``, and nothing is singular there, so an optimizer
-may start at zero and move freely.  Use [`parameters_from_bms`](@ref) to start elsewhere.
+freedom of the supertranslation's modes up to ``ℓ_α``.  Every ``θ`` describes a valid
+BMS transformation, the identity is ``θ = 0``, and nothing is singular there, so an
+optimizer may start at zero.  Use [`parameters_from_bms`](@ref) to start elsewhere.  The
+plan's output times `t′` must still be valid for every ``θ`` the optimizer tries, as for
+`transform_objective`: a grid from `compute_t′(t, β_max, δt_max)` covers boosts up to speed
+`β_max` and supertranslations up to `δt_max`, and beyond them this function throws an
+`ArgumentError`.
 
 The arguments `data`, `t`, `dc`, and `plan` are as for `transform_objective`, including
 plans with `ℓ_fit`, which cost one more pass over the pixels.  The shape of `∇` must match

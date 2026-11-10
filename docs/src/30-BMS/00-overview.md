@@ -55,7 +55,7 @@ sufficient because there is a major complication:
 
 Their tetrads are *not related* by the Lorentz transformation that
 relates the observers.  The importance of this subtlety cannot be
-understated, and is hidden by sloppy language frequently used in the
+overstated, and is hidden by sloppy language frequently used in the
 literature — words like "invariant" and "scalar" used to refer to
 numbers that are actually nothing more than components of a tensor
 with respect to a particular tetrad, which is itself defined naively

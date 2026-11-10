@@ -6,11 +6,10 @@ coordinates and solving for the coefficients.  That route is short and
 easy to verify, but it has two shortcomings.  The conformal factor and
 the spin phase are obtained by separate arguments, one from the
 conformal weight of the legs and one from the action of a rotation on
-the dyad, and their identification with the ``A`` and ``K`` factors of
-[the ``KAN`` decomposition](@ref "Iwasawa's ``KAN`` decomposition") is
-stated rather than derived.  The null-rotation parameter, meanwhile,
-appears as a coordinate derivative, with no evident relation to the
-group structure at all.
+the dyad — the ``A`` and ``K`` factors of [the ``KAN``
+decomposition](@ref "Iwasawa's ``KAN`` decomposition"), respectively.
+The null-rotation parameter, meanwhile, appears as a coordinate
+derivative, with no evident relation to the group structure at all.
 
 This page derives the same law along a different route, in which each
 factor of the answer is produced by a structural feature of the group.
@@ -20,45 +19,52 @@ two derivations agree, and the coordinate computation of the previous
 page remains the most direct verification; what is gained here is an
 account of *why* the answer takes the form it does.
 
-## A Lorentz transformation distinguishes one cut
+## A Lorentz transformation distinguishes a cut
 
 It is worth recalling why the ``KAN`` decomposition, which is such a
-natural description of the Lorentz group, does not immediately describe
-the BMS action on the tetrad.
+natural description of the Lorentz group, does not immediately
+describe the BMS action on the tetrad.
 
 A Lorentz transformation is a generalized rotation about the spacetime
-origin.  A spatial rotation is taken about a spatial origin, and a boost
-is likewise taken about the time origin, so the transformation as a
-whole is a rotation about the full spacetime origin.  Consequently the
-objects it describes most naturally are those attached to that origin,
-and in particular the null cone through it.  The ``KAN`` decomposition
-inherits this: it is stated relative to a null direction *at a point*.
+origin.  Just as a spatial rotation is only meaningful with respect to
+a spatial origin — so that we always talk about "rotations about the
+origin" — a boost is only meaningful with respect to a time origin.
+The general Lorentz transformation is taken "about" the full spacetime
+origin.  Consequently the objects it describes most naturally are
+those related directly to the spacetime origin, and in particular the
+null cone through it.  The ``KAN`` decomposition inherits this: it is
+stated relative to a null direction *at a point*.  More specifically,
+the choice of null direction will be one of the canonical tetrad
+elements at that point.
 
 The same fact appears at ``ℐ`` in the time law.  A Lorentz
-transformation acts as ``t' = κ(k̂)\,t``, so the cuts it preserves
-satisfy ``t\left(κ - 1\right) = 0``.  Unless ``κ ≡ 1`` — that is, unless
-the transformation is a rotation — the only such cut is ``t = 0``.  A
-boost therefore distinguishes exactly one cut of ``ℐ``, and it is the
-cut on which the two observers' origins coincide.
+transformation acts as ``t' = κ(k̂)\,t``, so a cut of constant ``t``
+is carried to a cut of constant ``t'`` only if ``t\left(κ - 1\right) =
+0``.  Unless ``κ ≡ 1`` — that is, unless the transformation is a
+rotation — the only such cut is ``t = 0``.  It is also the only cut of
+constant ``t`` on which ``ðt' = t\,ðκ`` vanishes, and it is the cut on
+which the two observers' *time* origins coincide — though the angular
+coordinates within the cut differ.
 
-This suggests splitting the problem in two.  First, describe the action
-of the transformation *on its own distinguished cut*, where we may hope
-that ``KAN`` applies directly.  Second, account for the displacement
-from that cut to whichever cut the data actually occupies.  The
-remainder of the page follows that plan.
+This suggests splitting the problem in two.  First, describe the
+action of the transformation *on its own distinguished cut*, where we
+may hope that ``KAN`` applies directly.  Second, account for the
+displacement from that cut to whichever cut the data actually
+occupies.  The remainder of this page walks through that plan,
+incorporating additional complications due to the supertranslation.
 
 ## Cuts as the homogeneous space
 
 The second half of the plan requires knowing how BMS relates the
-distinguished cuts of different elements, and the semidirect-product
-structure answers this.
+distinguished cuts of different elements, which will be informed by
+the semidirect-product structure.
 
-Recall from [the BMS page](@ref bms_group) that
-``\text{BMS} = ℒ ⋉_{\mathrm{Ad}} 𝒮``, with
-``\mathrm{Ad}(Λ)(α)(𝐤) = α(Λ^{-1}𝐤)/κ(Λ^{-1}, 𝐤)``, that ``𝒮`` is a
-normal subgroup, and that ``ℒ`` is not.  The failure of ``ℒ`` to be
-normal is precisely what we need: conjugating a Lorentz transformation
-by a supertranslation produces an element that is not a Lorentz
+Recall from [the BMS page](@ref bms_group) that ``\text{BMS} = ℒ
+⋉_{\mathrm{Ad}} 𝒮``, with ``\mathrm{Ad}(Λ)(α)(𝐤) =
+α(Λ^{-1}𝐤)/κ(Λ^{-1}, 𝐤)``, that ``𝒮`` is a normal subgroup, and
+that ``ℒ`` is not.  The failure of ``ℒ`` to be normal is precisely
+what we need: conjugating a Lorentz transformation by a
+supertranslation produces an element that is not a Lorentz
 transformation.  Explicitly, using the group law of that page,
 
 ```math
@@ -67,16 +73,18 @@ transformation.  Explicitly, using the group law of that page,
 ```
 
 The supertranslation content on the right vanishes only when ``β ∘ Λ =
-κβ``, which for a boost fails for every nonzero ``β``.  So there is a
+κβ``.  For a boost, this holds only when ``β`` is a translation that
+the boost leaves fixed — a spatial translation orthogonal to its
+velocity — and fails for every other nonzero ``β``.  So there is a
 whole family of Lorentz subgroups of BMS, conjugate to one another by
-supertranslations, and each distinguishes its own cut.  The situation is
-identical in structure to the Poincaré group, where the Lorentz
+supertranslations, and each distinguishes its own cut.  The situation
+is identical in structure to the Poincaré group, where the Lorentz
 subgroups are conjugate by translations and each distinguishes its own
 origin event.
 
 The analogy extends to the homogeneous spaces.  Minkowski spacetime is
-the coset space of the Poincaré group by a Lorentz subgroup, its points
-labeling the possible choices of origin.  In the same way,
+the coset space of the Poincaré group by a Lorentz subgroup, its
+points labeling the possible choices of origin.  In the same way,
 
 ```math
 \left\{\text{cuts of } ℐ \right\} \;=\; \text{BMS} / ℒ ,
@@ -86,38 +94,24 @@ the cuts labeling the possible choices of *origin cut*.  A choice of
 origin in special relativity is replaced, in the BMS setting, by a
 choice of cut.
 
-!!! note "Why there is no ``KAN`` decomposition of BMS"
-
-    Iwasawa's theorem applies to semisimple groups, and BMS is not
-    semisimple: the supertranslations are an abelian normal subgroup.
-    There is therefore no useful ``KAN``-like factorization of BMS
-    itself.  But this is again the Poincaré situation, and the same
-    remedy applies.  One does not seek an Iwasawa decomposition of the
-    Poincaré group; one uses the semidirect structure to reduce to the
-    stabilizer of a point, and that stabilizer — the Lorentz group — is
-    semisimple.  Here the stabilizer of a cut is likewise a Lorentz
-    group, so the correct generalization is not "``KAN`` for BMS" but
-    "``KAN`` relative to a chosen cut", together with the conjugation
-    above to move between cuts.
-
 ## The celestial sphere and its conformal frames
 
 Before using ``KAN`` we need to know what it measures.  The answer is
 that it measures the action on a particular four-dimensional space
-attached to the celestial sphere, and that both the conformal factor and
-the spin phase are components of a single object there.
+attached to the celestial sphere, and that both the conformal factor
+and the spin phase are components of a single object there.
 
-Recall from [the conformal-factor
-section](@ref "Lorentz transformations ``ℒ`` and the conformal factor
-``κ``") that a Lorentz transformation acts on the celestial sphere by a
-conformal map, with ``{dΩ'}² = κ²\, dΩ²``.  Being conformal, the
-differential of that map at any point is a *similarity* of the tangent
-plane: a positive rescaling composed with a rotation.  Identifying the
-tangent plane with ``ℂ`` by way of the dyad, a similarity is
-multiplication by a single complex number.  Its modulus is ``κ``, and its
-argument is an angle that we will call ``-γ``, the sign chosen for later
-convenience.  A conformal map of the sphere therefore supplies exactly
-two real numbers at each point, and there is no room for more.
+Recall from [the conformal-factor section](@ref "Lorentz
+transformations ``ℒ`` and the conformal factor ``κ``") that a Lorentz
+transformation acts on the celestial sphere by a conformal map, with
+``{dΩ'}² = κ²\, dΩ²``.  Being conformal, the differential of that map
+at any point is a *similarity* of the tangent plane: a positive
+rescaling composed with a rotation.  Identifying the tangent plane
+with ``ℂ`` by way of the dyad, a similarity is multiplication by a
+single complex number.  Its modulus is ``κ``, and its argument is an
+angle that we will call ``-γ``, the sign chosen for later convenience.
+A conformal map of the sphere therefore supplies exactly two real
+numbers at each point, and there is no room for more.
 
 The group-theoretic counterpart is the following.  Consider the set of
 pairs
@@ -126,13 +120,14 @@ pairs
 \left(𝐤,\; \left[𝐦\right]\right),
 ```
 
-where ``𝐤`` is a future-pointing null *vector* — not merely a ray — and
-``𝐦`` is a complex null vector with ``𝐦 ⋅ 𝐦̄ = 1`` and ``𝐦 ⋅ 𝐤 = 0``,
-taken modulo the shift ``𝐦 ↦ 𝐦 + c\,𝐤``.  The null vectors form a
-three-dimensional set, and for fixed ``𝐤`` the admissible ``[𝐦]``
-differ only by a phase, so the pairs form a four-dimensional space.  We
-will call it the **bundle of conformal frames**, since a pair records a
-point of the sphere, a scale, and an orientation in the tangent plane.
+where ``𝐤`` is a future-pointing null *vector* — not merely a ray —
+and ``𝐦`` is a complex null vector with ``𝐦 ⋅ 𝐦̄ = 1`` and ``𝐦 ⋅
+𝐤 = 0``, taken modulo the shift ``𝐦 ↦ 𝐦 + c\,𝐤``.  The null
+vectors form a three-dimensional set, and for fixed ``𝐤`` the
+admissible ``[𝐦]`` differ only by a phase, so the pairs form a
+four-dimensional space.  We will call it the **bundle of conformal
+frames**, since a pair records a point of the sphere, a scale, and an
+orientation in the tangent plane.
 
 ``\mathrm{Spin}^+(3,1)`` acts transitively on this bundle, and the
 stabilizer of a pair is easy to identify.  An element fixing ``𝐤``
@@ -151,19 +146,19 @@ factorization of a rotor against this identification gives the
 statement we were after:
 
 - the ``𝕊²`` part of ``K`` determines the point of the sphere;
-- the ``M`` part of ``K``, the Hopf fiber, determines the orientation in
-  the tangent plane;
+- the ``M`` part of ``K``, the Hopf fiber, determines the orientation
+  in the tangent plane;
 - ``A`` determines the scale, since it is the factor that rescales
   ``𝐤``; and
 - ``N`` acts trivially, since it is the stabilizer.
 
-So the modulus and argument of the conformal map's differential are the
-``A`` and ``M`` factors of ``KAN``, and they are the only quantities
-that a Lorentz transformation can contribute to any object built from a
-point of the sphere together with a dyad.  In particular, writing the
-boost as ``𝐑_{φₐ} = \exp\left[\tfrac{φₐ}{2}𝐭𝐳\right]`` and the
-Hopf-fiber rotation as ``𝐑_γ = \exp\left[\tfrac{γ}{2}𝐱𝐲\right]``, we
-have
+So the modulus and argument of the conformal map's differential are
+the ``A`` and ``M`` factors of ``KAN``, and they are the only
+quantities that a Lorentz transformation can contribute to any object
+built from a point of the sphere together with a dyad.  In particular,
+writing the boost as ``𝐑_{φₐ} = \exp\left[\tfrac{φₐ}{2}𝐭𝐳\right]``
+and the Hopf-fiber rotation as ``𝐑_γ =
+\exp\left[\tfrac{γ}{2}𝐱𝐲\right]``, we have
 
 ```math
 κ = e^{φₐ},
@@ -171,47 +166,56 @@ have
 𝐑_γ\, 𝐦\, 𝐑̃_γ = e^{iγ}\, 𝐦 .
 ```
 
-The second of these deserves a word.  On the dyad the spatial
-pseudoscalar and the screen pseudoscalar agree, ``𝐈₃𝐦 = 𝐱𝐲\,𝐦``, so
-``𝐱𝐲`` is the dyad's own unit imaginary and the rotation acts as a pure
-phase; a quantity of spin weight ``s`` accordingly acquires ``e^{isγ}``.
-Note that this generator is the negative of the one written for ``M`` on
-[the Lorentz page](@ref IwasawaHopfLevi), a sign chosen here so that the
-dyad phase comes out positive.
+Here, as on the [previous page](@ref "BMS Action on the Tetrad"), the
+rotor being factored carries the original tetrad to the transformed
+one, so it is the inverse of the map from old labels to new.
+Factoring that map itself, as the [null-cone page](@ref "Lorentz
+transformations ``ℒ`` and the conformal factor ``κ``") does, reverses
+the sign of ``φₐ`` relative to the one here.
+
+Similarly, the choice of spin convention is delicate.  On the dyad,
+the spatial pseudoscalar and the screen pseudoscalar agree, ``𝐈₃𝐦 =
+𝐱𝐲\,𝐦``, so ``𝐱𝐲`` is the dyad's own unit imaginary and the
+rotation acts as a pure phase; a quantity of spin weight ``s``
+accordingly acquires ``e^{isγ}``.  Note that this generator is the
+negative of the one written for ``M`` on [the Lorentz page](@ref
+IwasawaHopfLevi), a sign chosen here so that the dyad phase comes out
+positive.
 
 !!! details "Why the null rotation cannot contribute a weight"
 
-    That ``N`` is the stabilizer of a conformal frame gives an
-    immediate reason for a fact established by other means on [the
-    Lorentz page](@ref which_null_direction): no quantity constructed
-    from a point of the sphere and a dyad can transform under ``N`` by
-    any factor at all, because ``N`` moves neither.  A null rotation can
-    act only on data that involve more than the conformal frame — that
-    is, on data that involve the transverse leg, and hence the choice of
-    cut.  This is why its effect must appear as a mixing of components
-    rather than as a weight, and it is also why the mixing is bound up
-    with the slicing.
+    The fact that ``N`` is the stabilizer of a conformal frame gives
+    an immediate reason for a fact established by another route on
+    [the Lorentz page](@ref which_null_direction): no quantity
+    constructed from a point of the sphere and a dyad can transform
+    under ``N`` by a simple factor, because ``N`` does not affect
+    either one.  A null rotation can act only on data that involve
+    more than the conformal frame — that is, on data that involve the
+    transverse leg, and hence the choice of cut.  This is why its
+    effect must appear as a mixing of components rather than as a
+    weight, and it is also why the mixing is so closely related to the
+    slicing.
 
 ## The law on the distinguished cut
 
 We can now dispose of the first half of the plan.
 
 On the cut distinguished by the transformation, the coordinate
-derivative that produced the mixing on the previous page vanishes: with
-``t' = κ\,t`` and ``κ`` independent of time, ``ð t' = t\, ðκ``, which is
-zero at ``t = 0``.  The transition between the two tetrads on that cut
-therefore contains no null rotation, and by the previous section it is
-precisely the ``M`` and ``A`` factors of ``KAN``.
+derivative that produced the mixing on the previous page vanishes:
+with ``t' = κ\,t`` and ``κ`` independent of time, ``ð t' = t\, ðκ``,
+which is zero at ``t = 0``.  The transition between the two tetrads on
+that cut therefore contains no null rotation, and by the previous
+section it is precisely the ``M`` and ``A`` factors of ``KAN``.
 
 It remains to convert this into a statement about the legs that are
 regular at ``ℐ``.  Each unregularized leg has a boost weight ``b``,
 equal to ``+1``, ``0`` and ``-1`` for ``\boldsymbol{ℓ}``, ``𝐦`` and
 ``𝐧``, and the ``A`` factor multiplies it by ``κ^{b}``; the ``M``
-factor contributes the phase ``e^{iγ}`` on the dyad alone.  [The regular
-tetrad](@ref "Tetrad") is obtained by multiplying the leg of weight
-``b`` by ``ω^{-(1+b)}``, and the primed observer regularizes with ``ω' =
-κω``.  The ratio of the primed regular leg to the unprimed one is
-therefore
+factor contributes the phase ``e^{iγ}`` on the dyad alone.  [The
+regular tetrad](@ref "Tetrad") is obtained by multiplying the leg of
+weight ``b`` by ``ω^{-(1+b)}``, and the primed observer regularizes
+with ``ω' = κω``.  The ratio of the primed regular leg to the unprimed
+one is therefore
 
 ```math
 \left(\frac{ω'}{ω}\right)^{-(1+b)} κ^{b}
@@ -222,11 +226,12 @@ therefore
 
 The graded regularization exactly cancels the boost grading, and every
 leg acquires the same factor ``1/κ``, the inverse of the conformal
-factor.  This is the common factor ``1/κ`` of the previous page, obtained there from the relation ``ĝ' = κ²ĝ``
-between the two conformal metrics; the two accounts are equivalent, but
-the present one exhibits the cancellation rather than the result.  The
-spin phase involves no power of ``ω`` and so survives untouched.  Hence,
-on the distinguished cut,
+factor.  This is the common factor ``1/κ`` of the previous page,
+obtained there from the relation ``ĝ' = κ²ĝ`` between the two
+conformal metrics; the two accounts are equivalent, but the present
+one exhibits the cancellation rather than the result.  The spin phase
+involves no power of ``ω`` and so survives untouched.  Hence, on the
+distinguished cut,
 
 ```math
 ñ' = \frac{1}{κ}\, ñ,
@@ -240,21 +245,22 @@ There is a second route to the dyad relation which is worth recording,
 because it identifies ``γ`` independently of the group theory.  The
 legs ``m̃`` and ``m̃'`` are *coordinate* dyads, built from the
 respective angular coordinates, so they are related by the inverse
-Jacobian of the angular map.  That map is conformal, so its Jacobian is
-the single complex number of the previous section, of modulus ``κ`` and
-argument ``-γ``; its inverse is ``e^{iγ}/κ``.  The two derivations
+Jacobian of the angular map.  That map is conformal, so its Jacobian
+is the single complex number of the previous section, of modulus ``κ``
+and argument ``-γ``; its inverse is ``e^{iγ}/κ``.  The two derivations
 agree, which fixes the sign convention for ``γ`` and confirms that the
 angle appearing in the tetrad law is the Hopf-fiber angle of ``K``.
 
 ## What a difference of cuts does to the tetrad
 
 Away from the distinguished cut the two observers no longer agree on
-which two-surface through a given point is the cut, and by the previous
-section that disagreement is the only difference between their tetrads
-that remains to be accounted for.  Two questions follow.  What kind of
-transformation of the tetrad does a difference of cuts induce, and by
-what quantity is the difference measured?  The first is settled by the
-geometry of the surface, the second by an elementary slope.
+which two-surface through a given point is the cut, and by the
+previous section that disagreement is the only difference between
+their tetrads that remains to be accounted for.  Two questions follow.
+What kind of transformation of the tetrad does a difference of cuts
+induce, and by what quantity is the difference measured?  The first is
+settled by the geometry of the surface, the second by an elementary
+slope.
 
 Both tetrads are adapted to ``ℐ``, meaning that each has its generator
 leg tangent to the generators of the surface, and the screen of each
@@ -322,27 +328,27 @@ b = -\frac{m̃\!\left(t'\right)}{ñ\!\left(t'\right)} .
 
 This is nothing more than the formula for the slope of one graph over
 another.  Both cuts are transverse to the generator, so within the
-three-dimensional tangent space of ``ℐ`` each of their tangent planes is
-a graph over the other, with the generator as the fiber direction.  The
-numerator is then the rate at which ``t'`` changes along the unprimed
-screen, the denominator the rate at which it changes along the
-generator, and the ratio is the distance one must slide along the
+three-dimensional tangent space of ``ℐ`` each of their tangent planes
+is a graph over the other, with the generator as the fiber direction.
+The numerator is then the rate at which ``t'`` changes along the
+unprimed screen, the denominator the rate at which it changes along
+the generator, and the ratio is the distance one must slide along the
 generator, per unit angular displacement, in order to remain on the
 primed cut.  **The tilt of one cut relative to the other is therefore
 exactly what the dyad records**, and this is the link between the
 coordinate transformation and the tetrad.
 
-Both derivatives are immediate.  The generator leg is normalized so that
-``ñ(t) = \sqrt2``, and it annihilates the angles, while ``t'`` differs
-from ``κ t`` only by a function of the angles; hence
+Both derivatives are immediate.  The generator leg is normalized so
+that ``ñ(t) = \sqrt2``, and it annihilates the angles, while ``t'``
+differs from ``κ t`` only by a function of the angles; hence
 
 ```math
 ñ\!\left(t'\right) = \sqrt2\, κ .
 ```
 
-The dyad, being tangent to the unprimed cut, annihilates ``t``, so only
-the angular dependence of ``t'`` contributes.  For any function of the
-angles alone the regular dyad gives ``m̃(f) = -ð f/\sqrt2``, so
+The dyad, being tangent to the unprimed cut, annihilates ``t``, so
+only the angular dependence of ``t'`` contributes.  For any function
+of the angles alone the regular dyad gives ``m̃(f) = -ð f/\sqrt2``, so
 
 ```math
 m̃\!\left(t'\right) = -\frac{ð t'}{\sqrt2} .
@@ -354,22 +360,23 @@ Together these give
 b = \frac{ð t'}{2 κ} ,
 ```
 
-the factor of two arising from the two leg normalizations, one from the
-dyad and one from the generator.
+the factor of two arising from the two leg normalizations, one from
+the dyad and one from the generator.
 
-Two remarks before continuing.  First, no term along the conjugate dyad
-appears, and the reason is worth isolating.  The induced metric on ``ℐ``
-is degenerate along ``ñ``, so a *cut metric* is well defined on the
-quotient of the tangent space by the generator; the shear is the identity
-on that quotient and so distorts nothing there, while the residual map
-of the quotient onto itself is an orientation-preserving similarity,
-since a proper orthochronous transformation acts on the sphere
-conformally and preserves orientation.  An orientation-preserving
-similarity of a two-plane is complex-linear, so it multiplies the dyad by
-a single complex number and cannot produce a conjugate term.  Second,
-the tetrad is now seen to depend on the two coordinate systems through
-the single function ``ð t'`` and nothing else.  What remains is to
-determine that function, and the answer is structural.
+Two remarks before continuing.  First, no term along the conjugate
+dyad appears, and the reason is worth isolating.  The induced metric
+on ``ℐ`` is degenerate along ``ñ``, so a *cut metric* is well defined
+on the quotient of the tangent space by the generator; the shear is
+the identity on that quotient and so distorts nothing there, while the
+residual map of the quotient onto itself is an orientation-preserving
+similarity, since a proper orthochronous transformation acts on the
+sphere conformally and preserves orientation.  An
+orientation-preserving similarity of a two-plane is complex-linear, so
+it multiplies the dyad by a single complex number and cannot produce a
+conjugate term.  Second, the tetrad is now seen to depend on the two
+coordinate systems through the single function ``ð t'`` and nothing
+else.  What remains is to determine that function, and the answer is
+structural.
 
 The transverse leg requires no further input, but it does require
 stepping off the surface.  The shear above was a map of the tangent
@@ -387,10 +394,10 @@ Here the displacement is no longer purely linear: the transverse leg
 acquires a screen term at first order in the parameter and a generator
 term at second order.  Expanding the screen vector in the dyad as
 ``\boldsymbol{ξ} = \bar b\, 𝐦 + b\, 𝐦̄``, so that ``𝐦 ⋅
-\boldsymbol{ξ} = b`` and ``\tfrac12 ξ² = |b|²``, those two terms are the
-linear and quadratic coefficients of the law collected below.  Imposing
-orthogonality on the primed tetrad, as on the previous page, gives the
-same result.
+\boldsymbol{ξ} = b`` and ``\tfrac12 ξ² = |b|²``, those two terms are
+the linear and quadratic coefficients of the law collected below.
+Imposing orthogonality on the primed tetrad, as on the previous page,
+gives the same result.
 
 ## The tilt of the cuts is a commutator
 
@@ -400,8 +407,8 @@ group is that the result then requires no computation in coordinates.
 Suppose the data occupy a cut other than the one the transformation
 distinguishes.  To describe the action there we conjugate by the
 translation that moves the origin cut, and, as recorded above, that
-conjugation does not return a Lorentz transformation.  Taking ``β = c``
-constant — an ordinary time translation — the conjugate is
+conjugation does not return a Lorentz transformation.  Taking ``β =
+c`` constant — an ordinary time translation — the conjugate is
 
 ```math
 \left(1, c\right)\left(Λ, 0\right)\left(1, c\right)^{-1}
@@ -474,11 +481,11 @@ b = \frac{ð t'}{2κ},
 which is the law of [the previous page](@ref "BMS Action on the
 Tetrad").  Each ingredient now has a stated origin: the factor ``1/κ``
 from the cancellation of the boost grading against the graded
-regularization, with ``κ = e^{φₐ}`` the ``A`` factor; the phase from the
-Hopf fiber of ``K``, equivalently from the rotation part of the
-conformal map's differential; and the shear from the offset between the
-data cut and the cut the transformation distinguishes, by way of the
-semidirect twist.
+regularization, with ``κ = e^{φₐ}`` the ``A`` factor; the phase from
+the Hopf fiber of ``K``, equivalently from the rotation part of the
+conformal map's differential; and the shear from the offset between
+the data cut and the cut the transformation distinguishes, by way of
+the semidirect twist.
 
 Three limiting cases confirm the accounting.  A pure supertranslation
 has ``Λ = 1``, hence ``κ = 1`` and ``γ = 0``, and only the shear
@@ -492,14 +499,14 @@ cut, ``b = 0``, leaving the real factor ``1/κ`` of aberration.
 
 Everything above carries over to ``ℐ⁻`` under the exchange of the two
 null legs together with the replacement of retarded by advanced time.
-The generator there is ``l̃`` rather than ``ñ``, so the shear is a null
-rotation about ``l̃`` and the transition lies in ``M A
+The generator there is ``l̃`` rather than ``ñ``, so the shear is a
+null rotation about ``l̃`` and the transition lies in ``M A
 N_{\boldsymbol{ℓ}}``; the conformal factor involves ``1 + v⃗ ⋅ k̂``
-rather than ``1 - v⃗ ⋅ k̂``, following the [antipodal
-labeling](@ref scri_pm_conventions) of that surface.  The argument for
-the shear is unchanged, since it used only that both tetrads are adapted
-to one null hypersurface, and the identification of the conformal factor
-and spin phase with the ``A`` and ``M`` factors is unchanged, since it
+rather than ``1 - v⃗ ⋅ k̂``, following the [antipodal labeling](@ref
+scri_pm_conventions) of that surface.  The argument for the shear is
+unchanged, since it used only that both tetrads are adapted to one
+null hypersurface, and the identification of the conformal factor and
+spin phase with the ``A`` and ``M`` factors is unchanged, since it
 used only the action on the conformal frames of the sphere.  The
 resulting law is the one collected at the end of [the previous
 page](@ref "BMS Action on the Tetrad").
@@ -508,14 +515,15 @@ page](@ref "BMS Action on the Tetrad").
 
 The two derivations are complementary rather than competing.  The
 coordinate derivation is the more direct and the easier to check: it
-requires only the action of the legs on the coordinates, and it produces
-the null-rotation parameter immediately, in the form in which the code
-computes it.  The route taken here is longer, but it answers questions
-the coordinate route leaves open — why exactly two real numbers appear
-in the spin–boost part, why they are the ``A`` and ``M`` factors of
-``KAN``, why the mixing parameter is linear in the retarded time, and
-why the mixing cannot be read off from any factorization of the Lorentz
-rotor.  For the [convention dependence](@ref
-convention_dependence_tetrad_future) of the result, and for the
-consequences for the [field components](@ref "BMS Action on Fields"),
-the previous page and its successor remain the references.
+requires only the action of the legs on the coordinates, and it
+produces the null-rotation parameter immediately, in the form in which
+the code computes it.  The route taken here is longer, but it answers
+questions the coordinate route leaves open — why exactly two real
+numbers appear in the spin–boost part, why they are the ``A`` and
+``M`` factors of ``KAN``, why the mixing parameter is linear in the
+retarded time, and why the mixing cannot be read off from any
+factorization of the Lorentz rotor.  For the [convention
+dependence](@ref convention_dependence_tetrad_future) of the result,
+and for the consequences for the [field components](@ref "BMS Action
+on Fields"), the previous page and its successor remain the
+references.
