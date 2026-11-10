@@ -78,9 +78,9 @@ end
 
 function ObjectivePlan(
     target::Array{Complex{T1},3},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     dc::DataComponents{C},
-    t′::Vector{T3};
+    t′::AbstractVector{T3};
     grid=nothing,
     weights=nothing,
     time_weights=nothing,

@@ -77,6 +77,11 @@ end
     @test Scri.parameters_from_bms(v⃗, R, α) ≈ θ rtol = 1e-14
     @test_throws ArgumentError Scri.parameters_from_bms([0.1], R, α)
 
+    # Either sign of the rotor gives the same, shortest rotation vector, so that `-1` is
+    # the identity rather than a rotation by 2π.
+    @test Scri.parameters_from_bms(v⃗, -R, α) ≈ θ rtol = 1e-14
+    @test Scri.parameters_from_bms(zeros(3), -one(Rotor{Float64}), [0.0im])[1:3] == zeros(3)
+
     # Zero is the identity, and nothing is singular there or at small rapidities, where
     # the series and the closed form of tanh(√x)/√x meet.
     v₀, R₀, α₀ = Scri.bms_from_parameters(zeros(7))
@@ -101,6 +106,10 @@ end
     J = ForwardDiff.jacobian(θ -> collect(vec(Scri.bms_from_parameters(θ)[1])), zeros(7))
     @test J[:, 4:6] ≈ [1 0 0; 0 1 0; 0 0 1]
     @test_throws ArgumentError Scri.bms_from_parameters(zeros(8))
+
+    # Six parameters are a Lorentz transformation with no supertranslation.
+    v₆, R₆, α₆ = Scri.bms_from_parameters(θ[1:6])
+    @test v₆ == v⃗ && R₆ == R && α₆ == [0.0im]
 end
 
 @testitem "objective_and_gradient!: matches ForwardDiff through transform_objective" tags = [
@@ -162,6 +171,13 @@ end
 
     # The gradient must fit θ.
     @test_throws ArgumentError Scri.objective_and_gradient!(zeros(3), θ, data, t, dc, plan)
+
+    # Six parameters fit a Lorentz transformation alone, exactly as seven with a zero time
+    # translation do.
+    ∇₆, ∇₇ = zeros(6), zeros(7)
+    @test Scri.objective_and_gradient!(∇₆, θ[1:6], data, t, dc, plan) ==
+        Scri.objective_and_gradient!(∇₇, [θ[1:6]; 0.0], data, t, dc, plan)
+    @test ∇₆ == ∇₇[1:6]
 
     # A boost beyond the speed `t′` was built for is an error, and its message reports the
     # valid range in plain numbers, not the dual numbers the gradient computes with.

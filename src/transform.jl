@@ -1,8 +1,9 @@
 """
-    validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
 
 Check the shared input contract of [`transform!`](@ref) and [`transform_objective`](@ref):
-`v⃗` is finite and subluminal; `t` is finite, strictly increasing, and has at least 4
+`v⃗` is finite and subluminal; the rotor `R` is finite, which also excludes a zero
+quaternion, since normalizing one gives NaN; `t` is finite, strictly increasing, and has at least 4
 samples; `data` is a 3-dimensional array whose first dimension is a perfect square and whose
 second and third dimensions match those of `t` and `dc`, respectively; the band limit is at
 least 2; `αᵢₙ` is finite, has a perfect-square length, and fits within the band limit; and
@@ -13,12 +14,17 @@ spawning any task, so that a bad input never surfaces as a `TaskFailedException`
 is no violation, it returns `(Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀)`, where `N₀` is the number of modes
 within the declared input band limit (`Nᵐ` if none was declared).
 """
-function validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+function validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     # These are explicit throws (not `@assert`) so they survive even when asserts are
     # disabled.
     check(cond, msg) = cond || throw(ArgumentError(msg))
     check(all(isfinite, vec(v⃗)), "Input `v⃗` = $v⃗ has a non-finite component")
     check(absvec(v⃗) < 1, "Input `v⃗` has magnitude $(absvec(v⃗)), but expected less than 1")
+    check(
+        all(isfinite, components(R)),
+        "Input rotation `R` = $R has a non-finite component; a rotation given as a " *
+        "quaternion must be finite and nonzero",
+    )
     check(length(t) ≥ 4, "Input `t` has only $(length(t)) samples, but expected at least 4")
     check(all(isfinite, t), "Input `t` has a non-finite element")
     check(issorted(t; lt=(≤)), "Input `t` must be strictly increasing")
@@ -374,12 +380,12 @@ and untouched.
 """
 function transform!(
     data::Array{Complex{T1}},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     v⃗::QuatVec{T3},
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}},
     dc::DataComponents{C,I};
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    t′::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real,C,I}
@@ -414,7 +420,7 @@ function transform!(
     end
 
     # Check that the input data has the expected dimensions and properties.
-    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     Nᵖ = Nᵐ
     block_size = max(1, min(Nᵗ, cachesize_L2() ÷ (Nᵐ * sizeof(Complex{T1}))))
 
@@ -622,14 +628,14 @@ The `ℐ` and `conventions` keywords are used only when `data_components` is *no
 """
 function transform!(
     data::Array{Complex{T1}},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     v⃗::QuatVec{T3},
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}};
     data_components=nothing,
     ℐ::Int=+1,
     conventions::Conventions=Conventions(),
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    t′::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 ) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}
@@ -639,6 +645,12 @@ function transform!(
     elseif isnothing(data_components)
         # The strain leads on both ends of null infinity; the Weyl tower orders differ.
         full_dc = ℐ == 1 ? (:h, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀) : (:h, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)
+        Nᵈ ≤ length(full_dc) || throw(
+            ArgumentError(
+                "`data` has $Nᵈ components, more than the $(length(full_dc)) that can be " *
+                "chosen by default; pass `data_components` explicitly",
+            ),
+        )
         default_dc = full_dc[1:Nᵈ]
         @warn "Defaulting to data components $(default_dc).\n" *
             "Check that this is correct for your input data.\n" *
@@ -650,16 +662,18 @@ function transform!(
     return transform!(data, t, v⃗, R, αᵢₙ, dc; t′, ℓₘₐₓ₀, plan)
 end
 
+# Plain vectors, tuples, and any mix of those with Quaternionic types, as for the positional
+# form below.
 function transform!(
     data::Array{<:Complex},
-    t::Vector{<:Real},
-    v⃗::Vector{<:Real},
-    R::Vector{<:Real},
+    t::AbstractVector{<:Real},
+    v⃗,
+    R,
     αᵢₙ::Vector{<:Complex};
     data_components=nothing,
     ℐ::Int=+1,
     conventions::Conventions=Conventions(),
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    t′::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 )
@@ -685,12 +699,12 @@ end
 # specific, so this cannot recurse.
 function transform!(
     data::Array{<:Complex},
-    t::Vector{<:Real},
+    t::AbstractVector{<:Real},
     v⃗,
     R,
     αᵢₙ::Vector{<:Complex},
     dc::DataComponents;
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    t′::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 )
@@ -715,10 +729,10 @@ as the main method does.
 """
 function transform!(
     data::Array{<:Complex},
-    t::Vector{<:Real},
+    t::AbstractVector{<:Real},
     g::BMS,
     dc::DataComponents{C,I};
-    t′::Union{Nothing,Vector{<:Real}}=nothing,
+    t′::Union{Nothing,AbstractVector{<:Real}}=nothing,
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
     plan::Union{Nothing,TransformPlan}=nothing,
 ) where {C,I}
@@ -758,7 +772,10 @@ but — unlike the `t′` keyword of `transform!` — it may have **any** length
 particular it may be much coarser than `t`.
 """
 function pixel_waveform(
-    data::Array{Complex{T1},3}, t::Vector{T2}, dc::DataComponents, t′::Vector{<:Real}
+    data::Array{Complex{T1},3},
+    t::AbstractVector{T2},
+    dc::DataComponents,
+    t′::AbstractVector{<:Real},
 ) where {T1<:Real,T2<:Real}
     ℓₘₐₓ = isqrt(size(data, 1)) - 1
     T′ = primal_float(promote_type(T1, T2, eltype(t′)))
@@ -766,13 +783,13 @@ function pixel_waveform(
 end
 function pixel_waveform(
     data::Array{Complex{T1},3},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     dc::DataComponents{C,I},
-    t′::Vector{<:Real},
+    t′::AbstractVector{<:Real},
     R′ₚ::AbstractVector{<:Rotor},
 ) where {T1<:Real,T2<:Real,C,I}
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, _ = validate_transform_inputs(
-        data, t, zero(QuatVec{T2}), Complex{T1}[], dc, nothing
+        data, t, zero(QuatVec{T2}), one(Rotor{T2}), Complex{T1}[], dc, nothing
     )
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
@@ -882,7 +899,7 @@ the parameters carry duals.
 """
 function transform_objective(
     data::Array{Complex{T1},3},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     v⃗::QuatVec{T3},
     R::Rotor{T4},
     αᵢₙ::Vector{Complex{T5}},
@@ -905,7 +922,7 @@ function transform_objective(
     ### Stage A: Validation and parameter-independent setup
     ###
 
-    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     validate_plan(plan, dc, N₀)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
     R′ₚ, w, t′, v, c, target = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
@@ -1078,7 +1095,7 @@ end
 # tuples.  The fully-typed main method is strictly more specific, so this cannot recurse.
 function transform_objective(
     data::Array{<:Complex},
-    t::Vector{<:Real},
+    t::AbstractVector{<:Real},
     v⃗,
     R,
     αᵢₙ::Vector{<:Complex},
@@ -1101,7 +1118,7 @@ representation and supertranslation sign of `dc`.  See the main
 """
 function transform_objective(
     data::Array{<:Complex},
-    t::Vector{<:Real},
+    t::AbstractVector{<:Real},
     g::BMS,
     dc::DataComponents{C,I},
     plan::ObjectivePlan;

@@ -80,7 +80,7 @@ grid `t′`.  This is the common grid-construction step of the [`compute_t′`](
 function rescale_t′(t, t′ₘᵢₙ, t′ₘₐₓ)
     tₘᵢₙ, tₘₐₓ = t[begin], t[end]
     scale = (t′ₘₐₓ - t′ₘᵢₙ) / (tₘₐₓ - tₘᵢₙ)
-    t′ = @. t′ₘᵢₙ + scale * (t - tₘᵢₙ)
+    t′ = map(tᵢ -> t′ₘᵢₙ + scale * (tᵢ - tₘᵢₙ), t)  # a `Vector`, even when `t` is a range
     t′[end] = t′ₘₐₓ  # ensure exact endpoint to avoid extrapolation
 
     # We used to compute the crossover time `tᵪ` at which `t′ = t`

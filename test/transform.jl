@@ -630,6 +630,15 @@ end
     @test_throws ArgumentError Scri.transform!(
         copy(data), t, v⃗, R, zeros(ComplexF64, N + 11), dc
     )  # α too long
+    # A zero or NaN rotation is reported as such, not as a grid with no complete slices.
+    for Rbad ∈ ([0.0, 0.0, 0.0, 0.0], [NaN, 0.0, 0.0], Rotor(NaN, 0.0, 0.0, 0.0))
+        err = try
+            Scri.transform!(copy(data), t, v⃗, Rbad, copy(α), dc)
+        catch e
+            e
+        end
+        @test err isa ArgumentError && occursin("rotation", err.msg)
+    end
     # Each of these used to fail inside a spawned task, or, for the NaN in α, to give NaN
     # output silently.
     @test_throws ArgumentError Scri.transform!(copy(data), reverse(t), v⃗, R, copy(α), dc)
@@ -672,6 +681,71 @@ end
     @test_throws ArgumentError Scri.transform!(
         randn(ComplexF32, N, Nᵗ, 2), t, v⃗, R, copy(α), dc
     )
+end
+
+@testitem "transform!: integer time arrays act as their floating-point values" tags = [
+    :unit, :fast
+] begin
+    import Random
+
+    # Integer times once made the spline cache integer-typed, so every entry point threw an
+    # `InexactError` (inside a task, for `transform!`).
+    rng = Random.Xoshiro(7171)
+    ℓ = 3
+    N = (ℓ + 1)^2
+    t = collect(-15:15)
+    tf = float(t)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, length(t), 2)
+    v⃗, R, α = [0.01, 0.0, 0.02], [0.1, 0.0, 0.0], ComplexF64[0.1, 0, 0, 0]
+    t′ = Scri.compute_t′(tf, 0.05, 0.5)
+
+    d₁, t′₁ = Scri.transform!(copy(data), t, v⃗, R, α, dc)
+    d₂, t′₂ = Scri.transform!(copy(data), tf, v⃗, R, α, dc)
+    @test d₁ == d₂ && t′₁ == t′₂
+    @test Scri.transform!(copy(data), t, v⃗, R, α, dc; t′)[1] ==
+        Scri.transform!(copy(data), tf, v⃗, R, α, dc; t′)[1]
+
+    plan = Scri.ObjectivePlan(data, t, dc, t′)
+    @test plan.target == Scri.ObjectivePlan(data, tf, dc, t′).target
+    @test Scri.transform_objective(data, t, v⃗, R, α, dc, plan) ==
+        Scri.transform_objective(data, tf, v⃗, R, α, dc, plan)
+    θ = Scri.parameters_from_bms(v⃗, R, α)
+    ∇₁, ∇₂ = similar(θ), similar(θ)
+    @test Scri.objective_and_gradient!(∇₁, θ, data, t, dc, plan) ==
+        Scri.objective_and_gradient!(∇₂, θ, data, tf, dc, plan)
+    @test ∇₁ == ∇₂
+end
+
+@testitem "transform!: time ranges act as their collected vectors" tags = [:unit, :fast] begin
+    import Random
+
+    # Ranges for `t` and `t′` once met a `MethodError`, and without a `t′` the computed
+    # grid was a range that could not be written into.
+    rng = Random.Xoshiro(7272)
+    N = 16
+    t = -15.0:1.0:15.0
+    tv = collect(t)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    data = Random.randn(rng, ComplexF64, N, length(t), 2)
+    v⃗, R, α = [0.01, 0.0, 0.02], [0.1, 0.0, 0.0], ComplexF64[0.1, 0, 0, 0]
+    t′ = range(-14.0, 14.0; length=20)
+    t′v = collect(t′)
+
+    @test Scri.transform!(copy(data), t, v⃗, R, α, dc) ==
+        Scri.transform!(copy(data), tv, v⃗, R, α, dc)
+    @test Scri.transform!(copy(data), t, v⃗, R, α, dc; plan=Scri.TransformPlan(data, dc)) ==
+        Scri.transform!(copy(data), tv, v⃗, R, α, dc)
+    @test Scri.transform!(copy(data), t, v⃗, R, α; data_components=dc)[1] ==
+        Scri.transform!(copy(data), tv, v⃗, R, α; data_components=dc)[1]
+    plan = Scri.ObjectivePlan(data, t, dc, t′)
+    @test plan.target == Scri.ObjectivePlan(data, tv, dc, t′v).target
+    @test Scri.transform_objective(data, t, v⃗, R, α, dc, plan) ==
+        Scri.transform_objective(data, tv, v⃗, R, α, dc, plan)
+    θ = Scri.parameters_from_bms(v⃗, R, α)
+    @test Scri.objective_and_gradient!(similar(θ), θ, data, t, dc, plan) ==
+        Scri.objective_and_gradient!(similar(θ), θ, data, tv, dc, plan)
+    @test Scri.pixel_waveform(data, t, dc, t′) == Scri.pixel_waveform(data, tv, dc, t′v)
 end
 
 @testitem "transform!: pure rotation rotates modes and preserves the time grid" tags = [
@@ -976,6 +1050,12 @@ end
         copy(data), copy(t), v⃗, R, copy(α), Scri.DataComponents(:h, :ψ₄)
     )
     @test d_default == d_explicit
+
+    # Only six components can be chosen by default; more is an `ArgumentError`, not an
+    # out-of-bounds index.
+    @test_throws ArgumentError Scri.transform!(
+        randn(rng, ComplexF64, N, Nᵗ, 7), copy(t), v⃗, R, copy(α)
+    )
 end
 
 @testitem "transform!: declared input band limit ℓₘₐₓ₀ is exact and validated" tags = [
@@ -1689,6 +1769,14 @@ end
             copy(data), copy(t), v⃗bad, R, copy(α), dc
         )
         @test_throws ArgumentError Scri.transform_objective(data, t, v⃗bad, R, α, dc, plan)
+    end
+
+    # The keyword form takes the same arguments: tuples, and mixes of plain vectors with
+    # Quaternionic types.
+    for (v⃗arg, Rarg) ∈ ((Tuple(v⃗vec), Tuple(Rvec)), (v⃗, Rvec), (v⃗vec, R))
+        @test Scri.transform!(
+            copy(data), copy(t), v⃗arg, Rarg, copy(α); data_components=dc
+        )[1] == d₁
     end
 
     # The BMS convenience method matches the unpacked call, exactly as for `transform!`.

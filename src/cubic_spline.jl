@@ -27,7 +27,7 @@ end
 
 Precompute the Thomas LU factorization of the natural-cubic-spline tridiagonal
 system for knot vector `t`.  `t` must be strictly increasing with at least 4
-elements.
+elements.  The cache holds floating-point numbers even when `t` holds integers.
 
 # Natural spline system
 
@@ -66,7 +66,8 @@ On interval [t[j], t[j+1]] at offset τ = t_query − t[j]:
     a = h⁻¹[j]*(d[j+1]−d[j]) − h[j]/6*(2d̈[j]+d̈[j+1])
     S = d[j] + τ*(a + τ*(b + τ*c))
 """
-function CubicSplineCache(t::AbstractVector{T}) where {T<:Real}
+function CubicSplineCache(t::AbstractVector{<:Real})
+    T = float(eltype(t))
     N = length(t)
     N ≥ 4 || throw(ArgumentError("CubicSplineCache requires at least 4 knots, got $N"))
     h = Vector{T}(undef, N - 1)

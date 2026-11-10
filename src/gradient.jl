@@ -33,7 +33,7 @@ function objective_and_gradient!(
     ∇::AbstractVector,
     θ::AbstractVector{<:Real},
     data::Array{Complex{T1},3},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     dc::DataComponents,
     plan::ObjectivePlan{TQ};
     ℓₘₐₓ₀::Union{Nothing,Int}=nothing,
@@ -76,7 +76,7 @@ end
 # derivation is on the documentation page "The gradient of the objective".
 function gradient_core(
     data::Array{Complex{T1},3},
-    t::Vector{T2},
+    t::AbstractVector{T2},
     v⃗,
     R,
     αᵢₙ,
@@ -86,7 +86,7 @@ function gradient_core(
     ::Type{T},
     ::Val{P},
 ) where {T1,T2,C,I,TQ,T,P}
-    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     validate_plan(plan, dc, N₀)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
     R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
@@ -329,7 +329,8 @@ that the parameter vector `θ` of [`objective_and_gradient!`](@ref) describes, i
 that [`transform!`](@ref) and [`transform_objective`](@ref) take.  `θ[1:3]` is the
 rotation vector, with `R = exp(QuatVec(θ[1:3]...)/2)`; `θ[4:6]` is the rapidity vector,
 with `v⃗` of speed `tanh(|θ[4:6]|)` along it; and `θ[7:end]` holds the real degrees of
-freedom of `α`, which must number a perfect square `(ℓ_α+1)²`.  These are stored in the
+freedom of `α`, which must number a perfect square `(ℓ_α+1)²`, or zero for no
+supertranslation.  These are stored in the
 order of the modes: at the position of mode `(ℓ, m)` is the real part of `α_{ℓ,m}` if
 `m ≥ 0`, and the imaginary part of `α_{ℓ,|m|}` if `m < 0`; the reality condition then fixes
 the modes of negative `m`.  Generic over the element type, so `θ` may hold dual numbers.
@@ -337,7 +338,7 @@ the modes of negative `m`.  Generic over the element type, so `θ` may hold dual
 function bms_from_parameters(θ::AbstractVector)
     Nα = length(θ) - 6
     L = isqrt(max(Nα, 0))
-    (Nα ≥ 1 && L^2 == Nα) || throw(
+    (Nα ≥ 0 && L^2 == Nα) || throw(
         ArgumentError(
             "θ has $(length(θ)) entries; it needs 6 plus a perfect square number of " *
             "supertranslation parameters",
@@ -347,7 +348,7 @@ function bms_from_parameters(θ::AbstractVector)
     f = tanhc_sqrt(θ[4]^2 + θ[5]^2 + θ[6]^2)
     v⃗ = QuatVec(f * θ[4], f * θ[5], f * θ[6])
     a = view(θ, 7:length(θ))
-    α = zeros(Complex{eltype(θ)}, Nα)
+    α = zeros(Complex{eltype(θ)}, max(Nα, 1))  # six parameters: no supertranslation
     for ℓ ∈ 0:(L - 1)
         i₀ = ℓ^2 + ℓ + 1
         α[i₀] = a[i₀]
@@ -365,7 +366,8 @@ end
 
 The parameter vector `θ` of [`objective_and_gradient!`](@ref) for the boost velocity `v⃗`,
 frame rotation `R`, and supertranslation modes `α`; the inverse of
-[`bms_from_parameters`](@ref), up to the sign of `R`, which describes the same rotation.
+[`bms_from_parameters`](@ref), up to the sign of `R`, which describes the same rotation;
+the rotation vector returned has length at most π.
 The modes are made real first, as everywhere else, by averaging each with its partner.
 """
 function parameters_from_bms(v⃗, R, α::AbstractVector)
@@ -380,7 +382,10 @@ function parameters_from_bms(v⃗, R, α::AbstractVector)
     else
         atanh(sqrt(β²)) / sqrt(β²)
     end
-    r⃗ = 2 * log(rotor_argument(R))
+    # `±R` are the same rotation; the sign with a nonnegative scalar part gives the
+    # shortest rotation vector, so that `-1` gives zero rather than a vector of length 2π.
+    R = rotor_argument(R)
+    r⃗ = 2 * log(R.w < 0 ? -R : R)
     L = isqrt(length(α))
     L^2 == length(α) || throw(ArgumentError("α must have a perfect-square length"))
     a = zeros(real(eltype(float.(α))), length(α))
