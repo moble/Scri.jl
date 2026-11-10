@@ -2,8 +2,9 @@
 #
 # Run from the repository root with threads enabled:
 #
-#     julia --project=test -t auto benchmark/gradient.jl
+#     julia --project=test -t auto benchmark/gradient.jl [ℓₘₐₓ...]
 #
+# The band limits ℓₘₐₓ default to 8 and 16.
 # Times are best-of-5 wall-clock seconds (best-of-3 for ForwardDiff), after a warm-up.
 
 using Printf: @printf
@@ -42,7 +43,8 @@ println("objective_and_gradient! benchmarks, threads = $(Threads.nthreads())")
     "FD [s]",
     "ratio"
 )
-for (ℓₘₐₓ, Nᵗ) ∈ ((8, 400), (16, 400)), ℓ_fit ∈ (nothing, ℓₘₐₓ ÷ 2), Nα ∈ (1, 16)
+ℓs = isempty(ARGS) ? [8, 16] : parse.(Int, ARGS)
+for ℓₘₐₓ ∈ ℓs, Nᵗ ∈ (400,), ℓ_fit ∈ (nothing, ℓₘₐₓ ÷ 2), Nα ∈ (1, 16)
     P, tJ, tG, tF = bench(ℓₘₐₓ, Nᵗ, Nα, ℓ_fit)
     @printf(
         "%5d │ %5s │ %5d │ %3d │ %10.4f │ %10.4f │ %6.2f │ %10.4f │ %6.2f\n",

@@ -34,6 +34,37 @@
     end
 end
 
+@testitem "synthesis_transpose_block!: the transpose of synthesize_block!" tags = [
+    :unit, :fast
+] begin
+    using DoubleFloats: Double64
+    import Random
+
+    # For harmonics Y and cotangents ΩX, the transpose ΩY satisfies
+    # Σ ΩY Y = Σ ΩX X, where X is synthesized from Y, with no conjugation.
+    rng = Random.Xoshiro(3131)
+    Nᵐ, Nᵗ, nb = 25, 6, 5
+    spins = [-2, 0, -2]
+    used = [s - minimum(spins) + 1 for s ∈ unique(spins)]
+    for (T, N₀) ∈ ((Float64, Nᵐ), (Float64, 16), (Double64, Nᵐ), (Double64, 16))
+        data = Random.randn(rng, Complex{T}, Nᵐ, Nᵗ, length(spins))
+        Y = Random.randn(rng, Complex{T}, Nᵐ, nb, 3)
+        ΩX = Random.randn(rng, Complex{T}, Nᵗ, nb, length(spins))
+        X = similar(ΩX)
+        Scri.synthesize_block!(X, data, Y, spins, N₀)
+        ΩY = fill(Complex{T}(NaN), Nᵐ, nb, 3)  # entries that must be left alone
+        Scri.synthesis_transpose_block!(ΩY, data, ΩX, spins, N₀)
+        lhs = sum(
+            sum(ΩY[m, q, col] * Y[m, q, col] for m ∈ ((s ^ 2 + 1):N₀), q ∈ 1:nb) for
+            (s, col) ∈ zip(unique(spins), used)
+        )
+        @test lhs ≈ sum(ΩX .* X) rtol = 10eps(T)
+        @test all(isnan, ΩY[:, :, 2])  # the spin weight −1 is unused
+        @test all(isnan, ΩY[1:3, :, 1])  # ℓ < 2 for the spin weight −2
+        N₀ < Nᵐ && @test all(isnan, ΩY[(N₀ + 1):end, :, :])
+    end
+end
+
 @testitem "mixing_matrix!: mix_components! as a matrix and an offset" tags = [:unit, :fast] begin
     import Random
 

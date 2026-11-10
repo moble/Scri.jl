@@ -49,6 +49,7 @@ include("transform_plan.jl")
 include("aberration.jl")
 include("bms.jl")
 include("transform.jl")
+include("pixel_blocks.jl")
 include("gradient.jl")
 
 export transform!,

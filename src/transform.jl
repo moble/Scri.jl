@@ -866,18 +866,21 @@ target waveform, and it is designed for use with
 [Automatic Differentiation](@ref) documentation page for a complete recipe.
 
 The `data`, `t`, `v⃗`, `R`, `αᵢₙ`, `dc`, and `ℓₘₐₓ₀` arguments are exactly as in
-[`transform!`](@ref) — except that `data` is **never modified**, and its element type
-need *not* be widened to match the parameter types.  In particular, when `v⃗`, `R`, or
-`αᵢₙ` carry ForwardDiff dual numbers, `data` stays primal and is simply read; no
-dual-typed copy of the (typically very large) data array is ever made, no dual-typed
-synthesis matrices are built, and the analysis stage of `transform!` is skipped entirely.
-Dual numbers are confined to per-pixel scalars and a few task-local buffers of size
-`O(Nᵈ × Nᵗ)`, so the memory overhead of differentiation is negligible, and `data` can be
-reused across optimizer iterations without copying.  A `BMS`-valued transformation may be
-passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗` and `R` may also be plain vectors or tuples, such
-as slices of an optimizer's parameter vector.  A velocity must have three components.  A
-rotation given as three components is read as a rotation vector, and four as a rotor; see
-[`rotor_argument`](@ref).
+[`transform!`](@ref) — except that `data` is **never modified**, and its element type need
+*not* be widened to match the parameter types.  In particular, when `v⃗`, `R`, or `αᵢₙ` hold
+ForwardDiff dual numbers, `data` stays primal and is simply read; no dual-typed copy of the
+(typically very large) data array is ever made, no dual-typed synthesis matrices for the
+whole grid are built, and the analysis stage of `transform!` is skipped entirely.  The
+pixels are synthesized a block at a time, each block by one matrix product per component,
+and dual numbers are confined to the pixels' geometry, the harmonics and time series of one
+block, and a few buffers of size `O(Nᵈ × Nᵗ)` for each thread.  The block's harmonics and
+time series take no more memory than `data` itself, or 128 MiB if that is larger, except
+that a block always holds at least four pixels for each thread.  So the memory overhead of
+differentiation is modest, and `data` can be reused across optimizer iterations without
+copying.  A `BMS`-valued transformation may be passed in place of `(v⃗, R, αᵢₙ)`, and `v⃗`
+and `R` may also be plain vectors or tuples, such as slices of an optimizer's parameter
+vector.  A velocity must have three components.  A rotation given as three components is
+read as a rotation vector, and four as a rotor; see [`rotor_argument`](@ref).
 
 The plan's output grid `t′` is held fixed across parameter values, which is what makes
 objective values (and derivatives) comparable across optimizer iterations.  It must remain
@@ -891,7 +894,8 @@ Two fine points.  First, the spline-interval selection inside the interpolation 
 discontinuous on a measure-zero set of parameter values (where a transformed time
 `t′[j] κ⁻¹ + αₚ` crosses a knot of `t`); the objective itself is continuous there, and
 derivatives are unaffected away from those isolated points.  Second, the result is
-deterministic: for a fixed number of threads, repeated calls with identical inputs return
+deterministic: each pixel's share is computed on its own and the shares are summed in
+pixel order, so for a fixed number of threads, repeated calls with identical inputs return
 bitwise-identical values.
 
 Returns a real scalar of the common promoted type of the inputs — a ForwardDiff dual when
@@ -948,7 +952,6 @@ function transform_objective(
     # These per-pixel values must all exist before the main loop, because the grid
     # validation and `compute_ðt′╱2κ` consume them whole.
     Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
-    Tₚ = eltype(Rₚ)
 
     # Validate the output grid at these parameter values (synchronously, so a bad grid
     # throws a plain ArgumentError), then assemble the null-rotation parameter parts.
@@ -956,98 +959,49 @@ function transform_objective(
     ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
     ###
-    ### Stage C: Fused per-pixel synthesis → interpolation/mixing → accumulation
+    ### Stage C: Blocked synthesis → per-pixel interpolation and mixing → accumulation
     ###
 
-    # Components sharing a spin weight reuse a single ₛYₗₘ evaluation per pixel, and one
-    # calculator evaluates every spin weight in the range from a single recurrence.
-    unique_spins = unique(spins)
-    spin_components = [findall(==(s), spins) for s ∈ unique_spins]
-    spin_range = minimum(spins):maximum(spins)
-
-    # Fill `d′ᵢ` with the transformed time series of pixel `i`.  The pixel's rest-frame
-    # time series is synthesized directly from the (primal, read-only) mode data:
-    # dᵢ[k, j] = Σₘ Yₘ data[m, j, k], over the modes with ℓ ≥ |s| and within any declared
-    # input band limit (m ≤ N₀); the inner loop over m walks a contiguous column of `data`.
-    function transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
-        sYlm_rows!(Y, calc, Rₚ[i])
-        for (s, ks) ∈ zip(unique_spins, spin_components)
-            Yˢ = view(Y, :, s - first(spin_range) + 1)
-            for k ∈ ks
-                @inbounds for j ∈ 1:Nᵗ
-                    dᵢ[k, j] = pixel_dot(Yˢ, view(data, :, j, k), s ^ 2 + 1, N₀)
-                end
-            end
-        end
-        κ⁻¹ᵢ = γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ))
-        return transform_pixel!(
-            d′ᵢ,
-            dᵢ,
-            d̈ᵢ,
-            cubic_spline_cache,
-            t,
-            t′,
-            κ⁻¹ᵢ,
-            αₚ[i],
-            ðt′╱2κₚ[1, i],
-            ðt′╱2κₚ[2, i],
-            ð²αₚ[i],
-            dc,
-        )
-    end
-    # Task-local storage and buffers, allocated once per chunk; these are the only
-    # dual-typed arrays of the whole computation.
-    function buffers()
-        return (
-            sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range),
-            Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range)),
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′),
-        )
-    end
-    chunks = OhMyThreads.index_chunks(1:Nᵖ; n=nthreads())
+    # The pixels' time series are synthesized from the (primal, read-only) mode data a
+    # block of pixels at a time; see `transform_pixel_blocks`.
+    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ)) for i ∈ 1:Nᵖ]
+    geometry = (; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ)
 
     Φ = if plan.ℓ_fit < 0
-        OhMyThreads.tmapreduce(+, chunks; chunking=false) do chunk
-            calc, Y, dᵢ, d̈ᵢ, d′ᵢ = buffers()
-            acc = zero(TR)
-            for i ∈ chunk
-                transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
-                objᵢ = zero(TR)
-                @inbounds for j ∈ 1:Nᵗ′
-                    objᵢⱼ = zero(TR)
-                    for k ∈ 1:Nᵈ
-                        objᵢⱼ += c[k] * abs2(d′ᵢ[k, j] - target[i, j, k])
-                    end
-                    objᵢ += v[j] * objᵢⱼ
+        # Each pixel's share of the objective is computed as soon as the pixel is
+        # transformed.  The shares are then summed in pixel order, whatever tasks computed
+        # them.
+        Φₚ = Vector{TR}(undef, Nᵖ)
+        transform_pixel_blocks(
+            Returns(nothing),
+            synthesis_blocks(data, Rₚ, spins),
+            data,
+            t,
+            t′,
+            cubic_spline_cache,
+            geometry,
+            dc,
+            spins,
+            N₀,
+            TR,
+        ) do d′ᵢ, i, q
+            objᵢ = zero(TR)
+            @inbounds for j ∈ 1:Nᵗ′
+                objᵢⱼ = zero(TR)
+                for k ∈ 1:Nᵈ
+                    objᵢⱼ += c[k] * abs2(d′ᵢ[k, j] - target[i, j, k])
                 end
-                acc += w[i] * objᵢ
+                objᵢ += v[j] * objᵢⱼ
             end
-            acc
+            Φₚ[i] = w[i] * objᵢ
         end
+        sum(Φₚ)
     else
-        # The band-limited objective: project the transformed waveform onto the modes with
-        # ℓ ≤ ℓ_fit by the quadrature, Pₖ[n, j] = Σᵢ wᵢ conj(ₛYₙ(Rᵢ)) d′ᵢⱼₖ, whose weighted
-        # conjugate harmonics the plan holds as the columns of Ȳ[k], and compare with the
-        # target's projection.  The partial projections of the chunks add up.
-        P = OhMyThreads.tmapreduce(+, chunks; chunking=false) do chunk
-            calc, Y, dᵢ, d̈ᵢ, d′ᵢ = buffers()
-            Pc = [zeros(Complex{TR}, size(plan.Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
-            for i ∈ chunk
-                transformed_pixel!(d′ᵢ, dᵢ, d̈ᵢ, calc, Y, i)
-                @inbounds for k ∈ 1:Nᵈ
-                    Ȳₖ, Pₖ = plan.Ȳ[k], Pc[k]
-                    for j ∈ 1:Nᵗ′
-                        d = d′ᵢ[k, j]
-                        for n ∈ axes(Ȳₖ, 1)
-                            Pₖ[n, j] = muladd(Ȳₖ[n, i], d, Pₖ[n, j])
-                        end
-                    end
-                end
-            end
-            Pc
-        end
+        # The band-limited objective compares the projections of the transformed waveform
+        # and of the target onto the modes with ℓ ≤ ℓ_fit.
+        P = transformed_projection(
+            data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, plan.Ȳ, TR
+        )
         sum(
             c[k] * sum(
                 v[j] * sum(abs2, view(P[k], :, j) .- view(plan.T̂[k], :, j)) for j ∈ 1:Nᵗ′

@@ -6,10 +6,10 @@ CurrentModule = Scri
 
 The function [`objective_and_gradient!`](@ref) returns the value of
 [`transform_objective`](@ref) together with its gradient with respect
-to every parameter of the BMS transformation.  It costs about twice as
-many evaluations as the objective along, regardless of how many
-parameters there are; forward-mode automatic differentiation costs
-about one extra evaluation per parameter.  This page states the
+to every parameter of the BMS transformation.  It costs a few
+evaluations of the objective, regardless of how many parameters there
+are; forward-mode automatic differentiation costs about one extra
+evaluation per parameter.  This page states the
 problem, sets up the notation, shows the structure of the computation
 in a diagram, and then derives each piece.
 
@@ -1061,7 +1061,11 @@ product rule.
 
 The harmonics depend only on the boost and the rotation, not on the
 ``a``, but they hold derivatives with respect to all the parameters.
-That extra work is a few percent of the total.
+They are evaluated twice for each pixel: without derivatives for the
+synthesis, and again with them for this contraction, since keeping them
+from the first evaluation would take ``P + 1`` times the memory.  Both
+evaluations together take from 2 to 8 percent of the total in the
+benchmarks below.
 
 ## Comparing only the modes up to ``ℓ_\mathrm{fit}``
 
@@ -1102,30 +1106,46 @@ cost of one evaluation of the objective.
 Per pixel, the objective costs one synthesis and the gradient two sums
 of that size, plus work that involves no sum over modes: the second run
 of ``ι`` and ``μ`` with eight derivatives, the harmonics' derivatives,
-and the geometry.  Forward-mode differentiation of the objective
-instead carries a derivative for every parameter through the
-synthesis.  Measured with strain and ``ψ_4`` data, ``N_t = 400``, and 8
-threads, as multiples of the time for one evaluation of the objective:
+and the geometry.  Both take the pixels a block at a time, so that the
+synthesis, and in the gradient its transpose, is a matrix product over
+the block.  Forward-mode differentiation of the objective instead
+carries a derivative for every parameter through the synthesis.
+Measured with strain and ``ψ_4`` data, ``N_t = 400``, and 8 threads, as
+multiples of the time for one evaluation of the objective:
 
 | ``ℓ_\mathrm{max}`` | ``ℓ_\mathrm{fit}`` | ``P`` | gradient | ForwardDiff |
 | :---: | :---: | :---: | :---: | :---: |
-| 8 | — | 7 | 2.4 | 9.6 |
-| 8 | — | 22 | 2.4 | 21.7 |
-| 8 | 4 | 7 | 3.0 | 10.2 |
-| 8 | 4 | 22 | 3.1 | 29.8 |
-| 16 | — | 7 | 1.6 | 6.6 |
-| 16 | — | 22 | 1.6 | 14.4 |
-| 16 | 8 | 7 | 2.5 | 7.1 |
-| 16 | 8 | 22 | 2.7 | 18.0 |
+| 8 | — | 7 | 3.9 | 13.6 |
+| 8 | — | 22 | 4.8 | 28.9 |
+| 8 | 4 | 7 | 4.0 | 8.1 |
+| 8 | 4 | 22 | 5.8 | 40.8 |
+| 16 | — | 7 | 3.3 | 8.5 |
+| 16 | — | 22 | 3.9 | 23.9 |
+| 16 | 8 | 7 | 4.4 | 8.3 |
+| 16 | 8 | 22 | 6.1 | 39.5 |
+| 32 | — | 7 | 2.7 | 9.1 |
+| 32 | — | 22 | 3.4 | 27.1 |
+| 32 | 16 | 7 | 3.3 | 8.4 |
+| 32 | 16 | 22 | 4.2 | 31.0 |
 
-The gradient's multiple is smaller at the larger band limit, where the
-sums over modes take a larger share of the time.  With
-``ℓ_\mathrm{fit}``, the first pass adds about one evaluation.
+The matrix products made the objective three to four times faster at
+``ℓ_\mathrm{max} = 16`` and six to eight times faster at 32, so the
+gradient's work that involves no sum over modes now takes most of its
+time, and its multiple is three to six.  In absolute terms the gradient
+also became faster, by about one and a half to two times at
+``ℓ_\mathrm{max} = 16`` and three to five at 32.  At
+``ℓ_\mathrm{max} = 8`` it became slower, by up to two times, because
+the matrix products there are too small to occupy BLAS's threads well.
+With ``ℓ_\mathrm{fit}``, the first pass adds about one evaluation.
 
-No result of one pixel is needed by another, so each thread reuses a
-few buffers the size of one pixel's time series and harmonics.  A
-general reverse-mode tool would instead record every operation of every
-synthesis, of which there are
+Besides a few buffers for each thread, the size of one pixel's time
+series and harmonics, the storage is the harmonics and synthesized
+time series of one block, which are overwritten by their cotangents.
+A block holds as many pixels as fit in the memory of the mode array
+itself, or in 128 MiB if that is larger, but at least four for each
+thread.  A general reverse-mode tool
+would
+instead record every operation of every synthesis, of which there are
 ``N_\mathrm{pix}\, N_t\, N_\mathrm{comp}\, N_\mathrm{modes}``.
 
 ## How it is checked

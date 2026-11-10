@@ -114,7 +114,7 @@ approach is inside the differentiated function to convert the array to
 the dual type of the parameter being differentiated — for a parameter
 vector `θ`, that is `eltype(θ)`.  Here [`bms_from_parameters`](@ref)
 turns `θ` into the boost velocity, rotation, and supertranslation; its
-parameter layout is described [below](@ref "Gradients at about twice the
+parameter layout is described [below](@ref "Gradients at a few times the
 cost of the objective"):
 
 ```julia
@@ -155,13 +155,12 @@ a single scalar at the end.
 
 with `j` running over the pixels of a grid on the sphere, `i` over the
 fixed output times `t′`, and `k` over the data components, and with
-``c`` the target.  It fuses
-the ``L²`` accumulation into the per-pixel transformation loop, so the
-transformed waveform is never materialized, `data` is never modified
-(it is reused across optimizer iterations), and dual numbers are
-confined to per-pixel scalars and small task-local buffers.  The
-analysis stage (converting back to waveform modes) is skipped
-entirely.
+``c`` the target.  It accumulates the ``L²`` sum as the pixels are
+transformed, a block of pixels at a time, so the transformed waveform
+is never stored in full, `data` is never modified (it is reused across
+optimizer iterations), and dual numbers are confined to the geometry
+of the pixels and to storage for one block of pixels.  The analysis
+stage (converting back to waveform modes) is skipped entirely.
 
 Everything in ``Φ`` that does not depend on ``θ`` is stored in an
 [`ObjectivePlan`](@ref), which is built once: the grid and its weights
@@ -211,73 +210,81 @@ as above.
 A few things to know:
 
 - **Parameters.**  The parameter vector ``θ`` is laid out as for
-  [`objective_and_gradient!`](@ref), described below: a rotation vector
-  ``\vec{r}``, a rapidity vector ``\vec{η}``, and the supertranslation's
-  modes.  So the same starting point and the same result serve both
-  ways of computing the gradient.  `transform_objective` also accepts
-  the transformation directly; there, three rotation components are
-  read as a rotation vector, and four as a rotor `(w, x, y, z)`, which
-  is normalized; see [`rotor_argument`](@ref Scri.rotor_argument).
+  [`objective_and_gradient!`](@ref), described below: a rotation
+  vector ``\vec{r}``, a rapidity vector ``\vec{η}``, and the
+  supertranslation's modes.  So the same starting point and the same
+  result serve both ways of computing the gradient.
+  `transform_objective` also accepts the transformation directly;
+  there, three rotation components are read as a rotation vector, and
+  four as a rotor `(w, x, y, z)`, which is normalized; see
+  [`rotor_argument`](@ref Scri.rotor_argument).
 
 - **Weights and noise.**  The plan's keywords set the weights:
-  `time_weights` for the ``v_i``, `component_weights` for the
-  ``u_k``, and `weights` for per-pixel factors that multiply the
-  quadrature weights, for example to down-weight part of the sky.
+  `time_weights` for the ``v_i``, `component_weights` for the ``u_k``,
+  and `weights` for per-pixel factors that multiply the quadrature
+  weights, for example to down-weight part of the sky.
   `normalize=true` divides by the target's norm.  `ℓ_fit=L` compares
-  only the modes with ``ℓ ≤ L`` of the difference, projected exactly by
-  the quadrature, which leaves out high-``ℓ`` noise in the data or the
-  target.
+  only the modes with ``ℓ ≤ L`` of the difference, projected exactly
+  by the quadrature, which leaves out high-``ℓ`` noise in the data or
+  the target.
 
-- **Memory.**  Per thread, the dual-typed storage is a few buffers of
-  size `O(Nᵈ Nᵗ)` — with `ntasks` threads and `N` parameters, roughly
-  `ntasks × (3NᵗNᵈ + 2Nᵐ) × (1+N) × 16` bytes — compared to `(NᵐNᵗNᵈ +
-  5Nᵐ²) × (1+N) × 16` bytes for dual `data` plus dual synthesis
-  matrices when differentiating through `transform!`.  For
-  production-sized arrays this can be a reduction by an order of
-  magnitude or two.
+- **Memory.**  The dual-typed storage is for one block of pixels at a
+  time: their harmonics and their synthesized time series, a copy of
+  each in plain numbers for the matrix products, and a few buffers of
+  size `O(NᵗNᵈ)` for each thread.  The block is sized so that its
+  harmonics and series take no more memory than `data` itself, or 128
+  MiB if that is larger, but it holds at least four pixels for each
+  thread; with the copies, the total is at most about twice that.
+  Differentiating through `transform!` instead takes `(NᵐNᵗNᵈ + 5Nᵐ²)
+  × (1+N) × 16` bytes, with `N` parameters, for dual `data` plus dual
+  synthesis matrices, which is more than `1+N` times the size of
+  `data`.
 
-- **Speed.**  Nothing important is lost by leaving the GEMM
-  formulation behind: `Complex{Dual}` is not a BLAS type, so a dual
-  `transform!` already runs on generic matrix multiplication.  The
-  per-pixel dot products do the same work, and the analysis stage is
-  eliminated entirely.  The default grid has about twice as many
-  points as there are modes, so an evaluation costs about twice what a
-  sum over `transform!`'s own pixels would, but this is essential to
-  ensure that the *squared* difference is integrated correctly,
-  without aliasing.
+- **Speed.**  The synthesis of each block of pixels is one matrix
+  product for each component.  `Complex{Dual}` is not a BLAS type, so
+  the values and partials of the dual harmonics are first laid side by
+  side in one matrix of plain complex numbers; the product, which is
+  linear in them, is then a single BLAS call.  A dual `transform!`
+  runs on generic matrix multiplication instead, and its analysis
+  stage is eliminated here entirely.  The default grid has about twice
+  as many points as there are modes, so an evaluation costs about
+  twice what a sum over `transform!`'s own pixels would, but this is
+  essential to ensure that the *squared* difference is integrated
+  correctly, without aliasing.
 
 - **Stability.**  The spline knots and Thomas factors stay primal
   (duals enter only because the values being interpolated are dual, so
-  the conditioning of the interpolation is unchanged), and the results
-  accumulate per-pixel → per-task → across tasks.  The result is
-  deterministic for a fixed number of threads.
+  the conditioning of the interpolation is unchanged).  Each pixel's
+  share of the objective is computed on its own, and the shares are
+  summed in pixel order.  The result is deterministic for a fixed
+  number of threads.
 
-## Gradients at about twice the cost of the objective
+## Gradients at a few times the cost of the objective
 
 ForwardDiff's gradient costs about one evaluation of the objective per
 parameter: with a supertranslation up to ``ℓ = 4``, that is 31
 evaluations.  [`objective_and_gradient!`](@ref) computes the objective
-and its exact gradient together, at about twice the cost of the
-objective alone, whatever the number of parameters: 2.5 evaluations at
-``ℓ_\mathrm{max} = 8``, and 1.7 at ``ℓ_\mathrm{max} = 16``.  It takes
-the transformation as one parameter vector,
+and its exact gradient together, at a few times the cost of the
+objective alone, whatever the number of parameters: about four
+evaluations at ``ℓ_\mathrm{max} = 16``, or five with `ℓ_fit`.  It
+takes the transformation as one parameter vector,
 
 ```math
 θ = (\vec{r},\; \vec{η},\; a_1, …, a_{(ℓ_α+1)^2}),
 ```
 
-a rotation vector ``\vec{r}`` (the frame rotation is ``\exp(\vec{r}/2)``), a
-rapidity vector ``\vec{η}`` (the boost velocity is ``\tanh|\vec{η}|`` along
-``\vec{η}``), and the real degrees of freedom of the supertranslation's
-modes up to ``ℓ_α``.  Every ``θ`` describes a valid BMS
-transformation, and the identity is ``θ = 0``.  The plan's fixed output
-grid `t′` is valid only for the transformations it was built for,
-though: those with a boost speed up to `β_max` and a supertranslation
-up to `δt_max`, as [above](@ref "Fix the output time grid").  Past
-those bounds, the call throws an `ArgumentError`, which stops most
-optimizers.  So either build `t′` with a generous margin, or bound the
-optimizer, for example by keeping the rapidity below
-``\operatorname{atanh}(β_\mathrm{max})``.
+a rotation vector ``\vec{r}`` (the frame rotation is
+``\exp(\vec{r}/2)``), a rapidity vector ``\vec{η}`` (the boost
+velocity is ``\tanh|\vec{η}|`` along ``\vec{η}``), and the real
+degrees of freedom of the supertranslation's modes up to ``ℓ_α``.
+Every ``θ`` describes a valid BMS transformation, and the identity is
+``θ = 0``.  The plan's fixed output grid `t′` is valid only for the
+transformations it was built for, though: those with a boost speed up
+to `β_max` and a supertranslation up to `δt_max`, as [above](@ref "Fix
+the output time grid").  Past those bounds, the call throws an
+`ArgumentError`, which stops most optimizers.  So either build `t′`
+with a generous margin, or bound the optimizer, for example by keeping
+the rapidity below ``\operatorname{atanh}(β_\mathrm{max})``.
 
 ```julia
 using Scri
