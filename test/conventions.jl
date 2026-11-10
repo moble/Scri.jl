@@ -132,7 +132,13 @@ end
         @test weyl_factor(X, n) ≈ (-1)^3 * q^(2 - n)  # c_s c_ψ c_R = (−1)³
     end
     for n ∈ 0:2
-        @test faraday_factor(X, n) ≈ -q^(1 - n)       # c_φ = −1
+        @test faraday_factor(X, n) ≈ q^(1 - n)        # c_s c_φ = (−1)²
+    end
+    # The signature alone flips every φₙ, as it flips every ψₙ: both are contractions of a
+    # tensor lowered by one index from a mixed tensor that all conventions share.
+    Y = Conventions(; c_s=-1)
+    for n ∈ 0:2
+        @test faraday_factor(Y, n) == -1 == weyl_factor(Y, n)
     end
     # F_σ = c_s c_σ c_l c_m² (ℐ⁺ shear, of the l congruence): m legs are vectors (c_m²,
     # no metric), the lowered l_b = g l contributes c_s c_l.  Here c_s c_σ = (−1)² = 1.

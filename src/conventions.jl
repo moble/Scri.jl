@@ -222,17 +222,25 @@ end
     faraday_factor(c::Conventions, n::Integer)
 
 Factor taking the Faraday component ``φₙ`` from the SXS convention to convention `c`:
-``φₙ^{[c]} = c_φ (c_l c_m)^{1-n} φₙ^{[SXS]}`` (two tetrad legs instead of the Weyl four).
+``φₙ^{[c]} = c_s c_φ (c_l c_m)^{1-n} φₙ^{[SXS]}``.
+
+The field shared by all conventions is the mixed tensor ``F^a{}_b`` of the Lorentz force,
+``du^a/dτ = (q/m) F^a{}_b u^b``, which is written the same way in either signature.  The
+components are contractions of the lowered ``F_{ab} = g_{ac} F^c{}_b``, so they pick up one
+``c_s``, just as the Weyl components do from the lowered Weyl tensor.  Two tetrad legs
+enter, so the dyad scaling ``c_l c_m`` is raised to the spin weight ``1-n``, where the four
+legs of the Weyl components give ``2-n``.
 """
 function faraday_factor(c::Conventions, n::Integer)
     0 ≤ n ≤ 2 || throw(ArgumentError("Faraday component index n must be in 0:2; got $n"))
     q = dyad_factor(c)
+    F = c.c_s * c.c_φ
     return if n == 0
-        c.c_φ * q
+        F * q
     elseif n == 1
-        c.c_φ
+        F
     else
-        c.c_φ / q
+        F / q
     end
 end
 

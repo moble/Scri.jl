@@ -58,19 +58,76 @@ decomposed into components as
 \end{aligned}
 ```
 
-These are consistent with the Weyl components above: each ``φ_n`` has
-spin weight ``1-n`` (just as ``ψ_n`` has ``2-n``), and each step down
-either tower trades a leg scaling as ``c_l`` or ``c_m`` for one
-scaling as its inverse.  Paralleling the Weyl conversion ``∝ (c_l
-c_m)^{2-n}``, the inter-convention factor is
+With ``c_φ = 1`` these are the definitions of Eq. (A1) of
+[NewmanPenrose_1962](@citet) and Eq. (1.1) of [Teukolsky_1973](@citet),
+both written in the opposite signature.  In our signature, they are
+the definitions of Eq. (8) of [BozzolaPaschalidis_2021](@citet), and
+those of ``φ_1`` and ``φ_2`` in Eqs. (3.3) and (3.4) of
+[ZilhaoEtAl_2012](@citet); both papers write ``k`` for our ``n``.
+
+These definitions are consistent with the Weyl components above: each
+``φ_n`` has spin weight ``1-n`` (just as ``ψ_n`` has ``2-n``), and
+each step down either tower trades a leg scaling as ``c_l`` or ``c_m``
+for one scaling as its inverse.
+
+Unlike the Weyl tensor, ``F_{ab}`` is not built from the metric, but
+its sign still depends on the signature, because the field that all
+authors share is not ``F_{ab}`` itself.  Every author writes the
+Lorentz force on a charge ``q`` of mass ``m`` in the same form,
 
 ```math
-{}^{[A]}φ_n = c_φ\, (c_l c_m)^{1-n}\, φ_n,
+\frac{du^a}{dτ} = \frac{q}{m} F^a{}_b\, u^b,
 ```
 
-with the dyad scaling ``c_l c_m`` raised to the spin weight ``1-n``,
-and neither a signature nor a Riemann-sign factor: no metric or
-curvature enters the definition of ``F_{ab}``.
+as in Eq. (3.4) of [MisnerThorneWheeler_1973](@citet), which calls it
+the definition of ``F^a{}_b``, and in Eq. (23.4) of
+[LandauLifshitz_1975](@citet).  The four-velocity and the proper time
+are the same in every convention, so ``F^a{}_b`` is too, and lowering
+its index gives
+
+```math
+{}^{[A]}F_{ab} = {}^{[A]}g_{ac} F^c{}_b = c_s F_{ab}.
+```
+
+This is why ``F_{0i} = -E_i`` in Eq. (3.7) of
+[MisnerThorneWheeler_1973](@citet), whose signature is ours, while
+``F_{0i} = +E_i`` in Eq. (11.138) of [Jackson_1999](@citet) and
+Eq. (23.5) of [LandauLifshitz_1975](@citet), whose signature is the
+opposite.  More generally, Appendix A of
+[DreinerHaberMartin_2010](@citet) shows that contravariant vectors,
+mixed tensors, and spinors are unchanged by the choice of signature,
+while each lowered index changes sign.  Combining this with the leg
+scalings, the inter-convention factor is
+
+```math
+{}^{[A]}φ_n = c_s c_φ\, (c_l c_m)^{1-n}\, φ_n,
+```
+
+with the dyad scaling ``c_l c_m`` raised to the spin weight ``1-n``.
+The factor ``c_s`` arises exactly as it does for the Weyl components,
+from one lowered index, but there is no Riemann-sign factor, because no
+curvature enters the definition of ``F^a{}_b``.
+
+The same conclusion holds in the language of spinors.  The
+electromagnetic spinor ``φ_{AB}`` of Eq. (5.1.39) of
+[PenroseRindler_1984](@citet) is determined by ``F^a{}_b``, and so does
+not depend on the signature, whereas the components ``φ_n`` defined
+above change sign with ``c_s``.  For a fixed sign ``c_R`` of the
+Riemann tensor, the Weyl spinor and the Weyl components behave in the
+same way, so in either signature the two towers are related to their
+spinors by the same sign.
+
+In the default convention, and with the tetrad of the previous page
+before rescaling, the Coulombic component is
+``φ_1 = \tfrac{1}{2}(E_{r̂} + i B_{r̂})``, in terms of the orthonormal
+radial components of the electric and magnetic fields.  A positive charge ``Q`` therefore has
+``φ_1 = Q/(2r^2)``, and the rescaled value at null infinity is
+``Q/2``.  The same relation appears as Eq. (3.5) of
+[ZilhaoEtAl_2012](@citet) and Eq. (D4b) of
+[BozzolaPaschalidis_2021](@citet).  Some authors contract ``F_{ab}``
+with the legs in the other order, as in ``φ_2 = F_{ab} n^a m̄^b`` of
+Eq. (61) of [PalenzuelaEtAl_2010](@citet), which corresponds to
+``c_φ = -1`` if the legs are otherwise the same as ours.
 
 The metric perturbation is defined as
 

@@ -333,7 +333,7 @@ h^{[X]} = F_h\, h^{[\mathrm{SXS}]},
 \quad F_h = c_s c_h,
 ```
 
-and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_φ\,(c_l
+and analogously for ``φ_n`` (a factor ``F_{φ,n} = c_s c_φ\,(c_l
 c_m)^{1-n}``, two legs instead of four) and the radiative shear
 (``F_σ`` on ``ℐ⁺``, ``F_λ`` on ``ℐ⁻``; below).  A transform that
 *stays in* convention ``X`` is the composition ``\text{convert }
@@ -371,7 +371,7 @@ b^{[X]} = c_l\, c_m\, b^{[\mathrm{SXS}]}
 precisely the dyad scaling found on the [tetrad page](@ref
 convention_dependence_tetrad_future).  The Faraday tower behaves
 identically: ``F_{φ,n}/F_{φ,n+k} = (c_l c_m)^k`` again, and the
-overall ``c_φ`` cancels.  So **none of ``c_s, c_ψ, c_R, c_φ`` enters a
+overall ``c_s c_φ`` cancels.  So **none of ``c_s, c_ψ, c_R, c_φ`` enters a
 same-convention mixing**; only ``c_l c_m`` does, through ``b``.
 
 On ``ℐ⁻`` the tower mixes *downward* (the parameter is ``\bar b =
