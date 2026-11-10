@@ -866,7 +866,9 @@ The plan's output grid `t′` is held fixed across parameter values, which is wh
 objective values (and derivatives) comparable across optimizer iterations.  It must remain
 within the valid span ([`validate_t′`](@ref)) at every parameter value; build it with
 [`compute_t′(t, β, δt)`](@ref compute_t′(::Any, ::Real, ::Real)) for the largest boost and
-supertranslation the optimizer may try.  `dc` must have the same components as the plan.
+supertranslation the optimizer may try.  `dc` must have the same components as the plan,
+and with the plan's default grid the data's band limit (or `ℓₘₐₓ₀`, if given) must not
+exceed the target's.
 
 Two fine points.  First, the spline-interval selection inside the interpolation is
 discontinuous on a measure-zero set of parameter values (where a transformed time
@@ -904,15 +906,8 @@ function transform_objective(
     ###
 
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    validate_plan(plan, dc, N₀)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
-    if spins != plan.spins
-        throw(
-            ArgumentError(
-                "`dc` has components of spin weights $spins, but the plan was built " *
-                "for spin weights $(plan.spins)",
-            ),
-        )
-    end
     R′ₚ, w, t′, v, c, target = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)

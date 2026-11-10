@@ -29,6 +29,9 @@ The keywords are:
   ``L²`` norm.  A boosted field is not band-limited, so in general the sum is a
   spectrally accurate approximation of that norm rather than an exact one; a finer grid,
   such as `sphere_quadrature(L)` with a larger `L`, can be passed to reduce the error.
+  With the default grid, data of a higher band limit than the target's are rejected,
+  because the quadrature would not be exact even for them; zero-pad the target's modes
+  to the data's band limit first.
 - `weights`: per-pixel factors multiplying ``w_j``, for example to down-weight a region of
   the sphere.  The default is one.
 - `time_weights`: the ``v_i``.  The default is the trapezoid rule on `t′`, so that the sum
@@ -68,6 +71,7 @@ struct ObjectivePlan{T<:AbstractFloat}
     norm²::T
     normalize::Bool
     ℓ_fit::Int                     # -1 for the full objective
+    ℓ_grid::Int                    # band limit of the default grid; -1 for a grid passed in
     Ȳ::Vector{Matrix{Complex{T}}}  # per component, wᵢ conj(ₛYₙ(R′ᵢ)) at [n, i]
     T̂::Vector{Matrix{Complex{T}}}  # per component, the target's projection at [n, j]
 end
@@ -166,9 +170,40 @@ function ObjectivePlan(
         norm²,
         normalize,
         isnothing(ℓ_fit) ? -1 : Int(ℓ_fit),
+        isnothing(grid) ? max(ℓₘₐₓ, 0) : -1,
         Ȳ,
         T̂,
     )
+end
+
+"""
+    validate_plan(plan, dc, N₀)
+
+Throw an `ArgumentError` unless `plan` can be used with data of the components `dc` whose
+nonzero modes are the first `N₀`.  The components must have the plan's spin weights.  With
+the default grid, the data's band limit must also not exceed the target's, because the grid
+integrates exactly only up to that band limit; past it the objective is silently wrong.
+"""
+function validate_plan(plan::ObjectivePlan, dc::DataComponents{C}, N₀) where {C}
+    spins = Int[spin_weight(Val(c)) for c ∈ C]
+    spins == plan.spins || throw(
+        ArgumentError(
+            "`dc` has components of spin weights $spins, but the plan was built " *
+            "for spin weights $(plan.spins)",
+        ),
+    )
+    ℓ_data = isqrt(N₀) - 1
+    plan.ℓ_grid < 0 ||
+        ℓ_data ≤ plan.ℓ_grid ||
+        throw(
+            ArgumentError(
+                "The data have band limit ℓₘₐₓ=$ℓ_data, but the plan's default grid is exact " *
+                "only up to the target's band limit ℓₘₐₓ=$(plan.ℓ_grid).  Pad the target " *
+                "to the data's ℓₘₐₓ before building the plan, pass `ℓₘₐₓ₀` if the data's " *
+                "higher modes are zero, or pass a finer `grid` to the plan.",
+            ),
+        )
+    return nothing
 end
 
 function Base.show(io::IO, p::ObjectivePlan{T}) where {T}

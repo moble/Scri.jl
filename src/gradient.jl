@@ -87,13 +87,8 @@ function gradient_core(
     ::Val{P},
 ) where {T1,T2,C,I,TQ,T,P}
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, αᵢₙ, dc, ℓₘₐₓ₀)
+    validate_plan(plan, dc, N₀)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
-    spins == plan.spins || throw(
-        ArgumentError(
-            "`dc` has components of spin weights $spins, but the plan was built " *
-            "for spin weights $(plan.spins)",
-        ),
-    )
     R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)

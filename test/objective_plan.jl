@@ -51,6 +51,50 @@
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t .+ 100)
 end
 
+@testitem "ObjectivePlan: data beyond the target's band limit are rejected" tags = [
+    :unit, :fast
+] begin
+    import Random
+
+    # The default grid integrates exactly only up to the target's band limit, so data with
+    # higher modes must be refused rather than give a silently wrong objective.  Data whose
+    # higher modes are zero pass when `ℓₘₐₓ₀` says so, and a padded target or a grid passed
+    # in removes the restriction.
+    rng = Random.Xoshiro(3131)
+    Nᵗ = 12
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    t′ = Scri.compute_t′(t, 0.05, 0.5)
+    dc = Scri.DataComponents(:h, :ψ₄)
+    v⃗, R, α = [0.01, 0.02, -0.03], [0.1, 0.0, 0.2], ComplexF64[0.1, 0, 0, 0]
+    target = Random.randn(rng, ComplexF64, 16, Nᵗ, 2)  # ℓₘₐₓ = 3
+    plan = Scri.ObjectivePlan(target, t, dc, t′)
+    data = Random.randn(rng, ComplexF64, 36, Nᵗ, 2)    # ℓₘₐₓ = 5
+    θ = Scri.parameters_from_bms(v⃗, R, α)
+    @test_throws ArgumentError Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
+    @test_throws ArgumentError Scri.objective_and_gradient!(
+        similar(θ), θ, data, t, dc, plan
+    )
+
+    padded = zeros(ComplexF64, 36, Nᵗ, 2)
+    padded[1:16, :, :] .= data[1:16, :, :]
+    Φ₃ = Scri.transform_objective(data[1:16, :, :], t, v⃗, R, α, dc, plan)
+    @test Scri.transform_objective(padded, t, v⃗, R, α, dc, plan; ℓₘₐₓ₀=3) ≈ Φ₃
+    @test_throws ArgumentError Scri.transform_objective(padded, t, v⃗, R, α, dc, plan)
+
+    target₅ = zeros(ComplexF64, 36, Nᵗ, 2)
+    target₅[1:16, :, :] .= target
+    plan₅ = Scri.ObjectivePlan(target₅, t, dc, t′)
+    @test isfinite(Scri.transform_objective(data, t, v⃗, R, α, dc, plan₅))
+    plan_grid = Scri.ObjectivePlan(target, t, dc, t′; grid=Scri.sphere_quadrature(5))
+    @test Scri.transform_objective(data, t, v⃗, R, α, dc, plan_grid) ≈
+        Scri.transform_objective(data, t, v⃗, R, α, dc, plan₅)
+
+    # Components of other spin weights are refused as before.
+    @test_throws ArgumentError Scri.transform_objective(
+        data[1:16, :, :], t, v⃗, R, α, Scri.DataComponents(:σ, :ψ₄), plan
+    )
+end
+
 @testitem "transform_objective: the default plan's minimum is the true L² minimum" tags = [
     :validation
 ] begin
