@@ -876,13 +876,16 @@ velocity `v⃗`, this gives `κ = 1/(γ(1 - ℐ v⃗⋅k̂))`; `Λ = Boost(v⃗)
 `κ = 1/(γ(1 + ℐ v⃗⋅k̂))` instead.  Quaternionic's `Boost(v⃗)` is the active boost, which
 takes the time axis `𝐭` to `γ(𝐭 + v⃗)`, the worldline of an observer moving with velocity
 `v⃗`; its inverse `Boost(-v⃗)` gives a vector's components in that observer's frame, which
-is the passive transformation a `BMS` element stores.  The trailing `ℐ` on `k̂′` undoes the section sign
-so that the returned direction is in the same `k̂` labeling (rotations map `k̂ ↦ Rk̂`
-regardless of `ℐ`).  The `ℐ = -1` map agrees with [`aberration`](@ref)`(…, -1)`.
+is the passive transformation a `BMS` element stores.  The trailing `ℐ` on `k̂′` undoes
+the section sign so that the returned direction is in the same `k̂` labeling (rotations map
+`k̂ ↦ Rk̂` regardless of `ℐ`).  This map inverts the direction map of [`aberration`](@ref)
+called with `Λℐ = Boost(ℐ * v⃗) * R`: the frame rotor at ``ℐ⁺`` and its parity conjugate at
+``ℐ⁻``.
 
-This is the single place where the conformal-factor convention is defined; everything
-else (the action, [`compose`](@ref), [`conformal_factor`](@ref)) uses it.  The direction
-`k̂` must be a unit vector.
+The group code (the action, [`compose`](@ref), and [`conformal_factor`](@ref)) computes the
+conformal factor only here.  The transformation of data computes ``1/κ = γ(1 - ℐ v⃗⋅k̂)``
+directly from the boost velocity, which agrees with this function.  The direction `k̂` must
+be a unit vector.
 """
 function transform_ray(Λ::Lorentz{T1}, k̂::QuatVec{T2}; ℐ::Int=1) where {T1<:Real,T2<:Real}
     T = promote_type(T1, T2)
@@ -1046,8 +1049,8 @@ end
     end
 
     # transform_ray at ℐ⁻ agrees with the independently-tested `aberration` direction map
-    # built with `Boost(-v⃗)` (the same check test #9 makes at ℐ⁺, with `Boost(v⃗)`), pinning
-    # the section convention.
+    # built with `Boost(-v⃗)` (the same check that "BMS: direction map vs aberration" makes
+    # at ℐ⁺, with `Boost(v⃗)`), pinning the section convention.
     for _ ∈ 1:8
         R = random_rotation(rng, Float64)
         R′ₚ = random_rotation(rng, Float64)

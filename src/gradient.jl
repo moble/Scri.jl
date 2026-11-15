@@ -99,9 +99,13 @@ function gradient_core(
     c_α = dc.conventions.c_α
     γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
-    Λ = Boost(I * v⃗) * R
+    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
+    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
+    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
+    # antipodal labeling of the sphere.
+    Λℐ = Boost(I * v⃗) * R
     cubic_spline_cache = CubicSplineCache(t)
-    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
     Tₚ = eltype(Rₚ)
     validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
     ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)

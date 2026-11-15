@@ -166,8 +166,8 @@ end
     import Quaternionic: Rotor, QuatVec
     β = 0.5
     γ = 1 / √(1 - β^2)
-    # Pixel at +z (identity rotor): κ⁻¹ = γ(1-β)  — blue-shifted, weak constraint
-    # Pixel at -z (Rotor(0,1,0,0)): κ⁻¹ = γ(1+β)  — red-shifted, binding constraint
+    # Pixel at +z (identity rotor): κ⁻¹ = γ(1-β)  — red-shifted, weak constraint
+    # Pixel at -z (Rotor(0,1,0,0)): κ⁻¹ = γ(1+β)  — blue-shifted, binding constraint
     Rₚ = [Rotor(1.0, 0.0, 0.0, 0.0), Rotor(0.0, 1.0, 0.0, 0.0)]
     αₚ = [0.0, 0.0]
     v⃗ = QuatVec(0.0, 0.0, β)
@@ -325,15 +325,15 @@ end
     # β = 0: the bounds are just the supertranslation-shrunk span.
     t = collect(range(-10.0, 10.0; length=101))
     @test Scri.compute_t′_bounds(t, 0.0, 1.5) == (-8.5, 8.5)
-    # δt = 0, span straddling zero: both bounds set by the red-shifted (anti-boost)
+    # δt = 0, span straddling zero: both bounds set by the blue-shifted (anti-boost)
     # direction, matching the exact-transformation Doppler test above.
     β = 0.5
     γ = 1 / √(1 - β^2)
     (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t, β, 0.0)
     @test t′ₘᵢₙ ≈ -10.0 / (γ * (1 + β))
     @test t′ₘₐₓ ≈ 10.0 / (γ * (1 + β))
-    # δt = 0, entirely positive span: the lower bound is set by the blue-shifted
-    # direction, the upper bound by the red-shifted one.
+    # δt = 0, entirely positive span: the lower bound is set by the red-shifted
+    # direction, the upper bound by the blue-shifted one.
     t₊ = collect(range(5.0, 20.0; length=101))
     (t′ₘᵢₙ, t′ₘₐₓ) = Scri.compute_t′_bounds(t₊, β, 0.0)
     @test t′ₘᵢₙ ≈ 5.0 / (γ * (1 - β))

@@ -12,7 +12,8 @@
     # the rest of its peeling tower set to zero, there is no component mixing, so the law is
     # simply ψ₂′ = κ⁻³ ψ₂ with 1/κ = γ(1 - ℐ v⃗⋅k̂).  We reconstruct that pointwise from the
     # *output* modes and compare against an independent evaluation — pinning the conformal
-    # factor (transform.jl) and the past-vs-future direction map (`aberration`'s `ℐ`)
+    # factor (transform.jl) and the past-vs-future direction map (the rotor `Λℐ` passed to
+    # `aberration`)
     # at both null infinities.  At ℐ = +1 this is also a regression guard for ℐ⁺.
     ℓ = 8
     N = (ℓ + 1)^2
@@ -35,8 +36,8 @@
         Scri.transform!(data, copy(t), v⃗, one(Rotor{Float64}), zeros(ComplexF64, 1), dc)
 
         # Replicate transform!'s rest-frame grid and the expected pixel values.
-        Λ = Boost(ℐ * v⃗)   # R = 1, so Λ = Boost(ℐ*v⃗) * R = Boost(ℐ*v⃗)
-        Rₚ = [Scri.aberration(R′ₚ, Λ) for R′ₚ ∈ Rs]
+        Λℐ = Boost(ℐ * v⃗)   # R = 1, so Λℐ = Boost(ℐ*v⃗) * R = Boost(ℐ*v⃗)
+        Rₚ = [Scri.aberration(R′ₚ, Λℐ) for R′ₚ ∈ Rs]
         ψ₂_rest = sYlm_matrix(Rₚ, ℓ, 0) * α0                    # input ψ₂ at rest directions
         κ⁻¹ = [γ * (1 - ℐ * dot(vec(v⃗), vec(Rₚ[p](𝐤)))) for p ∈ eachindex(Rₚ)]
         expected = @. κ⁻¹^3 * ψ₂_rest                            # ψ₂′ = κ⁻³ ψ₂ (no mixing)

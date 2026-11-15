@@ -135,14 +135,16 @@ function augmented_factorization(R′ₚ, ℓₘₐₓ, s)
 end
 
 """
-    supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
 
 Return the distorted grid `Rₚ`, the rotors in the rest frame of the pixels `R′ₚ` of the
-transformed frame under the Lorentz transformation `Λ`, together with the supertranslation
+transformed frame under the Lorentz rotor `Λℐ`, together with the supertranslation
 `αₚ`, its eth derivative `ðαₚ`, and its second eth derivative `ð²αₚ` at those rotors.
-Either `Λ` or `αᵢₙ` may hold dual numbers, and the types of the results follow from
+Either `Λℐ` or `αᵢₙ` may hold dual numbers, and the types of the results follow from
 theirs: the rotors are those that [`aberration`](@ref) returns, and the values have the
-real type of `Λ` promoted with that of `αᵢₙ`.
+real type of `Λℐ` promoted with that of `αᵢₙ`.  At ``ℐ⁺`` the rotor `Λℐ` is the frame rotor
+`Λ = Boost(v⃗) * R`, and at ``ℐ⁻`` it is the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`;
+see [`aberration`](@ref).
 
 The reality condition is imposed on the modes, and they are multiplied by `c_α`, so that
 from here on `α` enters the time law as `t′ = κ(t − α)`.  Each pixel's values are three dot
@@ -151,10 +153,10 @@ calculator stepped pixel by pixel.  The calculator works at the supertranslation
 limit (at least 2, the largest spin weight needed), which is usually far below that of the
 data, so this costs much less than synthesis matrices at the data's band limit would.
 """
-function supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
-    TΛ, Tᵅ = real(basetype(Λ)), real(eltype(αᵢₙ))
-    TΘ = promote_type(TΛ, Tᵅ)
-    Tₚ = Rotor{TΛ}
+function supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
+    TΛℐ, Tᵅ = real(basetype(Λℐ)), real(eltype(αᵢₙ))
+    TΘ = promote_type(TΛℐ, Tᵅ)
+    Tₚ = Rotor{TΛℐ}
     T5′ = primal_float(Tᵅ)
     ℓᵅ = max(2, isqrt(length(αᵢₙ)) - 1)
     Nᵅ = (ℓᵅ + 1)^2
@@ -172,9 +174,10 @@ function supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
             calc = sYlmCalculator(one(Tₚ), ℓᵅ, 0:2)
             Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵅ, 3)
         end
-        # `ℐ = +1` (ℐ⁺) vs `-1` (ℐ⁻) selects the past-vs-future-cone direction map; see the
-        # `aberration` docstring and the "Future and past null infinity" conventions.
-        Rₚ[i] = aberration(R′ₚ[i], Λ)
+        # The sign `ℐ`, folded into `Λℐ`, selects the future-cone (ℐ⁺) or past-cone (ℐ⁻)
+        # direction map; see the `aberration` docstring and the "Future and past null
+        # infinity" conventions.
+        Rₚ[i] = aberration(R′ₚ[i], Λℐ)
         # The columns of `Y` hold spins 0, 1, and 2; the sums run over the modes with ℓ ≥ s,
         # and `α` is real on the sphere by construction.
         sYlm_rows!(Y, calc, Rₚ[i])
@@ -324,8 +327,22 @@ accept plain vectors, tuples, and, for `R`, quaternions.  A velocity must have t
 components.  A rotation given as three components is read as a rotation vector, and four as
 a rotor; see [`rotor_argument`](@ref).
 
+The new frame is obtained from the old one by first rotating its legs by `R` and then
+boosting them with velocity `v⃗`, with both `R` and `v⃗` given in the old frame's
+components.  Specifically, the new observer moves with velocity `v⃗` relative to the old
+one.  The basis tetrad is ``𝐞'_μ = Λ\\,𝐞_μ\\,Λ̃``, where the frame rotor is `Λ = Boost(v⃗) *
+R`, so its time leg is ``γ(𝐭 + v⃗)``.  For example, `R = Rotor(√2, 0, 0, √2)` puts the
+new ``x`` axis along the old ``y`` axis, so the event with old coordinates ``(t, x, y, z) =
+(0, 1, 0, 0)`` has new coordinates ``(0, 0, -1, 0)``.  The velocity `v⃗` and the rotation
+`R` mean the same thing at ``ℐ⁺`` and at ``ℐ⁻``.  Under a pure rotation, the mode weights of
+each field become ``𝔇(R^{-1})\\,f``, which is the frame-rotation law of
+`SphericalFunctions.jl`.  If this function is called twice, the second call's `v⃗` and `R`
+are interpreted *in the frame resulting from the first transformation*, and the result
+agrees with a single call using [`compose`](@ref)`(g₂, g₁)`.  The conventions are set out on
+the page [Frames and Components](@ref frames_and_components).
+
 The `αᵢₙ` array must be a complex vector, and must be ordered as described above for the
-final dimension of `data`, though it may have a smaller `ℓₘₐₓ`.  (A larger `ℓₘₐₓ` cannot be
+final dimension of `data`, though it may have a smaller `ℓₘₐₓ`.  (A larger `ℓₘₐₓ` is not
 allowed, because the result would have higher angular dependence than `data`, which is not
 possible since we are transforming `data` in-place.)  This array is expected to represent a
 supertranslation in the rest frame, which is a real-valued function (with spin weight 0) on
@@ -340,11 +357,11 @@ hierarchical nature of the BMS transformation, any Weyl component ``ψᵢ`` must
 by all higher-index components ``ψⱼ`` for ``j > i``.  Note that `DataComponents` includes a
 sign indicating whether `data` represents data on ``ℐ⁺`` if `ℐ` = +1 or ``ℐ⁻`` if `ℐ` = -1.
 
-The `dc` argument also contains the [`Conventions`](@ref) the data are expressed in, and
-the transformation laws applied are the ones *native to that convention* — see the
-["Convention dependence"](@ref convention_dependence_fields) section of the "BMS Action on
-Fields" documentation page.  With the default conventions (SXS) every factor is the
-identity and compiles away.
+The `dc` argument also contains the [`Conventions`](@ref) the data are expressed in, and the
+transformation laws applied are the ones *native to that convention* — see the ["Convention
+dependence"](@ref convention_dependence_fields) section of the "BMS Action on Fields"
+documentation page.  With the default conventions (SXS) every factor is the identity and
+compiles away.
 
 The optional keyword `t′` supplies the output time grid explicitly, instead of the default
 grid constructed by [`compute_t′`](@ref).  It must be a real vector of the same length as
@@ -354,28 +371,26 @@ throws an `ArgumentError`).  This is chiefly useful in optimization loops over B
 parameters, where a fixed output grid makes the results directly comparable across
 iterations.
 
-The optional keyword `ℓₘₐₓ₀` declares the *input* band limit: a
-promise that every mode with ``ℓ > ℓₘₐₓ₀`` in `data` is exactly zero
-(as when band-limited data have been zero-padded to a larger array,
-per the pad-first workflow of [Choosing ``ℓ_\\mathrm{max}``](@ref
-choosing_ell_max)).  The first (synthesis) stage then processes only
-the nonzero modes, reducing its cost by roughly the factor
-`(ℓₘₐₓ₀+1)²/Nᵐ`.  The promise is verified, and an `ArgumentError` is
-thrown if any declared-zero mode is nonzero.
+The optional keyword `ℓₘₐₓ₀` declares the *input* band limit: a promise that every mode with
+``ℓ > ℓₘₐₓ₀`` in `data` is exactly zero (as when band-limited data have been zero-padded to
+a larger array, per the pad-first workflow of [Choosing ``ℓ_\\mathrm{max}``](@ref
+choosing_ell_max)).  The first (synthesis) stage then processes only the nonzero modes,
+reducing its cost by roughly the factor `(ℓₘₐₓ₀+1)²/Nᵐ`.  The promise is verified, and an
+`ArgumentError` is thrown if any declared-zero mode is nonzero.
 
-The optional keyword `plan` supplies a [`TransformPlan`](@ref) for the band limit, precision,
-and spin weights of `data`, so that the grid and its analysis factorizations, which depend
-on no BMS parameter, are not rebuilt on every call.
+The optional keyword `plan` supplies a [`TransformPlan`](@ref) for the band limit,
+precision, and spin weights of `data`, so that the grid and its analysis factorizations,
+which depend on no BMS parameter, are not rebuilt on every call.
 
 Returns `(data, t′)`, where `t′` is the output time grid (the supplied one, if given).
 
 The transformation is differentiable end-to-end with ForwardDiff with respect to the BMS
 parameters, provided the output grid is held fixed with `t′`; see the [Automatic
-Differentiation](@ref) documentation page.  Note, however, that differentiating through `transform!` requires a
-dual-typed copy of the entire `data` array; when the goal is to optimize the BMS
-parameters against a fixed target waveform, the memory-lean
-[`transform_objective`](@ref) computes the L² objective directly, leaving `data` primal
-and untouched.
+Differentiation](@ref) documentation page.  Note, however, that differentiating through
+`transform!` requires a dual-typed copy of the entire `data` array; when the goal is to
+optimize the BMS parameters against a fixed target waveform, the memory-lean
+[`transform_objective`](@ref) computes the L² objective directly, leaving `data` primal and
+untouched.
 
 """
 function transform!(
@@ -435,7 +450,11 @@ function transform!(
 
     γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
-    Λ = Boost(I * v⃗) * R
+    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
+    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
+    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
+    # antipodal labeling of the sphere.
+    Λℐ = Boost(I * v⃗) * R
 
     # The grid of the transformed frame, on which the transformed data are analyzed back
     # into modes; see `transform_grid`.  It is chosen for spin weight 0, because all the
@@ -467,7 +486,7 @@ function transform!(
     # the corresponding rotors in the rest frame, on which we will evaluate the input data
     # (the boosted or distorted grid), together with the supertranslation and its eth
     # derivatives there.  See `supertranslation_on_grid`.
-    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
     Tₚ = eltype(Rₚ)
 
     # The synthesis matrix on the distorted grid, for each spin weight that the data have.
@@ -941,7 +960,11 @@ function transform_objective(
     c_α = dc.conventions.c_α
     γ = lorentz_factor(v⃗)
     vˣ, vʸ, vᶻ = vec(v⃗)
-    Λ = Boost(I * v⃗) * R
+    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
+    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
+    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
+    # antipodal labeling of the sphere.
+    Λℐ = Boost(I * v⃗) * R
 
     cubic_spline_cache = CubicSplineCache(t)
 
@@ -951,7 +974,7 @@ function transform_objective(
 
     # These per-pixel values must all exist before the main loop, because the grid
     # validation and `compute_ðt′╱2κ` consume them whole.
-    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λ, αᵢₙ, c_α)
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
 
     # Validate the output grid at these parameter values (synchronously, so a bad grid
     # throws a plain ArgumentError), then assemble the null-rotation parameter parts.

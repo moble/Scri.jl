@@ -11,8 +11,9 @@ end
     # Taylor branch where the angle formulas are ill-conditioned.  That completely different
     # structure is what makes it a truly independent check.
     #
-    # The `emitted` keyword corresponds to the primary implementation's `ℐ` argument:
-    # `emitted = true` ⟺ `ℐ = +1` (ℐ⁺), `emitted = false` ⟺ `ℐ = -1` (ℐ⁻).
+    # The `emitted` keyword corresponds to the sign `ℐ` that the primary implementation's
+    # callers fold into its second argument, `Λℐ = Boost(ℐ * v⃗) * R`: `emitted = true` ⟺
+    # `ℐ = +1` (ℐ⁺), `emitted = false` ⟺ `ℐ = -1` (ℐ⁻).
     using Quaternionic: Rotor, QuatVec, 𝐤, absvec, basetype, value
 
     function aberration(RRₚᵢ, v⃗; emitted::Bool=true)
@@ -153,7 +154,7 @@ end
     using .AberrationSetup: FloatTypes
 
     # The docstring's central claim is that `aberration` returns the ``K`` factor of the
-    # Iwasawa ``KAN`` decomposition of `Λ * R′ₚᵢ`.  The other tests here verify
+    # Iwasawa ``KAN`` decomposition of `Λℐ * R′ₚᵢ`.  The other tests here verify
     # *consequences* of that claim (the direction map, the spin phase against the Boyle
     # (2015) oracle, the group identities).  This one verifies the claim itself, and does
     # so without trusting `Quaternionic.KAN`'s internals — which compute the same
@@ -163,7 +164,7 @@ end
     # Instead we take `A` and `N` from `KAN` merely as *candidate* factors and check the
     # defining properties directly:
     #
-    #   1. `K * A * N` reconstructs `Λ * R′ₚᵢ`,
+    #   1. `K * A * N` reconstructs `Λℐ * R′ₚᵢ`,
     #   2. `K` is a real rotor — a pure rotation, so `K ∈ Spin(3)`,
     #   3. `A = coshφₐ╱2 + sinhφₐ╱2 𝐭𝐳` — a boost along the preferred axis, so `A ∈ A`,
     #   4. `N` fixes the null direction `ℓ` — components `(1, ζ, imζ, 0)`, so `N ∈ N`.
@@ -177,7 +178,7 @@ end
     # (whose behavior out to β = 1 - 64eps is covered by the unit-norm tests below).
     #
     # The near-pole pixel is normalized explicitly: `Rotor{T}(1, 10⁻⁷, 0, 0)` has norm
-    # 1 + 5×10⁻¹⁵, so `Λ * R′ₚᵢ` would lie off the group by far more than eps(Double64).
+    # 1 + 5×10⁻¹⁵, so `Λℐ * R′ₚᵢ` would lie off the group by far more than eps(Double64).
     rng = Random.Xoshiro(4646)
     for T ∈ FloatTypes, ℐ ∈ (-1, +1)
         ϵ = eps(T)
@@ -187,15 +188,15 @@ end
 
             R = randn(rng, Rotor{T})  # frame rotation, as folded in by the caller
             v⃗ = β * normalize(randn(rng, QuatVec{T}))
-            Λ = Boost(ℐ * v⃗) * R
-            K = Scri.aberration(R′ₚᵢ, Λ)
-            _, A, N = KAN(Λ * R′ₚᵢ)
+            Λℐ = Boost(ℐ * v⃗) * R
+            K = Scri.aberration(R′ₚᵢ, Λℐ)
+            _, A, N = KAN(Λℐ * R′ₚᵢ)
 
             # (1) K A N reconstructs the full transformation.  Compare as `Quaternion`s so
             # that no constructor silently renormalizes the product away.
-            ΛR′ₚᵢ = Λ * R′ₚᵢ
-            scale = maximum(abs, components(ΛR′ₚᵢ))
-            @test maximum(abs, components(Quaternion(K * A * N) - Quaternion(ΛR′ₚᵢ))) <
+            ΛℐR′ₚᵢ = Λℐ * R′ₚᵢ
+            scale = maximum(abs, components(ΛℐR′ₚᵢ))
+            @test maximum(abs, components(Quaternion(K * A * N) - Quaternion(ΛℐR′ₚᵢ))) <
                 100ϵ * scale
 
             # (2) K is a rotation: real components, unit norm.
@@ -297,8 +298,8 @@ end
     using .AberrationSetup: FloatTypes
 
     # For boost along z, any rotation Rz about z preserves v⃗, so
-    # aberration(Rz * R, v⃗) = Rz * aberration(R, v⃗).  This follows from the equivariance
-    # of the K factor under rotations about the boost axis.
+    # aberration(Rz * R, Boost(v⃗)) = Rz * aberration(R, Boost(v⃗)).  This follows from the
+    # equivariance of the K factor under rotations about the boost axis.
     for T ∈ FloatTypes
         let π = T(π)
             R_base = Rotor(cos(π/4), 0, sin(π/4), 0)  # equatorial pixel
@@ -348,9 +349,9 @@ end
     import Quaternionic: Boost, Rotor, QuatVec, components
     using .AberrationSetup: FloatTypes
 
-    # Applying aberration twice with velocities v⃗₁ then v⃗₂ is equivalent to applying aberration once
-    # with the effective boost and pre-rotating by the Wigner rotation:
-    #   aberration(aberration(R, v⃗₁), v⃗₂) ≈ aberration(R_Wigner * R, v⃗_eff)
+    # Applying aberration twice, with the boosts Boost(v⃗₁) and then Boost(v⃗₂), is equivalent
+    # to applying it once with the effective boost after pre-rotating by the Wigner rotation:
+    #   aberration(aberration(R, Boost(v⃗₁)), Boost(v⃗₂)) ≈ aberration(R_Wigner * R, Boost(v⃗_eff))
     # where (v⃗_eff, R_Wigner) = vR(L₂ * L₁).
     # vR is not exported from Quaternionic; access as Quaternionic.vR.
     for T ∈ FloatTypes
@@ -445,7 +446,7 @@ end
     using .AberrationSetup: FloatTypes
 
     # For ANY rotation Rf (not just about the boost axis),
-    #     aberration(Rf·R, Rf(v⃗), ℐ) = Rf · aberration(R, v⃗, ℐ).
+    #     aberration(Rf·R, Boost(ℐ·Rf(v⃗))) = Rf · aberration(R, Boost(ℐ·v⃗)).
     # The azimuthal-symmetry test is the special case Rf = Rz; this stronger version
     # catches sign errors in the rotation axis that azimuthal symmetry misses.
     rng = Random.Xoshiro(4343)
