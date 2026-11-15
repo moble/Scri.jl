@@ -552,7 +552,8 @@ decomposition") used throughout these docs.
 
 A BMS element is represented as a pair ``(Λ, α)``.  The
 supertranslation ``α`` is applied first, on the old sphere, and the
-Lorentz transformation second:
+Lorentz transformation second, about the new origin set by the
+supertranslation rather than the original one:
 
 ```math
 t' = κ\,\bigl[t - c_α\,α(k̂)\bigr],

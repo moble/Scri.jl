@@ -13,7 +13,7 @@
     using .BMSTestSetup: random_bms, random_direction, act_ref
     using Quaternionic: components
 
-    # THE metamorphic test: acting with g₂∘g₁ must equal acting with g₁ and then g₂,
+    # THE metamorphic test: acting with g₁ * g₂ must equal acting with g₁ and then g₂,
     # where the action is computed from raw geometry only (`act_ref`); `compose` is the
     # only Scri group code involved.  This checks every sign, factor, and evaluation
     # point in the composition law at once.
@@ -23,7 +23,7 @@
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=3, βmax=0)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
-        h = g₂ * g₁
+        h = g₁ * g₂
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             k̂ = random_direction(rng, Float64)
@@ -40,7 +40,7 @@
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-        h = Scri.compose(g₂, g₁; ℓₘₐₓ=12)
+        h = Scri.compose(g₁, g₂; ℓₘₐₓ=12)
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             k̂ = random_direction(rng, Float64)
@@ -60,7 +60,7 @@ end
     using .BMSTestSetup: random_bms, random_direction, act_ref
     using Quaternionic: components
 
-    # The metamorphic composition test, repeated on ℐ⁻ (ℐ = -1): acting with g₂∘g₁ must
+    # The metamorphic composition test, repeated on ℐ⁻ (ℐ = -1): acting with g₁ * g₂ must
     # equal acting with g₁ then g₂, where the reference action is computed from raw geometry
     # with the antipodal section 𝐤 = (1, -k̂).  The elements include the ℐ⁻ representation
     # as their `ℐ` type parameter (attached to the same raw modes the oracle reads), and
@@ -73,7 +73,7 @@ end
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=3, βmax=0)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
-        h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁))
+        h = Scri.compose(at_ℐ⁻(g₁), at_ℐ⁻(g₂))
         @test Scri.ℐ(h) == -1
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
@@ -91,7 +91,7 @@ end
     for _ ∈ 1:4
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-        h = Scri.compose(at_ℐ⁻(g₂), at_ℐ⁻(g₁); ℓₘₐₓ=12)
+        h = Scri.compose(at_ℐ⁻(g₁), at_ℐ⁻(g₂); ℓₘₐₓ=12)
         for c_α ∈ (+1, -1), _ ∈ 1:4
             t = 2randn(rng)
             k̂ = random_direction(rng, Float64)
@@ -133,7 +133,7 @@ end
             @test c ≈ expected atol = tol(T, 3) * scale
 
             # Even with ℓ-headroom, no ℓ ≥ 2 modes appear.
-            c₄ = Scri.compose(Scri.compose(gΛ, T_d), inv(gΛ); ℓₘₐₓ=4, ℓʷ=9)
+            c₄ = Scri.compose(gΛ, Scri.compose(T_d, inv(gΛ)); ℓₘₐₓ=4, ℓʷ=9)
             @test maximum(abs, c₄.α[5:end]) < tol(T, 9) * scale
         end
     end
@@ -154,10 +154,10 @@ end
         δt = 1.75
         g = BMS{Float64}(; boost_velocity=QuatVec(0.0, 0.0, β))
         T_δt = BMS{Float64}(; time_translation=δt)
-        c = g * T_δt * inv(g)
+        c = inv(g) * T_δt * g
 
-        # Expected: translation by d′ = Λ(δt, 0⃗), with Λ = lorentz(g) acting as a
-        # 4-vector map; for this passive convention d′ = γδt(1, -v⃗).
+        # Expected: translation by d′ = Λ̃(δt, 0⃗), with Λ̃ = inv(lorentz(g)) the reverse of
+        # the frame rotor acting as a 4-vector map, so d′ = γδt(1, -v⃗).
         γ = 1 / √(1 - β^2)
         expected = BMS{Float64}(;
             time_translation=γ * δt, space_translation=QuatVec(0.0, 0.0, -γ * δt * β)
@@ -183,25 +183,26 @@ end
     using LinearAlgebra: dot
 
     # The "Which way around is κ?" note in docs/src/30-BMS/04-bms_group.md works
-    # through the conjugation Λ⁻¹ ∘ δt ∘ Λ for a pure boost with velocity v⃗, claiming
-    # the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅k̂) — equivalently the
-    # spacetime translation by the 4-vector Λ⁻¹δ = γ δt (1; v⃗).  Pin all three faces of
-    # that worked example, with κ taken from the package's own `conformal_factor`.
+    # through the conjugation (Λ, 0)(1, δt)(Λ, 0)⁻¹ for a pure boost with frame rotor
+    # Λ = B(v⃗), claiming the result is the pure supertranslation δt/κ = γ δt (1 - v⃗⋅k̂) —
+    # equivalently the spacetime translation by the 4-vector Λδ = γ δt (1; v⃗).  Pin all
+    # three faces of that worked example, with κ taken from the package's own
+    # `conformal_factor`.
     rng = Random.Xoshiro(2424)
     for _ ∈ 1:5
         v⃗ = (0.7rand(rng)) * random_direction(rng, Float64)
         β = absvec(v⃗)
         γ = 1 / √(1 - β^2)
         δt = randn(rng)
-        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ: κ = 1/(γ(1 - v⃗⋅k̂))
+        g = BMS{Float64}(; boost_velocity=v⃗)  # the note's Λ = B(v⃗): κ = 1/(γ(1 - v⃗⋅k̂))
         T_δt = BMS{Float64}(; time_translation=δt)
         scale = max(1.0, γ * abs(δt))
 
-        c = inv(g) * T_δt * g  # the note's Λ⁻¹ ∘ δt ∘ Λ
+        c = g * T_δt * inv(g)  # the note's (Λ, 0)(1, δt)(Λ, 0)⁻¹
 
-        # (1) 4-vector face: the result is the translation by Λ⁻¹δ, computed with
+        # (1) 4-vector face: the result is the translation by Λδ, computed with
         # Quaternionic's 4-vector action, which should equal γ δt (1; v⃗).
-        d′ = inv(Scri.lorentz(g))([δt, 0.0, 0.0, 0.0])
+        d′ = Scri.lorentz(g)([δt, 0.0, 0.0, 0.0])
         @test d′ ≈ γ * δt .* [1.0, vec(v⃗)...] atol = 1e-13 * scale
         expected = BMS{Float64}(; time_translation=d′[1], space_translation=d′[2:4])
         @test c ≈ expected atol = tol(Float64, 3) * scale
@@ -233,7 +234,7 @@ end
     using Quaternionic: Lorentz, components
 
     # Conjugating a supertranslation by a pure rotation rotates the function on the
-    # sphere: (Q,0)∘(1,α)∘(Q,0)⁻¹ = (1, α∘Q⁻¹).  The rotated modes are computed with
+    # sphere: (Q,0)(1,α)(Q,0)⁻¹ = (1, α∘Q⁻¹).  The rotated modes are computed with
     # SphericalFunctions' Wigner-D matrices — an oracle completely independent of the
     # composition machinery.  Everything is exactly band-limited here, so tolerances are
     # eps-scale.
@@ -294,9 +295,10 @@ end
     # far below these tolerances.
     for _ ∈ 1:3
         g = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=3//20)
-        # At the default band limits, `inv` truncates where `compose` does, so an element
-        # composed with its inverse is the identity to roundoff, even with a boost.
-        @test g * inv(g) ≈ one(BMS{Float64}) atol = tol(Float64, 5)
+        # At the default band limits, `inv` truncates where `compose` does, so
+        # `inv(g) * g`, which applies `inv(g)` first, is the identity to roundoff, even with
+        # a boost.
+        @test inv(g) * g ≈ one(BMS{Float64}) atol = tol(Float64, 5)
         g⁻¹ = inv(g; ℓₘₐₓ=12)
         @test Scri.compose(g, g⁻¹; ℓₘₐₓ=12) ≈ one(BMS{Float64}) atol = 1e-7
         @test Scri.compose(g⁻¹, g; ℓₘₐₓ=12) ≈ one(BMS{Float64}) atol = 1e-7
@@ -325,7 +327,7 @@ end
         α = random_α(rng, Float64, 2)
         gΛ = BMS(Λ, zeros(ComplexF64, 1))
         s = BMS{Float64}(; supertranslation=α)
-        c = Scri.compose(Scri.compose(gΛ, s), inv(gΛ); ℓₘₐₓ=10)
+        c = Scri.compose(gΛ, Scri.compose(s, inv(gΛ)); ℓₘₐₓ=10)
 
         @test Scri.is_identity_rotor(c.Λ) ||
             maximum(abs, components(c.Λ - one(c.Λ))) < 1e-14
@@ -337,7 +339,7 @@ end
     end
 
     # Ad is a homomorphism: conjugating by g₂g₁ equals conjugating by g₁ then by g₂.
-    conjugate(gΛ, s; ℓₘₐₓ) = Scri.compose(Scri.compose(gΛ, s), inv(gΛ; ℓₘₐₓ); ℓₘₐₓ)
+    conjugate(gΛ, s; ℓₘₐₓ) = Scri.compose(gΛ, Scri.compose(s, inv(gΛ; ℓₘₐₓ)); ℓₘₐₓ)
     for _ ∈ 1:3
         Λ₁ = random_lorentz(rng, Float64; βmax=1//5)
         Λ₂ = random_lorentz(rng, Float64; βmax=1//5)
@@ -361,7 +363,7 @@ end
     using LinearAlgebra: norm
 
     # The complement of the normal-subgroup statement: conjugating a Lorentz
-    # transformation by a supertranslation, (1,α)(Λ,0)(1,−α) = (Λ, α∘Λ/κ_Λ − α), leaves
+    # transformation by a supertranslation, (1,α)(Λ,0)(1,−α) = (Λ, α − Ad(Λ)(α)), leaves
     # the Lorentz part untouched but generically acquires a supertranslation part — so ℒ
     # is *not* a normal subgroup of BMS.
     rng = Random.Xoshiro(2323)
@@ -377,16 +379,17 @@ end
         # Lorentz part is preserved *exactly* (the ±1 factors short-circuit).
         @test c.Λ == Λ
 
-        # The supertranslation part matches α∘Λ/κ_Λ − α, evaluated from raw geometry.
+        # The supertranslation part matches α − Ad(Λ)(α) = α − α∘Λ⁻¹/κ_{Λ⁻¹}, evaluated
+        # from raw geometry.
         for _ ∈ 1:5
             k̂ = random_direction(rng, Float64)
-            κ, k̂′ = ray_map(Λ, k̂)
-            @test α_value(c.α, k̂) ≈ α_value(α, k̂′) / κ - α_value(α, k̂) atol = 3e-6
+            κ⁻, k̂⁻ = ray_map(inv(Λ), k̂)
+            @test α_value(c.α, k̂) ≈ α_value(α, k̂) - α_value(α, k̂⁻) / κ⁻ atol = 3e-6
         end
     end
 
     # Sharp positive case: constant α = δt conjugating a pure z-boost.  Then
-    # α∘Λ/κ_Λ − α = δt(1/κ_Λ − 1) = δt(γ − 1) + δt γ β k̂ᶻ — an exact ℓ ≤ 1 closed form,
+    # α − Ad(Λ)(α) = δt(1 − 1/κ_{Λ⁻¹}) = −δt(γ − 1) + δt γ β k̂ᶻ — an exact ℓ ≤ 1 closed form,
     # bounded well away from zero, so the conjugate is definitely not in ℒ.
     η = 0.6
     β = tanh(η)
@@ -397,7 +400,7 @@ end
     c = conjugate(s, gB; ℓₘₐₓ=4)
     @test c.Λ == gB.Λ
     expected = Scri.translation_modes(
-        Float64, δt * (γ - 1), QuatVec(0.0, 0.0, -δt * γ * β), 4
+        Float64, -δt * (γ - 1), QuatVec(0.0, 0.0, -δt * γ * β), 4
     )
     @test maximum(abs, c.α - expected) < tol(Float64, 9) * δt * γ
     @test norm(c.α) > δt * (γ - 1)                  # ⇒ c ∉ ℒ
@@ -425,8 +428,8 @@ end
     g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=3//10)
 
     # Boosted composition converges as the working bandwidth grows.
-    ref = Scri.compose(g₂, g₁; ℓₘₐₓ=6, ℓʷ=40).α
-    errs = [norm(Scri.compose(g₂, g₁; ℓₘₐₓ=6, ℓʷ).α - ref) for ℓʷ ∈ (7, 13, 25)]
+    ref = Scri.compose(g₁, g₂; ℓₘₐₓ=6, ℓʷ=40).α
+    errs = [norm(Scri.compose(g₁, g₂; ℓₘₐₓ=6, ℓʷ).α - ref) for ℓʷ ∈ (7, 13, 25)]
     @test errs[1] > 1e-10            # the test is nontrivial: ℓʷ=7 really does alias
     @test errs[2] < errs[1]
     @test errs[3] < errs[2]
@@ -434,13 +437,13 @@ end
 
     # A working bandwidth below the inputs' band limits would alias silently, so it is
     # refused.
-    @test_throws ArgumentError Scri.compose(g₂, g₁; ℓₘₐₓ=1, ℓʷ=1)
+    @test_throws ArgumentError Scri.compose(g₁, g₂; ℓₘₐₓ=1, ℓʷ=1)
 
     # Rotation-only composition is exact already at the minimal working bandwidth.
     h₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
     h₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=0)
     @test norm(
-        Scri.compose(h₂, h₁; ℓₘₐₓ=2, ℓʷ=2).α - Scri.compose(h₂, h₁; ℓₘₐₓ=2, ℓʷ=20).α
+        Scri.compose(h₁, h₂; ℓₘₐₓ=2, ℓʷ=2).α - Scri.compose(h₁, h₂; ℓₘₐₓ=2, ℓʷ=20).α
     ) < 1e-12
 end
 
@@ -493,12 +496,88 @@ end
             boost_velocity=QuatVec{T}(v⃗64), supertranslation=Complex{T}.(α₁64)
         )
         g₂ = Scri.BMS{T}(; frame_rotation=one(Rotor{T}), supertranslation=Complex{T}.(α₂64))
-        h = Scri.compose(g₂, g₁; ℓₘₐₓ=8, ℓʷ=9)
+        h = Scri.compose(g₁, g₂; ℓₘₐₓ=8, ℓʷ=9)
         for _ ∈ 1:5
             k̂ = random_direction(rng, T)
-            κ₁, k̂′ = ray_map(g₁.Λ, k̂)
+            κ₁, k̂′ = ray_map(inv(g₁.Λ), k̂)
             expected = α_value(g₁.α, k̂) + α_value(g₂.α, k̂′) / κ₁
             @test abs(α_value(h.α, k̂) - expected) < 1e-5
+        end
+    end
+end
+
+@testitem "BMS: the stored Λ is the frame rotor Boost(v⃗) * R" tags = [
+    :unit, :fast, :validation
+] setup = [BMSTestSetup] begin
+    import Random
+    using .BMSTestSetup: random_direction, random_rotation
+    using Quaternionic: QuatVec, Lorentz, Boost, components
+    using Scri: boost_velocity, frame_rotation
+
+    # The conventions of the "Frames and Components" page.  The frame rotor
+    # Λ = Boost(v⃗) * R takes the old legs to the new ones, so the new time leg is
+    # Λ(𝐭) = γ(𝐭 + v⃗), with v⃗ in the old frame's components, and `BMS` stores Λ itself.
+    # The other order, R * Boost(v⃗), would put the velocity at R v⃗ R̃.  Frames given in
+    # succession compose as Λ₁Λ₂, in the order of application.
+    pm(a, b) = min(maximum(abs, components(a - b)), maximum(abs, components(a + b)))
+    rng = Random.Xoshiro(1110)
+    𝐭 = [1.0, 0.0, 0.0, 0.0]
+    for ℐ ∈ (-1, +1), _ ∈ 1:5
+        v⃗ = 0.6rand(rng) * random_direction(rng, Float64)
+        R = random_rotation(rng, Float64)
+        γ = 1 / √(1 - sum(abs2, vec(v⃗)))
+        g₁ = BMS{Float64}(; boost_velocity=v⃗, frame_rotation=R, ℐ)
+        @test g₁.Λ == Boost(v⃗) * Lorentz(R)
+        @test g₁.Λ(𝐭) ≈ γ .* [1; vec(v⃗)]
+        @test (Lorentz(R) * Boost(v⃗))(𝐭) ≈ γ .* [1; vec(R(v⃗))]
+
+        g₂ = BMS{Float64}(;
+            boost_velocity=0.6rand(rng) * random_direction(rng, Float64),
+            frame_rotation=random_rotation(rng, Float64),
+            ℐ,
+        )
+        @test pm((g₁ * g₂).Λ, g₁.Λ * g₂.Λ) < 1e-14
+    end
+
+    # The parameters of g₂ are read in the frame that g₁ produces: a boost along 𝐳 after a
+    # rotation by π/2 about 𝐱 is a boost along R₁(𝐳) = -𝐲 in the original frame.
+    R₁ = exp(QuatVec(π / 4, 0.0, 0.0))
+    h = BMS(; frame_rotation=R₁) * BMS(; boost_velocity=QuatVec(0.0, 0.0, 0.3))
+    @test boost_velocity(h) ≈ QuatVec(0.0, -0.3, 0.0) atol = 1e-15
+    @test pm(frame_rotation(h), R₁) < 1e-15
+end
+
+@testitem "BMS: the new origin is at the old (δt, δx⃗), with a boost and a rotation" tags = [
+    :unit, :fast, :validation
+] setup = [BMSTestSetup] begin
+    import Random
+    using .BMSTestSetup: random_direction, random_rotation
+    using Quaternionic: QuatVec, components
+    using LinearAlgebra: dot
+
+    # The translation keywords place the new origin at the event whose old coordinates are
+    # (δt, δx⃗), whatever the boost, the rotation, c_α, and ℐ, because the supertranslation
+    # is applied first.  Light that passes through the new origin has new time t′ = 0 at
+    # every point of ℐ.  At ℐ⁺ its old retarded time in the direction k̂ is δt - δx⃗⋅k̂, and
+    # at ℐ⁻, where k̂ is the direction on the sky from which it arrives, its old advanced
+    # time is δt + δx⃗⋅k̂; that is, δt - ℐ δx⃗⋅k̂ in both cases.  The functor returns the old
+    # coordinates of the point with new coordinates (0, k̂′).
+    rng = Random.Xoshiro(5151)
+    for ℐ ∈ (-1, +1), c_α ∈ (-1, +1), _ ∈ 1:5
+        δt = randn(rng)
+        δx⃗ = QuatVec(randn(rng), randn(rng), randn(rng))
+        g = BMS{Float64}(;
+            time_translation=δt,
+            space_translation=δx⃗,
+            boost_velocity=0.5rand(rng) * random_direction(rng, Float64),
+            frame_rotation=random_rotation(rng, Float64),
+            c_α,
+            ℐ,
+        )
+        for _ ∈ 1:5
+            k̂′ = random_direction(rng, Float64)
+            t, k̂ = g(0.0, k̂′)
+            @test t ≈ δt - ℐ * dot(vec(δx⃗), vec(k̂)) atol = 1e-12
         end
     end
 end

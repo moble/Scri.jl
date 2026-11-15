@@ -338,8 +338,9 @@ new ``x`` axis along the old ``y`` axis, so the event with old coordinates ``(t,
 each field become ``𝔇(R^{-1})\\,f``, which is the frame-rotation law of
 `SphericalFunctions.jl`.  If this function is called twice, the second call's `v⃗` and `R`
 are interpreted *in the frame resulting from the first transformation*, and the result
-agrees with a single call using [`compose`](@ref)`(g₂, g₁)`.  The conventions are set out on
-the page [Frames and Components](@ref frames_and_components).
+agrees with a single call using `g₁ * g₂`, where `g₁` and `g₂` are the [`BMS`](@ref)
+elements built from the two calls' parameters; see [`compose`](@ref).  The conventions are
+set out on the page [Frames and Components](@ref frames_and_components).
 
 The `αᵢₙ` array must be a complex vector, and must be ordered as described above for the
 final dimension of `data`, though it may have a smaller `ℓₘₐₓ`.  (A larger `ℓₘₐₓ` is not
@@ -736,9 +737,9 @@ end
 Apply the BMS element `g` to `data` in place.  This convenience wrapper unpacks the boost
 velocity, frame rotation, and supertranslation from `g` — via [`boost_velocity`](@ref),
 [`frame_rotation`](@ref), and [`supertranslation`](@ref) — and forwards to the main
-[`transform!`](@ref) method.  Because the accessors define `lorentz(g) = inv(Boost(v⃗) *
-Lorentz(R))`, these parts have exactly the meaning the `v⃗` and `R` arguments have in the
-main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
+[`transform!`](@ref) method.  Because `lorentz(g) = Boost(v⃗) * Lorentz(R)`, with `v⃗` and
+`R` the values of those accessors, these parts have exactly the meaning the `v⃗` and `R`
+arguments have in the main method, so `transform!(data, t, g, dc)` reproduces the action of `g` on the data.
 
 The data are given on the null infinity singled out by `dc`'s `ℐ` type parameter, so `g` is
 first re-expressed in that representation — and with the supertranslation sign given by the

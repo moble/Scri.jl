@@ -800,6 +800,117 @@ end
     end
 end
 
+@testitem "transform!: a pure rotation transforms modes by 𝔇(Λ̃)" tags = [:validation, :fast] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    import Random
+
+    # For a pure rotation, the new mode weights are 𝔇(Λ̃) f, where Λ = R is the frame rotor
+    # that the BMS element stores and Λ̃ = R̃ is its reverse: SphericalFunctions' rotation
+    # law applied with Λ̃, as the "Frames and Components" page states.  The test above checks
+    # the pointwise form f′(𝐐) = f(Λ𝐐) = f(R𝐐); this one checks the mode law, at both ℐ and
+    # for spin weights 0, ±1, and ±2.
+    rng = Random.Xoshiro(1111)
+    ℓ = 5
+    N = (ℓ + 1)^2
+    Nᵗ = 5
+    t = collect(LinRange(-2.0, 2.0, Nᵗ))
+    for (ℐ, comps, spins) ∈
+        ((+1, (:ψ₂, :ψ₃, :ψ₄), (0, -1, -2)), (-1, (:ψ₂, :ψ₁, :ψ₀), (0, 1, 2)))
+        dc = Scri.DataComponents(comps...; ℐ)
+        R = randn(rng, Rotor{Float64})
+        Λ = Scri.rotation_part(Scri.lorentz(Scri.BMS{Float64}(; frame_rotation=R)))
+        f = map(spins) do s
+            fₛ = Random.randn(rng, ComplexF64, N)
+            fₛ[1:(s ^ 2)] .= 0
+            fₛ
+        end
+        data = zeros(ComplexF64, N, Nᵗ, 3)
+        for k ∈ 1:3, j ∈ 1:Nᵗ
+            data[:, j, k] .= f[k]
+        end
+        v⃗ = QuatVec(0.0, 0.0, 0.0)
+        data′, _ = Scri.transform!(data, copy(t), v⃗, R, zeros(ComplexF64, 1), dc)
+        for (k, s) ∈ enumerate(spins)
+            valid = (s ^ 2 + 1):N
+            expected = Scri.rotate_modes(f[k], conj(Λ), ℓ)
+            @test maximum(abs, data′[valid, 3, k] .- expected[valid]) < 1e-12
+        end
+    end
+end
+
+@testitem "transform!: v⃗ and R describe the new frame at both ℐ" tags = [:validation] begin
+    using Quaternionic: QuatVec, Rotor, Quaternion, from_spherical_coordinates, 𝐤
+    using SphericalFunctions: sYlm_matrix, leja_rotors
+
+    # The physical meaning of the parameters of `transform!`, checked from the output data.
+    # The rotation `R` turns the old axes into the new ones, so `Rotor(√2, 0, 0, √2)` puts
+    # the new x axis along the old y axis, and the event with old coordinates (0, 1, 0, 0)
+    # has new coordinates (0, 0, -1, 0).  The boost velocity `v⃗` is the velocity of the new
+    # observer, so radiation is redshifted in the direction of motion: an observer moving
+    # with v⃗ = v 𝐳 measures the frequency γ(1 ∓ v)ω for radiation propagating along ±𝐳 (at
+    # ℐ⁺), and γ(1 ± v)ω for radiation arriving from ±𝐳 (at ℐ⁻, whose labels are directions
+    # on the sky).
+    for (ℐ, comps) ∈ ((+1, (:ψ₂, :ψ₃, :ψ₄)), (-1, (:ψ₂, :ψ₁, :ψ₀)))
+        dc = Scri.DataComponents(comps...; ℐ)
+
+        # The axes.  A spin-0 field equal to the old component 𝐞ᵢ⋅k̂ of the direction,
+        # transformed and read at the new axis directions 𝐞′ⱼ, gives the matrix 𝐞ᵢ⋅𝐞′ⱼ.
+        ℓ = 4
+        N = (ℓ + 1)^2
+        Rs = leja_rotors(0, ℓ, Float64)
+        Y = sYlm_matrix(Rs, ℓ, 0)
+        t = collect(LinRange(-2.0, 2.0, 5))
+        axes′ = [
+            from_spherical_coordinates(π / 2, 0.0),
+            from_spherical_coordinates(π / 2, π / 2),
+            one(Rotor{Float64}),
+        ]
+        M = zeros(3, 3)
+        for i ∈ 1:3
+            f = [(Quaternion(Q) * Quaternion(𝐤) * conj(Quaternion(Q)))[i + 1] for Q ∈ Rs]
+            data = zeros(ComplexF64, N, length(t), 3)
+            for j ∈ eachindex(t)
+                data[:, j, 1] .= Y \ ComplexF64.(f)
+            end
+            R = Rotor(√2, 0, 0, √2)
+            data′, _ = Scri.transform!(
+                data, copy(t), QuatVec(0.0, 0.0, 0.0), R, zeros(ComplexF64, 1), dc
+            )
+            for j ∈ 1:3
+                M[i, j] = real((sYlm_matrix([axes′[j]], ℓ, 0) * data′[:, 3, 1])[1])
+            end
+        end
+        @test M ≈ [0 -1 0; 1 0 0; 0 0 1] atol = 1e-12
+
+        # The Doppler shift.  Radiation of frequency ω = 1, uniform on the sphere, is read at
+        # the new directions ±𝐳, and its frequency is measured from the phase.
+        ℓ = 12
+        N = (ℓ + 1)^2
+        v = 0.1
+        γ = 1 / √(1 - v^2)
+        t = collect(LinRange(0.0, 12.0, 1201))
+        data = zeros(ComplexF64, N, length(t), 3)
+        data[1, :, 1] .= √(4π) .* cis.(-t)
+        data′, t′ = Scri.transform!(
+            data,
+            copy(t),
+            QuatVec(0.0, 0.0, v),
+            one(Rotor{Float64}),
+            zeros(ComplexF64, 1),
+            dc,
+        )
+        for (θ, s) ∈ ((0.0, +1), (Float64(π), -1))
+            ψ = vec(
+                sYlm_matrix([from_spherical_coordinates(θ, 0.0)], ℓ, 0) * data′[:, :, 1]
+            )
+            phase = cumsum([0.0; angle.(ψ[2:end] ./ ψ[1:(end - 1)])])
+            j₁, j₂ = length(t′) ÷ 3, 2 * length(t′) ÷ 3
+            ω′ = -(phase[j₂] - phase[j₁]) / (t′[j₂] - t′[j₁])
+            @test ω′ ≈ γ * (1 - ℐ * s * v) rtol = 1e-6
+        end
+    end
+end
+
 @testitem "transform!: pure time translation is exact at the shifted knots" tags = [
     :validation, :fast
 ] begin
@@ -943,15 +1054,22 @@ end
     using Quaternionic: QuatVec, Rotor, randn
     import Random
 
-    # Applying g₁ then g₂ must agree with applying h = g₂∘g₁ once.  The two pipelines
+    # Applying g₁ then g₂ must agree with applying h = g₁ * g₂ once.  The two pipelines
     # construct different default time grids, so we force the sequential pipeline's final
     # step onto the composed run's grid via the t′ keyword, making the outputs directly
-    # comparable.  Tolerances are set by the spline floor and band-limit truncation.
+    # comparable.
+    #
+    # Two truncations limit the agreement.  The boosts spread the ℓ = 2 data into every ℓ,
+    # and the sequential pipeline also truncates its intermediate result at ℓ, losing what
+    # the second boost would mix back down; that error falls by nearly a factor of ten with
+    # each unit of ℓ.  The cubic spline in time adds an error of fourth order in the time
+    # step.  With ℓ = 14 and 3201 times, both are near 5×10⁻¹³; ℓ = 8 and 201 times gave
+    # 6×10⁻⁷.
     rng = Random.Xoshiro(6666)
     ℓ_data = 2
-    ℓ = 8
+    ℓ = 14
     N = (ℓ + 1)^2
-    Nᵗ = 201
+    Nᵗ = 3201
     T = 500.0
     t = collect(LinRange(-T, T, Nᵗ))
     f(m, k, t) = exp(-(t / 300)^2) * (1 + m / 10 + k / 7) * cis(t / 150 + m)
@@ -962,33 +1080,41 @@ end
         data[ℓ_data ^ 2 + i, j, k] = f(m, k, t[j])
     end
 
+    # The boosts are of order 0.1, so that the order of composition matters: the reversed
+    # composite misses by order 1.
     g₁ = Scri.BMS{Float64}(;
-        boost_velocity=QuatVec(1e-4, 0.0, -2e-4),
+        boost_velocity=QuatVec(0.06, 0.0, -0.1),
         frame_rotation=randn(rng, Rotor{Float64}),
         supertranslation=Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1),
     )
     g₂ = Scri.BMS{Float64}(;
-        boost_velocity=QuatVec(0.0, 2e-4, 1e-4),
+        boost_velocity=QuatVec(0.0, 0.1, 0.05),
         frame_rotation=randn(rng, Rotor{Float64}),
         supertranslation=Scri.impose_reality(1e-2 * Random.randn(rng, ComplexF64, 9), 2, 1),
     )
-    h = Scri.compose(g₂, g₁; ℓₘₐₓ=6, ℓʷ=16)
+    # The composed supertranslation keeps every mode that the data have, the most that
+    # `transform!` accepts.
+    h = Scri.compose(g₁, g₂; ℓₘₐₓ=ℓ)
 
-    # The two pipelines have slightly different valid t′ ranges, so shrink the composed
-    # run's default grid a little and force BOTH runs onto that common grid.
+    # The two pipelines have different valid t′ ranges, the sequential one narrower, so
+    # shrink the composed run's default grid and force BOTH runs onto that common grid.
     _, th_default = Scri.transform!(copy(data), copy(t), h, dc)
     tc = (th_default[begin] + th_default[end]) / 2
-    t_common = tc .+ 0.98 .* (th_default .- tc)
+    t_common = tc .+ 0.7 .* (th_default .- tc)
 
     dh, th = Scri.transform!(copy(data), copy(t), h, dc; t′=copy(t_common))
 
     d1, t1 = Scri.transform!(copy(data), copy(t), g₁, dc)
     d2, t2 = Scri.transform!(d1, t1, g₂, dc; t′=copy(t_common))
     @test t2 == th == t_common
-    # As in the round-trip test, the floor is the band-limit truncation of the composed
-    # element's supertranslation sector, plus the doubled spline/regrid floor of the
-    # sequential pipeline.
-    @test maximum(abs, d2 .- dh) / maximum(abs, data) < 2e-5
+    # Modes with ℓ < 2 do not exist for these fields of spin weight −2, so they are omitted.
+    valid = 5:N
+    @test maximum(abs, d2[valid, :, :] .- dh[valid, :, :]) / maximum(abs, data) < 2e-12
+    # The composite in the other order, as if both elements were given in the original
+    # frame, is a different transformation.
+    hʳ = Scri.compose(g₂, g₁; ℓₘₐₓ=ℓ)
+    dʳ, _ = Scri.transform!(copy(data), copy(t), hʳ, dc; t′=copy(t_common))
+    @test maximum(abs, d2[valid, :, :] .- dʳ[valid, :, :]) / maximum(abs, data) > 0.1
 end
 
 @testitem "transform!: supplied t′ grid reproduces the default and validates its input" tags = [

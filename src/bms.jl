@@ -1,20 +1,23 @@
 # BMS group elements: a supertranslation followed by a Lorentz transformation.
 #
-# Conventions: see docs/src/30-BMS/04-bms_group.md
+# Conventions: see docs/src/20-Conventions/06-frames.md and docs/src/30-BMS/04-bms_group.md
 
 @doc raw"""
     BMS{T<:Real,A,I}
 
 An element of the BMS group: a supertranslation `α` followed by a (proper orthochronous)
-Lorentz transformation `Λ`.  We write elements as pairs
+Lorentz transformation with frame rotor `Λ`.  We write elements as pairs
 
 ```math
-(Λ, α) = (Λ, 0) ∘ (1, α),
+(Λ, α) = (1, α)\,(Λ, 0),
 ```
 
-where `Λ ∈ Spin⁺(3,1)` is represented by a [`Lorentz`](@extref
-:jl:type:`Quaternionic.Lorentz`) rotor and the supertranslation is a real-valued function on
-the sphere, stored as its spin-weight-0 spherical-harmonic mode weights.
+where a product is written in the order in which its factors are applied, `Λ ∈ Spin⁺(3,1)`
+is represented by a [`Lorentz`](@extref :jl:type:`Quaternionic.Lorentz`) rotor, and the
+supertranslation is a real-valued function on the sphere, stored as its spin-weight-0
+spherical-harmonic mode weights.  The second factor is read in the frame that the first
+produces, so `Λ` acts about the new origin set by the supertranslation rather than the
+original one; in the time law `t′ = κ(t - A α)` below, `κ` multiplies the shifted time.
 
 The second type parameter `A ∈ {+1, -1}` is the **supertranslation-sign convention**: the
 element acts as `t′ = κ(t - A α)`.  This says how the element's *own* stored `α` is read as
@@ -42,13 +45,17 @@ See [the BMS group documentation](@ref bms_group) for details about the group st
 action, and conventions.
 
 The element acts (passively) on a point `(t, 𝐤)` of `ℐ` as `t′ = κ(𝐤)(t - c_α α(𝐤))`,
-`𝐤′ = Λ𝐤`; see the action functor `(g::BMS)(t, k̂)`, [`conformal_factor`](@ref), and
-[the group law](@ref bms_group).
+with the new direction read from `Λ̃𝐤Λ`.  The functor `g(t′, k̂′)` maps new coordinates back
+to old ones, and [`new_coordinates`](@ref Scri.new_coordinates)`(g, t, k̂)` maps old ones to
+new; see also [`conformal_factor`](@ref) and [the group law](@ref bms_group).
 
 ## Storage
 
-- `Λ::Lorentz{T}`: the Lorentz rotor.  Note that `±Λ` represent the same transformation
-  (the double cover); `==`, `isapprox`, and `hash` account for this.
+- `Λ::Lorentz{T}`: the frame rotor ``Λ = B(v⃗)\,R``, which takes the old legs to the new
+  ones, ``𝐞'_μ = Λ\,𝐞_μ\,Λ̃``.  Its reverse ``Λ̃`` gives the new components of a fixed
+  vector, ``V^{μ'} = (Λ̃\,𝐕\,Λ)^μ``, and so the new coordinates of a fixed event; see
+  [Frames and Components](@ref frames_and_components).  Note that `±Λ` represent the same
+  transformation (the double cover); `==`, `isapprox`, and `hash` account for this.
 - `α::Vector{Complex{T}}`: mode weights of the supertranslation, of length `(ℓₘₐₓ+1)²`,
   ordered by increasing `ℓ ∈ 0:ℓₘₐₓ`, then increasing `m ∈ -ℓ:ℓ` — that is, the mode
   `(ℓ, m)` is stored at index `ℓ² + ℓ + m + 1`.  The constructor enforces the reality
@@ -58,18 +65,14 @@ The element acts (passively) on a point `(t, 𝐤)` of `ℐ` as `t′ = κ(𝐤)
 ## Constructors
 
 ```julia
-BMS(Λ, α)             # Lorentz rotor (or plain Rotor for a pure rotation) and modes
+BMS(Λ, α)             # frame rotor (a Lorentz, or a Rotor for a pure rotation) and modes
 BMS{T}(; kwargs...)   # assemble from parts; see below
 BMS(g; c_α, ℐ)        # convert an element between representations; see its own docstring
 ```
 
-!!! warning "A positional rotor is the inverse of the frame rotation"
-    The positional form stores its Lorentz part exactly as given, so in `BMS(R, α)` the
-    rotor `R` is the map applied to the labels of null rays, `k̂ ↦ R k̂ R̃`.  That is the
-    inverse of the frame rotation: `frame_rotation(BMS(R, α)) == conj(R)`, whereas
-    `BMS{T}(; frame_rotation=R)` has frame rotation `R`, the meaning that `R` has in
-    [`transform!`](@ref).  Use the keyword form when `R` is meant as a rotation of the
-    frame.
+The positional form stores its Lorentz part exactly as given, as the frame rotor, so
+`BMS(R, α)` and `BMS{T}(; frame_rotation=R, supertranslation=α)` have the same Lorentz part,
+with the meaning that `R` has in [`transform!`](@ref).
 
 The keyword constructor accepts any combination of
 
@@ -88,20 +91,26 @@ input convertible to those is accepted — real or lower-precision mode vectors,
 3-vectors for velocities and translations, and so on; the float type `T` is promoted to
 accommodate all the parts.  A part of any other kind throws an `ArgumentError`.
 
-The Lorentz part is assembled as the *passive* version of "rotate, then boost": `Λ =
-inv(Boost(v⃗) * Lorentz(R))`, so that `frame_rotation` and `boost_velocity` have exactly the
-same meaning as the `R` and `v⃗` arguments of [`transform!`](@ref).  In particular `κ(𝐤) =
-1/(γ(1 - ℐ v⃗⋅k̂))` for a pure boost, where `ℐ` is the element's representation `I`.  The
-translation parts contribute `α(k̂) = c_α(δt - ℐ δx⃗⋅k̂)` in the labeling selected by `ℐ` —
-i.e., the supertranslation of the spacetime translation of the origin by the 4-vector
-`(δt, δx⃗)`, which is the same physical translation in every convention.  If
-`supertranslation` is also supplied, any `time_translation` and/or `space_translation`
-content is *added* to it to produce the total supertranslation.
+The keyword constructor stores the frame rotor `Λ = Boost(v⃗) * Lorentz(R)`, which rotates
+the legs by `R` and then boosts them with velocity `v⃗`, both given in the old frame's
+components, so that `frame_rotation` and `boost_velocity` return exactly the `R` and `v⃗`
+arguments of [`transform!`](@ref).  In particular `κ(𝐤) = 1/(γ(1 - ℐ v⃗⋅k̂))` for a pure
+boost, where `ℐ` is the element's representation `I`.  The translation parts contribute
+`α(k̂) = c_α(δt - ℐ δx⃗⋅k̂)` in the labeling selected by `ℐ` — i.e., the supertranslation of
+the spacetime translation of the origin by the 4-vector `(δt, δx⃗)`, which is the same
+physical translation in every convention.  Because the supertranslation is applied first,
+the new origin is the event whose old coordinates are `(δt, δx⃗)`, whatever `v⃗` and `R`
+are.  If `supertranslation` is also supplied, any `time_translation` and/or
+`space_translation` content is *added* to it to produce the total supertranslation.
 
 ## Operations
 
-Group composition via `*` (or `∘`, or [`compose`](@ref) with explicit band limits), inverse
-via `inv`, identity via `one`.  Apply to a null ray with `g(t, k̂)`.  Accessors:
+Group composition via `*` (or `∘`, or [`compose`](@ref) with explicit band limits) is
+written in the order of application: `g₁ * g₂` applies `g₁` first, and then `g₂`, whose
+parameters are read in the frame that `g₁` produces, so that `lorentz(g₁ * g₂) ==
+lorentz(g₁) * lorentz(g₂)`.  The inverse is `inv`, and the identity `one`.  Applied to a
+point of null infinity, `g(t′, k̂′)` returns the old coordinates of the point whose new
+coordinates are `(t′, k̂′)`, so that `(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`.  Accessors:
 [`ℓₘₐₓ`](@ref), [`lorentz`](@ref), [`supertranslation`](@ref), [`frame_rotation`](@ref),
 [`boost_velocity`](@ref), [`translation`](@ref), [`time_translation`](@ref),
 [`space_translation`](@ref), [`proper_supertranslation`](@ref).
@@ -278,17 +287,18 @@ function BMS{T}(;
             ArgumentError("The boost speed |v⃗| = $(absvec(v⃗)) must be less than 1 (c = 1)")
         )
     end
-    # Passive version of "rotate by R, then boost by v⃗" — the same meaning these
-    # parameters have in `transform!`.  (Rotor products renormalize, perturbing the last
-    # ulps, so we skip the product when either factor is missing.)
+    # The frame rotor Λ = Boost(v⃗) * R: the legs are rotated by R and then boosted with
+    # velocity v⃗, the meaning these parameters have in `transform!`.  (Rotor products
+    # renormalize, perturbing the last ulps, so we skip the product when either factor is
+    # missing.)
     Λ = if isnothing(frame_rotation) && isnothing(boost_velocity)
         one(Lorentz{T})
     elseif isnothing(frame_rotation)
-        inv(Boost(v⃗))
+        Boost(v⃗)
     elseif isnothing(boost_velocity)
-        inv(Lorentz(R))
+        Lorentz(R)
     else
-        inv(Boost(v⃗) * Lorentz(R))
+        Boost(v⃗) * Lorentz(R)
     end
     δt = isnothing(time_translation) ? zero(T) : T(time_translation)
     δx⃗ = as_quatvec(T, space_translation)
@@ -381,7 +391,10 @@ See [`BMS`](@ref), including its conversion constructor `BMS(g; c_α, ℐ)`.
 """
     lorentz(g::BMS)
 
-The Lorentz part `Λ` of `g = (Λ, α)`.
+The frame rotor `Λ` of `g = (Λ, α)`, which is `Boost(v⃗) * Lorentz(R)` with `v⃗ =`
+[`boost_velocity`](@ref)`(g)` and `R =` [`frame_rotation`](@ref)`(g)`.  It takes the old legs
+to the new ones, ``𝐞'_μ = Λ\\,𝐞_μ\\,Λ̃``; see [Frames and Components](@ref
+frames_and_components).
 """
 lorentz(g::BMS) = g.Λ
 
@@ -396,20 +409,21 @@ supertranslation(g::BMS) = g.α
 """
     frame_rotation(g::BMS)
 
-The rotation `R` such that the Lorentz part of `g` represents the (passive) frame change
-"rotate by `R`, then boost by [`boost_velocity`](@ref)`(g)`" — that is,
-`lorentz(g) == inv(Boost(v⃗) * Lorentz(R))`, matching the meaning of the `R` argument of
-[`transform!`](@ref).
+The rotation `R` of the change of frame that `g` represents: the legs are rotated by `R`
+and then boosted with velocity `v⃗ =` [`boost_velocity`](@ref)`(g)`, both given in the old
+frame's components, so that the frame rotor [`lorentz`](@ref)`(g)` is `Boost(v⃗) *
+Lorentz(R)`, up to sign.  This is the meaning of the `R` argument of [`transform!`](@ref).
 """
-frame_rotation(g::BMS) = last(Quaternionic.vR(inv(g.Λ)))
+frame_rotation(g::BMS) = last(Quaternionic.vR(g.Λ))
 
 """
     boost_velocity(g::BMS)
 
-The boost velocity `v⃗` of the frame change represented by the Lorentz part of `g`; see
-[`frame_rotation`](@ref).
+The velocity `v⃗` of the new observer relative to the old one, in the old frame's
+components, so that the new time leg is ``Λ\\,𝐭\\,Λ̃ = γ(𝐭 + v⃗)``.  This is the meaning of
+the `v⃗` argument of [`transform!`](@ref); see [`frame_rotation`](@ref).
 """
-boost_velocity(g::BMS) = first(Quaternionic.vR(inv(g.Λ)))
+boost_velocity(g::BMS) = first(Quaternionic.vR(g.Λ))
 
 @doc raw"""
     translation(g::BMS) -> (δt, δx⃗)
@@ -613,13 +627,14 @@ end
     ### SphericalFunctions primitives, NOT from the functions under test.
     ###
 
-    # κ and the aberrated direction, straight from the 4-vector action on the section
-    # 𝐤 = (1, ℐ k̂); ℐ = +1 (ℐ⁺) or -1 (ℐ⁻).  The trailing ℐ on the spatial part returns
-    # the direction in the same k̂ labeling.
-    function ray_map(Λ::Lorentz{T1}, k̂::QuatVec{T2}; ℐ=1) where {T1,T2}
+    # κ and the new label of a ray under a change of frame with frame rotor Λ, straight from
+    # the active 4-vector action of its reverse Λ̃ on the section 𝐤 = (1, ℐ k̂), since the new
+    # components are those of Λ̃𝐤Λ; ℐ = +1 (ℐ⁺) or -1 (ℐ⁻).  The trailing ℐ on the spatial
+    # part returns the direction in the same k̂ labeling.
+    function ray_map(Λ̃::Lorentz{T1}, k̂::QuatVec{T2}; ℐ=1) where {T1,T2}
         T = promote_type(T1, T2)
         nˣ, nʸ, nᶻ = vec(k̂)
-        k′ = Λ(T[1, ℐ * nˣ, ℐ * nʸ, ℐ * nᶻ])
+        k′ = Λ̃(T[1, ℐ * nˣ, ℐ * nʸ, ℐ * nᶻ])
         return (1 / k′[1], QuatVec(ℐ * k′[2], ℐ * k′[3], ℐ * k′[4]) / k′[1])
     end
 
@@ -635,9 +650,11 @@ end
     end
     α_value(α, k̂::QuatVec) = α_eval(α, [rotor_pointing(k̂)])[1]
 
-    # Reference action of (Λ, α) on a null ray, from raw geometry only.
+    # Reference action of the element with frame rotor Λ and supertranslation α on a null
+    # ray, from raw geometry only: the new coordinates of the point with old coordinates
+    # (t, k̂).  The new components of the ray are those of Λ̃𝐤Λ, the raw action of Λ⁻¹.
     function act_ref(Λ, α, t, k̂; c_α=1, ℐ=1)
-        κ, k̂′ = ray_map(Λ, k̂; ℐ)
+        κ, k̂′ = ray_map(inv(Λ), k̂; ℐ)
         return (κ * (t - c_α * α_value(α, k̂)), k̂′)
     end
 
@@ -766,18 +783,18 @@ end
         # Identity when no parts are given.
         @test isone(BMS{T}())
 
-        # Pure rotation: Λ = inv(Lorentz(R)) = Lorentz(conj(R)).
+        # Pure rotation: the frame rotor is Λ = Lorentz(R).
         g = BMS{T}(; frame_rotation=R)
-        @test g.Λ == Lorentz(conj(R))
+        @test g.Λ == Lorentz(R)
         @test all(iszero, g.α)
 
-        # Pure boost: Λ = inv(Boost(v⃗)) = Boost(-v⃗).
+        # Pure boost: the frame rotor is Λ = Boost(v⃗).
         g = BMS{T}(; boost_velocity=v⃗)
-        @test g.Λ == Boost(-v⃗)
+        @test g.Λ == Boost(v⃗)
 
-        # Combined: passive version of rotate-then-boost.
+        # Combined: the legs are rotated by R and then boosted with velocity v⃗.
         g = BMS{T}(; frame_rotation=R, boost_velocity=v⃗)
-        @test g.Λ == inv(Boost(v⃗) * Lorentz(R))
+        @test g.Λ == Boost(v⃗) * Lorentz(R)
 
         # Round-trip through the accessors.
         v⃗′ = boost_velocity(g)
@@ -872,7 +889,7 @@ end
     import Random
     using .BMSTestSetup: random_direction
     using Quaternionic: QuatVec, components
-    using Scri: translation
+    using Scri: translation, new_coordinates
 
     # The keywords `time_translation = δt` and `space_translation = δx⃗` move the origin to
     # the event `(δt, δx⃗)` at either piece of null infinity and with either sign `c_α`.  The
@@ -892,8 +909,12 @@ end
                 k̂ = random_direction(rng, BigFloat)
                 X⃗′ = r * k̂ - δx⃗
                 t′ₒ = (t + ℐ * r - δt) - ℐ * sqrt(sum(abs2, components(X⃗′)))
-                t′, _ = g(t, k̂)
+                t′, k̂′ = new_coordinates(g, t, k̂)
                 @test abs(t′ - t′ₒ) < 1e-30
+                # The functor maps the new coordinates back to the old ones.
+                tₒ, k̂ₒ = g(t′ₒ, k̂′)
+                @test abs(tₒ - t) < 1e-30
+                @test maximum(abs, components(k̂ₒ - k̂)) < 1e-60
             end
 
             # The accessors return the physical translation, whatever the representation.
@@ -921,28 +942,28 @@ end
 @doc raw"""
     transform_ray(Λ, k̂; ℐ=+1) -> (κ, k̂′)
 
-Map the null ray `𝐤 = (1, ℐ k̂)` through the Lorentz transformation `Λ`, returning the
-conformal factor and the new direction:
+For the frame rotor `Λ` of a change of frame, return the conformal factor and the new label
+of the null ray `𝐤 = (1, ℐ k̂)`.  The new components of the ray are those of ``Λ̃𝐤Λ``, so
 
 ```math
-κ = \frac{k⁰}{(Λk)⁰},
+κ = \frac{k⁰}{(Λ̃𝐤Λ)⁰},
 \qquad
-k̂' = ℐ\,\frac{\overrightarrow{Λk}}{(Λk)⁰}.
+k̂' = ℐ\,\frac{\overrightarrow{Λ̃𝐤Λ}}{(Λ̃𝐤Λ)⁰}.
 ```
 
 The null-infinity sign `ℐ = ±1` selects the section `𝐤 = (1, ℐ k̂)` — outgoing
 (future-cone) labeling at ``ℐ⁺`` (`ℐ = +1`) or the antipodal past-light-cone labeling at
 ``ℐ⁻`` (`ℐ = -1`); see [the conventions page](@ref scri_pm_conventions).  For the pure
-boost `Λ = Boost(-v⃗)`, which is the Lorentz part of the [`BMS`](@ref) element with boost
-velocity `v⃗`, this gives `κ = 1/(γ(1 - ℐ v⃗⋅k̂))`; `Λ = Boost(v⃗)` gives
-`κ = 1/(γ(1 + ℐ v⃗⋅k̂))` instead.  Quaternionic's `Boost(v⃗)` is the active boost, which
-takes the time axis `𝐭` to `γ(𝐭 + v⃗)`, the worldline of an observer moving with velocity
-`v⃗`; its inverse `Boost(-v⃗)` gives a vector's components in that observer's frame, which
-is the passive transformation a `BMS` element stores.  The trailing `ℐ` on `k̂′` undoes
-the section sign so that the returned direction is in the same `k̂` labeling (rotations map
-`k̂ ↦ Rk̂` regardless of `ℐ`).  This map inverts the direction map of [`aberration`](@ref)
-called with `Λℐ = Boost(ℐ * v⃗) * R`: the frame rotor at ``ℐ⁺`` and its parity conjugate at
-``ℐ⁻``.
+boost `Λ = Boost(v⃗)`, the frame rotor of the [`BMS`](@ref) element with boost velocity `v⃗`,
+this gives `κ = 1/(γ(1 - ℐ v⃗⋅k̂))`; `Λ = Boost(-v⃗)` gives `κ = 1/(γ(1 + ℐ v⃗⋅k̂))`
+instead.  Quaternionic's `Boost(v⃗)` is the active boost, which takes the time axis `𝐭` to
+`γ(𝐭 + v⃗)`, the worldline of an observer moving with velocity `v⃗`, so `Boost(v⃗)` is the
+frame rotor of that observer's frame, and its reverse `Boost(-v⃗)` gives a vector's
+components in that frame.  The trailing `ℐ` on `k̂′` undoes the section sign so that the
+returned direction is in the same `k̂` labeling (a pure rotation `R` gives `k̂′ = R̃k̂R`,
+regardless of `ℐ`).  This map inverts the direction map of [`aberration`](@ref) called with
+`Λℐ = Boost(ℐ * v⃗) * R`: the frame rotor `Λ` at ``ℐ⁺`` and its parity conjugate
+`ℂconj(Λ)` at ``ℐ⁻``.
 
 The group code (the action, [`compose`](@ref), and [`conformal_factor`](@ref)) computes the
 conformal factor only here.  The transformation of data computes ``1/κ = γ(1 - ℐ v⃗⋅k̂)``
@@ -952,7 +973,7 @@ be a unit vector.
 function transform_ray(Λ::Lorentz{T1}, k̂::QuatVec{T2}; ℐ::Int=1) where {T1<:Real,T2<:Real}
     T = promote_type(T1, T2)
     nˣ, nʸ, nᶻ = vec(k̂)
-    k′ = Λ(T[1, ℐ * nˣ, ℐ * nʸ, ℐ * nᶻ])
+    k′ = inv(Λ)(T[1, ℐ * nˣ, ℐ * nʸ, ℐ * nᶻ])  # the new components, those of Λ̃𝐤Λ
     κ = inv(k′[1])
     return (κ, QuatVec{T}(ℐ * k′[2] * κ, ℐ * k′[3] * κ, ℐ * k′[4] * κ))
 end
@@ -961,9 +982,9 @@ end
     conformal_factor(Λ, k̂; ℐ=+1)
     conformal_factor(g::BMS, k̂)
 
-The conformal factor `κ(𝐤) = k⁰/(Λk)⁰` of the Lorentz transformation at the null ray
-`𝐤 = (1, ℐ k̂)`; see [`transform_ray`](@ref).  For a raw `Lorentz` rotor — which is
-representation-neutral — the null-infinity sign `ℐ` is supplied per call (default `+1`
+The conformal factor `κ(𝐤) = k⁰/(Λ̃𝐤Λ)⁰` of the change of frame with frame rotor `Λ`, at
+the null ray `𝐤 = (1, ℐ k̂)`; see [`transform_ray`](@ref).  For a frame rotor given directly
+— which is representation-neutral — the null-infinity sign `ℐ` is supplied per call (default `+1`
 for ``ℐ⁺``); for a [`BMS`](@ref) element it is the element's own `I`, so `k̂` is read in
 the element's labeling.  Use the conversion constructor `BMS(g; ℐ=…)` to realize the
 element on the other ``ℐ``.
@@ -1001,23 +1022,48 @@ function supertranslation_values(g::BMS{T}, Rs::AbstractVector{<:Rotor}) where {
 end
 
 @doc raw"""
-    (g::BMS)(t, k̂) -> (t′, k̂′)
+    (g::BMS)(t′, k̂′) -> (t, k̂)
 
-Act with `g = (Λ, α)` on the point of `ℐ` labeled by time `t` and (unit) direction `k̂`:
+Return the old coordinates of the point of `ℐ` whose new coordinates under `g = (Λ, α)` are
+the time `t′` and the (unit) direction `k̂′`.  The new components of a fixed ray are those of
+``Λ̃\,𝐤\,Λ``, so the old ray is ``𝐤 ∝ Λ\,𝐤'\,Λ̃``, and inverting the time law
+``t' = κ(𝐤)\,\left(t - c_α\,α(𝐤)\right)`` gives
 
 ```math
-t' = κ(𝐤)\,\left(t - c_α\,α(𝐤)\right),
+t = \frac{t'}{κ(𝐤)} + c_α\,α(𝐤),
 \qquad
-𝐤' = Λ𝐤,
+𝐤 ∝ Λ\,𝐤'\,Λ̃,
 ```
 
-with `κ` as in [`transform_ray`](@ref).  Both conventions are the element's own type
-parameters, fixed at construction: the supertranslation sign `c_α` says how `α` enters the
-time shift, and the null-infinity representation `ℐ` says which ``ℐ`` — and which
-labeling of it — the coordinates `(t, k̂)` refer to.  To act on the other ``ℐ``, convert
-the element first with the conversion constructor `BMS(g; ℐ=…)`.
+with `κ` as in [`transform_ray`](@ref).  This is the map that [`transform!`](@ref) evaluates
+at every new pixel and time, and it composes like a function:
+`(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`, which is why `∘` is a synonym for `*`.  The other
+direction is [`new_coordinates`](@ref Scri.new_coordinates)`(g, t, k̂)`, which is exact;
+`inv(g)(t, k̂)` agrees with it only up to the band limit of `inv`, which truncates the
+supertranslation of a boosted element.
+
+Both conventions are the element's own type parameters, fixed at construction: the
+supertranslation sign `c_α` says how `α` enters the time shift, and the null-infinity
+representation `ℐ` says which ``ℐ`` — and which labeling of it — the coordinates refer to.
+To act on the other ``ℐ``, convert the element first with the conversion constructor
+`BMS(g; ℐ=…)`.
 """
-function (g::BMS{T,A,I})(t::Real, k̂::QuatVec) where {T<:Real,A,I}
+function (g::BMS{T,A,I})(t′::Real, k̂′::QuatVec) where {T<:Real,A,I}
+    # transform_ray of the reverse rotor gives the old label k̂ and κ̄ = 1/κ(𝐤).
+    κ̄, k̂ = transform_ray(inv(g.Λ), k̂′; ℐ=I)
+    αₙ = supertranslation_values(g, [rotor_from_direction(k̂)])[1]
+    return (κ̄ * t′ + A * αₙ, k̂)
+end
+
+"""
+    new_coordinates(g::BMS, t, k̂) -> (t′, k̂′)
+
+Return the new coordinates under `g` of the point of `ℐ` whose old coordinates are the time
+`t` and the (unit) direction `k̂`: ``t' = κ(𝐤)(t - c_α α(𝐤))``, with the new label read from
+``Λ̃𝐤Λ``.  This is the exact inverse of the functor `g(t′, k̂′)`; `inv(g)(t, k̂)` agrees with
+it only up to the band limit of `inv`.  This function is not exported.
+"""
+function new_coordinates(g::BMS{T,A,I}, t::Real, k̂::QuatVec) where {T<:Real,A,I}
     κ, k̂′ = transform_ray(g.Λ, k̂; ℐ=I)
     αₙ = supertranslation_values(g, [rotor_from_direction(k̂)])[1]
     return (κ * (t - A * αₙ), k̂′)
@@ -1046,15 +1092,16 @@ end
             Λ = random_lorentz(rng, T; βmax=9//10)
             @test conformal_factor(Λ, random_direction(rng, T)) > 0
         end
-        # Boost along +z: (Λk)⁰ = e^{±η} at k̂ = ±ẑ, so κ = e^{∓η}.
+        # The frame rotor of a boost along +z: (Λ̃𝐤Λ)⁰ = e^{∓η} at k̂ = ±ẑ, so κ = e^{±η}.
+        # The new observer moves along +z, so radiation propagating along +z is redshifted.
         η = T(7//10)
         B = Boost(η, QuatVec{T}(0, 0, 1))
-        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
-        @test abs(conformal_factor(B, QuatVec{T}(0, 0, -1)) - exp(η)) < 20eps(T)
-        # And against the hand-rolled Doppler form 1/(γ(1 ∓ β)) for the active boost.
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - exp(η)) < 20eps(T)
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, -1)) - exp(-η)) < 20eps(T)
+        # And against the Doppler form κ = 1/(γ(1 - v⃗⋅k̂)) for the observer's velocity v⃗.
         β = tanh(η)
         γ = 1 / √(1 - β^2)
-        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - 1 / (γ * (1 + β))) < 20eps(T)
+        @test abs(conformal_factor(B, QuatVec{T}(0, 0, 1)) - 1 / (γ * (1 - β))) < 20eps(T)
     end
 end
 
@@ -1065,7 +1112,7 @@ end
     using .BMSTestSetup:
         FloatTypes, random_direction, random_rotation, random_bms, act_ref, tol
     using Quaternionic: QuatVec, Lorentz, Boost, components, 𝐤
-    using Scri: conformal_factor, transform_ray, aberration, ℐ
+    using Scri: conformal_factor, transform_ray, aberration, ℐ, new_coordinates
 
     # ℐ is stored on the element as its third type parameter, defaulting to +1 (ℐ⁺); an
     # ℐ⁻-represented element is constructed with the `ℐ` keyword.
@@ -1073,17 +1120,17 @@ end
     @test BMS(one(Lorentz{Float64}), [1.0im]) isa BMS{Float64,1,1}
     @test ℐ(BMS(one(Lorentz{Float64}), [1.0im]; ℐ=-1)) == -1
 
-    # The ℐ⁻ conformal factor is the antipodal (sign-flipped) Doppler factor: for a z-boost
-    # the poles swap relative to ℐ⁺ (κ(+ẑ)=e^{+η}, κ(-ẑ)=e^{-η}), matching 1/(γ(1+v⃗·k̂)),
-    # and the default ℐ=+1 reproduces the ℐ⁺ values.
+    # The ℐ⁻ conformal factor is the antipodal (sign-flipped) Doppler factor: for the frame
+    # rotor of a z-boost, with v⃗ = tanh(η) 𝐳, the poles swap relative to ℐ⁺ (κ(+ẑ)=e^{-η},
+    # κ(-ẑ)=e^{+η}), matching 1/(γ(1+v⃗·k̂)), and the default ℐ=+1 gives κ(+ẑ)=e^{+η}.
     for T ∈ FloatTypes
         η = T(7//10)
         B = Boost(η, QuatVec{T}(0, 0, 1))
         g₊ = BMS(B, zeros(Complex{T}, 1))
         g₋ = BMS(B, zeros(Complex{T}, 1); ℐ=-1)
-        @test abs(conformal_factor(g₊, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
-        @test abs(conformal_factor(g₋, QuatVec{T}(0, 0, 1)) - exp(η)) < 20eps(T)
-        @test abs(conformal_factor(g₋, QuatVec{T}(0, 0, -1)) - exp(-η)) < 20eps(T)
+        @test abs(conformal_factor(g₊, QuatVec{T}(0, 0, 1)) - exp(η)) < 20eps(T)
+        @test abs(conformal_factor(g₋, QuatVec{T}(0, 0, 1)) - exp(-η)) < 20eps(T)
+        @test abs(conformal_factor(g₋, QuatVec{T}(0, 0, -1)) - exp(η)) < 20eps(T)
         for _ ∈ 1:5
             k̂ = random_direction(rng, T)
             # The BMS convenience method must agree with the raw transform_ray at the same ℐ.
@@ -1091,9 +1138,9 @@ end
         end
     end
 
-    # The action functor realizes the element on its own ℐ: an ℐ⁻-represented element
-    # uses the ℐ⁻ conformal factor and direction map, matching the independent oracle
-    # act_ref(…; ℐ=-1).  (Attaching ℐ=-1 to the same raw modes reinterprets them in the
+    # Both directions of the action realize the element on its own ℐ: an ℐ⁻-represented
+    # element uses the ℐ⁻ conformal factor and direction map, so that `new_coordinates`
+    # matches the independent oracle act_ref(…; ℐ=-1), and the functor inverts it.  (Attaching ℐ=-1 to the same raw modes reinterprets them in the
     # ℐ⁻ labeling — it does not convert them; `BMS(g; ℐ=-1)` does the conversion.)
     for T ∈ (Float32, Float64, BigFloat)
         for _ ∈ 1:5
@@ -1102,10 +1149,13 @@ end
             k̂ = random_direction(rng, T)
             for ℐₖ ∈ (+1, -1)
                 gₖ = BMS(g.Λ, g.α; ℐ=ℐₖ)
-                t′, k̂′ = gₖ(t, k̂)
+                t′, k̂′ = new_coordinates(gₖ, t, k̂)
                 t′ᵣ, k̂′ᵣ = act_ref(g.Λ, g.α, t, k̂; ℐ=ℐₖ)
                 @test abs(t′ - t′ᵣ) < tol(T, 2)
                 @test maximum(abs, components(k̂′ - k̂′ᵣ)) < 40eps(T)
+                t₀, k̂₀ = gₖ(t′ᵣ, k̂′ᵣ)
+                @test abs(t₀ - t) < tol(T, 2) * max(abs(t′ᵣ), one(T))
+                @test maximum(abs, components(k̂₀ - k̂)) < 40eps(T)
             end
         end
     end
@@ -1124,7 +1174,7 @@ end
     end
 end
 
-@testitem "BMS: representations of α (represent, mixed-convention ops)" tags = [
+@testitem "BMS: representations of α (conversions, mixed-convention ops)" tags = [
     :unit, :fast, :validation
 ] setup = [BMSTestSetup] begin
     import Random
@@ -1158,19 +1208,19 @@ end
         @test BMS(g.Λ, g.α; ℐ=-1) != g
     end
 
-    # The matched element acts antipodally: if g takes (t, k̂) ↦ (t′, k̂′) on ℐ⁺, then
-    # BMS(g; ℐ=-1) takes (t, -k̂) ↦ (t′, -k̂′) on ℐ⁻.  This is the pointwise
-    # content of the isomorphism between BMS⁺ and BMS⁻.
+    # The matched element acts antipodally: if g takes the new coordinates (t′, k̂′) to the
+    # old ones (t, k̂) on ℐ⁺, then BMS(g; ℐ=-1) takes (t′, -k̂′) to (t, -k̂) on ℐ⁻.  This is
+    # the pointwise content of the isomorphism between BMS⁺ and BMS⁻.
     for T ∈ (Float32, Float64, BigFloat)
         for _ ∈ 1:5
             g = random_bms(rng, T; ℓₘₐₓ=2)
             g₋ = BMS(g; ℐ=-1)
-            t = 2 * randn(rng, T)
-            k̂ = random_direction(rng, T)
-            t′, k̂′ = g(t, k̂)
-            t′₋, k̂′₋ = g₋(t, -k̂)
-            @test abs(t′₋ - t′) < tol(T, 2) * max(abs(t), one(T))
-            @test maximum(abs, components(k̂′₋ + k̂′)) < 40eps(T)
+            t′ = 2 * randn(rng, T)
+            k̂′ = random_direction(rng, T)
+            t, k̂ = g(t′, k̂′)
+            t₋, k̂₋ = g₋(t′, -k̂′)
+            @test abs(t₋ - t) < tol(T, 2) * max(abs(t′), one(T))
+            @test maximum(abs, components(k̂₋ + k̂)) < 40eps(T)
         end
     end
 
@@ -1178,35 +1228,35 @@ end
     # disagree, both are converted exactly and the result uses the default (+1).
     g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
     g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-    h = compose(g₂, g₁)
+    h = compose(g₁, g₂)
     # Disagreeing ℐ: bitwise exact, because the conversion round-trips exactly (pure
     # sign flips) before the identical composition pipeline runs.
-    for (a, b) ∈ ((BMS(g₂; ℐ=-1), g₁), (g₂, BMS(g₁; ℐ=-1)))
+    for (a, b) ∈ ((BMS(g₁; ℐ=-1), g₂), (g₁, BMS(g₂; ℐ=-1)))
         h′ = compose(a, b)
         @test ℐ(h′) == 1 && c_α(h′) == 1
         @test h′.α == h.α && h′.Λ == h.Λ
     end
     # Disagreeing c_α likewise.
-    h′ = compose(BMS(g₂; c_α=-1), g₁)
+    h′ = compose(BMS(g₁; c_α=-1), g₂)
     @test c_α(h′) == 1 && ℐ(h′) == 1
     @test h′.α == h.α && h′.Λ == h.Λ
     # Conventions shared by both inputs are kept, and the result is the SAME abstract
-    # element as the default-representation composition — `represent` is a group
-    # isomorphism.  The c_α flip is algebraically trivial, so it is bitwise exact; the ℐ
+    # element as the default-representation composition — the conversion constructor is a
+    # group isomorphism.  The c_α flip is algebraically trivial, so it is bitwise exact; the ℐ
     # case runs the composition grid on the antipodal labeling, so the two truncated
     # results agree only to roundoff plus the (mild-boost) band-limit tail.
-    h₋α = compose(BMS(g₂; c_α=-1), BMS(g₁; c_α=-1))
+    h₋α = compose(BMS(g₁; c_α=-1), BMS(g₂; c_α=-1))
     @test c_α(h₋α) == -1
     @test h₋α.α == BMS(h; c_α=-1).α
-    h₋ᴵ = compose(BMS(g₂; ℐ=-1), BMS(g₁; ℐ=-1); ℓₘₐₓ=8)
+    h₋ᴵ = compose(BMS(g₁; ℐ=-1), BMS(g₂; ℐ=-1); ℓₘₐₓ=8)
     @test ℐ(h₋ᴵ) == -1
-    @test h₋ᴵ ≈ compose(g₂, g₁; ℓₘₐₓ=8) atol = 1e-5
+    @test h₋ᴵ ≈ compose(g₁, g₂; ℓₘₐₓ=8) atol = 1e-5
 
     # inv preserves the element's conventions and inverts on its own ℐ.
     g₋ = BMS(g₁; ℐ=-1)
     g₋⁻¹ = inv(g₋; ℓₘₐₓ=10)
     @test ℐ(g₋⁻¹) == -1 && c_α(g₋⁻¹) == 1
-    @test compose(g₋⁻¹, g₋; ℓₘₐₓ=10) ≈ one(g₋) atol = 1e-7
+    @test compose(g₋, g₋⁻¹; ℓₘₐₓ=10) ≈ one(g₋) atol = 1e-7
 end
 
 @testitem "BMS: κ cocycle via the 4-vector action" tags = [:unit, :fast, :validation] setup = [
@@ -1216,20 +1266,21 @@ end
     using .BMSTestSetup: FloatTypes, random_direction, random_lorentz, ray_map
     using Quaternionic: components
 
-    # κ_{Λ₂Λ₁}(𝐤) = κ₂(Λ₁𝐤) κ₁(𝐤), and the direction maps compose accordingly.  This
-    # uses only the oracle `ray_map` — no Scri code — so it validates the geometric
-    # consistency that `compose` relies on, independently of the composition law.
+    # For a change of frame with frame rotor Λ₁ followed by one with Λ₂, read in the frame
+    # that Λ₁ produces, κ(Λ₁Λ₂, 𝐤) = κ(Λ₂, Λ̃₁𝐤Λ₁) κ(Λ₁, 𝐤), and the new labels compose
+    # accordingly.  This uses only the oracle `ray_map` — no Scri code — so it validates the
+    # geometric consistency that `compose` relies on, independently of the composition law.
     rng = Random.Xoshiro(112)
     for T ∈ FloatTypes
         for _ ∈ 1:5
             Λ₁ = random_lorentz(rng, T)
             Λ₂ = random_lorentz(rng, T)
             k̂ = random_direction(rng, T)
-            κ₁, k̂₁ = ray_map(Λ₁, k̂)
-            κ₂, k̂₂ = ray_map(Λ₂, k̂₁)
-            κ₂₁, k̂₂₁ = ray_map(Λ₂ * Λ₁, k̂)
-            @test abs(κ₂₁ - κ₂ * κ₁) < 40eps(T) * abs(κ₂₁)
-            @test maximum(abs, components(k̂₂₁ - k̂₂)) < 40eps(T)
+            κ₁, k̂₁ = ray_map(inv(Λ₁), k̂)
+            κ₂, k̂₂ = ray_map(inv(Λ₂), k̂₁)
+            κ₁₂, k̂₁₂ = ray_map(inv(Λ₁ * Λ₂), k̂)
+            @test abs(κ₁₂ - κ₂ * κ₁) < 40eps(T) * abs(κ₁₂)
+            @test maximum(abs, components(k̂₁₂ - k̂₂)) < 40eps(T)
         end
     end
 end
@@ -1262,12 +1313,13 @@ end
             _, k̂′ = transform_ray(Λ, k̂)
             @test abs(absvec(k̂′) - 1) < 40eps(T)
         end
-        # For pure rotations, the direction map is just the rotation.
+        # For a pure rotation with frame rotor Q, the new label is Q̃k̂Q: the coordinates
+        # turn by the inverse rotation.
         for _ ∈ 1:5
             Q = random_rotation(rng, T)
             k̂ = random_direction(rng, T)
             _, k̂′ = transform_ray(Lorentz(Q), k̂)
-            @test maximum(abs, components(k̂′ - Q(k̂))) < 40eps(T)
+            @test maximum(abs, components(k̂′ - conj(Q)(k̂))) < 40eps(T)
         end
     end
 end
@@ -1325,11 +1377,13 @@ end
     end
 end
 
-@testitem "BMS: action functor and c_α" tags = [:unit, :fast] setup = [BMSTestSetup] begin
+@testitem "BMS: the action, both directions, and c_α" tags = [:unit, :fast] setup = [
+    BMSTestSetup
+] begin
     import Random
     using .BMSTestSetup: FloatTypes, random_direction, random_bms, act_ref, tol
     using Quaternionic: components
-    using Scri: c_α, conformal_factor
+    using Scri: c_α, conformal_factor, new_coordinates
 
     rng = Random.Xoshiro(616)
     for T ∈ (Float32, Float64, BigFloat)
@@ -1337,18 +1391,27 @@ end
             g = random_bms(rng, T; ℓₘₐₓ=2)  # c_α = +1 by default
             t = 2 * randn(rng, T)
             k̂ = random_direction(rng, T)
-            t′, k̂′ = g(t, k̂)
+            t′, k̂′ = new_coordinates(g, t, k̂)
             t′ᵣ, k̂′ᵣ = act_ref(g.Λ, g.α, t, k̂; c_α=1)
             @test abs(t′ - t′ᵣ) < tol(T, 2)
             @test maximum(abs, components(k̂′ - k̂′ᵣ)) < 40eps(T)
+            # The functor maps new coordinates back to old ones.
+            t₀, k̂₀ = g(t′, k̂′)
+            @test abs(t₀ - t) < tol(T, 2) * max(abs(t′), one(T))
+            @test maximum(abs, components(k̂₀ - k̂)) < 40eps(T)
             # c_α is the element's type parameter: the c_α = -1 element flips only the
-            # supertranslation term, leaving the direction (and conformal factor) alone.
+            # supertranslation term, leaving the direction (and conformal factor) alone, in
+            # both directions of the action.
             g₋ = BMS(g.Λ, g.α; c_α=-1)
             @test c_α(g₋) == -1
-            t′₋, k̂′₋ = g₋(t, k̂)
+            t′₋, k̂′₋ = new_coordinates(g₋, t, k̂)
             @test k̂′₋ == k̂′
             κ = conformal_factor(g, k̂)
             @test abs((t′₋ + t′) - 2κ * t) < tol(T, 2) * max(abs(t), one(T))
+            t₋, k̂₋ = g₋(t′, k̂′)
+            @test k̂₋ == k̂₀
+            @test abs((t₋ + t₀) - 2t′ / conformal_factor(g, k̂₀)) <
+                tol(T, 2) * max(abs(t′), one(T))
         end
     end
 end
@@ -1392,17 +1455,32 @@ function rotation_part(Λ::Lorentz{T}) where {T}
 end
 
 @doc raw"""
-    compose(g₂, g₁; ℓₘₐₓ, ℓʷ)
-    g₂ * g₁
-    g₂ ∘ g₁
+    compose(g₁, g₂; ℓₘₐₓ, ℓʷ)
+    g₁ * g₂
+    g₁ ∘ g₂
 
-Compose two BMS elements: the result acts as `g₁` *first*, then `g₂`:
+Compose two BMS elements, in the order in which they are applied: the result acts as `g₁`
+*first*, and then as `g₂`, whose parameters are read in the frame that `g₁` produces:
 
 ```math
-(Λ₂, α₂)\,(Λ₁, α₁) = \left(Λ₂ Λ₁,\; α₁(𝐤) + α₂(Λ₁𝐤)/κ₁(𝐤)\right).
+(Λ₁, α₁)\,(Λ₂, α₂) = \left(Λ₁Λ₂,\; α₁(𝐤) + α₂(Λ̃₁𝐤Λ₁)/κ₁(𝐤)\right),
 ```
 
-Because `κ₁` and the mapped direction `Λ₁𝐤` are realized on the labeled celestial sphere,
+where ``κ₁(𝐤) = k⁰/(Λ̃₁𝐤Λ₁)⁰``, and ``α₂(Λ̃₁𝐤Λ₁)`` means ``α₂`` evaluated at the label that
+the frame produced by `g₁` gives to the ray.  The second term is ``\mathrm{Ad}(Λ₁)(α₂)``.
+Applying `g₁` and then `g₂` with two successive calls to [`transform!`](@ref) therefore
+matches applying `g₁ * g₂` once, and `lorentz(g₁ * g₂) == lorentz(g₁) * lorentz(g₂)`:
+multiplying BMS elements extends multiplying their frame rotors.  If both elements are
+instead specified in the original frame, the second becomes the conjugate
+`inv(g₁) * g₂ * g₁` in the frame that `g₁` produces, and the composite is `g₂ * g₁`, as for
+rotations about fixed axes.  See [Frames and Components](@ref frames_and_components).
+
+Because the functor of an element maps new coordinates to old ones,
+`(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`, which is Julia's rule for `∘`; so
+`g₁ ∘ g₂ == g₁ * g₂`.  "First" refers to the changes of frame: as maps on coordinates,
+`g₂`'s is evaluated first.
+
+Because `κ₁` and the new label, read from `Λ̃₁𝐤Λ₁`, are realized on the labeled celestial sphere,
 the composed supertranslation depends on the labeling — which each element includes as its
 `I` type parameter (see [Representations of the supertranslation](@ref
 bms_representations)).  The inputs may use any mix of conventions (`A`, `I`): each
@@ -1419,24 +1497,24 @@ its own bandwidth, while `α₂/κ₁` gains one — the factor `1/κ₁` is exa
 `max(2ℓₘₐₓ + 1, ℓ₂ + 1, ℓ₁)`.
 
 !!! note "Band limits"
-    The factor `1/κ₁` is *exactly* band-limited to `ℓ ≤ 1`, and for pure rotations
-    `α₂∘Λ₁` has the same bandwidth as `α₂` — so when `Λ₁` involves no boost, the result
+    The factor `1/κ₁` is *exactly* band-limited to `ℓ ≤ 1`, and for pure rotations `α₂`
+    at the new labels has the same bandwidth as `α₂` — so when `Λ₁` involves no boost, the result
     is exact (up to roundoff) whenever `ℓʷ ≥ max(ℓ₁, ℓ₂)`, which the defaults guarantee,
     and a smaller `ℓʷ` throws an `ArgumentError`.
-    When `Λ₁` involves a boost, however, `α₂∘Λ₁` has unbounded bandwidth (with an
+    When `Λ₁` involves a boost, however, `α₂` at the new labels has unbounded bandwidth (with an
     exponentially decaying tail), so the result is *convergent in `ℓʷ`* rather than
     exact, and the modes above `ℓₘₐₓ` are simply discarded.  For large rapidities,
     increase `ℓʷ` (and possibly `ℓₘₐₓ`).
 
 Three cases short-circuit the grid entirely and are exact: when `α₂ = 0` (so the result is
-just `(Λ₂Λ₁, α₁)`); when `Λ₁ = ±1` (so `κ₁ ≡ 1` and the supertranslations simply add); and
-when `Λ₁` is any pure rotation (so `κ₁ ≡ 1` and `α₂∘Λ₁` is the band-limit-preserving rigid
-rotation of `α₂`'s modes, computed with Wigner's ``𝔇`` matrices via
-[`rotate_modes`](@ref Scri.rotate_modes)).
+just `(Λ₁Λ₂, α₁)`); when `Λ₁ = ±1` (so `κ₁ ≡ 1` and the supertranslations simply add); and
+when `Λ₁` is a pure rotation `Q₁` (so `κ₁ ≡ 1` and `α₂` at the new labels is the
+band-limit-preserving rigid rotation of `α₂`'s modes by `Q₁`, computed with Wigner's ``𝔇``
+matrices via [`rotate_modes`](@ref Scri.rotate_modes)).
 """
 function compose(
-    g₂::BMS{T,A,I},
-    g₁::BMS{T,A,I};
+    g₁::BMS{T,A,I},
+    g₂::BMS{T,A,I};
     ℓₘₐₓ::Int=max(ell_max(g₂)+1, ell_max(g₁)),
     ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g₂)+1, ell_max(g₁)),
 ) where {T<:Real,A,I}
@@ -1458,20 +1536,20 @@ function compose(
     elseif is_identity_rotor(g₂.Λ)
         g₂.Λ == one(g₂.Λ) ? g₁.Λ : -g₁.Λ
     else
-        g₂.Λ * g₁.Λ
+        g₁.Λ * g₂.Λ
     end
     Q₁ = rotation_part(g₁.Λ)
     α = if all(iszero, g₂.α)
-        # (Λ₂, 0)(Λ₁, α₁) = (Λ₂Λ₁, α₁) — exact.
+        # (Λ₁, α₁)(Λ₂, 0) = (Λ₁Λ₂, α₁) — exact.
         resize_modes(g₁.α, ℓₘₐₓ)
     elseif is_identity_rotor(g₁.Λ)
-        # κ₁ ≡ 1 and Λ₁𝐤 = 𝐤, so the supertranslations simply add — exact.
+        # κ₁ ≡ 1 and Λ̃₁𝐤Λ₁ = 𝐤, so the supertranslations simply add — exact.
         resize_modes(g₁.α, ℓₘₐₓ) .+ resize_modes(g₂.α, ℓₘₐₓ)
     elseif !isnothing(Q₁)
-        # Λ₁ is a pure rotation: κ₁ ≡ 1 and the label map is k̂ ↦ Q₁(k̂) for either ℐ,
-        # so α₂∘Λ₁ is the rigid rotation of α₂'s modes by Q₁⁻¹ — band-limit-preserving,
-        # hence exact (up to roundoff) with no grid round trip.
-        resize_modes(g₁.α, ℓₘₐₓ) .+ rotate_modes(g₂.α, conj(Q₁), ℓₘₐₓ)
+        # Λ₁ is a pure rotation Q₁: κ₁ ≡ 1 and the new label is Q̃₁ k̂ Q₁ = Q₁⁻¹(k̂) for
+        # either ℐ, so α₂ at the new labels is the rigid rotation of α₂'s modes by Q₁ —
+        # band-limit-preserving, hence exact (up to roundoff) with no grid round trip.
+        resize_modes(g₁.α, ℓₘₐₓ) .+ rotate_modes(g₂.α, Q₁, ℓₘₐₓ)
     else
         # The transform is built in the primal type, so that any dual numbers in the
         # inputs pass through its solve rather than into its factorization.
@@ -1493,17 +1571,17 @@ function compose(
     return BMS{T,A,I}(Λ, α)
 end
 
-function compose(g₂::BMS{T2,A₂,I₂}, g₁::BMS{T1,A₁,I₁}; kwargs...) where {T1,T2,A₁,A₂,I₁,I₂}
+function compose(g₁::BMS{T1,A₁,I₁}, g₂::BMS{T2,A₂,I₂}; kwargs...) where {T1,T2,A₁,A₂,I₁,I₂}
     # Mixed conventions: keep each convention the inputs share; where they disagree,
     # convert both — exactly — to the default (+1) and compose there.
     A = A₁ == A₂ ? A₁ : 1
     I = I₁ == I₂ ? I₁ : 1
     T = promote_type(T1, T2)
-    return compose(BMS{T,A,I}(g₂), BMS{T,A,I}(g₁); kwargs...)
+    return compose(BMS{T,A,I}(g₁), BMS{T,A,I}(g₂); kwargs...)
 end
 
-Base.:*(g₂::BMS, g₁::BMS) = compose(g₂, g₁)
-Base.:∘(g₂::BMS, g₁::BMS) = compose(g₂, g₁)
+Base.:*(g₁::BMS, g₂::BMS) = compose(g₁, g₂)
+Base.:∘(g₁::BMS, g₂::BMS) = compose(g₁, g₂)
 
 function Base.one(::Type{BMS{T,A,I}}) where {T<:Real,A,I}
     return BMS{T,A,I}(one(Lorentz{T}), zeros(Complex{T}, 1))
@@ -1520,27 +1598,28 @@ Base.isone(g::BMS) = is_identity_rotor(g.Λ) && all(iszero, g.α)
 The inverse BMS element,
 
 ```math
-(Λ, α)^{-1} = (1, -α) ∘ (Λ^{-1}, 0)
-            = \left(Λ^{-1},\; -α(Λ^{-1}𝐤) / κ_{Λ^{-1}}(𝐤)\right),
+(Λ, α)^{-1} = (Λ̃, 0)\,(1, -α)
+            = \left(Λ̃,\; -α(Λ𝐤Λ̃) / κ(Λ̃, 𝐤)\right),
 ```
 
-computed through [`compose`](@ref); the result inherits `g`'s conventions (`A`, `I`),
-and the null-infinity representation `I` governs the geometry internally.  `compose`'s
+with ``κ(Λ̃, 𝐤) = k⁰/(Λ𝐤Λ̃)⁰``; that is, ``(Λ̃, -\mathrm{Ad}(Λ̃)(α))``.  It is
+computed through [`compose`](@ref).  The result inherits `g`'s conventions (`A`, `I`), and
+the null-infinity representation `I` governs the geometry internally.  `compose`'s
 band-limit caveats (and `ℓₘₐₓ`/`ℓʷ` keywords) apply here too: the inverse of an element
 whose Lorentz part involves a boost is exact only in the limit of large `ℓʷ` and `ℓₘₐₓ`.
 The Lorentz part `inv(Λ)` is the exact GA reverse.
 
 The default `ℓₘₐₓ` is one more than that of `g`, which is also the band limit that
-`compose` gives `g * inv(g)` by default.  The two truncations then coincide, so `g * inv(g)`
-is the identity to roundoff.  The other order, `inv(g) * g`, truncates differently and is
-exact only in the limit.
+`compose` gives `inv(g) * g` by default.  The two truncations then coincide, so
+`inv(g) * g`, which applies `inv(g)` first, is the identity to roundoff.  The other order,
+`g * inv(g)`, truncates differently and is exact only in the limit.
 """
 function Base.inv(
     g::BMS{T,A,I}; ℓₘₐₓ::Int=ell_max(g) + 1, ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g))
 ) where {T<:Real,A,I}
     return compose(
-        BMS{T,A,I}(one(Lorentz{T}), -g.α),
-        BMS{T,A,I}(inv(g.Λ), zeros(Complex{T}, 1));
+        BMS{T,A,I}(inv(g.Λ), zeros(Complex{T}, 1)),
+        BMS{T,A,I}(one(Lorentz{T}), -g.α);
         ℓₘₐₓ,
         ℓʷ,
     )
@@ -1567,36 +1646,37 @@ end
         @test g * e == g
         @test e * g == g
 
-        # The defining decomposition (Λ, α) = (Λ, 0) ∘ (1, α), exactly.
+        # The defining decomposition (Λ, α) = (1, α)(Λ, 0), with the supertranslation
+        # applied first, exactly.
         gΛ = BMS(g.Λ, zeros(Complex{T}, 1))
         gα = BMS(one(Lorentz{T}), g.α)
-        @test gΛ * gα == g
+        @test gα * gΛ == g
 
         # Acting with a Lorentz transformation *after* a supertranslation never changes
         # the supertranslation, for any Λ.
         Λ₂ = random_lorentz(rng, T)
-        h = BMS(Λ₂, zeros(Complex{T}, 1)) * g
+        h = g * BMS(Λ₂, zeros(Complex{T}, 1))
         @test h.α == g.α
-        @test h.Λ == Λ₂ * g.Λ
+        @test h.Λ == g.Λ * Λ₂
 
         # Supertranslations form an abelian subgroup; composition is exact addition.
         α₁ = random_α(rng, T, 2)
         α₂ = random_α(rng, T, 3)  # deliberately different ℓₘₐₓ
         s₁ = BMS(one(Lorentz{T}), α₁)
         s₂ = BMS(one(Lorentz{T}), α₂)
-        s₂₁ = s₂ * s₁
-        @test s₂₁ == s₁ * s₂
-        # The default output resolution is one ℓ higher than the inputs' (ℓ = 4 here), so
-        # the exact mode sum appears zero-padded to length 25.
-        @test s₂₁.α == [[α₁; zeros(Complex{T}, 16 - 9)] .+ α₂; zeros(Complex{T}, 25 - 16)]
-        @test is_identity_rotor(s₂₁.Λ)
+        s₁₂ = s₁ * s₂
+        @test s₁₂ == s₂ * s₁
+        # The default output resolution is one ℓ higher than that of the element applied
+        # second (ℓ = 4 here), so the exact mode sum appears zero-padded to length 25.
+        @test s₁₂.α == [[α₁; zeros(Complex{T}, 16 - 9)] .+ α₂; zeros(Complex{T}, 25 - 16)]
+        @test is_identity_rotor(s₁₂.Λ)
         # Pure time translations compose additively, with no other modes appearing.
         # (Mode addition is exact; the δt accessor only rounds in the final division.)
         t₁ = BMS{T}(; time_translation=T(3//2))
         t₂ = BMS{T}(; time_translation=T(7//4))
-        @test (t₂ * t₁) == BMS(one(Lorentz{T}), t₁.α .+ t₂.α)
-        @test time_translation(t₂ * t₁) ≈ T(3//2) + T(7//4) atol = 8eps(T)
-        @test all(iszero, (t₂ * t₁).α[2:end])
+        @test (t₁ * t₂) == BMS(one(Lorentz{T}), t₁.α .+ t₂.α)
+        @test time_translation(t₁ * t₂) ≈ T(3//2) + T(7//4) atol = 8eps(T)
+        @test all(iszero, (t₁ * t₂).α[2:end])
         # Inverses of the special subgroups are exact.
         @test inv(s₁) == BMS(one(Lorentz{T}), -α₁)
         @test inv(gΛ) == BMS(inv(g.Λ), zeros(Complex{T}, 1))
@@ -1617,8 +1697,9 @@ end
         Λ₂ = random_lorentz(rng, T)
         g₁ = BMS(Λ₁, zeros(Complex{T}, 1))
         g₂ = BMS(Λ₂, zeros(Complex{T}, 1))
-        h = g₂ * g₁
-        @test h.Λ == Λ₂ * Λ₁
+        # Products are in the order of application, and so are the frame rotors.
+        h = g₁ * g₂
+        @test h.Λ == Λ₁ * Λ₂
         @test all(iszero, h.α)
         @test inv(g₁).Λ == conj(Λ₁)
         @test inv(g₁).Λ == inv(Λ₁)
@@ -1639,10 +1720,11 @@ end
     for _ ∈ 1:5
         g₁ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
         g₂ = random_bms(rng, Float64; ℓₘₐₓ=2, βmax=1//5)
-        h = compose(g₂, g₁; ℓₘₐₓ=10)
+        h = compose(g₁, g₂; ℓₘₐₓ=10)
         for _ ∈ 1:5
             k̂ = random_direction(rng, Float64)
-            κ₁, k̂′ = ray_map(g₁.Λ, k̂)
+            # The new label from the frame rotor Λ₁: the raw action of its reverse.
+            κ₁, k̂′ = ray_map(inv(g₁.Λ), k̂)
             expected = α_value(g₁.α, k̂) + α_value(g₂.α, k̂′) / κ₁
             @test abs(α_value(h.α, k̂) - expected) < 1e-6
         end
