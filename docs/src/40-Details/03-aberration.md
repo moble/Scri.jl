@@ -23,21 +23,21 @@ either a field that A **emits** (to future null infinity ``ℐ^+``) or a
 field that A **receives** (from past null infinity ``ℐ^-``).  The goal
 of this section is to find B's description of the same physical field.
 
-We introduce a sign variable ``ε ∈ \{+1,-1\}`` to track the two cases:
+We use the sign ``ℐ ∈ \{+1,-1\}`` of [Future and past null
+infinity](@ref scri_pm_conventions) to track the two cases:
 
 ```math
-ε = \begin{cases}
+ℐ = \begin{cases}
   +1 & \text{emitted field ($\mathscr{I}^+$)} \\
   -1 & \text{received field ($\mathscr{I}^-$)}
 \end{cases}
 ```
 
 This single variable turns out to control the sign of every
-frame-dependent quantity in the transformation.  It is the same sign
-as the ``ℐ`` of [Future and past null infinity](@ref
-scri_pm_conventions); in the code it is the `ℐ` argument of
-[`Scri.aberration`](@ref), and the `emitted` keyword of the test
-oracle (`emitted = true` ⟺ ``ε = +1``).
+frame-dependent quantity in the transformation.  In the code it enters
+[`Scri.aberration`](@ref) through the boost in its second argument,
+`Boost(ℐ * v⃗) * R`, and it is the `emitted` keyword of the test oracle
+(`emitted = true` ⟺ ``ℐ = +1``).
 
 ## Waves and null wavevectors
 
@@ -57,7 +57,7 @@ k^μ k_μ = 0,
 
 the **null condition**, with metric signature ``{-}{+}{+}{+}``.
 
-### Frame decomposition and the ε convention
+### Frame decomposition and the ℐ convention
 
 Given observer A with four-velocity ``t^μ = (1,0,0,0)`` (at rest in
 A's frame), we define
@@ -71,23 +71,23 @@ spatial wavevector ``\vec{k} = (k^x, k^y, k^z)`` to satisfy
 ``|\vec{k}| = ω``.  We write
 
 ```math
-k^μ = ω(1,\, ε\hat{k}),
+k^μ = ω(1,\, ℐ\hat{k}),
 ```
 
-where ``\hat{k}`` is a unit 3-vector and ``ε = \pm 1``, as defined
+where ``\hat{k}`` is a unit 3-vector and ``ℐ = \pm 1``, as defined
 above:
 
-- **``ε = +1``** (outgoing, ``ℐ^+``): ``\hat{k}`` points **away from**
+- **``ℐ = +1``** (outgoing, ``ℐ^+``): ``\hat{k}`` points **away from**
   A — it is the propagation direction of the wave.  (Think of
   gravitational waves emitted by A; the chosen portion of the field
   travels outward in direction ``\hat{k}``.)
-- **``ε = -1``** (incoming, ``ℐ^-``): ``\hat{k}`` points from A
+- **``ℐ = -1``** (incoming, ``ℐ^-``): ``\hat{k}`` points from A
   **toward the source**, and the wave propagates in the opposite
   direction, ``-\hat{k}``.  (Think of a plane wave whose source is far
   away in the direction ``\hat{k}``.)
 
-This is identical to the null section ``σ_ε: \hat{k} \mapsto (1,
-ε\hat{k})`` introduced in the [BMS group page](@ref "Lorentz
+This is identical to the null section ``σ_ℐ: \hat{k} \mapsto (1,
+ℐ\hat{k})`` introduced in the [BMS group page](@ref "Lorentz
 transformations ``ℒ`` and the conformal factor ``κ``") in its
 discussion of the celestial sphere.  The same rotor language connects
 naturally to the [Spacetime Algebra](@extref Quaternionic :doc:`spacetime_algebra`) developed in Quaternionic.jl, where null vectors arise from
@@ -103,20 +103,20 @@ B's four-velocity in A's frame is ``(t_B)^μ = (γ, γ\vec{v})``, where
 ω' = -k_μ (t_B)^μ.
 ```
 
-Expanding with ``k^μ = ω(1, ε\hat{k})`` and writing ``\cos Θ = \hat{k}
+Expanding with ``k^μ = ω(1, ℐ\hat{k})`` and writing ``\cos Θ = \hat{k}
 \cdot \hat{v}`` (where ``\hat{v} = \vec{v}/β`` is the unit boost
 direction):
 
 ```math
-ω' = γω(1 - εβ\cos Θ).
+ω' = γω(1 - ℐβ\cos Θ).
 ```
 
 The angle ``Θ`` is *not* an independent definition; it is fixed by the
 inner product of the spatial wavevector with the boost direction,
-``\cos Θ = ε(k^i \hat{v}_i)/ω``, which comes directly from the
-contraction ``k_μ (t_B)^μ``.  When ``ε = +1``, this is ``\cos Θ =
+``\cos Θ = ℐ(k^i \hat{v}_i)/ω``, which comes directly from the
+contraction ``k_μ (t_B)^μ``.  When ``ℐ = +1``, this is ``\cos Θ =
 \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the propagation direction; when
-``ε = -1`` it is ``\cos Θ = \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the
+``ℐ = -1`` it is ``\cos Θ = \hat{k}\cdot\hat{v}`` with ``\hat{k}`` the
 direction toward the source.
 
 ### The conformal factor
@@ -124,11 +124,11 @@ direction toward the source.
 The ratio
 
 ```math
-κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ε\vec{v}\cdot\hat{k})}
+κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ℐ\vec{v}\cdot\hat{k})}
 ```
 
-is exactly the conformal factor introduced in the BMS page: for ``ε =
-+1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{k})]`` while for ``ε
+is exactly the conformal factor introduced in the BMS page: for ``ℐ =
++1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{k})]`` while for ``ℐ
 = -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{k})]``.
 
 ## The aberration formula
@@ -139,24 +139,25 @@ In addition to changing the frequency, B's boost changes the
 satisfies
 
 ```math
-\cos Θ' = \frac{\cos Θ - εβ}{1 - εβ\cos Θ}.
+\cos Θ' = \frac{\cos Θ - ℐβ}{1 - ℐβ\cos Θ}.
 ```
 
-The ``ε = +1`` case is the standard relativistic aberration formula
-[MisnerThorneWheeler_1973](@cite), and the sign of ``ε`` extends it to
+The ``ℐ = +1`` case is the standard relativistic aberration formula
+[MisnerThorneWheeler_1973](@cite), and the sign of ``ℐ`` extends it to
 incoming radiation.
 
 This is derived by applying the Lorentz boost directly to the spatial
-wavevector components: with ``k^μ = ω(1, ε\sinΘ, 0, ε\cos Θ)``
-(choosing the boost in the ``x``-``z`` plane for simplicity), the
+wavevector components: with ``k^μ = ω(1, ℐ\sinΘ, 0, ℐ\cos Θ)``
+(choosing the boost along ``z`` and the wavevector in the
+``x``-``z`` plane, for simplicity), the
 boosted spatial ``z``-component is
 
 ```math
-k'^z = γ(k^z - β k^t) = γω(ε\cos Θ - β),
+k'^z = γ(k^z - β k^t) = γω(ℐ\cos Θ - β),
 ```
 
-which is ``εω'\cos Θ'``.  Dividing by ``ω' = γω(1 - εβ\cos Θ)`` and
-multiplying by ``ε`` gives the formula above.
+which is ``ℐω'\cos Θ'``.  Dividing by ``ω' = γω(1 - ℐβ\cos Θ)`` and
+multiplying by ``ℐ`` gives the formula above.
 
 ### Half-angle form
 
@@ -164,7 +165,7 @@ The half-angle substitution ``\cos Θ = (1-t^2)/(1+t^2)``, ``t =
 \tan(Θ/2)``, allows us to write the aberration formula as
 
 ```math
-\tan\!\frac{Θ'}{2} = e^{+εφ}\,\tan\!\frac{Θ}{2},
+\tan\!\frac{Θ'}{2} = e^{+ℐφ}\,\tan\!\frac{Θ}{2},
 \qquad φ = \operatorname{atanh}(β).
 ```
 
@@ -173,15 +174,15 @@ in the rotor implementation.
 
 ### Geometric sign
 
-The direction of the shift depends on ``ε``:
+The direction of the shift depends on ``ℐ``:
 
-- **``ε = +1``** (emitted): ``Θ' > Θ`` for ``β > 0``.  In B's frame
+- **``ℐ = +1``** (emitted): ``Θ' > Θ`` for ``β > 0``.  In B's frame
   the wave appears at a *larger* angle from the boost axis than in A's
   frame.  Equivalently, in A's frame the radiation is beamed *toward*
   the boost axis.  This is relativistic beaming familiar from
   astrophysical jets [MisnerThorneWheeler_1973](@cite).
 
-- **``ε = -1``** (received): ``Θ' < Θ`` for ``β > 0``.  Moving
+- **``ℐ = -1``** (received): ``Θ' < Θ`` for ``β > 0``.  Moving
   observers see incoming sources shifted *toward* their direction of
   motion — the classical stellar-aberration effect.  This is the
   convention used in Penrose-Rindler Vol. 1 around Eq. (1.3.5)
@@ -198,7 +199,7 @@ let ``Θ`` denote the corresponding rest-frame angle (the angle *A*
 uses).  They are related by the half-angle formula
 
 ```math
-\tan\!\frac{Θ}{2} = e^{-εφ}\,\tan\!\frac{Θ'}{2}.
+\tan\!\frac{Θ}{2} = e^{-ℐφ}\,\tan\!\frac{Θ'}{2}.
 ```
 
 The rotation that maps ``\hat{k}'`` to the correct rest-frame
@@ -208,7 +209,7 @@ direction is generated by the **aberration rotor**
 B' = \exp\!\left(\frac{\hat{k}' \times \vec{v}}{|\hat{k}' \times \vec{v}|}\,\frac{Θ'-Θ}{2}\right).
 ```
 
-For ``ε = +1``, ``Θ' > Θ`` so the exponent is positive; for ``ε =
+For ``ℐ = +1``, ``Θ' > Θ`` so the exponent is positive; for ``ℐ =
 -1``, ``Θ' < Θ`` and the exponent is negative, reversing the rotation.
 
 Crucially, ``B'`` does not merely map the *direction* ``\hat{k}' \to
@@ -218,7 +219,8 @@ transformation of spin-weighted functions.  This is why we work with
 full rotors rather than unit 3-vectors.
 
 The oracle (`AberrationOracle.aberration` in `test/aberration.jl`)
-implements this for the product ``R' = B' R_{\mathrm{pix}}``, where
+implements this as the rest-frame rotor ``\operatorname{ab}(R_{\mathrm{pix}},
+\vec{v}) = B' R_{\mathrm{pix}}``, where
 ``R_{\mathrm{pix}}`` is the pixel rotor encoding both the direction
 and the tangent frame orientation at a grid point.  The derivation of
 ``B'`` is given in Appendix C of [Boyle_2015](@cite), Eqs. (C6)–(C8).
@@ -227,7 +229,7 @@ same rotor as the ``K`` factor of the ``KAN`` decomposition; the
 testitem `"aberration: KAN K factor matches Boyle (2015) oracle"`
 verifies that the two agree — as full rotors, so that the
 tangent-frame part is pinned down along with the direction — across
-random rotors, velocities, and both signs of ``ε``.
+random rotors, velocities, and both signs of ``ℐ``.
 
 !!! warning "The oracle's Taylor branch is inaccurate for large β near the poles"
 
@@ -237,7 +239,7 @@ random rotors, velocities, and both signs of ``ε``.
     is excellent for small ``β``, it is *wrong* when ``β`` is large
     and only ``\sin Θ'`` is small — e.g., at ``Θ' = 10^{-7}``, ``β =
     0.99``, it returns a rotor component of ``9.25 × 10^{-10}`` where
-    the correct value is ``e^{-εφ} Θ'/2 ≈ 3.54 × 10^{-9}``.  The
+    the correct value is ``e^{-ℐφ} Θ'/2 ≈ 3.54 × 10^{-9}``.  The
     ``K``-factor implementation is purely algebraic, has no branches,
     and gets this regime right (verified against `BigFloat`
     evaluations, which keep the oracle in its exact branch).  This
@@ -253,13 +255,14 @@ maps to a `@testitem` in `test/aberration.jl` or `src/aberration.jl`.
 
 ### ``β = 0``: no boost, no aberration
 
-At ``β = 0``, ``φ = 0`` and ``Θ = Θ'`` for both values of ``ε``.  The
-aberration rotor is the identity, so ``R' = R_{\mathrm{pix}}``
+At ``β = 0``, ``φ = 0`` and ``Θ = Θ'`` for both values of ``ℐ``.  The
+aberration rotor is the identity, so ``\operatorname{ab}(R_{\mathrm{pix}}, \vec{v}) =
+R_{\mathrm{pix}}``
 regardless of the boost direction.  This holds for all input rotors
 and all choices of ``\hat{v}``.
 
 *Test*: `"aberration: identity at β=0"` (in `src/aberration.jl`; both
-signs of ``ε``).
+signs of ``ℐ``).
 
 ### Pole invariance: no tangent rotation along the boost axis
 
@@ -268,25 +271,25 @@ When ``\hat{k}' \parallel \pm\hat{v}``, the cross product ``\hat{k}'
 Consequently ``B' = 1`` and the rotor is unchanged.
 
 This covers both the north pole (``\hat{k}' = +\hat{v}``) and the
-south pole (``\hat{k}' = -\hat{v}``), and holds for both ``ε = +1``
-and ``ε = -1`` since the cross product is independent of the sign
+south pole (``\hat{k}' = -\hat{v}``), and holds for both ``ℐ = +1``
+and ``ℐ = -1`` since the cross product is independent of the sign
 convention.
 
 *Test*: `"aberration: pole invariance — no tangent rotation along
-boost axis"` (in `src/aberration.jl`; both signs of ``ε``).
+boost axis"` (in `src/aberration.jl`; both signs of ``ℐ``).
 
-### Equatorial formula: ``\cos Θ = εβ``
+### Equatorial formula: ``\cos Θ = ℐβ``
 
 Take the boost along ``\hat{z}`` and consider an equatorial direction
 ``\hat{k}'`` (``Θ' = π/2``).  Setting ``\cos Θ' = 0`` in the aberration
 formula gives
 
 ```math
-\cos Θ = εβ.
+\cos Θ = ℐβ.
 ```
 
-For ``ε = +1``: the rest-frame direction is in the *northern*
-hemisphere, ``\cos Θ = +β > 0``.  For ``ε = -1``: the rest-frame
+For ``ℐ = +1``: the rest-frame direction is in the *northern*
+hemisphere, ``\cos Θ = +β > 0``.  For ``ℐ = -1``: the rest-frame
 direction is in the *southern* hemisphere, ``\cos Θ = -β < 0``.
 
 *Test*: `"aberration: geometric sign — equatorial pixel: cosΘ = ℐβ"`.
@@ -297,7 +300,7 @@ For a boost along ``\hat{z}``, any rotation ``R_z`` about ``\hat{z}``
 commutes with the aberration correction:
 
 ```math
-R'(R_z R_{\mathrm{pix}},\, \vec{v}) = R_z\, R'(R_{\mathrm{pix}},\, \vec{v}).
+\operatorname{ab}(R_z R_{\mathrm{pix}},\, \vec{v}) = R_z\, \operatorname{ab}(R_{\mathrm{pix}},\, \vec{v}).
 ```
 
 This follows because ``R_z`` acts on ``\hat{k}'`` by rotating it about
@@ -307,17 +310,17 @@ magnitude of the aberration — unchanged, while rotating the axis
 
 *Test*: `"aberration: azimuthal symmetry — z-rotation commutes with z-boost"`.
 
-### Round-trip: ``ε = +1`` and ``ε = -1`` are inverses
+### Round-trip: ``ℐ = +1`` and ``ℐ = -1`` are inverses
 
-Applying the ``ε = +1`` aberration and then the ``ε = -1`` aberration
+Applying the ``ℐ = +1`` aberration and then the ``ℐ = -1`` aberration
 with the same ``\vec{v}`` recovers the identity:
 
 ```math
-R'(R'(R, \vec{v};\, ε=+1),\, \vec{v};\, ε=-1) = R.
+\operatorname{ab}(\operatorname{ab}(R, \vec{v};\, ℐ=+1),\, \vec{v};\, ℐ=-1) = R.
 ```
 
-This is immediate from the half-angle formula: ``e^{-εφ}`` with ``ε =
-+1`` followed by ``e^{-εφ}`` with ``ε = -1`` gives ``e^{-φ} e^{+φ} =
+This is immediate from the half-angle formula: ``e^{-ℐφ}`` with ``ℐ =
++1`` followed by ``e^{-ℐφ}`` with ``ℐ = -1`` gives ``e^{-φ} e^{+φ} =
 1``.  (For the ``K``-factor implementation the same identity follows
 from uniqueness of the Iwasawa decomposition: the second boost cancels
 the first, and the leftover ``AN`` factor is absorbed.)
@@ -329,14 +332,17 @@ orders of the signs, plus a cross-check against the independent
 ### Wigner rotation: composition of non-collinear boosts
 
 Two successive boosts in different directions do not compose to a pure
-boost; their composition in the Spin group is a boost followed by a
-Wigner rotation.  Specifically, if the composite Lorentz
-transformation decomposes as ``(v⃗_{\mathrm{eff}}, R_W)`` (in the
-sense of Quaternionic.jl's `vR` decomposition), then
+boost; their composition in the Spin group combines a boost with a
+Wigner rotation.  Specifically, change frame first by ``\vec{v}_2`` and
+then by ``\vec{v}_1``, read in the frame the first change produces.
+The frame rotor of the two changes together is
+``B(\vec{v}_2)\,B(\vec{v}_1)``, and if it is written as
+``B(v⃗_{\mathrm{eff}})\,R_W``, as Quaternionic.jl's `vR` decomposition
+does, then
 
 ```math
-R'\!\left(R'(R, \vec{v}_1),\, \vec{v}_2\right)
-= R'\!\left(R_W R,\, \vec{v}_{\mathrm{eff}}\right).
+\operatorname{ab}\!\left(\operatorname{ab}(R, \vec{v}_1),\, \vec{v}_2\right)
+= \operatorname{ab}\!\left(R_W R,\, \vec{v}_{\mathrm{eff}}\right).
 ```
 
 The Wigner rotation ``R_W`` is a purely spatial rotation that has no
@@ -354,13 +360,13 @@ either frame on a series of time slices, and on each time slice the
 field components are decomposed in spin-weighted spherical harmonics.
 During the transformation, these have to be evaluated at a series of
 "pixels" — rotors from ``\mathrm{Spin}(3)`` [Boyle_2016](@cite), which
-correspond as discussed above to flagpoles and flagplanes.
-Specifically, there is a natural choice of pixels in the *transformed*
-frame which will allow us to compute the mode weights.  We will denote
-those pixels as ``𝐑'_p``.  But the field at each such pixel has to be
-computed from the original data.  So we need to evaluate it at some
-corresponding ``𝐑_p``.  The previous section tells us that the
-flagpole and flagplane should be the same for both:
+correspond to the flagpoles and flagplanes of the [null-cones
+page](@ref "Flagpoles and flagplanes").  Specifically, there is a
+natural choice of pixels in the *transformed* frame which will allow
+us to compute the mode weights.  We will denote those pixels as
+``𝐑'_p``.  But the field at each such pixel has to be computed from
+the original data.  So we need to evaluate it at some corresponding
+``𝐑_p``, and the flagpole and flagplane should be the same for both:
 
 ```math
 \begin{aligned}
@@ -372,8 +378,9 @@ flagpole and flagplane should be the same for both:
 \end{aligned}
 ```
 
-The reference vectors being acted on here are related by the
-transformation:
+The primed reference vectors are the new legs, which the frame rotor
+``Λ = B(v⃗)\,R`` builds from the old ones (see [Frames and
+Components](@ref frames_and_components)):
 
 ```math
 \boldsymbol{ℓ}' = Λ \boldsymbol{ℓ} Λ̃,
@@ -381,68 +388,61 @@ transformation:
 𝐱' = Λ 𝐱 Λ̃.
 ```
 
-Therefore, the expression above can be rewritten as
-
-```math
-\begin{aligned}
-𝐑'ₚ Λ \boldsymbol{ℓ} Λ̃ 𝐑̃'ₚ
-&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̃ₚ,
-\\
-𝐑'ₚ Λ \left(𝐱 ∧ \boldsymbol{ℓ}\right) Λ̃ 𝐑̃'ₚ
-&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̃ₚ,
-\end{aligned}
-```
-
-so we might expect that the correct ``𝐑ₚ`` to use would be
-
-```math
-𝐑ₚ = 𝐑'ₚ Λ.
-```
-
-Or better yet, the previous section argued that all we actually need
-is the ``K`` factor of that product, so we might expect that the right
-choice would be
-
-```math
-𝐑ₚ = K\left(𝐑'ₚ Λ\right),
-```
-
-where ``K`` is the function that extracts the ``K`` factor from a
-``KAN`` decomposition.
-
-*However*, the subtlety is that the `𝐑′ₚ` actually generated by the
-code is just an array of four numbers.  And throughout the code, the
-frame of those four numbers is never explicitly specified.  Therefore,
-such an array is inherently always in the same frame.  Since the rest
-of the calculation assumes the frame is the unprimed one, the code is
-effectively treating the array as being in the *unprimed* frame.  On
-the other hand, the code generating that array doesn't know anything
-about that distinction, and our information is relative to the
-*primed* frame.  That is, in principal we expect the code to generate
+The pixel rotor ``𝐑'_p`` is built on the primed basis in the same
+way.  But the `R′ₚ` actually generated by the code is just an array of
+four numbers, and throughout the code the frame of those four numbers
+is never explicitly specified.  Nothing in the code that generates the
+array refers to either basis, but the pixels are chosen in the new
+frame, so the numbers are the components of ``𝐑'_p`` in the primed
+basis,
 
 ```math
 𝐑'ₚ = R'ₚʷ + R'ₚˣ 𝐢' + R'ₚʸ 𝐣' + R'ₚᶻ 𝐤',
 ```
 
-but what it actually stores is the array of components
+while the rest of the calculation treats every array as components in
+the *unprimed* basis.  The rotor that the array represents there is
 
-```julia
-𝐑′ₚ = [R′ₚʷ,  R′ₚˣ,  R′ₚʸ,  R′ₚᶻ]
+```math
+r = R'ₚʷ + R'ₚˣ 𝐢 + R'ₚʸ 𝐣 + R'ₚᶻ 𝐤 = Λ̃\, 𝐑'ₚ\, Λ,
 ```
 
-(Note that the previous equation was in "math" face, while this one is
-in "code" face, to distinguish what *should* happen analytically from
-what *does* happen practically.)  To resolve the mismatch, we just
-have to conjugate by ``Λ`` to get the correct rotor relative to the
-primed frame, which we can do implicitly and arrive at
+because the basis bivectors transform like the legs, ``𝐢' =
+Λ\,𝐢\,Λ̃``, and so on.  So ``𝐑'_p\,Λ = Λ\,r``, and the flagpole
+condition becomes
 
-```julia
-𝐑ₚ = K(Λ * 𝐑′ₚ)
+```math
+𝐑'ₚ \boldsymbol{ℓ}' 𝐑̃'ₚ
+= \left(Λ\, r\right) \boldsymbol{ℓ} \left(Λ\, r\right)^{\sim}
+∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̃ₚ,
 ```
 
-as the correct rotor to use in the unprimed frame.  This is exactly
-what [`aberration`](@ref Scri.aberration)`(R′ₚ, Λ)` computes.  Again,
-the ``A`` and ``N`` factors that the extraction discards are exactly
-the ones accounted for elsewhere: the conformal factor ``κ``, and the
-component mixing, which re-enters in as a null rotation about the
-generator ``𝐧``, as discussed next.
+and similarly for the flagplane.  The [Lorentz page](@ref "Reversing
+the order") argued that all we actually need is the ``K`` factor of
+the rotor ``Λ\,r``, so
+
+```math
+𝐑ₚ = K\left(Λ\, r\right).
+```
+
+The rotor ``r`` is what the Lorentz page writes as ``𝐑'_p``, the
+pixel's point frame read in the old components, so ``Λ\,r`` is that
+page's point frame ``𝐐``.  Here ``K`` is the function that extracts
+the ``K`` factor from a ``KAN`` decomposition.  (Note that the
+equation above is in "math" face, while the one below is in "code"
+face, to distinguish what happens analytically from what happens
+practically.)  In code, ``r`` is just the array `R′ₚ`, so this is
+
+```julia
+Rₚ = K(Λℐ * R′ₚ)
+```
+
+which is exactly what [`aberration`](@ref Scri.aberration)`(R′ₚ, Λℐ)`
+computes, where `Λℐ` is ``Λ`` at ``ℐ⁺``.  At ``ℐ⁻`` the code passes
+the parity conjugate ``Λ_ℐ`` = `ℂconj(Λ) = Boost(-v⃗) * R` instead of
+``Λ``, as the docstring of `aberration` explains.
+Again, the ``A`` and ``N`` factors that the extraction discards are
+exactly the ones accounted for elsewhere: the conformal factor ``κ``,
+and the component mixing, which re-enters as a null rotation about the
+generator ``𝐧``, as discussed on [the tetrad page](@ref "BMS Action on
+the Tetrad").
