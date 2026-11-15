@@ -60,18 +60,22 @@ There is no single formula, but two effects set the scale.
     to ``4ℓ_α`` to the data's band limit — which may be quite
     significant — but only to the components that vanish most quickly.
     Finally, we can think of a supertranslation in terms of the Taylor
-    expansion of the data in time.  That is, for a field ``f``, the
-    supertranslation shifts it (assuming the Taylor series is a
-    reasonable approximation) to
+    expansion of the data in time.  With ``t' = t - α``, the new data at
+    time ``t`` are the old data at ``t + α``.  That is, for a field
+    ``f``, the supertranslation shifts it (assuming the Taylor series is
+    a reasonable approximation) to
 
     ```math
-    f(t - α) = f(t) - α \dot{f}(t) + \frac{α²}{2} \ddot{f}(t) - \ldots.
+    f(t + α) = f(t) + α \dot{f}(t) + \frac{α²}{2} \ddot{f}(t) + \ldots.
     ```
 
-    This is a more complicated effect because progressively higher
-    powers are multiplied by progressively higher time derivatives,
-    which should have progressively lower amplitudes.  The size of
-    this effect is intertwined with details about the waveform.
+    (Note that this is *not* how the supertranslation is actually
+    implemented in the code; it is just a way to understand the
+    effect.) This is a more complicated effect because progressively
+    higher powers are multiplied by progressively higher time
+    derivatives, which should have progressively lower amplitudes.
+    The size of this effect is intertwined with details about the
+    waveform.
 
 * **Boosts.**  A boost can similarly be thought of in distinct ways.
     First, the aberration changes the angular shape of the waves,

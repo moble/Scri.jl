@@ -71,19 +71,18 @@ data′, t′ = transform!(copy(data), t, v⃗, R, α, dc)
 The band limit of the output is the band limit of the array you pass
 in.  Because BMS transformations push power to higher ``ℓ``, you will
 usually want to *pad first* — embed the data in a larger array before
-transforming — as described under [Choosing
-``ℓ_\mathrm{max}``](@ref choosing_ell_max).
+transforming — as described under [Choosing ``ℓ_\mathrm{max}``](@ref
+choosing_ell_max).
 
 ## Reusing the setup across calls
 
 Part of every call to `transform!` depends on no BMS parameter: the
-grid on which the transformed data are analyzed back into
-modes, and the factorization of the analysis matrix there for each
-spin weight in the data.  At high ``ℓ_\mathrm{max}`` those
-factorizations are a large share of the cost.  When transforming many
-times at one band limit, precision, and set of components, as in a
-scan over parameters, build a [`TransformPlan`](@ref) once and pass it
-along:
+grid on which the transformed data are analyzed back into modes, and
+the factorization of the analysis matrix there for each spin weight in
+the data.  At high ``ℓ_\mathrm{max}`` those factorizations are a large
+share of the cost.  When transforming many times at one band limit,
+precision, and set of components, as in a scan over parameters, build
+a [`TransformPlan`](@ref) once and pass it along:
 
 ```julia
 plan = TransformPlan(data, dc)
@@ -102,7 +101,15 @@ about a third as long with the plan as without it.
 The fully explicit form takes the transformation as separate parts —
 boost velocity `v⃗` (a `QuatVec`), frame rotation `R` (a `Rotor`), and
 supertranslation mode weights `α` — along with the
-[`DataComponents`](@ref) descriptor:
+[`DataComponents`](@ref) descriptor.  Here `v⃗` is the velocity of the
+new observer relative to the old one, and the new axes are the old
+axes turned by `R` before the boost, both given in the old frame's
+components: the new legs are ``𝐞'_μ = Λ\,𝐞_μ\,Λ̃`` with the frame
+rotor ``Λ = B(v⃗)\,R``.  For example, with `R = Rotor(√2, 0, 0, √2)`,
+a quarter turn about ``z``, the new ``x`` axis is the old ``y`` axis,
+and the event with old coordinates ``(0, 1, 0, 0)`` has new
+coordinates ``(0, 0, -1, 0)``.  The precise meaning of both is fixed
+on the page [Frames and Components](@ref frames_and_components).
 
 ```julia
 dc = DataComponents(:h, :ψ₄)
@@ -137,11 +144,13 @@ slices.  But each slice needs complete data over the whole sphere to
 supply the spherical-harmonic synthesis; the first such slice of
 ``t'`` will be later than the first slice of ``t``, and the last slice
 of ``t'`` will be earlier than the last slice of ``t``.  This is a
-necessary feature of any transformation with a nonzero boost or
-supertranslation.  `transform!` therefore constructs a new time grid
-`t′` by *scaling* the input `t` to cover the largest possible span.
-In particular, `t′` has the same number of samples as `t`.  This `t′`
-is returned along with the data:
+necessary feature of any transformation with a nonzero boost or a
+supertranslation that varies over the sphere.  (A pure time
+translation does not produce a tilt; it only relabels the slices.)
+`transform!` therefore constructs a new time grid `t′` by *scaling*
+the input `t` to cover the largest possible span.  In particular, `t′`
+has the same number of samples as `t`.  This `t′` is returned along
+with the data:
 
 ```julia
 data′, t′ = transform!(data, t, v⃗, R, α, dc)

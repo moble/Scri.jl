@@ -95,6 +95,12 @@ take.  The superscript ``×`` indicates the multiplicative group of
 nonzero elements of the field — meaning that the parameters cannot be
 zero.
 
+The sign ``c_α`` enters the time law ``t' = κ\,[t - c_α α]`` of a BMS
+transformation.  The conformal factor ``κ`` in that law is not a
+convention parameter: it is always the ratio ``k^0/k^{0'}`` of the old
+to the new time component of a null ray, as fixed on the page [Frames
+and Components](@ref frames_and_components).
+
 A user can make choices about these conventions, and implement them by
 creating a `Conventions` object with the desired values, then passing
 that object to the relevant functions.

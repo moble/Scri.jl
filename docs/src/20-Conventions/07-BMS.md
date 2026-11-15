@@ -19,7 +19,7 @@ which the active convention is more natural.
 <!-- markdownlint-enable MD049 -->
 ```
 
-We assume two sets (primed and unprimed) of asymptotic coordinates as
+We assume two sets (primed and unprimed) of the asymptotic coordinates
 introduced on the [tetrad-conventions page](@ref "Tetrad").  The
 *supertranslation* (ignoring the Lorentz transformations for the
 moment) affects only the time coordinate:

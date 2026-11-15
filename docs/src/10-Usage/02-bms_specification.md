@@ -4,16 +4,18 @@ CurrentModule = Scri
 
 # Specifying a BMS Transformation
 
-A general BMS element is the composition of three simpler
-transformations, which this package applies in a fixed order:
-supertranslation ``α`` first, then spatial rotation ``R``, then boost
-``v⃗``.  Each of the three is specified in the coordinate system of
-the initial, inertial observer, and each is described below as if it
-were acting alone.  Throughout, we use the *passive* convention: the
-spacetime events are fixed, and it is the coordinates used to describe
-them that change (see [BMS Transformations](@ref) for some details
-about conventions, and [The Lorentz Group](@ref) and [The BMS
-Group](@ref bms_group) for the underlying theory).
+A general BMS element combines three simpler transformations: a
+supertranslation ``α``, a spatial rotation ``R``, and a boost ``v⃗``.
+The supertranslation is applied first, as a function of the direction
+in the frame of the initial, inertial observer ``A``.  The rotation and
+the boost are both given in ``A``'s components: the new axes are
+``A``'s axes turned by ``R`` and then boosted with velocity ``v⃗``.
+Each part is described below as if it were acting alone.
+Throughout, we use the *passive* convention: the spacetime events are
+fixed, and it is the coordinates used to describe them that change (see
+[BMS Transformations](@ref) for some details about conventions, and
+[The Lorentz Group](@ref) and [The BMS Group](@ref bms_group) for the
+underlying theory).
 
 ## The three parts
 
@@ -36,8 +38,10 @@ is related to ``A``'s by ``𝐞' = R\, 𝐞\, R̃``, so a null ray at ``𝐤`` i
 ``𝐤`` along the rotated basis are those of ``R̃\, 𝐤\, R`` along the
 original one.  The time coordinate is unchanged.
 
-The **boost** is given by a velocity ``v⃗`` in ``A``'s frame.  Observer
-``B``'s worldline is parallel to
+The **boost** is given by a velocity ``v⃗`` of observer ``B`` relative
+to observer ``A``, in ``A``'s frame (see [Frames and Components](@ref
+frames_and_components) for the precise statement).  Observer ``B``'s
+worldline is parallel to
 
 ```math
 𝐭' = γ(𝐭 + v⃗),
@@ -52,18 +56,23 @@ t' = κ(𝐤)\, t,
 ```
 
 with ``ℐ = ±1`` selecting [future or past null infinity](@ref
-scri_pm_conventions).  Composing all three, the BMS element
-``(Λ = \text{boost} ∘ R,\ α)`` acts on ``A``'s coordinates ``(t, 𝐤)``
-as
+scri_pm_conventions).  Composing the rotation and the boost, the new
+legs are ``𝐞'_μ = Λ\,𝐞_μ\,Λ̃`` with the *frame rotor* ``Λ = B(v⃗)\,R``,
+where ``B(v⃗)`` is the boost rotor `Boost(v⃗)`.  The BMS element is the
+pair ``(Λ, α)``.  The reverse ``Λ̃ = R̃\,B(-v⃗)`` gives the new
+components of any fixed vector, ``V^{μ'} = (Λ̃\,𝐕\,Λ)^μ``, so the
+element acts on ``A``'s coordinates ``(t, 𝐤)`` as
 
 ```math
 t' = κ(Λ, 𝐤)\,\bigl[t - c_α α(𝐤)\bigr],
 \qquad
-𝐤' = \frac{Λ𝐤}{(Λ𝐤)^0},
+𝐤' = \frac{Λ̃\,𝐤\,Λ}{(Λ̃\,𝐤\,Λ)^0},
 ```
 
-where ``κ(Λ, 𝐤) = k⁰/(Λ𝐤)⁰`` is the conformal factor of the combined
-Lorentz transformation on the null ray ``𝐤 = (1, ℐ k̂)``.
+where ``κ(Λ, 𝐤) = k⁰/(Λ̃\,𝐤\,Λ)⁰`` is the conformal factor of the change
+of frame with frame rotor ``Λ``, on the null ray ``𝐤 = (1, ℐ k̂)``.  The
+rotation does not change it, so it is the same function as the
+``κ(𝐤)`` of the boost alone.
 
 ## Calling `transform!`
 
@@ -107,12 +116,16 @@ data′, t′ = transform!(data, t, g, dc)
 so that `transform!(data, t, g, dc)` reproduces the action of `g` on
 the data.  Pure spacetime translations are just the ``ℓ = 0`` and
 ``ℓ = 1`` parts of a supertranslation, and the `time_translation` /
-`space_translation` keywords set them by their physical parameters
-``δt`` and ``δx⃗`` (see the [BMS decomposition](@ref
-"Decomposition of BMS")).  Elements compose with
-[`compose`](@ref Scri.compose), and their conformal factor on a
-direction is available from [`conformal_factor`](@ref
-Scri.conformal_factor).
+`space_translation` keywords set them by their physical parameters: the
+new origin is the event with coordinates ``(δt, δx⃗)`` in ``A``'s
+frame, at either piece of null infinity and with either sign ``c_α``
+(see the [BMS decomposition](@ref "Decomposition of BMS")).  Elements
+compose with `*`, or [`compose`](@ref Scri.compose), in the order in
+which they are applied: `g₁ * g₂` applies `g₁` first and then `g₂`,
+whose parameters are read in the frame that `g₁` produces, so that
+transforming by `g₁` and then by `g₂` is the same as transforming by
+`g₁ * g₂`.  Their conformal factor on a direction is available from
+[`conformal_factor`](@ref Scri.conformal_factor).
 
 The `BMS` element also tracks the two convention signs `c_α` and `ℐ`
 that fix how its supertranslation is [represented](@ref
