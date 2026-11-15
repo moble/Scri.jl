@@ -2,7 +2,7 @@
 
 Though we go into detail about the *structure* of the BMS group
 [elsewhere](@ref bms_group), we need to specify some basic conventions
-about the coordinate transformation.  For anything not stated on this
+about how the coordinates change.  For anything not stated on this
 page, read the theory behind it in the "BMS Transformations" section.
 
 ```@raw html
@@ -20,8 +20,9 @@ which the active convention is more natural.
 ```
 
 We assume two sets (primed and unprimed) of asymptotic coordinates as
-introduced on the [tetrad-conventions page](@ref "Tetrad").  The BMS
-supertranslation affects only the time coordinate:
+introduced on the [tetrad-conventions page](@ref "Tetrad").  The
+*supertranslation* (ignoring the Lorentz transformations for the
+moment) affects only the time coordinate:
 
 ```math
 u' = u - c_α α(θ,ϕ).
@@ -46,15 +47,29 @@ that the two groups are isomorphic — though in a slightly complicated
 way.  So through this identification, we can treat the two groups as a
 single BMS group.
 
+A general BMS element applies a Lorentz transformation after the
+supertranslation, and the time coordinate then transforms as
+
+```math
+t' = κ\,\bigl[t - c_α α(θ,ϕ)\bigr],
+```
+
+where ``t`` is ``u`` or ``v``, and ``κ`` is the conformal factor of
+the Lorentz transformation on the null ray through the point.  The
+meaning of the boost velocity ``v⃗``, the rotation ``R``, the frame
+rotor ``Λ``, and ``κ`` is fixed on the page [Frames and
+Components](@ref frames_and_components), which also compares this
+ordering with that of [Sachs_1962a](@citet).
+
 ## [Future and past null infinity](@id scri_pm_conventions)
 
 The data that we manipulate *and* the various transformations exist on
 a chosen piece of ``ℐ`` — the two pieces of which are future null
 infinity ``ℐ⁺`` and past null infinity ``ℐ⁻``.  Knowing which piece we
 are working on is important, and we will frequently need to retain a
-sign to track that information.  By mild abuse of notation, we will
-denote this variable simply as ``ℐ`` — or `ℐ` in the code.  The sign
-is defined as
+sign to track that information.  We will abuse notation slightly,
+denoting this variable simply as ``ℐ`` — which looks like `ℐ` in code.
+The sign is defined in the obvious way as
 
 ```math
 ℐ = \begin{cases}
