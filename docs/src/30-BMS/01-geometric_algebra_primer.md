@@ -310,6 +310,34 @@ throughout.  While the distinction doesn't matter for the integer-spin
 fields that are most common in the literature, it is actually easier
 to work with the more general _Spin_ group.
 
+### Rotating vectors and rotating frames
+
+The sandwich ``𝐯 ↦ R𝐯R̃`` always produces a new vector from the one it
+is given.  Whether a calculation describes an _active_ or a _passive_
+transformation is decided only by what the sandwich is applied to.
+Applied to a physical vector, with the basis held fixed, it moves the
+vector.  Applied to the basis vectors, with every physical vector held
+fixed, it builds a new basis ``𝐞'_μ = R𝐞_μR̃``, which is a change of
+frame.  The components of a fixed vector ``𝐯`` in the new basis then
+follow from the reverse rotor:
+
+```math
+𝐯 = v^{μ'}\,𝐞'_μ = v^{μ'}\,R𝐞_μR̃
+\quad⟹\quad
+R̃𝐯R = v^{μ'}\,𝐞_μ
+\quad⟹\quad
+v^{μ'} = \bigl(R̃𝐯R\bigr)^μ.
+```
+
+So a change of frame by ``R`` changes components exactly as an active
+transformation by ``R̃`` would.  Active transformations compose right
+to left, so that ``R₂R₁`` applies ``R₁`` first.  But when each change
+of frame is specified in the frame produced by the one before, as with
+Euler angles about moving axes, the composite frame rotor is ``R₁R₂``.
+In this package the frame rotor is always written ``Λ``, so that the
+new components of a fixed vector are those of ``Λ̃𝐯Λ``; the page
+[Frames and Components](@ref frames_and_components) fixes the details.
+
 ## Higher-dimensional products
 
 The bivector is part of a broader pattern.  The product of two
@@ -425,12 +453,12 @@ we have to remember that ``i`` will have new meaning in the new frame.
     ``𝐈₃`` itself transforms under null rotations, so we have to
     expect our transformation law for ``𝐦`` to reflect this.
     Specifically, we need to factor as
-    ``𝐑 𝐈₃𝐲 𝐑̄  = (𝐑 𝐈₃ 𝐑̄ )\, (𝐑 𝐲 𝐑̄)``.
+    ``𝐑 𝐈₃𝐲 𝐑̃  = (𝐑 𝐈₃ 𝐑̃ )\, (𝐑 𝐲 𝐑̃)``.
 
 This is _almost_ the null tetrad used in, e.g., the Newman-Penrose
 formalism, except our definitions of ``𝐦`` and ``𝐦̄`` do not use the
-unit imaginary ``i ∈ ℂ``, but rather the unit pseudoscalar ``𝐈 ∈
-𝒢(ℝ^{3,1})``.  In fact, with these definitions, ``𝐦`` and ``𝐦̄``
+unit imaginary ``i ∈ ℂ``, but rather the spatial pseudoscalar ``𝐈₃ =
+𝐈𝐭 ∈ 𝒢(ℝ^{3,1})``.  In fact, with these definitions, ``𝐦`` and ``𝐦̄``
 are not even vectors, but more general multivectors.  This makes
 almost no difference to the calculations, but it does allow us to work
 entirely within the geometric algebra, without the gratuitous and

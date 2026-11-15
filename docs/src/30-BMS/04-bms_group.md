@@ -2,35 +2,38 @@
 
 ## Bondi-Sachs coordinates, metric, and gauge
 
-The natural setting for outgoing radiation is a coordinate system built
-from the light cones themselves.  We foliate the neighborhood of ``ℐ⁺``
-by outgoing null cones, label each cone by a *retarded time* ``u`` that
-is constant across it, and coordinatize the cross-sections by a radial
-coordinate ``r`` together with two angles ``xᴬ = (θ, ϕ)`` that stay
-fixed along each outgoing null ray.  That ray — the generator of the
-cone — is the null vector ``ℓ`` of [the standard tetrad](@ref
-"Tetrad").  These are the *Bondi–Sachs coordinates* [Sachs_1962a](@cite).
+The natural setting for outgoing radiation is a coordinate system
+built from the light cones themselves.  We foliate the neighborhood of
+``ℐ⁺`` by outgoing null cones, label each cone by a *retarded time*
+``u`` that is constant across it, and coordinatize the cross-sections
+by a radial coordinate ``r`` together with two angles ``xᴬ = (θ, ϕ)``
+that stay fixed along each outgoing null ray.  That ray — the
+generator of the cone — is the null vector ``ℓ`` of [the standard
+tetrad](@ref "Tetrad").  These are the *Bondi–Sachs coordinates*
+[Sachs_1962a](@cite).
 
-*Bondi gauge* is the handful of conditions that pin them down.  We take
-``r`` to be an areal radius, so that the determinant of the angular
-metric is ``r⁴`` times that of the round unit sphere, and we require the
-metric to approach Minkowski as ``r → ∞``, with its angular part
-approaching ``r² dΩ²`` — the round unit-sphere metric.  The full
-asymptotic expansion of the metric is standard [Sachs_1962a](@cite) and
-thoroughly coordinate-dependent; we will not need it.  We need exactly
-one fact drawn from it: *asymptotically, the angular part of the metric
-is ``r²`` times a round unit-sphere metric.*
+*Bondi gauge* is the handful of conditions that pin them down.  We
+take ``r`` to be an areal radius, so that the determinant of the
+angular metric is ``r⁴`` times that of the round unit sphere, and we
+require the metric to approach Minkowski as ``r → ∞``, with its
+angular part approaching ``r² dΩ²`` — the round unit-sphere metric.
+The full asymptotic expansion of the metric is standard
+[Sachs_1962a](@cite) and thoroughly coordinate-dependent; we will not
+need it.  We need exactly one fact drawn from it: *asymptotically, the
+angular part of the metric is ``r²`` times a round unit-sphere
+metric.*
 
 That single condition is what gives the conformal factor its meaning.
 An asymptotic symmetry is free to rescale ``r`` and to change the
 round metric on the sphere, but Bondi gauge ties the two together: the
 sphere metric may change only by an overall, angle-dependent
 rescaling, and the rescaling of the radius against the rescaling of
-the sphere is precisely Sachs's conformal factor ``κ``.  The rest of
-this page makes that statement precise by dropping the coordinates and
-keeping the geometry — the cross-sections of ``ℐ⁺`` assemble into a
-*celestial sphere*, and the asymptotic symmetries act on it
-conformally.
+the sphere is precisely the conformal factor ``κ``, which
+[Sachs_1962a](@citet) calls ``K`` (his equations 3.5 and 3.7).  The
+rest of this page makes that statement precise by dropping the
+coordinates and keeping the geometry — the cross-sections of ``ℐ⁺``
+assemble into a *celestial sphere*, and the asymptotic symmetries act
+on it conformally.
 
 ## Supertranslations ``𝒮``
 
@@ -62,12 +65,17 @@ acts solely on the time coordinate as
 t'(t, 𝐤) = t - c_α α(𝐤).
 ```
 
-The Lorentz transformation ``Λ ∈ ℒ`` acts on the spatial coordinates
-as well as the time coordinate, the latter as
+A Lorentz transformation, with frame rotor ``Λ ∈ ℒ``, changes the
+spatial coordinates as well as the time coordinate, the latter as
 
 ```math
-t'(t, 𝐤) = κ(Λ, 𝐤) t.
+t'(t, 𝐤) = κ(Λ, 𝐤) t,
 ```
+
+where ``κ(Λ, 𝐤) = k⁰/(Λ̃\,𝐤\,Λ)⁰`` is the ratio of the old to the
+new time component of the null ray ``𝐤``, whose new components are
+those of ``Λ̃\,𝐤\,Λ`` (see [Frames and Components](@ref
+conformal_factor_convention)).
 
 We can combine these two transformations, applying ``α`` first and
 then ``Λ``, to get the general transformation of the time coordinate:
@@ -78,33 +86,36 @@ t'(t, 𝐤) = κ(Λ, 𝐤) [t - c_α α(𝐤)].
 
 Now, we can investigate how repeated transformations compose.  Take
 ``α₁, α₂ ∈ 𝒮`` and ``Λ₁, Λ₂ ∈ ℒ``, and we apply ``α₁`` followed by
-``Λ₁``, and then ``α₂`` followed by ``Λ₂``.  First, note that the null
-ray transforms as
+``Λ₁``, and then ``α₂`` followed by ``Λ₂``, where ``α₂`` and ``Λ₂``
+are given in the frame that the first pair produces.  First, note that
+the new components of the null ray are those of
 
 ```math
-𝐤' = Λ₁ 𝐤.
+𝐤' = Λ̃₁\, 𝐤\, Λ₁.
 ```
 
-Also, using the definition of ``κ``, we can compute[^1]
+Also, using the definition of ``κ``, and the fact that the frame rotor
+of the two changes together is ``Λ₁Λ₂``, whose reverse is ``Λ̃₂Λ̃₁``,
+we can compute the *cocycle property* of ``κ``:[^1]
 
 ```math
 \begin{aligned}
-κ(Λ₂Λ₁, 𝐤)
-&= \frac{k⁰}{{(Λ₂Λ₁)⁰}ᵦkᵝ} \\
-&= \frac{k⁰}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \\
-&= \frac{{(Λ₁)⁰}ᵦkᵝ}{{(Λ₂)⁰}ᵧ {(Λ₁)ᵞ}ᵦkᵝ} \frac{k⁰}{{(Λ₁)⁰}ᵦkᵝ} \\
-&= κ(Λ₂, Λ₁𝐤)\,κ(Λ₁, 𝐤).
+κ(Λ₁Λ₂, 𝐤)
+&= \frac{k⁰}{(Λ̃₂Λ̃₁\, 𝐤\, Λ₁Λ₂)⁰} \\
+&= \frac{(Λ̃₁\, 𝐤\, Λ₁)⁰}{\bigl(Λ̃₂\, (Λ̃₁\, 𝐤\, Λ₁)\, Λ₂\bigr)⁰}\,
+   \frac{k⁰}{(Λ̃₁\, 𝐤\, Λ₁)⁰} \\
+&= κ(Λ₂, Λ̃₁𝐤Λ₁)\,κ(Λ₁, 𝐤).
 \end{aligned}
 ```
 
-These allow us to write
+These two results allow us to write
 
 ```math
 \begin{aligned}
 t''(t', 𝐤')
 &= κ(Λ₂, 𝐤') [t' - c_α α₂(𝐤')] \\
-&= κ(Λ₂, Λ₁𝐤) \left\{κ(Λ₁, 𝐤) [t - c_α α₁(𝐤)] - c_α α₂(Λ₁𝐤)\right\} \\
-&= κ(Λ₂Λ₁, 𝐤) \left\{t - c_α [α₁(𝐤) + α₂(Λ₁𝐤) / κ(Λ₁, 𝐤)]\right\} \\
+&= κ(Λ₂, Λ̃₁𝐤Λ₁) \left\{κ(Λ₁, 𝐤) [t - c_α α₁(𝐤)] - c_α α₂(Λ̃₁𝐤Λ₁)\right\} \\
+&= κ(Λ₁Λ₂, 𝐤) \left\{t - c_α [α₁(𝐤) + α₂(Λ̃₁𝐤Λ₁) / κ(Λ₁, 𝐤)]\right\} \\
 \end{aligned}
 ```
 
@@ -119,8 +130,8 @@ where
 
 ```math
 \begin{aligned}
-Λ &= Λ₂ Λ₁, \\
-α(𝐤) &= α₁(𝐤) + α₂(Λ₁ 𝐤)/κ(Λ₁, 𝐤).
+Λ &= Λ₁ Λ₂, \\
+α(𝐤) &= α₁(𝐤) + α₂(Λ̃₁𝐤Λ₁)/κ(Λ₁, 𝐤).
 \end{aligned}
 ```
 
@@ -132,9 +143,9 @@ function of the null rays in those transformed components.
 [^1]: The equality between the first and last lines of this equation
     is the defining feature of a "crossed homomorphism" — or more
     specifically a "1-cocycle" — of the Lorentz group with values in
-    the multiplicative group of positive real numbers (the ``κ``
-    function) [Brown_1982, nlab:crossed_homomorphism](@cite).  Though
-    we explicitly compute it here, that equality is a general
+    the multiplicative group of positive functions on the sphere (the
+    ``κ`` function) [Brown_1982, nlab:crossed_homomorphism](@cite).
+    Though we explicitly compute it here, that equality is a general
     consequence of the definition of ``κ`` as the factor needed to
     restore the preferred section after a Lorentz transformation.
 
@@ -150,41 +161,45 @@ product](https://en.wikipedia.org/wiki/Semidirect_product#Outer_semidirect_produ
 where the homomorphism ``\mathrm{Ad}: ℒ → \text{Aut}(𝒮)`` is given by
 
 ```math
-\mathrm{Ad}(Λ)(α)(𝐤) = \frac{α(Λ^{-1}𝐤)}{κ(Λ^{-1}, 𝐤)}.
+\mathrm{Ad}(Λ)(α)(𝐤) = \frac{α(Λ̃\,𝐤\,Λ)}{κ(Λ, 𝐤)},
 ```
 
-The identity element of this group is the pair ``(1, 0)``, and a
-general element is
+where ``α(Λ̃\,𝐤\,Λ)`` means ``α`` evaluated at the label of the ray
+whose components are those of ``Λ̃\,𝐤\,Λ``.
+
+The identity element of this group is the pair ``(1, 0)``.  We write
+products in the order in which their factors are applied, so that a
+general element, whose supertranslation is applied first, is
 
 ```math
-(Λ, α) = (Λ, 0) ∘ (1, α).
+(Λ, α) = (1, α)\,(Λ, 0).
 ```
 
-The group operation is defined as
+The group operation is then
 
 ```math
-(Λ₂, α₂) (Λ₁, α₁) = (Λ₂ Λ₁, α₁ + α₂ ∘ Λ₁ / κ₁).
+(Λ₁, α₁)\,(Λ₂, α₂) = \bigl(Λ₁ Λ₂, α₁ + \mathrm{Ad}(Λ₁)(α₂)\bigr),
 ```
 
-The name comes from conjugation.  Writing each element as a product
-gives ``Λ₂ α₂ Λ₁ α₁ = Λ₂ Λ₁ (Λ₁^{-1} α₂ Λ₁)\, α₁``, and comparing this
-with the group law shows that ``Λ₁^{-1} α₂ Λ₁ = α₂ ∘ Λ₁ / κ₁``, which
-is ``\mathrm{Ad}(Λ₁^{-1})(α₂)``.  That is, ``\mathrm{Ad}(Λ)(α) = Λ α
-Λ^{-1}``, the action of ``ℒ`` on ``𝒮`` by conjugation.
+and the inverse is ``(Λ, α)^{-1} = \bigl(Λ̃, -\mathrm{Ad}(Λ̃)(α)
+\bigr)``.  Here each ``Λ`` is a frame rotor, and each element is
+specified in the frame it acts from, so ``(Λ₂, α₂)`` is given in the
+frame produced by ``(Λ₁, α₁)``.  The frame rotors therefore compose as
+``Λ₁Λ₂``, and their reverses, which give the new components, as
+``Λ̃₂Λ̃₁`` (see [Frames and Components](@ref frames_and_components)).
+
+The name comes from conjugation.  Writing each element as a product in
+the order of application, ``(Λ, α) = αΛ``, gives ``α₁Λ₁α₂Λ₂ =
+α₁\,(Λ₁α₂Λ₁^{-1})\,Λ₁Λ₂``, and comparing this with the group law shows
+that ``Λ₁α₂Λ₁^{-1} = \mathrm{Ad}(Λ₁)(α₂)``.  That is,
+``\mathrm{Ad}(Λ)(α) = Λ α Λ^{-1}``, the action of ``ℒ`` on ``𝒮`` by
+conjugation, and it appears in the group law directly.
 
 Composing with a Lorentz transformation and dividing by ``κ``
 preserves the defining properties of the supertranslations, so
 ``\mathrm{Ad}(Λ)`` is indeed an automorphism.  The cocycle property of
-``κ`` in the footnote above then gives ``\mathrm{Ad}(Λ₂ Λ₁) =
-\mathrm{Ad}(Λ₂)\, \mathrm{Ad}(Λ₁)``, so ``\mathrm{Ad}`` is a
-homomorphism.
-
-Note that the map ``α ↦ α ∘ Λ / κ_Λ`` that appears directly in the
-group law is ``\mathrm{Ad}(Λ^{-1})``, not ``\mathrm{Ad}(Λ)``.  It
-reverses the order of composition: applying it for ``Λ₂`` and then for
-``Λ₁`` gives the map for ``Λ₂ Λ₁``.  It is therefore a *right* action
-of ``ℒ`` on ``𝒮``, an anti-homomorphism into ``\text{Aut}(𝒮)``, which
-is why the subscript on ``⋉`` names ``\mathrm{Ad}`` instead.
+``κ`` noted above then gives ``\mathrm{Ad}(Λ₁ Λ₂) = \mathrm{Ad}(Λ₁)\,
+\mathrm{Ad}(Λ₂)``, so ``\mathrm{Ad}`` is a homomorphism.
 
 The groups ``ℒ`` and ``𝒮`` are isomorphic to subgroups of
 ``\text{BMS}`` in the obvious way: we can identify any Lorentz
@@ -195,7 +210,8 @@ BMS group.  Note that, by this construction, ``𝒮`` is a [normal
 subgroup](https://en.wikipedia.org/wiki/Normal_subgroup) of
 ``\text{BMS}``, but ``ℒ`` is not.  That is, for ``Λ ∈ ℒ`` and ``α ∈
 𝒮``, the element ``Λ α Λ⁻¹`` is still an element of ``𝒮``, but ``α Λ
-α⁻¹`` is not an element of ``ℒ``.  This fact will be useful later.
+α⁻¹`` need not be an element of ``ℒ``.  This fact will be useful
+later.
 
 We have essentially *constructed* the BMS group, but
 [Sachs_1962a](@citet) actually *derived* it from the asymptotic metric
@@ -208,7 +224,7 @@ group to honor his contribution.)  His slightly later paper
 and proved some important properties, including:
 
   1. The supertranslations form an abelian normal subgroup ``N`` of
-     the BMS group; the factor group is isomorphic to the Poincaré
+     the BMS group; the factor group is isomorphic to the Lorentz
      group.
   2. The translations form a normal four-dimensional subgroup of the
      proper BMS group.
@@ -220,34 +236,44 @@ and proved some important properties, including:
 
 In particular, the Poincaré group — which Sachs refers to by its
 longer name, the inhomogeneous (proper) orthochronous Lorentz group —
-is a subgroup of the BMS group, though it is not a normal subgroup
-because conjugating a spatial translation by a Lorentz transformation
-results in a general supertranslation.
+is a subgroup of the BMS group, though it is not a normal subgroup.
+Conjugating a translation by a Lorentz transformation gives another
+translation, but conjugating a Lorentz transformation by a proper
+supertranslation gives an element outside the Poincaré group, as shown
+on [the geometric tetrad page](@ref tetrad_geometric).
 
 !!! note "Which way around is κ?"
 
-    It is easy to confuse ``κ`` with ``1/κ`` in these formulas — not
-    least because different references actually define it both ways.  A
-    discerning consistency check is *Poincaré closure*.  That is, we
+    It is easy to confuse ``κ`` with ``1/κ`` in these formulas.  Ours
+    is the ratio ``κ = k⁰/k^{0'}`` of the old to the new time component
+    of a fixed null ray, whose new components are those of
+    ``Λ̃\,𝐤\,Λ``.  [Sachs_1962a](@citet) calls the same factor ``K``,
+    but he applies the supertranslation after the Lorentz
+    transformation, on the new sphere, so his ``α`` differs from ours
+    by a factor of ``κ``; the conversion is given on the page [Frames
+    and Components](@ref frames_and_components).  A discerning
+    consistency check is *Poincaré closure*.  That is, we
     perform a transformation that comes from the Poincaré subgroup of
     BMS and check that the BMS result is the same as the simpler
     Poincaré result.  Specifically, the time translation ``α = δt``
     corresponds to a spacetime translation by the 4-vector
     ``\boldsymbol{δ} = (δt, 0, 0, 0)``.  We can readily compute
-    ``Λ^{-1} \boldsymbol{δ} Λ = γ\,δt\,(1; v⃗)`` for a pure boost
-    with velocity v⃗, which is equivalent to the BMS
-    supertranslation ``α' = γ\,δt\,(1 - v⃗⋅k̂) = δt/κ``.
+    ``Λ \boldsymbol{δ} Λ̃ = γ\,δt\,(1; v⃗)`` for a pure boost with
+    velocity ``v⃗``, whose frame rotor is ``Λ = B(v⃗)``, which is
+    equivalent to the BMS supertranslation ``α' = γ\,δt\,(1 - v⃗⋅k̂) =
+    δt/κ``.
 
     Our group multiplication law is consistent, because we take
-    ``Λ₂=Λ⁻¹``, ``Λ₁=Λ``, ``α₁=0``, and ``α₂=δt`` to find that
+    ``Λ₁=Λ``, ``α₁=0``, ``Λ₂=Λ⁻¹``, and ``α₂=δt`` to find that
     ```math
-    (Λ₂, α₂) (Λ₁, α₁) = Λ⁻¹ ∘ δt ∘ Λ = (1, α ∘ Λ / κ) = (1, δt / κ).
+    (Λ₁, α₁)\,(Λ₂, α₂) = Λ\,δt\,Λ⁻¹ = \bigl(1, \mathrm{Ad}(Λ)(δt)\bigr) = (1, δt / κ).
     ```
     The last equality is because ``α`` is constant over the sphere,
-    so evaluating in the direction ``Λ𝐤`` is the same as evaluating
-    in the direction ``𝐤``, and the resulting value is ``δt``.  That
-    factor of  ``1/κ`` is given by our composition law, and is exactly
-    the same as the result of the Poincaré transformation.
+    so evaluating in the direction ``Λ̃\,𝐤\,Λ`` is the same as
+    evaluating in the direction ``𝐤``, and the resulting value is
+    ``δt``.  That factor of ``1/κ`` is given by our composition law,
+    and is exactly the same as the result of the Poincaré
+    transformation.
 
 ## [Representations of the supertranslation](@id bms_representations)
 
@@ -275,15 +301,15 @@ map ``A: k̂ ↦ -k̂``:
 since ``Y_{ℓ,m}(-k̂) = (-1)^ℓ\, Y_{ℓ,m}(k̂)``.  The Lorentz part needs
 no such choice — a rotor is representation-neutral — but its
 *realization* as a map of labels does depend on the labeling: on the
-antipodal labels, ``Λ`` acts through the conjugated map ``A ∘ Λ ∘ A``,
-which flips the boost part (``v⃗ ↦ -v⃗``) while leaving rotations
-alone — exactly why the conformal factor and the direction map involve
-the ``ℐ`` sign.
+antipodal labels, the label map ``𝐤 ↦ Λ̃\,𝐤\,Λ`` becomes the
+conjugated map ``A ∘ Λ̃ ∘ A``, which flips the boost part (``v⃗ ↦
+-v⃗``) while leaving rotations alone — exactly why the conformal
+factor and the direction map involve the ``ℐ`` sign.
 
-The [`BMS`](@ref) type therefore retains that choice as data — the
-`I` type parameter — declaring which labeling the stored modes refer
-to, alongside the analogous supertranslation-sign convention `A` (the
-sign with which ``α`` enters the time law ``t' = κ(t - c_αα)``).  Both
+The [`BMS`](@ref) type therefore retains that choice as data — the `I`
+type parameter — declaring which labeling the stored modes refer to,
+alongside the analogous supertranslation-sign convention `A` (the sign
+with which ``α`` enters the time law ``t' = κ(t - c_αα)``).  Both
 default to `+1`: future null infinity, and the plus sign.  The
 conversion constructor `BMS(g; c_α, ℐ)` (see [`BMS`](@ref)) converts
 an element between representations — exactly, since both conversions
@@ -292,14 +318,14 @@ are pure sign flips.
 Because the "twist" in the twisted group law,
 
 ```math
-α(𝐤) = α₁(𝐤) + α₂(Λ₁𝐤)/κ(Λ₁, 𝐤),
+α(𝐤) = α₁(𝐤) + α₂(Λ̃₁𝐤Λ₁)/κ(Λ₁, 𝐤),
 ```
 
-is built from the label map ``Λ₁𝐤`` and the conformal factor ``κ(Λ₁,
-𝐤)`` — both realized on the *labeled* sphere — the coordinates of a
-composite element depend on the representation even though the
-abstract group does not.  To make that precise, write ``∘⁺`` and
-``∘⁻`` for the two composition laws: each is the formula above, with
+is built from the label map ``𝐤 ↦ Λ̃₁\,𝐤\,Λ₁`` and the conformal
+factor ``κ(Λ₁, 𝐤)`` — both realized on the *labeled* sphere — the
+coordinates of a composite element depend on the representation even
+though the abstract group does not.  To make that precise, write
+``·⁺`` and ``·⁻`` for the two products: each is the formula above, with
 the label map and conformal factor computed from the corresponding
 section ``𝐤 = (1, ±k̂)``.  Note that ``κ`` itself needs no such
 decoration: as defined [above](@ref "Lorentz transformations ``ℒ`` and
@@ -319,33 +345,36 @@ P \colon \text{BMS}⁺ &→ \text{BMS}⁻, \\
 
 which sends the coordinates of a ``\text{BMS}⁺`` element to the
 coordinates of the matched ``\text{BMS}⁻`` element — and, being an
-involution, back again.  Then the two composition laws are related by
+involution, back again.  Then the two products are related by
 
 ```math
-P(g₂) ∘⁻ P(g₁) = P(g₂ ∘⁺ g₁).
+P(g₁) ·⁻ P(g₂) = P(g₁ ·⁺ g₂).
 ```
 
 That is, composing the matched elements at ``ℐ⁻`` yields the matched
 composite — precisely the statement that ``P`` is a group isomorphism
 ``\text{BMS}⁺ → \text{BMS}⁻``.  Pointwise, the matched element acts
-antipodally: if ``g`` maps ``(t, k̂) ↦ (t', k̂')`` on ``ℐ⁺``, then
-``P(g)`` maps ``(t, -k̂) ↦ (t', -k̂')`` on ``ℐ⁻``.
+antipodally: if the point with old coordinates ``(t, k̂)`` has new
+coordinates ``(t', k̂')`` under ``g`` on ``ℐ⁺``, then the point with
+old coordinates ``(t, -k̂)`` has new coordinates ``(t', -k̂')`` under
+``P(g)`` on ``ℐ⁻``.
 
-In the code, all this bookkeeping is handled automatically.  Operations
-that combine two elements ([`compose`](@ref Scri.compose), `==`,
-`isapprox`) accept any mix of conventions, accounting for the
+In the code, all this bookkeeping is handled automatically.
+Operations that combine two elements ([`compose`](@ref Scri.compose),
+`==`, `isapprox`) accept any mix of conventions, accounting for the
 differences exactly; each convention the two inputs share is kept for
 the result, and each convention on which they disagree is resolved to
 the default `+1`.  Single-element operations — the action functor,
-[`conformal_factor`](@ref Scri.conformal_factor), `inv` — use the
-element's own conventions, and the [`transform!`](@ref) bridge
-re-represents the element to match the null infinity declared by its
-[`DataComponents`](@ref Scri.DataComponents) argument.
+which maps new coordinates to old, [`conformal_factor`](@ref
+Scri.conformal_factor), and `inv` — use the element's own conventions,
+and the [`transform!`](@ref) bridge re-represents the element to match
+the null infinity declared by its [`DataComponents`](@ref
+Scri.DataComponents) argument.
 
 Note that the ``ℐ`` relevant to `DataComponents` is conceptually
-distinct from the ``ℐ`` relevant to the BMS element.  It may be
-quite reasonable, for example, to always consider the effect a BMS
-element has on future null infinity, but still be concerned with the
+distinct from the ``ℐ`` relevant to the BMS element.  It may be quite
+reasonable, for example, to always consider the effect a BMS element
+has on future null infinity, but still be concerned with the
 transformations of data on past null infinity.  This is the reason why
 both `BMS` and `DataComponents` each have their own `ℐ` parameter.
 
@@ -529,12 +558,15 @@ Equivalently, we can think of such translations in terms of their
 physical parameters ``δt`` and ``δx⃗``.
 
 The Lorentz transformations decompose naturally into rotations ``R``
-and boosts ``v⃗``.  It is already convenient to represent the rotation
-as a quaternion, which can be constructed in numerous ways, including
-the generator of the rotation, the axis and angle of the rotation, the
-Euler angles, or the spherical coordinates and spin angle (which is
-essentially a different version of Euler angles).  Finally, a general
-boost may be decomposed into a 1-D boost of rapidity ``φ`` in the
-``(θ, ϕ)`` direction, and a null rotation of parameter ``ξ`` about
-that direction.  This is not often an intuitive decomposition, but it
-is important in discussions of boost weight.
+and boosts ``v⃗``.  These are parameters of the new frame, whose frame
+rotor ``Λ = B(v⃗)\,R`` is stored as part of the BMS element (see
+[Frames and Components](@ref frames_and_components)).  It is already
+convenient to represent the rotation as a quaternion, which can be
+constructed in numerous ways, including the generator of the rotation,
+the axis and angle of the rotation, the Euler angles, or the spherical
+coordinates and spin angle (which is essentially a different version
+of Euler angles).  Finally, a general boost may be decomposed into a
+1-D boost of rapidity ``φ`` in the ``(θ, ϕ)`` direction, and a null
+rotation of parameter ``ξ`` about that direction.  This is not often
+an intuitive decomposition, but it is important in discussions of
+boost weight.

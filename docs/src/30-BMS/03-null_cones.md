@@ -86,26 +86,28 @@ what a Lorentz transformation does to it.
 
 ## Lorentz transformations ``ℒ`` and the conformal factor ``κ``
 
-A Lorentz transformation ``Λ`` preserves the null cone ``𝒩⁺`` — null
-vectors map to null vectors — but it does *not* preserve the section:
-the image ``Λσ`` of a unit-time-component null vector generally has
-some other time component, so it no longer satisfies ``k⁰ = 1``.  The
-preferred section is restored by a simple rescaling, and it turns out
-that the factor that does it is the conformal factor by which the
+A change of frame preserves the null cone ``𝒩⁺`` — the norm is
+independent of the frame — but it does *not* preserve the section: the
+new components ``Λ̃σΛ`` of a unit-time-component null vector generally
+have some other time component, so they no longer satisfy ``k⁰ = 1``.
+The preferred section is restored by a simple rescaling, and it turns
+out that the factor that does it is the conformal factor by which the
 metric transforms.  Define
 
 ```math
-κ(Λ, 𝐤) = \frac{k⁰}{{Λ⁰}ᵦkᵝ} = \frac{1}{γ(1-v⃗⋅k̂)},
+κ(Λ, 𝐤) = \frac{k⁰}{(Λ̃\,𝐤\,Λ)⁰} = \frac{1}{γ(1-v⃗⋅k̂)},
 ```
 
-the ratio of the old time component to the new one.  The second form
+the ratio of the old time component to the new one.  Here ``Λ`` is the
+frame rotor, so the new components of ``𝐤`` are those of
+``Λ̃\,𝐤\,Λ``, and ``v⃗`` is the velocity of the new observer (see
+[Frames and Components](@ref frames_and_components)).  The second form
 is the familiar Doppler factor of a pure boost with velocity ``v⃗``,
 recovered explicitly on the [aberration page](@ref "Aberration of
-Gravitational Waves").  A Lorentz transformation acts on the section
-by
+Gravitational Waves").  A change of frame acts on the section by
 
 ```math
-σ' = κ\, (Λ ∘ σ),
+σ' = κ\, Λ̃\, σ\, Λ,
 ```
 
 the factor of ``κ`` undoing the change in time component, so that
@@ -118,10 +120,11 @@ the factor of ``κ`` undoing the change in time component, so that
     Lorentz transformations.  The conformal factor ``κ`` will also be
     extremely important in the BMS group, so it will be useful to
     relate the two.  Every KAN decomposition must be taken *with
-    respect to* some null direction.  If we choose ``𝐤``, then we saw
-    that the effect of the ``AN`` factors is to rescale the null
-    vector by a factor ``e^{φₐ}``.  The rotation ``K`` does not change
-    the time component, so the conformal factor is simply
+    respect to* some null direction.  If we decompose ``Λ̃`` with
+    respect to ``𝐤``, then we saw that the effect of the ``AN`` factors
+    is to rescale the null vector by a factor ``e^{φₐ}``.  The rotation
+    ``K`` does not change the time component, so the conformal factor
+    is simply
 
     ```math
     κ = e^{-φₐ}
@@ -131,30 +134,35 @@ the factor of ``κ`` undoing the change in time component, so that
     decomposition with respect to ``𝐤``.  Alternatively, we can note
     that if ``R`` is any rotation that takes the standard reference
     vector ``\boldsymbol{ℓ} = (𝐭 + 𝐳) / \sqrt{2}`` to ``𝐤``, then
-    ``κ(Λ, 𝐤) = κ(ΛR, \boldsymbol{ℓ})``, so ``φₐ`` also results from
-    the KAN decomposition of ``ΛR`` with respect to
-    ``\boldsymbol{ℓ}``.
+    ``κ(Λ, 𝐤) = κ(R̃Λ, \boldsymbol{ℓ})``, so ``φₐ`` also results from
+    the KAN decomposition of ``Λ̃R`` with respect to
+    ``\boldsymbol{ℓ}``.  The sign is the opposite for the point frame
+    ``Λ\,𝐑'_p`` of the Lorentz page, which is built from the frame
+    rotor rather than its reverse; there ``κ = e^{φₐ}``.
 
-Now, by the same logic as in the previous section, we can show the
-pullback in the new coordinate system:
+Now, by the same logic as in the previous section, we can compute the
+pullback of the metric through the new section ``σ'``, still as a
+function of the old coordinates ``xᴬ``:
 
 ```math
 g'_{AB} = ηᵦᵧ \frac{∂{σ'}ᵝ}{∂xᴬ} \frac{∂{σ'}ᵞ}{∂xᴮ}.
 ```
 
-Applying ``∂/∂xᴬ`` to ``{σ'}ᵝ = κ\, {Λᵝ}ᵧσᵞ`` produces two terms — one
+Applying ``∂/∂xᴬ`` to ``σ' = κ\, Λ̃\, σ\, Λ`` produces two terms — one
 differentiating ``κ`` and one differentiating ``σ``:
 
 ```math
-\frac{∂{σ'}ᵝ}{∂xᴬ} = \frac{∂κ}{∂xᴬ} {Λᵝ}ᵧσᵞ + κ {Λᵝ}ᵧ \frac{∂σᵞ}{∂xᴬ}.
+\frac{∂σ'}{∂xᴬ} = \frac{∂κ}{∂xᴬ}\, Λ̃\, σ\, Λ + κ\, Λ̃\, \frac{∂σ}{∂xᴬ}\, Λ.
 ```
 
-We can simplify this expansion using three facts.  First, ``Λ``
-preserves the metric:
+We can simplify this expansion using three facts.  First, the sandwich
+by ``Λ̃`` preserves inner products:
 
 ```math
-ηᵦᵧ {Λᵝ}ᵤ {Λᵞ}ᵥ = ηᵤᵥ.
+(Λ̃\, 𝐚\, Λ) ⋅ (Λ̃\, 𝐛\, Λ) = 𝐚 ⋅ 𝐛
 ```
+
+for any vectors ``𝐚`` and ``𝐛``.
 
 Second, the section is null:
 
@@ -190,7 +198,10 @@ spacetime, the two frames must agree there: ``r² dΩ² \sim {r'}²
 r \sim κ\, r',
 ```
 
-which is exactly Sachs's *definition* of ``κ``.  The geometric
+which is equation (3.5) of [Sachs_1962a](@citet), ``r = K r' + J``,
+with his ``K`` equal to our ``κ``.  His ``K`` is fixed by the
+condition (3.7) that the new round metric be ``K²`` times the old one,
+which is the statement ``{dΩ'}² = κ² dΩ²`` above.  The geometric
 conformal factor of the sphere and the coordinate rescaling of the
 radius are one and the same.
 
@@ -240,10 +251,13 @@ We first define the null vector
 
 ```math
 𝐊
-≔ Λ \boldsymbol{ℓ} \bar{Λ}
-= e^{φₐ}\, 𝐑_K \boldsymbol{ℓ} 𝐑̄_K
-= e^{φₐ}\, 𝐑_{k̂} \boldsymbol{ℓ} 𝐑̄_{k̂}.
+≔ 𝐐 \boldsymbol{ℓ} 𝐐̃
+= e^{φₐ}\, 𝐑_K \boldsymbol{ℓ} 𝐑̃_K
+= e^{φₐ}\, 𝐑_{k̂} \boldsymbol{ℓ} 𝐑̃_{k̂},
 ```
+
+where ``𝐐 = KAN`` is the point frame of the [Lorentz page](@ref
+"Reversing the order"), which in this package is ``Λ\,𝐑'_p``.
 
 This is the direction of propagation of the field, as a full
 four-vector of the spacetime.  It's important to note that ``𝐑_{k̂}``
@@ -260,7 +274,7 @@ rotations, this fiducial direction is just the ``𝐱`` basis vector
 after rotation.  We can define[^6]
 
 ```math
-𝐋 ≔ Λ 𝐱 \bar{Λ}.
+𝐋 ≔ 𝐐 𝐱 𝐐̃.
 ```
 
 We would *like* to use this as the fiducial direction for the
@@ -271,7 +285,7 @@ compute the transformed field.  Somehow, we have to get "as close as
 we can" to some sort of concordance between the frames.
 
 [^6]: Note that we often include ``𝐲`` by constructing the "complex
-    vector" ``𝐦 = 𝐑_K \tfrac{𝐱 + i 𝐲}{\sqrt{2}} 𝐑̄_K``.  This is,
+    vector" ``𝐦 = 𝐑_K \tfrac{𝐱 + i 𝐲}{\sqrt{2}} 𝐑̃_K``.  This is,
     in fact, how spin-weighted spherical harmonics are defined
     [Boyle_2016](@cite).
 
@@ -281,15 +295,15 @@ of ``𝐱`` is
 
 ```math
 𝐋
-= Λ 𝐱 \bar{Λ}
-=  𝐑_K\, \left(𝐱 + ξˣe^{φₐ}\boldsymbol{ℓ}\right)\, 𝐑̄_K
-= 𝐑_K\, 𝐱\, 𝐑̄_K + ξˣ𝐊.
+= 𝐐 𝐱 𝐐̃
+=  𝐑_K\, \left(𝐱 + ξˣe^{φₐ}\boldsymbol{ℓ}\right)\, 𝐑̃_K
+= 𝐑_K\, 𝐱\, 𝐑̃_K + ξˣ𝐊.
 ```
 
 Now, the set
 
 ```math
-\{c𝐊 + 𝐑_K\, 𝐱\, 𝐑̄_K \mathrel{|} c∈ℝ\}
+\{c𝐊 + 𝐑_K\, 𝐱\, 𝐑̃_K \mathrel{|} c∈ℝ\}
 ```
 
 is the set of all possible transformations of ``𝐱`` for the given
@@ -315,7 +329,7 @@ plane, which is what a simple bivector represents.[^7]  Therefore, we
 can also represent the flagplane by the bivector
 
 ```math
-𝐅 = 𝐊 ∧ 𝐋 = Λ \left(\boldsymbol{ℓ} ∧ 𝐱\right) \bar{Λ}.
+𝐅 = 𝐊 ∧ 𝐋 = 𝐐 \left(\boldsymbol{ℓ} ∧ 𝐱\right) 𝐐̃.
 ```
 
 This bivector scales as ``e^{φₐ}`` under the ``A`` factor, but is
@@ -522,7 +536,7 @@ called *parabolic subgroups*, and the piece ``MA`` common to both is
 called their *Levi factor*.)  The two stabilizers differ *only* in
 their nilpotent factors.  Now recall [the equivariance condition](@ref
 "Reversing the order"): spin weight and boost weight are the
-multipliers ``e^{isγ}`` and ``e^{bφₐ}`` picked up under
+multipliers ``e^{-isγ}`` and ``e^{bφₐ}`` picked up under
 right-multiplication by ``MA`` — they are characters of ``MA`` alone.
 Since ``MA`` is blind to the difference between ``\boldsymbol{ℓ}`` and
 ``𝐧``, so is the entire weight apparatus.  Spin weight, boost weight,
@@ -565,14 +579,25 @@ roles revert to ``MAN_{\boldsymbol{ℓ}}``.
 
 None of this demotes the ``\boldsymbol{ℓ}``-adapted decomposition used
 above; it just delimits its two jobs.  Its ``K`` factor is the *base
-map* — which generator, which flagpole and flagplane — and because
-``𝐑_K`` is a *rotation*, it carries the whole null pair
-``(\boldsymbol{ℓ}, 𝐧)`` at the pole onto the pair at the new point
-simultaneously, so the same ``K`` serves no matter which stabilizer
-the data surface selects.  Its ``A`` factor carries the boost weight,
-and ``A`` is common to both parabolics anyway.  The one factor that is
+map* — which generator, which flagpole and flagplane.  But the ``K``
+factor of a rotor does depend on the null direction around which the
+decomposition is built: the ``\boldsymbol{ℓ}``-adapted and
+``𝐧``-adapted ``K`` factors of one rotor are in general different
+rotations, because each must preserve the image of its own null
+direction.  The ``K`` that maps a pixel of the new frame to the same
+ray in the old frame is the one adapted to the direction of
+propagation, which is transverse to the data surface:
+``\boldsymbol{ℓ}`` at ``ℐ⁺``, and ``𝐧`` at ``ℐ⁻``.  The
+implementation obtains the second from the first by parity: at
+``ℐ⁻``, `aberration` receives the parity conjugate ``Λ_ℐ`` =
+`ℂconj(Λ)` of the frame rotor and extracts the
+``\boldsymbol{ℓ}``-adapted factor of the resulting point frame, which
+is the ``𝐧``-adapted factor of ``Λ\,𝐑'_p`` itself.  The ``A`` factor
+contributes the boost weight, and ``A`` is common to both parabolics
+anyway.  The one factor that is
 *not* shared, ``N_{\boldsymbol{ℓ}}``, is also the one factor that
 never acts on the data by a weight; its physical effect re-enters in
 mirrored form, as the null rotation about the generator ``𝐧`` whose
-parameter is computed directly from the coordinate transformation on
-[the tetrad page](@ref "BMS Action on the Tetrad").
+parameter ``ðu'/2κ`` is computed directly from the new retarded time
+``u' = κ(u - c_α α)`` on [the tetrad page](@ref "BMS Action on the
+Tetrad").

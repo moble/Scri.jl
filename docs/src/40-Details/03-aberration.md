@@ -364,11 +364,11 @@ flagpole and flagplane should be the same for both:
 
 ```math
 \begin{aligned}
-𝐑'ₚ \boldsymbol{ℓ}' 𝐑̄'ₚ
-&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̄ₚ,
+𝐑'ₚ \boldsymbol{ℓ}' 𝐑̃'ₚ
+&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̃ₚ,
 \\
-𝐑'ₚ \left(𝐱' ∧ \boldsymbol{ℓ}'\right) 𝐑̄'ₚ
-&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̄ₚ.
+𝐑'ₚ \left(𝐱' ∧ \boldsymbol{ℓ}'\right) 𝐑̃'ₚ
+&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̃ₚ.
 \end{aligned}
 ```
 
@@ -376,20 +376,20 @@ The reference vectors being acted on here are related by the
 transformation:
 
 ```math
-\boldsymbol{ℓ}' = Λ \boldsymbol{ℓ} \bar{Λ},
+\boldsymbol{ℓ}' = Λ \boldsymbol{ℓ} Λ̃,
 \qquad
-𝐱' = Λ 𝐱 \bar{Λ}.
+𝐱' = Λ 𝐱 Λ̃.
 ```
 
 Therefore, the expression above can be rewritten as
 
 ```math
 \begin{aligned}
-𝐑'ₚ Λ \boldsymbol{ℓ} \bar{Λ} 𝐑̄'ₚ
-&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̄ₚ,
+𝐑'ₚ Λ \boldsymbol{ℓ} Λ̃ 𝐑̃'ₚ
+&∝ 𝐑ₚ \boldsymbol{ℓ} 𝐑̃ₚ,
 \\
-𝐑'ₚ Λ \left(𝐱 ∧ \boldsymbol{ℓ}\right) \bar{Λ} 𝐑̄'ₚ
-&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̄ₚ,
+𝐑'ₚ Λ \left(𝐱 ∧ \boldsymbol{ℓ}\right) Λ̃ 𝐑̃'ₚ
+&∝ 𝐑ₚ \left(𝐱 ∧ \boldsymbol{ℓ}\right) 𝐑̃ₚ,
 \end{aligned}
 ```
 

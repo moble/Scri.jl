@@ -5,7 +5,7 @@ The combination ``ðt'/2κ`` (where ``t`` can represent either ``u`` or
 Thus, computing it accurately and efficiently is a key part of the BMS
 pipeline.
 
-We have the coordinate transformation
+The new time coordinate and the conformal factor are
 
 ```math
 \begin{gather}
@@ -16,8 +16,10 @@ t' = κ(t - c_α α),
 ```
 
 where ``c_α`` accounts for differences in the definition of the
-supertranslation parameter ``α``, and ``ℐ`` accounts for whether
-we're dealing with ``ℐ⁺`` (``ℐ = +1``) or ``ℐ⁻`` (``ℐ = -1``).
+supertranslation parameter ``α``, and ``ℐ`` accounts for whether we're
+dealing with ``ℐ⁺`` (``ℐ = +1``) or ``ℐ⁻`` (``ℐ = -1``).  Both
+expressions, and the meaning of ``v⃗``, are discussed on the page
+[Frames and Components](@ref conformal_factor_convention).
 
 Note that ``1/κ`` has a simple form — and specifically, it decomposes
 into a pure ``ℓ = 0`` plus a pure ``ℓ = 1`` function on the
@@ -56,7 +58,7 @@ that ``v⃗⋅k̂`` needs to be expressed as a function on
 express all of the terms in that form.  The solution is simple:
 
 ```math
-v⃗⋅k̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̄) = (Q̄ v⃗ Q) ⋅ ẑ.
+v⃗⋅k̂ : Q ↦ v⃗ ⋅ (Q ẑ Q̃) = (Q̃ v⃗ Q) ⋅ ẑ.
 ```
 
 That is, ``Q`` is interpreted as a rotation that takes the ``ẑ``
@@ -66,7 +68,7 @@ will be make the final result more efficient to calculate.  In fact,
 we will define
 
 ```math
-\vec{λ} = Q̄ v⃗ Q,
+\vec{λ} = Q̃ v⃗ Q,
 ```
 
 which can be calculated once, very efficiently.  Then we just need to
@@ -84,12 +86,12 @@ We can now immediately apply the definition of ``ð`` to compute
 ð(v⃗⋅k̂)
 &= c_ð R_{x̂+iŷ} v⃗⋅k̂ \\
 &= -c_ð i \left.\frac{d}{dϵ}\right|_{ϵ=0} \left\{
-  v⃗ ⋅ \left[Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̄\right] \right\} \\
+  v⃗ ⋅ \left[Q e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2} Q̃\right] \right\} \\
 &= -c_ð i v⃗ ⋅ \left\{Q \left[ \left.\frac{d}{dϵ}\right|_{ϵ=0} \left(
-  e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2}\right) \right] Q̄ \right\} \\
-&= -c_ð i v⃗ ⋅ \left\{Q \left[ -\frac{x̂+iŷ}{2} ẑ + ẑ \frac{x̂+iŷ}{2} \right] Q̄ \right\} \\
-&= -c_ð v⃗ ⋅ \left[Q \left( iŷ+x̂ \right) Q̄\right] \\
-&= -c_ð \left( Q̄ v⃗ Q \right) ⋅ \left( x̂+iŷ \right) \\
+  e^{-ϵ(x̂+iŷ)/2} ẑ e^{ϵ(x̂+iŷ)/2}\right) \right] Q̃ \right\} \\
+&= -c_ð i v⃗ ⋅ \left\{Q \left[ -\frac{x̂+iŷ}{2} ẑ + ẑ \frac{x̂+iŷ}{2} \right] Q̃ \right\} \\
+&= -c_ð v⃗ ⋅ \left[Q \left( iŷ+x̂ \right) Q̃\right] \\
+&= -c_ð \left( Q̃ v⃗ Q \right) ⋅ \left( x̂+iŷ \right) \\
 &= -c_ð \left( λˣ + i λʸ \right).
 \end{aligned}
 ```

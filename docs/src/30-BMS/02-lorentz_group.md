@@ -12,6 +12,11 @@ approach via stereographic coordinates and complex analysis
 [PenroseRindler_1984, PenroseRindler_1986, ODonnell_2003](@cite),
 while retaining clearer connections to the underlying geometry.
 
+On this page ``Λ`` denotes any Lorentz rotor, acting on vectors by
+``𝐯 ↦ Λ𝐯Λ̃``.  Whenever it describes a change of frame, it is the
+frame rotor ``Λ = B(v⃗)\,R`` of [Frames and Components](@ref
+frames_and_components).
+
 ## The standard basis and the null tetrad
 
 We start with a standard basis of spacetime vectors, which we denote
@@ -78,10 +83,13 @@ conjugation,
 ```
 
 with composition of transformations given by multiplication of rotors.
-Each rotor is the exponential of a bivector, and the *type* of
-transformation is fixed by the sign of that bivector's square:
-negative for pure rotations, positive for pure boosts, and zero for
-null rotations.
+Each rotor is, up to sign, the exponential of a bivector.  For the
+three simple kinds of transformation the bivector's square is real,
+and its sign fixes the *type* of transformation: negative for pure
+rotations, positive for pure boosts, and zero for null rotations.  (A
+general bivector's square also has a pseudoscalar part, and its
+exponential combines a boost with a rotation in the orthogonal
+plane.)
 
 A **rotation** comes from a *spatial* bivector, which squares to
 ``-1``.  Writing ``𝐢 = 𝐳𝐲``, ``𝐣 = 𝐱𝐳``, ``𝐤 = 𝐲𝐱`` for the
@@ -225,16 +233,16 @@ systematic:
 
 ```math
 \begin{aligned}
-R \boldsymbol{ℓ} R̄ &= \boldsymbol{ℓ}, \\
-R 𝐦 R̄ &= \frac{𝐱 + 𝐈₃'𝐲}{\sqrt{2}}
+R \boldsymbol{ℓ} R̃ &= \boldsymbol{ℓ}, \\
+R 𝐦 R̃ &= \frac{𝐱 + 𝐈₃'𝐲}{\sqrt{2}}
   + \frac{ξˣ + 𝐈₃'ξʸ}{\sqrt{2}} \boldsymbol{ℓ}, \\
-R 𝐦̄ R̄ &= \frac{𝐱 - 𝐈₃'𝐲}{\sqrt{2}}
+R 𝐦̄ R̃ &= \frac{𝐱 - 𝐈₃'𝐲}{\sqrt{2}}
   + \frac{ξˣ - 𝐈₃'ξʸ}{\sqrt{2}} \boldsymbol{ℓ}, \\
-R 𝐧 R̄ &= 𝐧 + \boldsymbol{ξ} + \frac{1}{2} ξ² \boldsymbol{ℓ},
+R 𝐧 R̃ &= 𝐧 + \boldsymbol{ξ} + \frac{1}{2} ξ² \boldsymbol{ℓ},
 \end{aligned}
 ```
 
-where ``\boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲`` and ``𝐈₃' ≔ R 𝐈₃ R̄``.  The
+where ``\boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲`` and ``𝐈₃' ≔ R 𝐈₃ R̃``.  The
 rotor sends the vectors ``𝐱`` and ``𝐲`` to ``𝐱'=𝐱 +
 ξˣ\boldsymbol{ℓ}`` and ``𝐲'=𝐲 + ξʸ\boldsymbol{ℓ}``.  The ``𝐦`` and
 ``𝐦̄`` lines therefore contain ``𝐈₃'`` rather than ``𝐈₃``, because
@@ -242,7 +250,7 @@ rotor sends the vectors ``𝐱`` and ``𝐲`` to ``𝐱'=𝐱 +
 the pseudoscalar ``𝐈`` commutes with the rotor, we have
 
 ```math
-𝐈₃' = 𝐈\, R 𝐭 R̄
+𝐈₃' = 𝐈\, R 𝐭 R̃
 = 𝐈₃ + \frac{1}{\sqrt{2}}\, 𝐈 \left(\boldsymbol{ξ}
 + \frac{1}{2} ξ² \boldsymbol{ℓ}\right),
 ```
@@ -255,7 +263,7 @@ in.
 The standard Newman-Penrose formalism instead holds the unit imaginary
 ``i`` fixed, so that the rotor acts only on ``𝐱`` and ``𝐲``.
 Replacing ``𝐈₃'`` by ``𝐈₃`` in the lines above gives that reading,
-``R 𝐦 R̄ = 𝐦 + \frac{ξˣ + 𝐈₃ξʸ}{\sqrt{2}} \boldsymbol{ℓ}``.  This
+``R 𝐦 R̃ = 𝐦 + \frac{ξˣ + 𝐈₃ξʸ}{\sqrt{2}} \boldsymbol{ℓ}``.  This
 is just the usual null rotation of the Newman-Penrose tetrad, with
 complex parameter ``(ξˣ + 𝐈₃ξʸ)/\sqrt{2}``, though exhibited in a
 simpler and more geometric form.
@@ -591,7 +599,7 @@ leaves the *direction* ``\boldsymbol{ℓ}`` invariant, but just rescales
 the vector as
 
 ```math
-𝐑_{AN} \boldsymbol{ℓ} \bar{𝐑}_{AN} = e^{φₐ} \boldsymbol{ℓ}.
+𝐑_{AN} \boldsymbol{ℓ} 𝐑̃_{AN} = e^{φₐ} \boldsymbol{ℓ}.
 ```
 
 The basic point is that the transformed field along ``\boldsymbol{ℓ}``
@@ -622,7 +630,7 @@ Given the choice of ``𝐳``, we have the Hopf map
 ```math
 \begin{aligned}
 𝔥 &: \mathrm{Spin}(3) \to 𝕊² \\
-𝔥 &: 𝐑 \mapsto k̂ = 𝐑 𝐳 𝐑̄.
+𝔥 &: 𝐑 \mapsto k̂ = 𝐑 𝐳 𝐑̃.
 \end{aligned}
 ```
 
@@ -794,11 +802,11 @@ Hopf-Levi decomposition to ``SMAN``:
 S \times M \times A \times N,
 ```
 
-and the general element of ``\mathrm{Spin}^+(3,1)`` can be written
-(not uniquely) as
+and the general element ``𝐐`` of ``\mathrm{Spin}^+(3,1)`` can be
+written (not uniquely) as
 
 ```math
-Λ = 𝐑_{k̂}\, 𝐑_{γ𝐲𝐱}\, 𝐑_{φₐ𝐭𝐳}\, 𝐑_{\boldsymbol{ℓ ξ}}.
+𝐐 = 𝐑_{k̂}\, 𝐑_{γ𝐲𝐱}\, 𝐑_{φₐ𝐭𝐳}\, 𝐑_{\boldsymbol{ℓ ξ}}.
 ```
 
 This decomposition is particularly nice because the latter three
@@ -840,7 +848,7 @@ past.  Extending this idea, we can permute the order of *all* of the
 operations to write
 
 ```math
-Λ = 𝐑_{\boldsymbol{ℓ}''' \boldsymbol{ξ}'''}\, 𝐑_{φₐ𝐭''𝐳''}\,
+𝐐 = 𝐑_{\boldsymbol{ℓ}''' \boldsymbol{ξ}'''}\, 𝐑_{φₐ𝐭''𝐳''}\,
 𝐑_{γ𝐲'𝐱'}\, 𝐑_{k̂},
 ```
 
@@ -859,15 +867,23 @@ basis is operative at the given stage of the transformation), but the
 respect to the final null direction, rather than the original ``𝐳``
 direction.  That is, the factor ``𝐑_K = 𝐑_{k̂}\, 𝐑_{γ𝐲𝐱} =
 𝐑_{γ𝐲'𝐱'}\, 𝐑_{k̂}`` produces the same null *direction* as the
-full transformation ``Λ``:
+full transformation ``𝐐``:
 
 ```math
-𝐑_K \boldsymbol{ℓ} \bar{𝐑}_K ∝ Λ \boldsymbol{ℓ} \bar{Λ}.
+𝐑_K \boldsymbol{ℓ} 𝐑̃_K ∝ 𝐐 \boldsymbol{ℓ} 𝐐̃.
 ```
 
-(The proportionality factor is just ``e^{-φₐ}``.)  So ``𝐑_K``
-produces exactly the same null direction for the unboosted observer as
-the full ``KAN`` produces for the boosted observer.  If we want to
+(The proportionality factor is just ``e^{-φₐ}``.)
+
+Now read the rotor ``𝐐`` as a *point frame*: a rotor that takes the
+reference tetrad to the tetrad of an observer looking along some null
+direction, here the boosted observer, expressed in the unboosted
+observer's components.  In this package's application ``𝐐 =
+Λ\,𝐑'_p``, the frame rotor ``Λ`` of the change of frame applied to
+the point frame ``𝐑'_p`` of a pixel of the new frame (see [Frames and
+Components](@ref frames_and_components)).  So ``𝐑_K`` produces exactly
+the same null direction for the unboosted observer as the full ``𝐐 =
+KAN`` produces for the boosted observer.  If we want to
 know the values of the fields along that null vector in the *boosted*
 frame, we need to know the values of the fields in the *unboosted*
 frame along the null vector produced by ``𝐑_K``.
@@ -893,19 +909,23 @@ frame along the null vector produced by ``𝐑_K``.
     with the ``𝐱`` axis, both in the rest frame of the original
     coordinate system.
 
-    That, of course, is the picture for past null infinity, where the
-    null rays are incoming to the telescope.  For future null
-    infinity, we think of an emitting source sending out polarized
-    signals in the particular direction.  The idea is fundamentally
-    identical, but perhaps a little less familiar.
+    Strictly, the null direction that ``K`` points along is
+    ``\boldsymbol{ℓ}``, the direction in which the radiation
+    propagates, so this is the picture for future null infinity, where
+    a source sends out polarized signals in that direction.  For past
+    null infinity, the light arriving at a telescope pointed along
+    ``k̂`` travels along ``𝐧`` instead.  In that case, the
+    implementation uses the parity conjugate ``Λ_ℐ`` = `ℂconj(Λ)` of
+    the frame rotor, so that the same ``K`` extraction applies; see
+    ["Which null direction?"](@ref which_null_direction).
 
 More generally, a function with spin weight ``s`` and boost weight
 ``b`` is a function on ``\mathrm{Spin}^+(3,1)`` that satisfies the
 right-equivariance condition[^4]
 
 ```math
-f\left(Λ\, 𝐑_{γ𝐲𝐱}\, 𝐑_{φₐ𝐭𝐳}\right)
-= e^{-i s γ} e^{b φₐ} f(Λ).
+f\left(𝐐\, 𝐑_{γ𝐲𝐱}\, 𝐑_{φₐ𝐭𝐳}\right)
+= e^{-i s γ} e^{b φₐ} f(𝐐).
 ```
 
 The null rotation ``𝐑_{\boldsymbol{ℓ ξ}}`` does not satisfy such a
@@ -916,8 +936,9 @@ that mixing — those fixing ``\boldsymbol{ℓ}`` or those fixing ``𝐧`` —
 is a sharper question than it looks; see ["Which null
 direction?"](@ref which_null_direction) below.  But the effect of
 ``𝐑_{φₐ𝐭𝐳}`` can be accounted for with a simple multiplication by
-``e^{b φₐ}`` — which we will see is essentially the conformal factor
-``κ`` to the power ``b``.  So information about the direction of
+``e^{b φₐ}``.  For the point frame ``𝐐 = Λ\,𝐑'_p`` this is exactly
+the conformal factor ``κ`` to the power ``b``, because there ``κ =
+e^{φₐ}``.  So information about the direction of
 propagation and tangent direction needed for a spin-weighted field is
 entirely contained in the ``𝐑_K`` factor.
 
@@ -939,9 +960,9 @@ entirely contained in the ``𝐑_K`` factor.
     *sub*group of ``MAN``, it does not have any nontrivial character.
     The easiest way to see this is to consider the requirement that a
     character must be a homomorphism.  If we have two group elements
-    ``Λ₁,\, Λ₂ ∈ MAN``, the character of their group commutator must
-    satisfy ``χ(Λ₁Λ₂Λ₁⁻¹Λ₂⁻¹) = χ(Λ₁)χ(Λ₂)χ(Λ₁)⁻¹χ(Λ₂)⁻¹ = 1``.  Now
-    take ``Λ₁ = 𝐑_{φₐ}`` and ``Λ₂ = 𝐑_{\boldsymbol{ℓ ξ}}``.  Then
+    ``X₁,\, X₂ ∈ MAN``, the character of their group commutator must
+    satisfy ``χ(X₁X₂X₁⁻¹X₂⁻¹) = χ(X₁)χ(X₂)χ(X₁)⁻¹χ(X₂)⁻¹ = 1``.  Now
+    take ``X₁ = 𝐑_{φₐ}`` and ``X₂ = 𝐑_{\boldsymbol{ℓ ξ}}``.  Then
     their group commutator is ``1 + \tfrac{1}{2}(e^{φₐ} − 1)
     \boldsymbol{ℓ ξ}``, so choosing ``φₐ = \ln 2`` the group
     commutator is actually just ``𝐑_{\boldsymbol{ℓ ξ}}``.  Therefore,

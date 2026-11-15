@@ -38,13 +38,13 @@ the choice of null direction will be one of the canonical tetrad
 elements at that point.
 
 The same fact appears at ``ℐ`` in the time law.  A Lorentz
-transformation acts as ``t' = κ(k̂)\,t``, so a cut of constant ``t``
-is carried to a cut of constant ``t'`` only if ``t\left(κ - 1\right) =
-0``.  Unless ``κ ≡ 1`` — that is, unless the transformation is a
-rotation — the only such cut is ``t = 0``.  It is also the only cut of
-constant ``t`` on which ``ðt' = t\,ðκ`` vanishes, and it is the cut on
-which the two observers' *time* origins coincide — though the angular
-coordinates within the cut differ.
+transformation acts as ``t' = κ(k̂)\,t``, so a cut of constant ``t =
+t₀`` is carried to a cut of constant ``t'`` only if ``t₀κ`` is
+constant over the sphere.  Unless ``κ ≡ 1`` — that is, unless the
+transformation is a rotation — the only such cut is ``t = 0``.  It is
+also the only cut of constant ``t`` on which ``ðt' = t\,ðκ`` vanishes,
+and it is the cut on which the two observers' *time* origins coincide
+— though the angular coordinates within the cut differ.
 
 This suggests splitting the problem in two.  First, describe the
 action of the transformation *on its own distinguished cut*, where we
@@ -60,22 +60,24 @@ distinguished cuts of different elements, which will be informed by
 the semidirect-product structure.
 
 Recall from [the BMS page](@ref bms_group) that ``\text{BMS} = ℒ
-⋉_{\mathrm{Ad}} 𝒮``, with ``\mathrm{Ad}(Λ)(α)(𝐤) =
-α(Λ^{-1}𝐤)/κ(Λ^{-1}, 𝐤)``, that ``𝒮`` is a normal subgroup, and
-that ``ℒ`` is not.  The failure of ``ℒ`` to be normal is precisely
-what we need: conjugating a Lorentz transformation by a
-supertranslation produces an element that is not a Lorentz
-transformation.  Explicitly, using the group law of that page,
+⋉_{\mathrm{Ad}} 𝒮``, with ``\mathrm{Ad}(Λ)(α)(𝐤) = α(Λ̃\,𝐤\,Λ)/κ(Λ,
+𝐤)``, that ``𝒮`` is a normal subgroup, and that ``ℒ`` is not.  The
+failure of ``ℒ`` to be normal is precisely what we need: conjugating a
+Lorentz transformation by a supertranslation produces an element that
+is not a Lorentz transformation.  Explicitly, using the group law of
+that page, with products written in the order in which their factors
+are applied,
 
 ```math
-\left(1, β\right)\left(Λ, 0\right)\left(1, β\right)^{-1}
-= \left(Λ,\; \frac{β ∘ Λ}{κ} - β\right).
+\left(1, α\right)^{-1}\left(Λ, 0\right)\left(1, α\right)
+= \left(Λ,\; \mathrm{Ad}(Λ)(α) - α\right).
 ```
 
-The supertranslation content on the right vanishes only when ``β ∘ Λ =
-κβ``.  For a boost, this holds only when ``β`` is a translation that
+The supertranslation content on the right vanishes only when
+``\mathrm{Ad}(Λ)(α) = α``, that is, when ``α(Λ̃\,𝐤\,Λ) = κ(Λ, 𝐤)\,
+α(𝐤)``.  For a boost, this holds only when ``α`` is a translation that
 the boost leaves fixed — a spatial translation orthogonal to its
-velocity — and fails for every other nonzero ``β``.  So there is a
+velocity — and fails for every other nonzero ``α``.  So there is a
 whole family of Lorentz subgroups of BMS, conjugate to one another by
 supertranslations, and each distinguishes its own cut.  The situation
 is identical in structure to the Poincaré group, where the Lorentz
@@ -133,12 +135,13 @@ orientation in the tangent plane.
 stabilizer of a pair is easy to identify.  An element fixing ``𝐤``
 cannot contain a boost along it, since a boost rescales ``𝐤``; and an
 element fixing ``[𝐦]`` cannot contain a rotation about ``𝐤``, since
-such a rotation changes the phase.  What remains is exactly the
-nilpotent subgroup, and therefore
+such a rotation changes the phase.  What remains is the nilpotent
+subgroup, together with ``-1``, which acts trivially on every vector,
+and therefore
 
 ```math
 \left\{\text{conformal frames}\right\}
-\;=\; \mathrm{Spin}^+(3,1) / N_{\boldsymbol{ℓ}} ,
+\;=\; \mathrm{Spin}^+(3,1) / \left(\{±1\}\, N_{\boldsymbol{ℓ}}\right) ,
 ```
 
 whose dimension is ``6 - 2 = 4`` as required.  Reading the ``KAN``
@@ -167,11 +170,12 @@ and the Hopf-fiber rotation as ``𝐑_γ =
 ```
 
 Here, as on the [previous page](@ref "BMS Action on the Tetrad"), the
-rotor being factored carries the original tetrad to the transformed
-one, so it is the inverse of the map from old labels to new.
-Factoring that map itself, as the [null-cone page](@ref "Lorentz
-transformations ``ℒ`` and the conformal factor ``κ``") does, reverses
-the sign of ``φₐ`` relative to the one here.
+rotor being factored is the frame rotor ``Λ``, which takes the
+original tetrad to the transformed one, so it is the inverse of the
+map ``Λ̃`` from old labels to new.  Factoring ``Λ̃`` itself, as the
+[null-cone page](@ref "Lorentz transformations ``ℒ`` and the conformal
+factor ``κ``") does, reverses the sign of ``φₐ`` relative to the one
+here.
 
 Similarly, the choice of spin convention is delicate.  On the dyad,
 the spatial pseudoscalar and the screen pseudoscalar agree, ``𝐈₃𝐦 =
@@ -211,11 +215,11 @@ It remains to convert this into a statement about the legs that are
 regular at ``ℐ``.  Each unregularized leg has a boost weight ``b``,
 equal to ``+1``, ``0`` and ``-1`` for ``\boldsymbol{ℓ}``, ``𝐦`` and
 ``𝐧``, and the ``A`` factor multiplies it by ``κ^{b}``; the ``M``
-factor contributes the phase ``e^{iγ}`` on the dyad alone.  [The
-regular tetrad](@ref "Tetrad") is obtained by multiplying the leg of
-weight ``b`` by ``ω^{-(1+b)}``, and the primed observer regularizes
-with ``ω' = κω``.  The ratio of the primed regular leg to the unprimed
-one is therefore
+factor contributes the phase ``e^{iγ}`` on the dyad.  [The regular
+tetrad](@ref "Tetrad") is obtained by multiplying the leg of weight
+``b`` by ``ω^{-(1+b)}``, and the primed observer regularizes with ``ω'
+= κω``.  The ratio of the primed regular leg to the unprimed one is
+therefore
 
 ```math
 \left(\frac{ω'}{ω}\right)^{-(1+b)} κ^{b}
@@ -336,7 +340,7 @@ the generator, and the ratio is the distance one must slide along the
 generator, per unit angular displacement, in order to remain on the
 primed cut.  **The tilt of one cut relative to the other is therefore
 exactly what the dyad records**, and this is the link between the
-coordinate transformation and the tetrad.
+new time coordinate ``t'`` and the tetrad.
 
 Both derivatives are immediate.  The generator leg is normalized so
 that ``ñ(t) = \sqrt2``, and it annihilates the angles, while ``t'``
@@ -348,7 +352,7 @@ differs from ``κ t`` only by a function of the angles; hence
 
 The dyad, being tangent to the unprimed cut, annihilates ``t``, so
 only the angular dependence of ``t'`` contributes.  For any function
-of the angles alone the regular dyad gives ``m̃(f) = -ð f/\sqrt2``, so
+of just the angles, the regular dyad gives ``m̃(f) = -ð f/\sqrt2``, so
 
 ```math
 m̃\!\left(t'\right) = -\frac{ð t'}{\sqrt2} .
@@ -404,15 +408,16 @@ gives the same result.
 It remains to evaluate ``ð t'``, and the point of doing so within the
 group is that the result then requires no computation in coordinates.
 
-Suppose the data occupy a cut other than the one the transformation
-distinguishes.  To describe the action there we conjugate by the
-translation that moves the origin cut, and, as recorded above, that
-conjugation does not return a Lorentz transformation.  Taking ``β =
-c`` constant — an ordinary time translation — the conjugate is
+Suppose the data occupy a cut other than the one distinguished by the
+transformation.  To describe the action there we conjugate by the
+translation that moves the origin cut, and, as explained above, that
+conjugation does not return a Lorentz transformation.  Taking that
+translation to be a constant ``δt`` — an ordinary time translation —
+the conjugate is
 
 ```math
-\left(1, c\right)\left(Λ, 0\right)\left(1, c\right)^{-1}
-= \left(Λ,\; c\left(\frac{1}{κ} - 1\right)\right),
+\left(1, δt\right)^{-1}\left(Λ, 0\right)\left(1, δt\right)
+= \left(Λ,\; δt\left(\frac{1}{κ} - 1\right)\right),
 ```
 
 whose supertranslation content is nonzero, and angle-dependent through
@@ -420,41 +425,42 @@ whose supertranslation content is nonzero, and angle-dependent through
 Substituting into the time law ``t' = κ\left(t - c_α α\right)`` gives
 
 ```math
-t' = κ\left(t + c_α c\right) - c_α c ,
+t' = κ\left(t + c_α\,δt\right) - c_α\,δt ,
 ```
 
-which confirms that the distinguished cut has moved to ``t = -c_α c``,
-the image of ``t = 0`` under the translation, as it must.  The angular
-derivative is then
+which confirms that the distinguished cut has moved to
+``t = -c_α\,δt``, the image of ``t = 0`` under the translation, as it
+must.  The angular derivative is then
 
 ```math
-ð t' = \left(t + c_α c\right) ðκ .
+ð t' = \left(t + c_α\,δt\right) ðκ .
 ```
 
 The null-rotation parameter is therefore proportional to the *offset
 between the cut with the original data and the cut the transformation
 distinguishes*.  It vanishes on the distinguished cut and grows
-linearly away from it, and the growth rate is fixed by ``ðκ`` alone.
-Nothing here was computed from the coordinates; the linear growth is
-given by the map ``α ↦ α ∘ Λ / κ`` of the group law, which is just
-``\mathrm{Ad}(Λ^{-1})``, evaluated on the constant offset ``c``.
+linearly away from it, and the growth rate is fixed entirely by
+``ðκ``.  Conceptually, this is independent of the coordinates; the
+linear growth is given by ``\mathrm{Ad}(Λ)``, the map of the group law
+that takes ``α`` to ``α(Λ̃\,𝐤\,Λ)/κ(Λ, 𝐤)``, evaluated on the
+constant offset ``δt``.
 
-Repeating the conjugation with a general ``β`` produces the second
-term of the general formula, and it is more compact simply to quote
-the result.  For an arbitrary element ``(Λ, α)``, with ``t' = κ(t -
-c_α α)``,
+Repeating the conjugation with a general supertranslation produces the
+second term of the general formula.  For an arbitrary element ``(Λ,
+α)``, with ``t' = κ(t - c_α α)``,
 
 ```math
-ð t' = \left(ðκ\right)\left[t - c_α α\right] - κ\, c_α\, ðα ,
+ð t' = \left(ðκ\right)\left[t - c_α α\right] - κ\, c_α\, ðα,
 ```
 
 in which the first term is the offset just discussed and the second is
 the tilt a supertranslation imprints on the cuts directly.  The second
 term survives when ``Λ = 1``, where there is no Lorentz transformation
 at all and hence no ``KAN`` factorization to appeal to — which is the
-structural reason the mixing parameter cannot be a factor of a rotor.
+structural reason the mixing parameter cannot be explained entirely by
+the Lorentz part of the transformation.
 
-!!! note "An analogy worth keeping"
+!!! note "An interesting analogy"
 
     The dependence of ``ð t'`` on the choice of origin cut is the same
     in form as the dependence of angular momentum on the choice of
@@ -464,9 +470,10 @@ structural reason the mixing parameter cannot be a factor of a rotor.
     BMS angular momentum is the same phenomenon, arising from the same
     failure of ``ℒ`` to be normal.
 
-## The assembled law
+## The fully assembled law
 
-Collecting the common factor ``1/κ``, the spin phase, and the shear:
+Collecting the common factor ``1/κ``, the spin phase, and the shear
+factor ``b = \frac{ð t'}{2κ}``:
 
 ```math
 \begin{aligned}
@@ -474,26 +481,25 @@ Collecting the common factor ``1/κ``, the spin phase, and the shear:
 m̃' &= \frac{e^{iγ}}{κ}\left(m̃ + b\, ñ\right), \\
 l̃' &= \frac{1}{κ}\left(l̃ + \bar b\, m̃ + b\, m̄̃ + |b|²\, ñ\right),
 \end{aligned}
-\qquad
-b = \frac{ð t'}{2κ},
 ```
 
-which is the law of [the previous page](@ref "BMS Action on the
-Tetrad").  Each ingredient now has a stated origin: the factor ``1/κ``
-from the cancellation of the boost grading against the graded
-regularization, with ``κ = e^{φₐ}`` the ``A`` factor; the phase from
-the Hopf fiber of ``K``, equivalently from the rotation part of the
-conformal map's differential; and the shear from the offset between
-the data cut and the cut the transformation distinguishes, by way of
-the semidirect twist.
+which is the same law as derived on [the previous page](@ref "BMS
+Action on the Tetrad").  Each factor has its origin as described
+above: the factor ``1/κ`` from the cancellation of the boost grading
+against the graded regularization, with ``κ = e^{φₐ}`` the ``A``
+factor; the phase from the Hopf fiber of ``K``, equivalently from the
+rotation part of the conformal map's differential; and the shear from
+the offset between the data cut and the cut the transformation
+distinguishes, by way of the semidirect twist.
 
-Three limiting cases confirm the accounting.  A pure supertranslation
-has ``Λ = 1``, hence ``κ = 1`` and ``γ = 0``, and only the shear
-survives, with ``b = -c_α\, ðα/2``.  A spatial rotation has ``κ ≡ 1``
-and ``ðκ = 0``, so ``b = 0`` and the dyad merely acquires its phase;
-consistently, a rotation distinguishes every cut rather than one.  A
-boost along the line of sight has ``γ = 0`` and, on its distinguished
-cut, ``b = 0``, leaving the real factor ``1/κ`` of aberration.
+Three limiting cases help confirm these expressions.  A pure
+supertranslation has ``Λ = 1``, hence ``κ = 1`` and spin phase ``γ =
+0``, and only the shear survives, with ``b = -c_α\, ðα/2``.  A spatial
+rotation has ``κ ≡ 1`` and ``ðκ = 0``, so ``b = 0`` and the dyad
+merely acquires the rotation's phase; consistently, a rotation
+"distinguishes" every cut rather than just one.  A boost along the
+line of sight has spin phase ``γ = 0`` and, on its distinguished cut,
+``b = 0``, leaving the real factor ``1/κ`` of aberration.
 
 ## Past null infinity
 

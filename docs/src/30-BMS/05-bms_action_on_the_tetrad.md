@@ -1,7 +1,7 @@
 # BMS Action on the Tetrad
 
 The next question is how [the standard tetrad](@ref "Tetrad")
-transforms under coordinate transformations — and specifically BMS
+changes when the coordinates change — specifically, under BMS
 transformations.
 
 ## Future null infinity
@@ -27,8 +27,8 @@ ñ' &= \sqrt{2} ∂_{u'}
 
 The crucial point is that even though the primes on the coordinates
 indicate a different coordinate system, the primes on the tetrads also
-indicate *fundamentally different vectors*, not just the coordinate
-transformation of a single tetrad.
+indicate *fundamentally different vectors*, not just a single tetrad
+written in new coordinates.
 
 Each tetrad is orthonormal in its *own* conformal frame: ``l̃ ⋅ ñ =
 -1`` and ``m̃ ⋅ m̄̃ = 1``, with all other combinations zero, in the
@@ -113,24 +113,24 @@ angular coordinates are independent of the time.  Now, we can expand
 in the unprimed coordinates:
 
 ```math
-ñ' = a ñ + b m̃ + c m̄̃,
+ñ' = p ñ + q m̃ + r m̄̃,
 ```
 
-but we know that since ``ñ'`` is real, we must have ``c = b̄``.  We
+but we know that since ``ñ'`` is real, we must have ``r = q̄``.  We
 can then determine the coefficients by applying both sides to the
 coordinates.  For example, applying both sides to ``u``, we have
 
 ```math
 \begin{aligned}
-ñ'(u) &= a ñ(u) + b m̃(u) + b̄ m̄̃(u) \\
-&= a \sqrt{2}.
+ñ'(u) &= p ñ(u) + q m̃(u) + q̄ m̄̃(u) \\
+&= p \sqrt{2}.
 \end{aligned}
 ```
 
 But since ``u = u' / κ + c_αα`` and ``κ`` and ``α`` are independent of
-time, we know that ``ñ'(u) = \sqrt{2} / κ``, so we have ``a = 1/κ``.
+time, we know that ``ñ'(u) = \sqrt{2} / κ``, so we have ``p = 1/κ``.
 We can similarly apply both sides to ``θ`` and ``ϕ`` to determine that
-``b = b̄ = 0``, so that
+``q = q̄ = 0``, so that
 
 ```math
 ñ' = \frac{1}{κ} ñ.
@@ -177,7 +177,7 @@ along it, and the null rotations ``N_{𝐧}`` fixing it.  The shift ``m̃
 ↦ m̃ + (ðu'/2κ)\,ñ`` found above is the ``N_{𝐧}`` piece: it is the
 [null rotation worked out earlier](@ref "Null rotations") with the
 roles of ``\boldsymbol{ℓ}`` and ``𝐧`` exchanged.  It is *not*,
-however, a factor of the Lorentz rotor ``L`` itself.  Expanding
+however, a factor of the frame rotor ``Λ`` itself.  Expanding
 
 ```math
 ðu' = (ðκ)\left[u - c_α α\right] - κ\, c_α\, ðα,
@@ -187,17 +187,16 @@ the parameter collects two separate contributions.  The first is the
 *tilt of the cuts*, linear in ``u`` because ``m̃`` and ``m̃'`` are
 tangent to *different* cuts — of constant ``u`` and of constant ``u'``
 — and the angle-dependent rescaling ``u' = κu`` tilts those cuts apart
-at a rate set by the lever arm ``u``; it vanishes on the boost's fixed
-cut ``u = 0`` and grows linearly up the generator, as a null
-rotation's shear should.  The second is the *shear a supertranslation
-imprints*, proportional to ``ðα`` and present even when ``L = 1``.  A
-fixed rotor could reproduce neither the ``u``-dependence nor the ``L =
-1`` case, so the honest definition of the null-rotation parameter is
-the coordinate derivative ``ðu'`` itself.  What the Lorentz rotor
-*does* supply — carried to the pole and factored [as for the Lorentz
-group](@ref "IwasawaHopfLevi") — is the spin–boost part, which the
-[two parabolics share](@ref which_null_direction): the boost ``A`` and
-the spin ``K`` fix ``d``, each by a one-line computation.
+at a rate set by the lever arm ``u``.  This term vanishes on the
+boost's fixed cut ``u = 0`` and grows linearly up the generator.  The
+second is the *shear a supertranslation imprints*, proportional to
+``ðα`` and present even when ``Λ = 1``.  A fixed rotor could reproduce
+neither the ``u``-dependence nor the ``Λ = 1`` case, so the
+null-rotation parameter must be the full coordinate derivative ``ðu'``
+itself.  What the frame rotor *does* supply — carried to the pole and
+factored [as for the Lorentz group](@ref "IwasawaHopfLevi") — is the
+spin–boost part, which is common between the [two parabolics](@ref
+which_null_direction): the boost ``A`` and the spin ``K`` fix ``d``.
 
 The ``K`` factor is the Hopf-fiber rotor ``R_γ =
 \exp\left[\tfrac{γ}{2} 𝐱𝐲\right]``, a rotation about the null
@@ -232,26 +231,26 @@ the conformal factor as
 κ = e^{φₐ}.
 ```
 
-The rotor factored here is the one that carries the original tetrad to
-the transformed one, which is the inverse ``Λ^{-1}`` of the map ``Λ``
-from old labels to new.  The [null-cone page](@ref "Lorentz
-transformations ``ℒ`` and the conformal factor ``κ``") factors ``Λ``
-itself and finds ``κ = e^{-φₐ}``.  The two agree: if ``Λ`` rescales
-``𝐤`` by ``e^{φₐ}`` onto the image direction ``𝐤'``, then ``Λ^{-1}``
-rescales ``𝐤'`` by ``e^{-φₐ}``, so the boost of ``Λ^{-1}`` at ``𝐤'`` is
-the negative of the boost of ``Λ`` at ``𝐤``.
+The rotor factored here is the one that takes the original tetrad to
+the transformed one, which is the frame rotor ``Λ``; its reverse
+``Λ̃`` maps old labels to new (see [Frames and Components](@ref
+frames_and_components)).  The [null-cone page](@ref "Lorentz
+transformations ``ℒ`` and the conformal factor ``κ``") factors ``Λ̃``
+and finds ``κ = e^{-φₐ}``.  These are consistent: if ``Λ̃`` rescales
+``𝐤`` by ``e^{φₐ}`` onto the image direction ``𝐤'``, then ``Λ``
+rescales ``𝐤'`` by ``e^{-φₐ}``.  That is, the boost part of ``Λ`` at
+``𝐤'`` is the negative of the boost part of ``Λ̃`` at ``𝐤``.
 
-For the generator, this boost is all that matters — ``ñ`` involves no
-power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' = ñ/κ`` is
-determined entirely by the boost.  The dyad is different: the boost
-leaves the spacetime multivector ``𝐦`` fixed, up to the
+For the generator, this boost is all that matters — ``ñ`` does not
+involve any power of ``ω`` (it was regularized with ``ω⁰``), so ``ñ' =
+ñ/κ`` is determined entirely by the boost.  But the dyad is different:
+the boost leaves the spacetime multivector ``𝐦`` fixed, up to the
 reinterpretation of ``𝐈₃``, so its ``1/κ`` comes instead from
 regularizing with ``ω' = κω``.  Both routes give the common factor
 ``1/κ`` found above, so ``|d| = 1/κ``.  The normalization ``m̃' ⋅ m̄̃'
 = 1`` gives the same factor, provided we correctly use the primed
-metric ``ĝ' = κ²ĝ``, so that we find ``|d|² = 1/κ²``.  Imposing it in
-the unprimed metric instead would give the incorrect value ``|d| =
-1``.  The same care is needed for ``l̃'`` below.
+metric ``ĝ' = κ²ĝ``, so that we find ``|d|² = 1/κ²``.  The same care
+is needed for ``l̃'`` below.
 
 Collecting the boost and the spin,
 
@@ -265,7 +264,7 @@ the dyad.
 We can check that this is consistent with the three special cases of
 BMS transformations.  The null-rotation parameter ``b = f/d`` is
 invariant under the spin-boost, so it is enough to check the three
-special cases with ``d = 1``.  First, a pure supertranslation has ``L
+special cases with ``d = 1``.  First, a pure supertranslation has ``Λ
 = 1``, so ``φₐ = γ = 0`` and ``d = 1``, leaving only the null-rotation
 shift.  Second, a spatial rotation has ``φₐ = 0``, so ``κ = 1`` and
 ``d = e^{𝐱𝐲γ}`` is a pure phase — the dyad simply spins.  And third,
@@ -311,7 +310,7 @@ l̃' = \frac{1}{κ}\, l̃ + \frac{\overline{ðu'}}{2κ²}\, m̃ + \frac{ðu'}{2�
 ```
 
 This is exactly the ``\boldsymbol{ℓ} ↔ 𝐧`` image of the null rotation
-``𝐑\,𝐧\,𝐑̄ = 𝐧 + \boldsymbol{ξ} + \tfrac12 ξ²\boldsymbol{ℓ}``: writing the
+``𝐑\,𝐧\,𝐑̃ = 𝐧 + \boldsymbol{ξ} + \tfrac12 ξ²\boldsymbol{ℓ}``: writing the
 screen vector ``\boldsymbol{ξ} = \tfrac{\overline{ðu'}}{2κ}m̃ +
 \tfrac{ðu'}{2κ}m̄̃`` (so that ``\tfrac12 ξ² = |ðu'|²/4κ²``), the transverse
 leg picks up a linear screen term and a quadratic ``ñ`` term — and, like
@@ -380,7 +379,7 @@ shape,
 ```math
 v' = κ(θ, ϕ)\left[v - c_α α(θ, ϕ)\right],
 \qquad
-κ = \frac{1}{γ(1 + v⃗ ⋅ k̂)},
+κ = \frac{\sqrt{1 - v⃗ ⋅ v⃗}}{1 + v⃗ ⋅ k̂},
 ```
 
 with two points of convention worth flagging:
