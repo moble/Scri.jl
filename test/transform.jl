@@ -138,9 +138,10 @@ end
     @test d_bridgeˢ == d_coreˢ
 
     # ...whereas an element already in the ℐ⁻ representation passes its modes through
-    # unchanged — and the two differ, because the same raw modes mean different functions in
-    # the two labelings.
-    g⁻ = Scri.BMS{Float64}(; parts..., ℐ=-1)
+    # unchanged — and an element with the same raw modes in that representation differs,
+    # because the same raw modes mean different functions in the two labelings.  (The
+    # keywords would not do here: they build the same physical translation at either ℐ.)
+    g⁻ = Scri.BMS{Float64}(Scri.lorentz(gˢ), Scri.supertranslation(gˢ); ℐ=-1)
     d_bridge⁻ˢ = mktdata()
     Scri.transform!(d_bridge⁻ˢ, t, g⁻, dc⁻)
     d_core⁻ˢ = mktdata()

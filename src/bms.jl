@@ -92,10 +92,11 @@ The Lorentz part is assembled as the *passive* version of "rotate, then boost": 
 inv(Boost(v⃗) * Lorentz(R))`, so that `frame_rotation` and `boost_velocity` have exactly the
 same meaning as the `R` and `v⃗` arguments of [`transform!`](@ref).  In particular `κ(𝐤) =
 1/(γ(1 - ℐ v⃗⋅k̂))` for a pure boost, where `ℐ` is the element's representation `I`.  The
-translation parts contribute `α(k̂) = δt - δx⃗⋅k̂` — i.e., the supertranslation of the
-spacetime translation by the 4-vector `(δt, δx⃗)`.  If `supertranslation` is also supplied,
-any `time_translation` and/or `space_translation` content is *added* to it to produce the
-total supertranslation.
+translation parts contribute `α(k̂) = c_α(δt - ℐ δx⃗⋅k̂)` in the labeling selected by `ℐ` —
+i.e., the supertranslation of the spacetime translation of the origin by the 4-vector
+`(δt, δx⃗)`, which is the same physical translation in every convention.  If
+`supertranslation` is also supplied, any `time_translation` and/or `space_translation`
+content is *added* to it to produce the total supertranslation.
 
 ## Operations
 
@@ -213,31 +214,41 @@ Quaternionic.basetype(::Type{BMS{T,A,I}}) where {T<:Real,A,I} = T
 Quaternionic.basetype(::BMS{T}) where {T<:Real} = T
 
 @doc raw"""
-    translation_modes(T, δt, δx⃗, ℓₘₐₓ=1)
+    translation_modes(T, δt, δx⃗, ℓₘₐₓ=1; c_α=1, ℐ=1)
 
 Mode weights (in the ordering used by [`BMS`](@ref)) of the supertranslation corresponding
-to the spacetime translation by the 4-vector `(δt, δx⃗)`:
+to the spacetime translation of the origin by the 4-vector `(δt, δx⃗)`:
 
 ```math
-α(k̂) = δt - δx⃗ ⋅ k̂.
+α(k̂) = c_α\,(δt - ℐ\, δx⃗ ⋅ k̂),
 ```
+
+in the labeling of the sphere selected by `ℐ`, and for an element that acts as `t′ = κ(t -
+c_α α)`, so that the factor `c_α` cancels from the time law.  At ``ℐ⁺`` (`ℐ = +1`) the
+label `k̂` is the direction of propagation, and the retarded time changes by
+``u' = u - (δt - δx⃗⋅k̂)``.  At
+``ℐ⁻`` (`ℐ = -1`) the label is the direction on the sky from which the radiation arrives,
+and the advanced time changes by ``v' = v - (δt + δx⃗⋅k̂)``.  So `(δt, δx⃗)` is the same
+physical translation at both.
 
 In terms of (orthonormal, Condon-Shortley) spherical harmonics, the nonzero modes are
 
 ```math
-α_{0,0} = 2\sqrt{π}\, δt,
+α_{0,0} = 2c_α\sqrt{π}\, δt,
 \qquad
-α_{1,0} = -2\sqrt{π/3}\, δz,
+α_{1,0} = -2c_αℐ\sqrt{π/3}\, δz,
 \qquad
-α_{1,±1} = ±\sqrt{2π/3}\, (δx ∓ i\, δy).
+α_{1,±1} = ±c_αℐ\sqrt{2π/3}\, (δx ∓ i\, δy).
 ```
 
 The output is zero-padded up to `ℓₘₐₓ` (which must be at least 1 whenever `δx⃗ ≠ 0`).
 """
-function translation_modes(::Type{T}, δt::Real, δx⃗::QuatVec, ℓₘₐₓ::Int=1) where {T<:Real}
+function translation_modes(
+    ::Type{T}, δt::Real, δx⃗::QuatVec, ℓₘₐₓ::Int=1; c_α::Int=1, ℐ::Int=1
+) where {T<:Real}
     α = zeros(Complex{T}, (ℓₘₐₓ + 1)^2)
-    α[1] = 2 * √T(π) * δt
-    δx, δy, δz = vec(δx⃗)
+    α[1] = c_α * 2 * √T(π) * δt
+    δx, δy, δz = (c_α * ℐ) .* vec(δx⃗)
     if ℓₘₐₓ ≥ 1
         α[2] = -√(2T(π) / 3) * (δx + im * δy)  # (ℓ,m) = (1,-1)
         α[3] = -2 * √(T(π) / 3) * δz           # (ℓ,m) = (1, 0)
@@ -295,7 +306,7 @@ function BMS{T}(;
     if L < ℓᵅ
         throw(ArgumentError("ℓₘₐₓ=$L is too small for the given supertranslation"))
     end
-    α = translation_modes(T, δt, δx⃗, L)
+    α = translation_modes(T, δt, δx⃗, L; c_α, ℐ)
     if !isnothing(supertranslation)
         α[1:length(supertranslation)] .+= supertranslation
     end
@@ -404,17 +415,20 @@ boost_velocity(g::BMS) = first(Quaternionic.vR(inv(g.Λ)))
     translation(g::BMS) -> (δt, δx⃗)
 
 Interpret the `ℓ ≤ 1` modes of the supertranslation of `g` as a spacetime translation,
-returning the time translation `δt` and space translation `δx⃗`.  This inverts
-[`translation_modes`](@ref); any `ℓ ≥ 2` ("proper supertranslation") content is ignored.
+returning the time translation `δt` and space translation `δx⃗` of the origin.  This
+inverts [`translation_modes`](@ref) with the element's own conventions `c_α` and `ℐ`, so
+the result is the same physical translation in every convention, and is unchanged by the
+conversion constructor `BMS(g; c_α, ℐ)`.  Any `ℓ ≥ 2` ("proper supertranslation") content
+is ignored.
 """
-function translation(g::BMS{T}) where {T<:Real}
+function translation(g::BMS{T,A,I}) where {T<:Real,A,I}
     α = g.α
-    δt = real(α[1]) / (2 * √T(π))
+    δt = A * real(α[1]) / (2 * √T(π))
     if length(α) ≥ 4
-        c = √(3 / (2T(π)))
+        c = A * I * √(3 / (2T(π)))
         δx = +c * real(α[4])
         δy = -c * imag(α[4])
-        δz = -real(α[3]) * √(3 / T(π)) / 2
+        δz = -A * I * real(α[3]) * √(3 / T(π)) / 2
         return (δt, QuatVec{T}(δx, δy, δz))
     else
         return (δt, QuatVec{T}(0, 0, 0))
@@ -850,6 +864,54 @@ end
             end
         end
     end
+end
+
+@testitem "BMS: translation keywords are physical at both ℐ" tags = [
+    :unit, :fast, :validation
+] setup = [BMSTestSetup] begin
+    import Random
+    using .BMSTestSetup: random_direction
+    using Quaternionic: QuatVec, components
+    using Scri: translation
+
+    # The keywords `time_translation = δt` and `space_translation = δx⃗` move the origin to
+    # the event `(δt, δx⃗)` at either piece of null infinity and with either sign `c_α`.  The
+    # oracle is raw Minkowski geometry: the point of ℐ with time coordinate t (u at ℐ⁺, v at
+    # ℐ⁻) in the direction labeled k̂ is the limit r → ∞ of X = (t + ℐ r, r k̂), since the ℐ⁻
+    # label is the direction on the sky.  In the translated coordinates X′ = X - (δt, δx⃗), so
+    # that t′ = X′⁰ - ℐ |X′⃗|.  BigFloat with r = 10⁴⁰ makes the O(1/r) remainder negligible.
+    rng = Random.Xoshiro(4242)
+    setprecision(BigFloat, 256) do
+        r = big(10)^40
+        for ℐ ∈ (-1, +1), c_α ∈ (-1, +1), _ ∈ 1:5
+            δt = big(randn(rng))
+            δx⃗ = QuatVec{BigFloat}(randn(rng), randn(rng), randn(rng))
+            g = BMS{BigFloat}(; time_translation=δt, space_translation=δx⃗, c_α, ℐ)
+            for _ ∈ 1:5
+                t = big(randn(rng))
+                k̂ = random_direction(rng, BigFloat)
+                X⃗′ = r * k̂ - δx⃗
+                t′ₒ = (t + ℐ * r - δt) - ℐ * sqrt(sum(abs2, components(X⃗′)))
+                t′, _ = g(t, k̂)
+                @test abs(t′ - t′ₒ) < 1e-30
+            end
+
+            # The accessors return the physical translation, whatever the representation.
+            for gᵢ ∈ (g, BMS(g; c_α, ℐ=(-ℐ)), BMS(g; c_α=(-c_α), ℐ))
+                δt′, δx⃗′ = translation(gᵢ)
+                @test abs(δt′ - δt) < 1e-70
+                @test maximum(abs, components(δx⃗′ - δx⃗)) < 1e-70
+            end
+        end
+    end
+
+    # The same keywords give the same transformation in either representation.
+    δx⃗ = QuatVec(0.3, -0.2, 0.1)
+    @test BMS(; space_translation=δx⃗, ℐ=-1) == BMS(BMS(; space_translation=δx⃗); ℐ=-1)
+    @test BMS(; time_translation=0.5, space_translation=δx⃗, ℐ=-1) ==
+        BMS(; time_translation=0.5, space_translation=δx⃗)
+    @test BMS(; time_translation=0.5, space_translation=δx⃗, c_α=-1) ==
+        BMS(; time_translation=0.5, space_translation=δx⃗)
 end
 
 ###
