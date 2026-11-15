@@ -598,8 +598,7 @@ compose as
 
 as derived on [the group page](@ref bms_group), and the factor ``c_α``
 cancels from the law of composition.  In the code, the frame rotor of
-the composition is `lorentz(g₁) * lorentz(g₂)`, as we saw above, which
-is also the order used on the group page.
+the composition is `lorentz(g₁) * lorentz(g₂)`, as we saw above.
 
 ### Comparison with Sachs
 
