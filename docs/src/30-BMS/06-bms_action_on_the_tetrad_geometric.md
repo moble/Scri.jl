@@ -69,8 +69,8 @@ that page, with products written in the order in which their factors
 are applied,
 
 ```math
-\left(1, α\right)^{-1}\left(Λ, 0\right)\left(1, α\right)
-= \left(Λ,\; \mathrm{Ad}(Λ)(α) - α\right).
+\left(1, α\right)\left(Λ, 0\right)\left(1, α\right)^{-1}
+= \left(Λ,\; α - \mathrm{Ad}(Λ)(α)\right).
 ```
 
 The supertranslation content on the right vanishes only when
@@ -416,8 +416,8 @@ translation to be a constant ``δt`` — an ordinary time translation —
 the conjugate is
 
 ```math
-\left(1, δt\right)^{-1}\left(Λ, 0\right)\left(1, δt\right)
-= \left(Λ,\; δt\left(\frac{1}{κ} - 1\right)\right),
+\left(1, δt\right)\left(Λ, 0\right)\left(1, δt\right)^{-1}
+= \left(Λ,\; δt\left(1 - \frac{1}{κ}\right)\right),
 ```
 
 whose supertranslation content is nonzero, and angle-dependent through
@@ -425,15 +425,15 @@ whose supertranslation content is nonzero, and angle-dependent through
 Substituting into the time law ``t' = κ\left(t - c_α α\right)`` gives
 
 ```math
-t' = κ\left(t + c_α\,δt\right) - c_α\,δt ,
+t' = κ\left(t - c_α\,δt\right) + c_α\,δt ,
 ```
 
 which confirms that the distinguished cut has moved to
-``t = -c_α\,δt``, the image of ``t = 0`` under the translation, as it
-must.  The angular derivative is then
+``t = c_α\,δt``, the new origin set by the translation, as it must.
+The angular derivative is then
 
 ```math
-ð t' = \left(t + c_α\,δt\right) ðκ .
+ð t' = \left(t - c_α\,δt\right) ðκ .
 ```
 
 The null-rotation parameter is therefore proportional to the *offset

@@ -485,6 +485,11 @@ Essentially, we have reversed the order of the factors relative to the
 previous expression.  So we simply have to be careful about the basis
 in which each factor is expressed.
 
+On the rest of this page, a rotor written in bold, such as
+``\boldsymbol{Λ}``, is always the geometric object, and the same letter
+in code font, such as `Λ`, is the corresponding object in the code,
+which wraps the components of the rotor in a particular basis.
+
 Generally, in this code, we assume that successive transformations are
 expressed in *successive* frames.  For example, if `g₁` and `g₂` are
 [`BMS`](@ref Scri.BMS) elements, then we assume that `g₁` is expressed
@@ -535,12 +540,26 @@ redshifted, ``κ > 1``.  In general the radiation is redshifted in
 exactly the directions with ``v⃗⋅k̂ > 1 - 1/γ``, because time dilation
 alone blueshifts the directions transverse to the motion.  The new
 label of the ray is read from ``𝐤' =
-\boldsymbol{Λ̃}\,𝐤\,\boldsymbol{Λ}/(\boldsymbol{Λ̃}\,𝐤\,\boldsymbol{Λ})^0``,
-and for two changes of frame in succession
+\boldsymbol{Λ̃}\,𝐤\,\boldsymbol{Λ}/(\boldsymbol{Λ̃}\,𝐤\,\boldsymbol{Λ})^0``.
+For two changes of frame in succession, with frame rotor
+``\boldsymbol{Λ}₂\boldsymbol{Λ}₁``, the conformal factors multiply,
+each being the ratio of the time components of ``𝐤`` before and after
+its own change of frame:
 
 ```math
-κ(Λ₁Λ₂, 𝐤) = κ(Λ₂, Λ̃₁𝐤Λ₁)\,κ(Λ₁, 𝐤).
+κ(\boldsymbol{Λ}₂\boldsymbol{Λ}₁, 𝐤)
+= \frac{k^0}{k^{0''}}
+= \frac{k^{0'}}{k^{0''}}\,\frac{k^0}{k^{0'}}.
 ```
+
+In the code, with `Λ₂` expressed in the frame that `Λ₁` produces, this
+reads
+
+```julia
+conformal_factor(Λ₁ * Λ₂, k̂) ≈ conformal_factor(Λ₂, k̂′) * conformal_factor(Λ₁, k̂)
+```
+
+where `k̂′` is the label of the ray in that frame.
 
 [Sachs_1962a](@citet) — the creator of the full BMS group — and
 [NewmanPenrose_1966](@citet) use the symbol ``K`` for this factor; we
@@ -550,7 +569,7 @@ decomposition") used throughout these docs.
 
 ## The time coordinate
 
-A BMS element is represented as a pair ``(Λ, α)``.  The
+A BMS element is represented as a pair ``(\boldsymbol{Λ}, α)``.  The
 supertranslation ``α`` is applied first, on the old sphere, and the
 Lorentz transformation second, about the new origin set by the
 supertranslation rather than the original one:
@@ -567,13 +586,18 @@ With products written in the order of application, two elements
 compose as
 
 ```math
-(Λ₁, α₁)\,(Λ₂, α₂) = \bigl(Λ₁Λ₂,\ α₁ + \mathrm{Ad}(Λ₁)(α₂)\bigr),
+(\boldsymbol{Λ}₁, α₁)\,(\boldsymbol{Λ}₂, α₂)
+= \bigl(\boldsymbol{Λ}₂\boldsymbol{Λ}₁,
+  \ α₁ + \mathrm{Ad}(\boldsymbol{Λ}₁)(α₂)\bigr),
 \qquad
-\mathrm{Ad}(Λ)(α)(𝐤) = \frac{α(Λ̃\,𝐤\,Λ)}{κ(Λ, 𝐤)},
+\mathrm{Ad}(\boldsymbol{Λ})(α)(𝐤)
+= \frac{α(\boldsymbol{Λ̃}\,𝐤\,\boldsymbol{Λ})}{κ(\boldsymbol{Λ}, 𝐤)},
 ```
 
 as derived on [the group page](@ref bms_group), and the factor ``c_α``
-cancels from the law of composition.
+cancels from the law of composition.  In the code, the frame rotor of
+the composition is `lorentz(g₁) * lorentz(g₂)`, as we saw above, which
+is also the order used on the group page.
 
 ### Comparison with Sachs
 
@@ -600,8 +624,9 @@ ray whose old label is ``k̂`` and new label is ``k̂'``,
 α_{\text{Sachs}}(k̂') = c_α\,κ(k̂)\,α(k̂),
 ```
 
-so Sachs's element is our ``\bigl(Λ,\ c_α\,(α_{\text{Sachs}}∘Λ̃)/κ
-\bigr)``, where ``α_{\text{Sachs}}∘Λ̃`` means ``α_{\text{Sachs}}``
+so Sachs's element is our
+``\bigl(\boldsymbol{Λ},\ c_α\,(α_{\text{Sachs}}∘\boldsymbol{Λ̃})/κ\bigr)``,
+where ``α_{\text{Sachs}}∘\boldsymbol{Λ̃}`` means ``α_{\text{Sachs}}``
 evaluated at the new label of the ray.  Sachs's definition is unusual
 in the literature, having been quickly replaced by the form used here.
 For example, [NewmanPenrose_1966](@citet) (their Eq. 2.1) write ``u' =
@@ -611,38 +636,41 @@ which is our law with ``c_α = +1``.
 ## Fields on the sphere
 
 `SphericalFunctions` treats a spin-weighted function as a function of
-a *point frame*: a rotor ``Q`` that takes the reference basis ``(𝐱,
+a *point frame*: a rotor ``𝐐`` that takes the reference basis ``(𝐱,
 𝐲, 𝐳)`` to a frame at a point of the sphere.  Under a pure rotation,
 ``\boldsymbol{Λ} = 𝐑``, and a field ``f`` is written in the new frame
-as
+as ``f'``, where
 
-```math
-f'(Q) = f(ΛQ),
-\qquad
-f' = 𝔇(Λ̃)\cdot f,
+```julia
+f′(Q) ≈ f(Λ * Q)
+f′ ≈ D(Λ̃, ℓₘₐₓ) * f
 ```
 
 pointwise and on its mode weights, respectively.  That is, the point
-frame whose components in the new frame are ``Q`` has components
-``ΛQ`` in the old frame.  The mode law is
-`SphericalFunctions`'s [rotation law](@extref SphericalFunctions
-:std:label:`spin_rotation_law`) with the rotor ``\boldsymbol{Λ̃}``,
-which is again the duality between an active rotation by
-``\boldsymbol{Λ̃}`` and a change of frame by ``\boldsymbol{Λ}``.
-
-In general the new field at a new pixel ``R'_p`` is read from the old
-field at the point frame
+frame described by `Q` in the new frame is described by `Λ * Q` in the
+old frame.  To get the mode law from the pointwise one, we note that
+`Λ` is the inverse of `Λ̃`, so that `f′(Q) ≈ f(inv(Λ̃) * Q)`.  This is
+the value at `Q` of the field that `SphericalFunctions` calls `f`
+*actively rotated* by `Λ̃`.  The [rotation law](@extref
+SphericalFunctions :std:label:`spin_rotation_law`) of that package
+gives the mode weights of this field, so that
 
 ```math
-R_p = K\bigl(Λ\,R'_p\bigr),
+f'_{ℓ,m'} = \sum_{m} 𝔇^{(ℓ)}_{m',m}(\boldsymbol{Λ̃})\, f_{ℓ,m},
 ```
 
-where ``K(\,⋅\,)`` is the rotation factor of the Iwasawa
-decomposition, and the value is then multiplied by suitable powers of
-``κ`` and mixed with other components as described in the following
-sections.  The first part of this process is performed by
-`aberration`, which is described in detail on [its own page](@ref
-"Aberration of Gravitational Waves").
+which is the mode law above with its sum written out.  This is again
+the duality between an active rotation by ``\boldsymbol{Λ̃}`` and a
+change of frame by ``\boldsymbol{Λ}``.
+
+In general the new field at a new pixel `R′ₚ` is read from the old
+field at the point frame `Rₚ`, the rotation factor ``K`` of the
+Iwasawa decomposition of `Λ * R′ₚ`, and the value is then multiplied
+by suitable powers of ``κ`` and mixed with other components as
+described in the following sections.  The first part of this process
+is performed by `aberration`, as `Rₚ = aberration(R′ₚ, Λ)`.  That
+function is described in detail on [its own page](@ref "Aberration of
+Gravitational Waves").
 
 At ``ℐ⁻`` the labeling of the sphere is antipodal.  The implementation
 then uses the parity conjugate of the frame rotor, ``\boldsymbol{Λ}_ℐ
@@ -663,5 +691,5 @@ itself at ``ℐ⁺``.
 | ``α``                | supertranslation, on the old sphere                                        | `g.α`, `supertranslation(g)`             |
 | ``c_α``              | sign convention of the supertranslation                                    | `c_α`                                    |
 | ``ℐ``                | ``+1`` at ``ℐ⁺``, ``-1`` at ``ℐ⁻``                                         | `ℐ`                                      |
-| ``R'_p``, ``R_p``    | point frame of a pixel, in new and old components                          | `R′ₚ`, `Rₚ`                              |
+| ``𝐑'_p``, ``𝐑_p``    | point frame of a pixel, relative to the new and old bases                  | `R′ₚ`, `Rₚ`                              |
 | ``K``, ``A``, ``N``  | factors of the Iwasawa decomposition                                       | `Quaternionic.KAN`                       |
