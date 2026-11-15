@@ -87,9 +87,10 @@ above:
   away in the direction ``\hat{k}``.)
 
 This is identical to the null section ``σ_ℐ: \hat{k} \mapsto (1,
-ℐ\hat{k})`` introduced in the [BMS group page](@ref "Lorentz
-transformations ``ℒ`` and the conformal factor ``κ``") in its
-discussion of the celestial sphere.  The same rotor language connects
+ℐ\hat{k})`` used on the [BMS group page](@ref bms_group), which for
+``ℐ = +1`` is the section introduced on the [null-cones page](@ref
+"The null cone and the celestial sphere") in its discussion of the
+celestial sphere.  The same rotor language connects
 naturally to the [Spacetime Algebra](@extref Quaternionic :doc:`spacetime_algebra`) developed in Quaternionic.jl, where null vectors arise from
 combinations of boost and rotation generators in the even subalgebra
 of ``\mathrm{Cl}(3,1)``.
@@ -127,9 +128,11 @@ The ratio
 κ = \frac{ω}{ω'} = \frac{1}{γ(1 - ℐ\vec{v}\cdot\hat{k})}
 ```
 
-is exactly the conformal factor introduced in the BMS page: for ``ℐ =
-+1`` it reduces to ``κ = 1/[γ(1-\vec{v}\cdot\hat{k})]`` while for ``ℐ
-= -1`` it becomes ``κ = 1/[γ(1+\vec{v}\cdot\hat{k})]``.
+is exactly the conformal factor introduced on the [null-cones
+page](@ref "Lorentz transformations ``ℒ`` and the conformal factor
+``κ``"): for ``ℐ = +1`` it reduces to ``κ =
+1/[γ(1-\vec{v}\cdot\hat{k})],`` while for ``ℐ = -1`` it becomes ``κ =
+1/[γ(1+\vec{v}\cdot\hat{k})]``.
 
 ## The aberration formula
 

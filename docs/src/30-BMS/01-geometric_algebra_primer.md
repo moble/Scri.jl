@@ -1,4 +1,4 @@
-# A Primer on Geometric Algebra
+# [A Primer on Geometric Algebra](@id geometric_algebra_primer)
 
 !!! tip "The short version"
     Geometric Algebra is — among many other things — a very simple and

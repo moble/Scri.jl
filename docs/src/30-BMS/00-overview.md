@@ -88,7 +88,7 @@ algebra, with one simple but powerful addition: parallel vectors
 commute and perpendicular vectors anti-commute.  And because the
 algebra uses vectors directly, the geometric meaning of GA expressions
 is transparent and directly tied to the physics of the situation.  The
-[next page](@ref "A Primer on Geometric Algebra") provides a brief
+[next page](@ref geometric_algebra_primer) provides a brief
 introduction to the GA formalism.
 
 We then move on to our discussion of [the Lorentz group](@ref "The
@@ -108,7 +108,7 @@ understand how observers related by a BMS transformation construct
 their tetrads.  As noted above, this is a subtle but critical part of
 understanding how the BMS group behaves.
 
-Finally, we discuss [how the BMS group act on fields](@ref "BMS Action
+Finally, we discuss [how the BMS group acts on fields](@ref "BMS Action
 on Fields") used to describe the physical phenomena of interest.  This
-is a relatively straightforward and simple application of the
-coordinate- and tetrad-transformation laws.
+is a relatively straightforward and simple application of the laws by
+which the coordinates and the tetrad change.

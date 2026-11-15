@@ -40,7 +40,7 @@ and all other products are zero.  We then define the *null* tetrad
 
 where ``𝐈₃ = 𝐈𝐭 = 𝐱𝐲𝐳`` is the spatial pseudoscalar, and
 replaces the ``i`` used in the Newman-Penrose formalism.  See
-[below](@ref "Reinterpreting ``i``") for details about this
+[the primer](@ref "Reinterpreting ``i``") for details about this
 replacement, but the important features here are that ``𝐈₃²=-1``, and
 it commutes with spatial vectors but anticommutes with ``𝐭``.  This
 means that the null tetrad is indeed null,
@@ -72,11 +72,11 @@ general Lorentz transformation *specifically with respect to* either
 
 Before we decompose the (proper orthochronous) Lorentz group, we need
 to understand how the Lorentz group shows up in Geometric Algebra.
-The answer is already implicit in [the primer](@ref "A Primer on
-Geometric Algebra"): every proper orthochronous Lorentz transformation
-can be expressed as a rotor ``R ∈ \mathrm{Spin}⁺(3,1)`` — the product
-of an even number of unit-norm vectors — acting on a vector ``𝐯`` by
-conjugation,
+The answer is already implicit in [the primer](@ref
+geometric_algebra_primer): every proper orthochronous Lorentz
+transformation can be expressed as a rotor ``R ∈ \mathrm{Spin}⁺(3,1)``
+— the product of an even number of unit-norm vectors — acting on a
+vector ``𝐯`` by conjugation,
 
 ```math
 𝐯' = R\, 𝐯\, R̃,
@@ -325,7 +325,7 @@ distinction matters, we subscript each family by the null vector that
 is fixed — ``N_{\boldsymbol{ℓ}}`` versus ``N_{𝐧}``.  The question of
 *which* family acts on radiation data at null infinity turns out to be
 surprisingly delicate; see ["Which null direction?"](@ref
-which_null_direction) below.
+which_null_direction) on the null-cones page.
 
 ## Cartan (polar) decomposition
 
@@ -544,8 +544,8 @@ and ``A`` factors would remain precisely the same, but the ``N``
 factor would be ``\left\{ \exp\left[\tfrac{1}{2} \boldsymbol{𝐧
 ξ}\right] \mid \boldsymbol{ξ} = ξˣ𝐱 + ξʸ𝐲 \right\}`` — and again,
 the particular values picked out for a given transformation would
-differ.  But that is another legitimate choice, which we wil come back
-to [below](@ref which_null_direction).
+differ.  But that is another legitimate choice, which we will come
+back to [on the null-cones page](@ref which_null_direction).
 
 [^2]: Formally, the decomposition is determined by a choice of
     "positivity" of the "restricted roots" of the full Lie algebra
@@ -934,11 +934,11 @@ null rotations can exist at all;[^5] it must be accounted for by
 mixing of the corresponding field components.  Which null rotations do
 that mixing — those fixing ``\boldsymbol{ℓ}`` or those fixing ``𝐧`` —
 is a sharper question than it looks; see ["Which null
-direction?"](@ref which_null_direction) below.  But the effect of
-``𝐑_{φₐ𝐭𝐳}`` can be accounted for with a simple multiplication by
-``e^{b φₐ}``.  For the point frame ``𝐐 = Λ\,𝐑'_p`` this is exactly
-the conformal factor ``κ`` to the power ``b``, because there ``κ =
-e^{φₐ}``.  So information about the direction of
+direction?"](@ref which_null_direction) on the null-cones page.  But
+the effect of ``𝐑_{φₐ𝐭𝐳}`` can be accounted for with a simple
+multiplication by ``e^{b φₐ}``.  For the point frame ``𝐐 = Λ\,𝐑'_p``
+this is exactly the conformal factor ``κ`` to the power ``b``,
+because there ``κ = e^{φₐ}``.  So information about the direction of
 propagation and tangent direction needed for a spin-weighted field is
 entirely contained in the ``𝐑_K`` factor.
 

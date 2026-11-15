@@ -190,7 +190,7 @@ positive.
 
     The fact that ``N`` is the stabilizer of a conformal frame gives
     an immediate reason for a fact established by another route on
-    [the Lorentz page](@ref which_null_direction): no quantity
+    [the null-cones page](@ref which_null_direction): no quantity
     constructed from a point of the sphere and a dyad can transform
     under ``N`` by a simple factor, because ``N`` does not affect
     either one.  A null rotation can act only on data that involve

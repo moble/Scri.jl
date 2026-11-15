@@ -441,7 +441,7 @@ by cross-sections is preserved: there is no invariant family of cuts,
 and that failure *is* the supertranslation freedom introduced below.
 A transformation relating two frames adapted to ``ℐ⁺`` must therefore
 fix the generator direction ``𝐧`` at each point, while nothing fixes
-the transverse ``ℓ``.  In the language of [the Lorentz page](@ref
+the transverse ``ℓ``.  In the language of [the next section](@ref
 which_null_direction), tetrad transitions at ``ℐ⁺`` lie in the
 stabilizer ``MAN_{𝐧}`` of the generator, so field components mix by
 null rotations about ``𝐧`` — worked out on [the tetrad page](@ref

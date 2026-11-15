@@ -325,16 +325,17 @@ is built from the label map ``𝐤 ↦ Λ̃₁\,𝐤\,Λ₁`` and the conformal
 factor ``κ(Λ₁, 𝐤)`` — both realized on the *labeled* sphere — the
 coordinates of a composite element depend on the representation even
 though the abstract group does not.  To make that precise, write
-``·⁺`` and ``·⁻`` for the two products: each is the formula above, with
-the label map and conformal factor computed from the corresponding
-section ``𝐤 = (1, ±k̂)``.  Note that ``κ`` itself needs no such
-decoration: as defined [above](@ref "Lorentz transformations ``ℒ`` and
-the conformal factor ``κ``"), it is a single function of a Lorentz
-transformation and a null vector — indeed, being scale-invariant in
-``𝐤``, a function of the null *ray* — and the two labelings merely
-feed it antipodal rays, ``κ(Λ, (1, -k̂))`` on ``ℐ⁻`` whereas it is
-``κ(Λ, (1, +k̂))`` on ``ℐ⁺``.  The same is true of the label map.  Now
-we promote the relabeling of ``α`` to a map on whole elements,
+``·⁺`` and ``·⁻`` for the two products: each is the formula above,
+with the label map and conformal factor computed from the
+corresponding section ``𝐤 = (1, ±k̂)``.  Note that ``κ`` itself needs
+no such decoration: as defined [on the null-cones page](@ref "Lorentz
+transformations ``ℒ`` and the conformal factor ``κ``"), it is a single
+function of a Lorentz transformation and a null vector — indeed, being
+scale-invariant in ``𝐤``, a function of the null *ray* — and the two
+labelings merely feed it antipodal rays, ``κ(Λ, (1, -k̂))`` on ``ℐ⁻``
+whereas it is ``κ(Λ, (1, +k̂))`` on ``ℐ⁺``.  The same is true of the
+label map.  Now we promote the relabeling of ``α`` to a map on whole
+elements,
 
 ```math
 \begin{aligned}
