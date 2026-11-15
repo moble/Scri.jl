@@ -406,11 +406,10 @@ on, `Quaternionic` and `SphericalFunctions`, generally use active
 transformations in their documentation.  Numerically, the new
 components of a fixed vector are given by the *active* transformation
 by ``\boldsymbol{Λ̃}`` that `Quaternionic` and `SphericalFunctions`
-apply to arrays of components — as, for example, `Λ̃(V)` and `D(Λ̃,
-ℓₘₐₓ) * f` respectively.  That is why the documentation of
-`Quaternionic` calls `inv(Boost(v⃗))` "the passive transformation" for
-an observer moving with velocity ``v⃗``: it is ``\boldsymbol{Λ̃}`` for
-``𝐑 = 1``.
+apply to arrays of components — as, for example, `Λ̃(V)` and `D(Λ̃) *
+f` respectively.  That is why the documentation of `Quaternionic`
+calls `inv(Boost(v⃗))` "the passive transformation" for an observer
+moving with velocity ``v⃗``: it is ``\boldsymbol{Λ̃}`` for ``𝐑 = 1``.
 
 ## Composition and translating geometry into code
 
@@ -462,11 +461,14 @@ expression is
 ```
 
 and we have corresponding objects in the code `Λ₂` and `Λ₁` expressed
-in the same basis, then we can compute this as
+in the same basis, then we could compute this with something like
 
 ```julia
 𝐞′′ = Λ₂ * Λ₁ * 𝐞 * conj(Λ₁) * conj(Λ₂).
 ```
+
+(Note that this code is *schematic* only; four vectors like `𝐞` are
+not currently defined in any of the actual code.)
 
 However, if — as is frequently the case — `Λ₂` is known only in the
 basis of the primed frame, then we need to rewrite its components to
@@ -646,11 +648,13 @@ f′(Q) ≈ f(Λ * Q)
 f′ ≈ D(Λ̃, ℓₘₐₓ) * f
 ```
 
-pointwise and on its mode weights, respectively.  That is, the point
-frame described by `Q` in the new frame is described by `Λ * Q` in the
-old frame.  To get the mode law from the pointwise one, we note that
-`Λ` is the inverse of `Λ̃`, so that `f′(Q) ≈ f(inv(Λ̃) * Q)`.  This is
-the value at `Q` of the field that `SphericalFunctions` calls `f`
+pointwise and on its mode weights, respectively.  (Note that the
+second line is schematically written; `SphericalFunctions.D` does not
+have multiplication defined in this way.)  That is, the point frame
+described by `Q` in the new frame is described by `Λ * Q` in the old
+frame.  To get the mode law from the pointwise one, we note that `Λ`
+is the inverse of `Λ̃`, so that `f′(Q) ≈ f(inv(Λ̃) * Q)`.  This is the
+value at `Q` of the field that `SphericalFunctions` calls `f`
 *actively rotated* by `Λ̃`.  The [rotation law](@extref
 SphericalFunctions :std:label:`spin_rotation_law`) of that package
 gives the mode weights of this field, so that
