@@ -508,7 +508,7 @@ the factor ``1/κ`` converts the shift of frame 1's time into a shift
 of the original time.  The same order makes the action of an element
 on the points of ``ℐ`` compose like a function: `g(t′, k̂′)` returns
 the old coordinates of the point whose new coordinates are ``(t',
-k̂')``, and `(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`.
+k̂')``, and `(g₁ * g₂)(t′, k̂′) ≈ g₁(g₂(t′, k̂′)...)`.
 
 ## [The conformal factor ``κ``](@id conformal_factor_convention)
 

@@ -110,7 +110,7 @@ written in the order of application: `g₁ * g₂` applies `g₁` first, and the
 parameters are read in the frame that `g₁` produces, so that `lorentz(g₁ * g₂) ==
 lorentz(g₁) * lorentz(g₂)`.  The inverse is `inv`, and the identity `one`.  Applied to a
 point of null infinity, `g(t′, k̂′)` returns the old coordinates of the point whose new
-coordinates are `(t′, k̂′)`, so that `(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`.  Accessors:
+coordinates are `(t′, k̂′)`, so that `(g₁ * g₂)(t′, k̂′) ≈ g₁(g₂(t′, k̂′)...)`.  Accessors:
 [`ℓₘₐₓ`](@ref), [`lorentz`](@ref), [`supertranslation`](@ref), [`frame_rotation`](@ref),
 [`boost_velocity`](@ref), [`translation`](@ref), [`time_translation`](@ref),
 [`space_translation`](@ref), [`proper_supertranslation`](@ref).
@@ -1036,11 +1036,11 @@ t = \frac{t'}{κ(𝐤)} + c_α\,α(𝐤),
 ```
 
 with `κ` as in [`transform_ray`](@ref).  This is the map that [`transform!`](@ref) evaluates
-at every new pixel and time, and it composes like a function:
-`(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`, which is why `∘` is a synonym for `*`.  The other
-direction is [`new_coordinates`](@ref Scri.new_coordinates)`(g, t, k̂)`, which is exact;
-`inv(g)(t, k̂)` agrees with it only up to the band limit of `inv`, which truncates the
-supertranslation of a boosted element.
+at every new pixel and time, and it composes like a function: `(g₁ * g₂)(t′, k̂′) ≈
+g₁(g₂(t′, k̂′)...)`, which is why `∘` is a synonym for `*`.  The other direction is
+[`new_coordinates`](@ref Scri.new_coordinates)`(g, t, k̂)`, which is exact; `inv(g)(t, k̂)`
+agrees with it only up to the band limit of `inv`, which truncates the supertranslation of a
+boosted element.
 
 Both conventions are the element's own type parameters, fixed at construction: the
 supertranslation sign `c_α` says how `α` enters the time shift, and the null-infinity
@@ -1466,23 +1466,23 @@ Compose two BMS elements, in the order in which they are applied: the result act
 (Λ₁, α₁)\,(Λ₂, α₂) = \left(Λ₁Λ₂,\; α₁(𝐤) + α₂(Λ̃₁𝐤Λ₁)/κ₁(𝐤)\right),
 ```
 
-where ``κ₁(𝐤) = k⁰/(Λ̃₁𝐤Λ₁)⁰``, and ``α₂(Λ̃₁𝐤Λ₁)`` means ``α₂`` evaluated at the label that
-the frame produced by `g₁` gives to the ray.  The second term is ``\mathrm{Ad}(Λ₁)(α₂)``.
-Applying `g₁` and then `g₂` with two successive calls to [`transform!`](@ref) therefore
-matches applying `g₁ * g₂` once, and `lorentz(g₁ * g₂) == lorentz(g₁) * lorentz(g₂)`:
-multiplying BMS elements extends multiplying their frame rotors.  If both elements are
-instead specified in the original frame, the second becomes the conjugate
-`inv(g₁) * g₂ * g₁` in the frame that `g₁` produces, and the composite is `g₂ * g₁`, as for
-rotations about fixed axes.  See [Frames and Components](@ref frames_and_components).
+where ``κ₁(𝐤) = k⁰/(Λ̃₁𝐤Λ₁)⁰``, and ``α₂(Λ̃₁𝐤Λ₁)`` means ``α₂`` evaluated at the label
+that the frame produced by `g₁` gives to the ray.  The second term is
+``\mathrm{Ad}(Λ₁)(α₂)``.  Applying `g₁` and then `g₂` with two successive calls to
+[`transform!`](@ref) therefore matches applying `g₁ * g₂` once, and `lorentz(g₁ * g₂) ==
+lorentz(g₁) * lorentz(g₂)`: multiplying BMS elements extends multiplying their frame rotors.
+If both elements are instead specified in the original frame, the second becomes the
+conjugate `inv(g₁) * g₂ * g₁` in the frame that `g₁` produces, and the composite is `g₂ *
+g₁`, as for rotations about fixed axes.  See [Frames and Components](@ref
+frames_and_components).
 
-Because the functor of an element maps new coordinates to old ones,
-`(g₁ * g₂)(t′, k̂′) == g₁(g₂(t′, k̂′)...)`, which is Julia's rule for `∘`; so
-`g₁ ∘ g₂ == g₁ * g₂`.  "First" refers to the changes of frame: as maps on coordinates,
-`g₂`'s is evaluated first.
+Because the functor of an element maps new coordinates to old ones, `(g₁ * g₂)(t′, k̂′) ≈
+g₁(g₂(t′, k̂′)...)`, which is Julia's rule for `∘`; so `g₁ ∘ g₂ == g₁ * g₂`.  "First" refers
+to the changes of frame: as maps on coordinates, `g₂`'s is evaluated first.
 
-Because `κ₁` and the new label, read from `Λ̃₁𝐤Λ₁`, are realized on the labeled celestial sphere,
-the composed supertranslation depends on the labeling — which each element includes as its
-`I` type parameter (see [Representations of the supertranslation](@ref
+Because `κ₁` and the new label, read from `Λ̃₁𝐤Λ₁`, are realized on the labeled celestial
+sphere, the composed supertranslation depends on the labeling — which each element includes
+as its `I` type parameter (see [Representations of the supertranslation](@ref
 bms_representations)).  The inputs may use any mix of conventions (`A`, `I`): each
 convention the two inputs *share* is kept for the result, and each convention on which they
 *disagree* is resolved by converting both inputs — exactly — to the default (`+1`).  `c_α`
@@ -1490,21 +1490,19 @@ does not otherwise enter the group law.
 
 The composed supertranslation is computed pointwise on a spherical grid of bandwidth `ℓʷ`,
 the Leja points of SphericalFunctions' `SSHTMatrix`, and then re-expanded in spherical
-harmonics, keeping modes up to `ℓₘₐₓ`.  The default is
-`ℓₘₐₓ = max(ℓ₂ + 1, ℓ₁)`, where `ℓᵢ` are the two inputs' resolutions: the term `α₁` keeps
-its own bandwidth, while `α₂/κ₁` gains one — the factor `1/κ₁` is exactly band-limited to
-`ℓ ≤ 1`, so the product has bandwidth `ℓ₂ + 1`.  `ℓʷ` defaults to
-`max(2ℓₘₐₓ + 1, ℓ₂ + 1, ℓ₁)`.
+harmonics, keeping modes up to `ℓₘₐₓ`.  The default is `ℓₘₐₓ = max(ℓ₂ + 1, ℓ₁)`, where `ℓᵢ`
+are the two inputs' resolutions: the term `α₁` keeps its own bandwidth, while `α₂/κ₁` gains
+one — the factor `1/κ₁` is exactly band-limited to `ℓ ≤ 1`, so the product has bandwidth
+`ℓ₂+1`.  `ℓʷ` defaults to `max(2ℓₘₐₓ + 1, ℓ₂ + 1, ℓ₁)`.
 
 !!! note "Band limits"
-    The factor `1/κ₁` is *exactly* band-limited to `ℓ ≤ 1`, and for pure rotations `α₂`
-    at the new labels has the same bandwidth as `α₂` — so when `Λ₁` involves no boost, the result
-    is exact (up to roundoff) whenever `ℓʷ ≥ max(ℓ₁, ℓ₂)`, which the defaults guarantee,
-    and a smaller `ℓʷ` throws an `ArgumentError`.
-    When `Λ₁` involves a boost, however, `α₂` at the new labels has unbounded bandwidth (with an
-    exponentially decaying tail), so the result is *convergent in `ℓʷ`* rather than
-    exact, and the modes above `ℓₘₐₓ` are simply discarded.  For large rapidities,
-    increase `ℓʷ` (and possibly `ℓₘₐₓ`).
+    The factor `1/κ₁` is *exactly* band-limited to `ℓ ≤ 1`, and for pure rotations `α₂` at
+    the new labels has the same bandwidth as `α₂` — so when `Λ₁` involves no boost, the
+    result is exact (up to roundoff) whenever `ℓʷ ≥ max(ℓ₁, ℓ₂)`, which the defaults
+    guarantee, and a smaller `ℓʷ` throws an `ArgumentError`.  When `Λ₁` involves a boost,
+    however, `α₂` at the new labels has unbounded bandwidth (with an exponentially decaying
+    tail), so the result is *convergent in `ℓʷ`* rather than exact, and the modes above
+    `ℓₘₐₓ` are simply discarded.  For large rapidities, increase `ℓʷ` (and possibly `ℓₘₐₓ`).
 
 Three cases short-circuit the grid entirely and are exact: when `α₂ = 0` (so the result is
 just `(Λ₁Λ₂, α₁)`); when `Λ₁ = ±1` (so `κ₁ ≡ 1` and the supertranslations simply add); and
