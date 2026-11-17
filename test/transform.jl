@@ -709,7 +709,7 @@ end
         Scri.transform!(copy(data), tf, v⃗, R, α, dc; t′)[1]
 
     plan = Scri.ObjectivePlan(data, t, dc, t′)
-    @test plan.target == Scri.ObjectivePlan(data, tf, dc, t′).target
+    @test plan.c == Scri.ObjectivePlan(data, tf, dc, t′).c
     @test Scri.transform_objective(data, t, v⃗, R, α, dc, plan) ==
         Scri.transform_objective(data, tf, v⃗, R, α, dc, plan)
     θ = Scri.parameters_from_bms(v⃗, R, α)
@@ -741,7 +741,7 @@ end
     @test Scri.transform!(copy(data), t, v⃗, R, α; data_components=dc)[1] ==
         Scri.transform!(copy(data), tv, v⃗, R, α; data_components=dc)[1]
     plan = Scri.ObjectivePlan(data, t, dc, t′)
-    @test plan.target == Scri.ObjectivePlan(data, tv, dc, t′v).target
+    @test plan.c == Scri.ObjectivePlan(data, tv, dc, t′v).c
     @test Scri.transform_objective(data, t, v⃗, R, α, dc, plan) ==
         Scri.transform_objective(data, tv, v⃗, R, α, dc, plan)
     θ = Scri.parameters_from_bms(v⃗, R, α)
@@ -1365,7 +1365,7 @@ end
     d′, t′ = Scri.transform!(copy(data), copy(t), v⃗, R, copy(α), dc)
     pixels = PixelReconstruction.reconstruct_pixels(d′, dc)
     plan = PixelReconstruction.grid_plan(Random.randn(rng, ComplexF64, N, Nᵗ, 4), t, dc, t′)
-    expected = sum(abs2, pixels .- plan.target)
+    expected = sum(abs2, pixels .- plan.c)
 
     obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
     @test obj ≈ expected rtol = 1e-11
@@ -1532,7 +1532,7 @@ end
             t′=t′fix,
         )
         pixels = PixelReconstruction.reconstruct_pixels(d, dc)
-        return sum(abs2, pixels .- plan.target)
+        return sum(abs2, pixels .- plan.c)
     end
     function lean(β::T) where {T}
         return Scri.transform_objective(
@@ -1581,7 +1581,7 @@ end
         data = Complex{eltype(θ)}.(data₀)
         d, _ = Scri.transform!(data, copy(t), parts(θ)..., dc; t′=t′fix)
         pixels = PixelReconstruction.reconstruct_pixels(d, dc)
-        return sum(abs2, pixels .- plan.target)
+        return sum(abs2, pixels .- plan.c)
     end
 
     ∇lean = ForwardDiff.gradient(lean, θ₀)
@@ -1821,13 +1821,13 @@ end
     sub = 1:3:Nᵗ
     plan = PixelReconstruction.grid_plan(modes, t, dc, t′f[sub])
     obj = Scri.transform_objective(data, t, v⃗, R, α, dc, plan)
-    expected = sum(abs2, pixels[:, sub, :] .- plan.target)
+    expected = sum(abs2, pixels[:, sub, :] .- plan.c)
     @test obj ≈ expected rtol = 1e-11
 
     # A single-sample grid also works.
     plan₁ = PixelReconstruction.grid_plan(modes, t, dc, t′f[12:12])
     obj₁ = Scri.transform_objective(data, t, v⃗, R, α, dc, plan₁)
-    @test obj₁ ≈ sum(abs2, pixels[:, 12:12, :] .- plan₁.target) rtol = 1e-11
+    @test obj₁ ≈ sum(abs2, pixels[:, 12:12, :] .- plan₁.c) rtol = 1e-11
 
     # `transform!` still rejects grids of the wrong length.
     @test_throws ArgumentError Scri.transform!(

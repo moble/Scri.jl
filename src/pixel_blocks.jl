@@ -61,12 +61,12 @@ function harmonics_block!(Y::AbstractArray{<:Any,3}, calcs, Rₚ, block)
 end
 
 @doc raw"""
-    synthesize_block!(X, data, Y, spins, N₀)
+    synthesize_block!(σ, data, Y, spins, N₀)
 
 Synthesize the time series of a block of pixels from the modes in `data`, which is only
 read:
 ```math
-X[h, q, k] = ∑_{m=s_k^2+1}^{N₀} Y[m, q, s_k - s₀ + 1]\, \mathrm{data}[m, h, k],
+σ[h, q, k] = ∑_{m=s_k^2+1}^{N₀} Y[m, q, s_k - s₀ + 1]\, \mathrm{data}[m, h, k],
 ```
 where ``s_k`` is `spins[k]`, the spin weight of component `k`, and ``s₀`` is the least of
 them.  So `Y[:, q, :]` holds the harmonics at pixel `q` as [`harmonics_block!`](@ref)
@@ -79,18 +79,18 @@ numbers on the element type of `data`, by way of [`stack_partials`](@ref).  Othe
 sum is a [`pixel_dot`](@ref), and the pixels are shared among parallel tasks.
 """
 function synthesize_block!(
-    X::StridedArray{T,3}, data::StridedArray{T,3}, Y::StridedArray{T,3}, spins, N₀
+    σ::StridedArray{T,3}, data::StridedArray{T,3}, Y::StridedArray{T,3}, spins, N₀
 ) where {T<:LinearAlgebra.BlasComplex}
     s₀ = minimum(spins)
-    for k ∈ axes(X, 3)
+    for k ∈ axes(σ, 3)
         s = spins[k]
         m = (s ^ 2 + 1):N₀
-        mul!(view(X, :, :, k), transpose(view(data, m, :, k)), view(Y, m, :, s - s₀ + 1))
+        mul!(view(σ, :, :, k), transpose(view(data, m, :, k)), view(Y, m, :, s - s₀ + 1))
     end
-    return X
+    return σ
 end
 function synthesize_block!(
-    X::StridedArray{Complex{D},3},
+    σ::StridedArray{Complex{D},3},
     data::StridedArray{Complex{V},3},
     Y::StridedArray{Complex{D},3},
     spins,
@@ -103,23 +103,23 @@ function synthesize_block!(
         m = (s ^ 2 + 1):N₀
         Yˢ = stack_partials(view(Y, m, :, s - s₀ + 1))
         for k ∈ findall(==(s), spins)
-            unstack_partials!(view(X, :, :, k), transpose(view(data, m, :, k)) * Yˢ, false)
+            unstack_partials!(view(σ, :, :, k), transpose(view(data, m, :, k)) * Yˢ, false)
         end
     end
-    return X
+    return σ
 end
-function synthesize_block!(X, data, Y, spins, N₀)
+function synthesize_block!(σ, data, Y, spins, N₀)
     s₀ = minimum(spins)
-    OhMyThreads.tforeach(axes(X, 2)) do q
-        for k ∈ axes(X, 3)
+    OhMyThreads.tforeach(axes(σ, 2)) do q
+        for k ∈ axes(σ, 3)
             s = spins[k]
             Yˢ = view(Y, :, q, s - s₀ + 1)
-            @inbounds for h ∈ axes(X, 1)
-                X[h, q, k] = pixel_dot(Yˢ, view(data, :, h, k), s ^ 2 + 1, N₀)
+            @inbounds for h ∈ axes(σ, 1)
+                σ[h, q, k] = pixel_dot(Yˢ, view(data, :, h, k), s ^ 2 + 1, N₀)
             end
         end
     end
-    return X
+    return σ
 end
 
 """
@@ -153,8 +153,8 @@ computes them.
 
 For each block in `blocks`, the time series of its pixels are synthesized with
 [`harmonics_block!`](@ref) and [`synthesize_block!`](@ref).  Then parallel tasks transform
-each pixel `i = block[q]` with `transform_pixel!`, into a buffer `d′ᵢ` of element type
-`Complex{TR}`, and call `on_pixel!(d′ᵢ, i, q)`.  The buffer is reused for the next pixel,
+each pixel `j = block[q]` with `transform_pixel!`, into a buffer `μⱼ` of element type
+`Complex{TR}`, and call `on_pixel!(μⱼ, j, q)`.  The buffer is reused for the next pixel,
 so `on_pixel!` must copy anything it keeps.  When every pixel of the block is done,
 `on_block!(block)` is called.
 """
@@ -179,7 +179,7 @@ function transform_pixel_blocks(
     spin_range = minimum(spins):maximum(spins)
     B = maximum(length, blocks)
     Y = Array{Complex{basetype(eltype(Rₚ))}}(undef, Nᵐ, B, length(spin_range))
-    X = Array{promote_type(eltype(data), eltype(Y))}(undef, Nᵗ, B, Nᵈ)
+    σ = Array{promote_type(eltype(data), eltype(Y))}(undef, Nᵗ, B, Nᵈ)
     # One calculator and one set of buffers for each parallel task, used for every block.
     calcs = [sYlmCalculator(one(eltype(Rₚ)), ℓₘₐₓ, spin_range) for _ ∈ 1:nthreads()]
     buffers = [
@@ -191,28 +191,28 @@ function transform_pixel_blocks(
     ]
     for block ∈ blocks
         nb = length(block)
-        Yb, Xb = view(Y, :, 1:nb, :), view(X, :, 1:nb, :)
+        Yb, σb = view(Y, :, 1:nb, :), view(σ, :, 1:nb, :)
         harmonics_block!(Yb, calcs, Rₚ, block)
-        synthesize_block!(Xb, data, Yb, spins, N₀)
-        foreach_chunk(nb, buffers) do (dᵢ, d̈ᵢ, d′ᵢ), chunk
+        synthesize_block!(σb, data, Yb, spins, N₀)
+        foreach_chunk(nb, buffers) do (σⱼ, σ̈ⱼ, μⱼ), chunk
             for q ∈ chunk
-                i = block[q]
-                permutedims!(dᵢ, view(Xb, :, q, :), (2, 1))
+                j = block[q]
+                permutedims!(σⱼ, view(σb, :, q, :), (2, 1))
                 transform_pixel!(
-                    d′ᵢ,
-                    dᵢ,
-                    d̈ᵢ,
+                    μⱼ,
+                    σⱼ,
+                    σ̈ⱼ,
                     cubic_spline_cache,
                     t,
                     t′,
-                    κ⁻¹ₚ[i],
-                    αₚ[i],
-                    ðt′╱2κₚ[1, i],
-                    ðt′╱2κₚ[2, i],
-                    ð²αₚ[i],
+                    κ⁻¹ₚ[j],
+                    αₚ[j],
+                    ðt′╱2κₚ[1, j],
+                    ðt′╱2κₚ[2, j],
+                    ð²αₚ[j],
                     dc,
                 )
-                on_pixel!(d′ᵢ, i, q)
+                on_pixel!(μⱼ, j, q)
             end
         end
         on_block!(block)
@@ -224,30 +224,30 @@ end
     transformed_projection(data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, TR)
 
 Project the transformed waveform onto the modes up to an `ObjectivePlan`'s `ℓ_fit` by its
-quadrature, returning one matrix `P[k]` for each component `k`, with
+quadrature, returning one matrix `μ̂[k]` for each component `k`, with
 ```
-P[k][n, j] = Σᵢ Ȳ[k][n, i] d′[k, j, i],
+μ̂[k][n, i] = Σⱼ Ȳ[k][n, j] μⱼ[k, i],
 ```
-where `d′[:, :, i]` is pixel `i`'s transformed time series, from
+where `μⱼ` is pixel `j`'s transformed time series, from
 [`transform_pixel_blocks`](@ref), and `Ȳ` is the plan's weighted conjugate harmonics.  The
 other arguments are as for `transform_pixel_blocks`.  The transformed series of each block
 are gathered into a matrix with one row for each pixel, and one matrix product for each
-component adds the block's share to `P[k]`.
+component adds the block's share to `μ̂[k]`.
 """
 function transformed_projection(
     data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, ::Type{TR}
 ) where {TR}
     Nᵈ = size(data, 3)
     Nᵗ′ = length(t′)
-    P = [zeros(Complex{TR}, size(Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
+    μ̂ = [zeros(Complex{TR}, size(Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
     blocks = synthesis_blocks(
         data, geometry.Rₚ, spins; extra_bytes_per_pixel=Nᵗ′ * Nᵈ * sizeof(Complex{TR})
     )
-    D′ = Array{Complex{TR}}(undef, maximum(length, blocks), Nᵗ′, Nᵈ)
-    gather!(d′ᵢ, i, q) = permutedims!(view(D′, q, :, :), d′ᵢ, (2, 1))
+    μᵇ = Array{Complex{TR}}(undef, maximum(length, blocks), Nᵗ′, Nᵈ)
+    gather!(μⱼ, j, q) = permutedims!(view(μᵇ, q, :, :), μⱼ, (2, 1))
     function project!(block)
         for k ∈ 1:Nᵈ
-            add_product!(P[k], view(Ȳ[k], :, block), view(D′, 1:length(block), :, k))
+            add_product!(μ̂[k], view(Ȳ[k], :, block), view(μᵇ, 1:length(block), :, k))
         end
     end
     transform_pixel_blocks(
@@ -264,7 +264,7 @@ function transformed_projection(
         N₀,
         TR,
     )
-    return P
+    return μ̂
 end
 
 """

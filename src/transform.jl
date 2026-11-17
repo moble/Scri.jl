@@ -189,6 +189,40 @@ function supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
 end
 
 """
+    pixel_geometry(t, t′, v⃗, R, αᵢₙ, R′ₚ, dc)
+
+Return everything about the pixels `R′ₚ` of the transformed frame that depends on the BMS
+transformation `(v⃗, R, αᵢₙ)`, as the named tuple `(; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ)`.  Its
+entries are each pixel's rotor in the original frame, its inverse conformal factor, the
+supertranslation there, the two parts of the null-rotation parameter from
+[`compute_ðt′╱2κ`](@ref), and the second eth derivative of the supertranslation.  This is
+what [`transform_objective`](@ref) and its gradient need at each pixel, in the form that
+[`transform_pixel_blocks`](@ref) takes.
+
+The output times `t′` are checked against this geometry with [`validate_t′`](@ref), so a
+transformation that takes them outside the span of `t` throws an `ArgumentError` here,
+before any task is spawned.  The transformation may hold dual numbers, and the results then
+hold their derivatives.
+"""
+function pixel_geometry(t, t′, v⃗, R, αᵢₙ, R′ₚ, dc::DataComponents{C,I}) where {C,I}
+    c_α = dc.conventions.c_α
+    γ = lorentz_factor(v⃗)
+    vˣ, vʸ, vᶻ = vec(v⃗)
+    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
+    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
+    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
+    # antipodal labeling of the sphere.
+    Λℐ = Boost(I * v⃗) * R
+    # These per-pixel values must all exist before the rest, because the validation of the
+    # output grid and `compute_ðt′╱2κ` consume them whole.
+    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
+    validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
+    ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
+    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[j], vˣ, vʸ, vᶻ)) for j ∈ eachindex(Rₚ)]
+    return (; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ)
+end
+
+"""
     transform_pixel!(d′ᵢ, dᵢ, d̈ᵢ, cubic_spline_cache, t, t′,
                      κ⁻¹ᵢ, αₚᵢ, ðt′╱2κₚ₀ᵢ, ðt′╱2κₚ₁ᵢ, ð²αₚᵢ, dc)
 
@@ -267,7 +301,7 @@ function transform_pixel!(
         for j ∈ (Nᵗ - 1):-1:1
             # Backward sweep step: d̈ᵢ[j] = z[j] − l[j-1]·d̈ᵢ[j+1]
             # (j=Nᵗ-1 and j=1 are natural-BC endpoints; no update needed)
-            if 2 ≤ j ≤ Nᵗ-2
+            if 2 ≤ j ≤ Nᵗ - 2
                 @simd ivdep for k ∈ 1:Nᵈ
                     d̈ᵢ[k, j] -= cubic_spline_cache.l[j - 1] * d̈ᵢ[k, j + 1]
                 end
@@ -872,13 +906,13 @@ scalar:
 
 ```math
 Φ = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
-    \left| {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right|^2,
+    \left| μ^{ki}_{j} - c^{ki}_{j} \right|^2,
 ```
 
-where ``{}^{k}d'^{i}_{j}`` is the transformed waveform at the plan's pixel `j`, output time
+where ``μ^{ki}_{j}`` is the transformed waveform at the plan's pixel `j`, output time
 `plan.t′[i]`, and component `k`, and the target ``c``, the weights ``w``, ``v``, and ``u``,
 and the normalization ``𝒩`` are the plan's.  With the plan's default grid and time
-weights, ``Φ`` is a quadrature of the integral of ``|d' - c|²`` over the
+weights, ``Φ`` is a quadrature of the integral of ``|μ - c|²`` over the
 sphere and the time window, exact over the sphere for band-limited fields.  This is the
 natural objective for optimizing the BMS parameters `(v⃗, R, αᵢₙ)` to align `data` with a
 target waveform, and it is designed for use with
@@ -912,7 +946,7 @@ exceed the target's.
 
 Two fine points.  First, the spline-interval selection inside the interpolation is
 discontinuous on a measure-zero set of parameter values (where a transformed time
-`t′[j] κ⁻¹ + αₚ` crosses a knot of `t`); the objective itself is continuous there, and
+`t′[i] κ⁻¹ + αₚ` crosses a knot of `t`); the objective itself is continuous there, and
 derivatives are unaffected away from those isolated points.  Second, the result is
 deterministic: each pixel's share is computed on its own and the shares are summed in
 pixel order, so for a fixed number of threads, repeated calls with identical inputs return
@@ -949,7 +983,7 @@ function transform_objective(
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     validate_plan(plan, dc, N₀)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
-    R′ₚ, w, t′, v, c, target = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
+    R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.u, plan.c
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
 
@@ -958,29 +992,16 @@ function transform_objective(
     TΘ = promote_type(T3, T4, T5)
     TR = promote_type(T1, T2, TΘ, TQ)
 
-    c_α = dc.conventions.c_α
-    γ = lorentz_factor(v⃗)
-    vˣ, vʸ, vᶻ = vec(v⃗)
-    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
-    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
-    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
-    # antipodal labeling of the sphere.
-    Λℐ = Boost(I * v⃗) * R
-
     cubic_spline_cache = CubicSplineCache(t)
 
     ###
-    ### Stage B: Per-pixel prepass — distorted grid, α and its derivatives on it
+    ### Stage B: Per-pixel prepass — the geometry of every pixel
     ###
 
-    # These per-pixel values must all exist before the main loop, because the grid
-    # validation and `compute_ðt′╱2κ` consume them whole.
-    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
-
-    # Validate the output grid at these parameter values (synchronously, so a bad grid
-    # throws a plain ArgumentError), then assemble the null-rotation parameter parts.
-    validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
-    ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
+    # The distorted grid, the supertranslation and its derivatives on it, the conformal
+    # factor, and the null-rotation parameter.  This also validates the output grid at these
+    # parameter values, synchronously, so that a bad grid throws a plain ArgumentError.
+    geometry = pixel_geometry(t, t′, v⃗, R, αᵢₙ, R′ₚ, dc)
 
     ###
     ### Stage C: Blocked synthesis → per-pixel interpolation and mixing → accumulation
@@ -988,17 +1009,15 @@ function transform_objective(
 
     # The pixels' time series are synthesized from the (primal, read-only) mode data a
     # block of pixels at a time; see `transform_pixel_blocks`.
-    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[i], vˣ, vʸ, vᶻ)) for i ∈ 1:Nᵖ]
-    geometry = (; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ)
 
     Φ = if plan.ℓ_fit < 0
-        # Each pixel's share of the objective is computed as soon as the pixel is
-        # transformed.  The shares are then summed in pixel order, whatever tasks computed
-        # them.
-        Φₚ = Vector{TR}(undef, Nᵖ)
+        # Each pixel's share of the objective, ν[j] = w[j] Σᵢ v[i] Σₖ u[k] |μⱼ[k, i] − c[j, i, k]|²,
+        # is computed as soon as the pixel is transformed.  The shares are then summed in
+        # pixel order, whatever tasks computed them.
+        ν = Vector{TR}(undef, Nᵖ)
         transform_pixel_blocks(
             Returns(nothing),
-            synthesis_blocks(data, Rₚ, spins),
+            synthesis_blocks(data, geometry.Rₚ, spins),
             data,
             t,
             t′,
@@ -1008,27 +1027,27 @@ function transform_objective(
             spins,
             N₀,
             TR,
-        ) do d′ᵢ, i, q
-            objᵢ = zero(TR)
-            @inbounds for j ∈ 1:Nᵗ′
-                objᵢⱼ = zero(TR)
+        ) do μⱼ, j, q
+            Σᵢ = zero(TR)
+            @inbounds for i ∈ 1:Nᵗ′
+                Σₖ = zero(TR)
                 for k ∈ 1:Nᵈ
-                    objᵢⱼ += c[k] * abs2(d′ᵢ[k, j] - target[i, j, k])
+                    Σₖ += u[k] * abs2(μⱼ[k, i] - c[j, i, k])
                 end
-                objᵢ += v[j] * objᵢⱼ
+                Σᵢ += v[i] * Σₖ
             end
-            Φₚ[i] = w[i] * objᵢ
+            ν[j] = w[j] * Σᵢ
         end
-        sum(Φₚ)
+        sum(ν)
     else
         # The band-limited objective compares the projections of the transformed waveform
         # and of the target onto the modes with ℓ ≤ ℓ_fit.
-        P = transformed_projection(
+        μ̂ = transformed_projection(
             data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, plan.Ȳ, TR
         )
         sum(
-            c[k] * sum(
-                v[j] * sum(abs2, view(P[k], :, j) .- view(plan.T̂[k], :, j)) for j ∈ 1:Nᵗ′
+            u[k] * sum(
+                v[i] * sum(abs2, view(μ̂[k], :, i) .- view(plan.ĉ[k], :, i)) for i ∈ 1:Nᵗ′
             ) for k ∈ 1:Nᵈ
         )
     end

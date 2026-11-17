@@ -150,26 +150,27 @@ a single scalar at the end.
 
 ```math
 Φ(θ) = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
-       \left| {}^{k}d'^{i}_{j}(θ) - {}^{k}c^{i}_{j} \right|^2,
+       \left| μ^{ki}_{j}(θ) - c^{ki}_{j} \right|^2,
 ```
 
 with `j` running over the pixels of a grid on the sphere, `i` over the
 fixed output times `t′`, and `k` over the data components, and with
-``c`` the target.  It accumulates the ``L²`` sum as the pixels are
-transformed, a block of pixels at a time, so the transformed waveform
-is never stored in full, `data` is never modified (it is reused across
-optimizer iterations), and dual numbers are confined to the geometry
-of the pixels and to storage for one block of pixels.  The analysis
-stage (converting back to waveform modes) is skipped entirely.
+``μ`` the transformed waveform and ``c`` the target.  It accumulates
+the ``L²`` sum as the pixels are transformed, a block of pixels at a
+time, so the transformed waveform is never stored in full, `data` is
+never modified (it is reused across optimizer iterations), and dual
+numbers are confined to the geometry of the pixels and to storage for
+one block of pixels.  The analysis stage (converting back to waveform
+modes) is skipped entirely.
 
 Everything in ``Φ`` that does not depend on ``θ`` is stored in an
 [`ObjectivePlan`](@ref), which is built once: the grid and its weights
 ``w_j``, the output times and their weights ``v_i``, the component
-weights ``u_k``, the target's values ``{}^{k}c^{i}_{j}`` on the grid,
+weights ``u_k``, the target's values ``c^{ki}_{j}`` on the grid,
 and the normalization ``𝒩``.  The grid is an exact quadrature on the
 sphere for band-limited fields, and the time weights are for the
 trapezoidal rule on `t′`, so ``Φ`` approximates the integral of
-``|d'-c|^2`` over the sphere and the time window — an ``L²`` norm.  A
+``|μ-c|^2`` over the sphere and the time window — an ``L²`` norm.  A
 boosted field is not band-limited, so the sphere part is spectrally
 accurate rather than exact; see [`ObjectivePlan`](@ref) for the
 precise condition and for the option to pass a finer grid.
@@ -261,13 +262,14 @@ A few things to know:
 
 ## Gradients at a few times the cost of the objective
 
-ForwardDiff's gradient costs about one evaluation of the objective per
-parameter: with a supertranslation up to ``ℓ = 4``, that is 31
-evaluations.  [`objective_and_gradient!`](@ref) computes the objective
-and its exact gradient together, at a few times the cost of the
-objective alone, whatever the number of parameters: about four
-evaluations at ``ℓ_\mathrm{max} = 16``, or five with `ℓ_fit`.  It
-takes the transformation as one parameter vector,
+ForwardDiff's gradient costs at least one evaluation of the objective
+for each parameter: with a supertranslation up to ``ℓ = 4``, that is
+31 evaluations or more.  [`objective_and_gradient!`](@ref) computes
+the objective and its exact gradient together, at a few times the cost
+of the objective alone.  That cost grows only slowly with the number
+of parameters: with 31 parameters at ``ℓ_\mathrm{max} = 16``, it is
+between four and six evaluations, with or without `ℓ_fit`.  It takes
+the transformation as one parameter vector,
 
 ```math
 θ = (\vec{r},\; \vec{η},\; a_1, …, a_{(ℓ_α+1)^2}),

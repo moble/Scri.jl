@@ -9,7 +9,7 @@
     # size of the precompile file and potentially make loading faster.  Nothing defined in
     # this section will be defined outside of this block.
     ℓₘₐₓ = 4
-    Nᵐ = (ℓₘₐₓ+1)^2
+    Nᵐ = (ℓₘₐₓ + 1)^2
     Nᵗ = 17
     t₁, t₂ = -50.0, 50.0
     rng = Xoshiro(1234)
@@ -48,9 +48,8 @@
         end
 
         # A small primal `transform_objective` call, for the most common component sets,
-        # and its gradient.  The gradient specializes on the number of parameters, so it is
-        # compiled for a supertranslation up to ℓ = 2, as in the documentation's example;
-        # other numbers of parameters still compile on their first call.
+        # and its gradient.  The gradient does not specialize on the number of parameters,
+        # so this one call, with a supertranslation up to ℓ = 2, serves them all.
         for dcsymbols ∈ ((:h,), (:ψ₄,))
             dc = DataComponents(dcsymbols...)
             data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, length(dcsymbols))

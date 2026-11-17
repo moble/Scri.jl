@@ -1,0 +1,398 @@
+# A comparison of ways to get the gradient of the objective (2026-11-16)
+# Apple M2 Max, 8 threads, Julia 1.13.4, 20000 time samples
+# this branch: wt/bms2-20261116a at 1528ec9; ForwardDiff 1.4.8; OhMyThreads 0.8.9; Quaternionic 5.0.0; SphericalFunctions 3.0.0
+# main: at 74961f4; OhMyThreads 0.8.9; Quaternionic 4.5.0; SphericalFunctions 2.2.9
+# Python scri: Python 3.14.10; scri 2024.0.14; numpy 2.5.5; numba 0.68.1 with 12 threads
+# load average at the start: 4.2; at the end: 2.0  (the 4.2 was left over from a check of
+# this script a minute earlier; nothing else was running, and an earlier attempt that was
+# stopped after 36 measurements agreed with these to within about 10%)
+# options: --difflimit=60
+# Each time is the least of several, in seconds.  The last column is the time as a
+# multiple of the time for `objective_and_gradient!`, which is the speedup it gives.
+
+ℓₘₐₓ = 8 │ h │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0234          1.0
+    objective_and_gradient!                            0.1115          4.8          1.0
+    ForwardDiff through transform_objective            0.2102          9.0          1.9
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0353
+    no resampling: forward differences (8)             0.3022                       2.7
+    no resampling: central differences (15)            0.5901                       5.3
+    careful resampling: one evaluation                 0.0466
+    careful resampling: forward differences (8)        0.4306                       3.9
+    careful resampling: central differences (15)       0.8124                       7.3
+    plain resampling: one evaluation                   0.1813
+    plain resampling: forward differences (8)          1.5381                      13.8
+    plain resampling: central differences (15)         2.9377                      26.4
+  Python scri: finite differences through its transformation
+    one evaluation                                     1.8518
+    forward differences (8)                       ~   14.8140                     132.9
+    central differences (15)                      ~   27.7763                     249.2
+  check: (P + 1) × one evaluation on main ÷ the gradient = 2.5
+
+ℓₘₐₓ = 8 │ h │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0234          1.0
+    objective_and_gradient!                            0.1096          4.7          1.0
+    ForwardDiff through transform_objective            0.9314         39.8          8.5
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0389
+    no resampling: forward differences (32)            1.4102                      12.9
+    no resampling: central differences (63)            2.8272                      25.8
+    careful resampling: one evaluation                 0.0455
+    careful resampling: forward differences (32)       1.8145                      16.6
+    careful resampling: central differences (63)       3.5858                      32.7
+    plain resampling: one evaluation                   0.1847
+    plain resampling: forward differences (32)         6.3233                      57.7
+    plain resampling: central differences (63)        12.4871                     113.9
+  Python scri: finite differences through its transformation
+    one evaluation                                     2.7842
+    forward differences (32)                      ~   89.0957                     812.7
+    central differences (63)                      ~  175.4071                    1599.9
+  check: (P + 1) × one evaluation on main ÷ the gradient = 11.4
+
+ℓₘₐₓ = 8 │ h │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0247          1.0
+    objective_and_gradient!                            0.1246          5.1          1.0
+    ForwardDiff through transform_objective            2.5201        102.2         20.2
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0435
+    no resampling: forward differences (88)            4.6926                      37.7
+    no resampling: central differences (175)           8.8570                      71.1
+    careful resampling: one evaluation                 0.0493
+    careful resampling: forward differences (88)       5.3385                      42.9
+    careful resampling: central differences (175)     10.8725                      87.3
+    plain resampling: one evaluation                   0.1926
+    plain resampling: forward differences (88)        18.6037                     149.4
+    plain resampling: central differences (175)       35.4101                     284.3
+  Python scri: finite differences through its transformation
+    one evaluation                                     4.5955
+    forward differences (88)                      ~  404.4008                    3246.7
+    central differences (175)                     ~  804.2061                    6456.5
+  check: (P + 1) × one evaluation on main ÷ the gradient = 30.7
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0735          1.0
+    objective_and_gradient!                            0.4225          5.8          1.0
+    ForwardDiff through transform_objective            0.8571         11.7          2.0
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0897
+    no resampling: forward differences (8)             0.7932                       1.9
+    no resampling: central differences (15)            1.5368                       3.6
+    careful resampling: one evaluation                 0.1276
+    careful resampling: forward differences (8)        1.0738                       2.5
+    careful resampling: central differences (15)       2.1143                       5.0
+    plain resampling: one evaluation                   0.6679
+    plain resampling: forward differences (8)          5.2979                      12.5
+    plain resampling: central differences (15)        10.2023                      24.1
+  Python scri: finite differences through its transformation
+    one evaluation                                    22.3710
+    forward differences (8)                       ~  178.9678                     423.6
+    central differences (15)                      ~  335.5646                     794.2
+  check: (P + 1) × one evaluation on main ÷ the gradient = 1.7
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0735          1.0
+    objective_and_gradient!                            0.4270          5.8          1.0
+    ForwardDiff through transform_objective            3.6737         50.0          8.6
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0862
+    no resampling: forward differences (32)            3.2884                       7.7
+    no resampling: central differences (63)            6.5037                      15.2
+    careful resampling: one evaluation                 0.1317
+    careful resampling: forward differences (32)       4.4722                      10.5
+    careful resampling: central differences (63)       9.0197                      21.1
+    plain resampling: one evaluation                   0.6697
+    plain resampling: forward differences (32)        21.6722                      50.8
+    plain resampling: central differences (63)        42.5595                      99.7
+  Python scri: finite differences through its transformation
+    one evaluation                                    31.3576
+    forward differences (32)                      ~ 1003.4420                    2350.3
+    central differences (63)                      ~ 1975.5264                    4627.1
+  check: (P + 1) × one evaluation on main ÷ the gradient = 6.5
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.0729          1.0
+    objective_and_gradient!                            0.4882          6.7          1.0
+    ForwardDiff through transform_objective           10.4512        143.4         21.4
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.0890
+    no resampling: forward differences (88)            9.0211                      18.5
+    no resampling: central differences (175)          18.1295                      37.1
+    careful resampling: one evaluation                 0.1272
+    careful resampling: forward differences (88)      12.5438                      25.7
+    careful resampling: central differences (175)     25.2379                      51.7
+    plain resampling: one evaluation                   0.6711
+    plain resampling: forward differences (88)        59.0853                     121.0
+    plain resampling: central differences (175)   ~  117.4416                     240.6
+  Python scri: finite differences through its transformation
+    one evaluation                                    41.3182
+    forward differences (88)                      ~ 3635.9986                    7447.5
+    central differences (175)                     ~ 7230.6791                   14810.3
+  check: (P + 1) × one evaluation on main ÷ the gradient = 16.0
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1013          1.0
+    objective_and_gradient!                            0.7202          7.1          1.0
+    ForwardDiff through transform_objective            1.3499         13.3          1.9
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.1247
+    no resampling: forward differences (8)             1.0988                       1.5
+    no resampling: central differences (15)            2.0525                       2.8
+    careful resampling: one evaluation                 0.1844
+    careful resampling: forward differences (8)        1.5802                       2.2
+    careful resampling: central differences (15)       2.9373                       4.1
+    plain resampling: one evaluation                   0.9701
+    plain resampling: forward differences (8)          7.9105                      11.0
+    plain resampling: central differences (15)        15.0735                      20.9
+  Python scri: finite differences through its transformation
+    one evaluation                                    22.3710
+    forward differences (8)                       ~  178.9678                     248.5
+    central differences (15)                      ~  335.5646                     465.9
+  check: (P + 1) × one evaluation on main ÷ the gradient = 1.4
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1046          1.0
+    objective_and_gradient!                            0.6834          6.5          1.0
+    ForwardDiff through transform_objective            5.6492         54.0          8.3
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.1268
+    no resampling: forward differences (32)            4.5146                       6.6
+    no resampling: central differences (63)            8.7442                      12.8
+    careful resampling: one evaluation                 0.1881
+    careful resampling: forward differences (32)       6.4394                       9.4
+    careful resampling: central differences (63)      12.6749                      18.5
+    plain resampling: one evaluation                   0.9511
+    plain resampling: forward differences (32)        32.0889                      47.0
+    plain resampling: central differences (63)        62.9365                      92.1
+  Python scri: finite differences through its transformation
+    one evaluation                                    31.3576
+    forward differences (32)                      ~ 1003.4420                    1468.3
+    central differences (63)                      ~ 1975.5264                    2890.7
+  check: (P + 1) × one evaluation on main ÷ the gradient = 5.9
+
+ℓₘₐₓ = 8 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1055          1.0
+    objective_and_gradient!                            0.6963          6.6          1.0
+    ForwardDiff through transform_objective           15.5389        147.3         22.3
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.1304
+    no resampling: forward differences (88)           12.3999                      17.8
+    no resampling: central differences (175)          24.5381                      35.2
+    careful resampling: one evaluation                 0.1847
+    careful resampling: forward differences (88)      18.0298                      25.9
+    careful resampling: central differences (175)     35.4292                      50.9
+    plain resampling: one evaluation                   0.9749
+    plain resampling: forward differences (88)    ~   85.7940                     123.2
+    plain resampling: central differences (175)   ~  170.6131                     245.0
+  Python scri: finite differences through its transformation
+    one evaluation                                    41.3182
+    forward differences (88)                      ~ 3635.9986                    5221.5
+    central differences (175)                     ~ 7230.6791                   10383.7
+  check: (P + 1) × one evaluation on main ÷ the gradient = 16.5
+
+ℓₘₐₓ = 16 │ h │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1399          1.0
+    objective_and_gradient!                            0.5208          3.7          1.0
+    ForwardDiff through transform_objective            1.3101          9.4          2.5
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.1974
+    no resampling: forward differences (8)             1.7108                       3.3
+    no resampling: central differences (15)            3.3661                       6.5
+    careful resampling: one evaluation                 0.2285
+    careful resampling: forward differences (8)        1.9510                       3.7
+    careful resampling: central differences (15)       3.8840                       7.5
+    plain resampling: one evaluation                   0.7282
+    plain resampling: forward differences (8)          5.9325                      11.4
+    plain resampling: central differences (15)        11.1036                      21.3
+  Python scri: finite differences through its transformation
+    one evaluation                                     5.9572
+    forward differences (8)                       ~   47.6575                      91.5
+    central differences (15)                      ~   89.3579                     171.6
+  check: (P + 1) × one evaluation on main ÷ the gradient = 3.0
+
+ℓₘₐₓ = 16 │ h │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1486          1.0
+    objective_and_gradient!                            0.5605          3.8          1.0
+    ForwardDiff through transform_objective            5.6604         38.1         10.1
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.1746
+    no resampling: forward differences (32)            7.5586                      13.5
+    no resampling: central differences (63)           14.9448                      26.7
+    careful resampling: one evaluation                 0.2360
+    careful resampling: forward differences (32)       8.1109                      14.5
+    careful resampling: central differences (63)      16.5350                      29.5
+    plain resampling: one evaluation                   0.7225
+    plain resampling: forward differences (32)        24.4417                      43.6
+    plain resampling: central differences (63)        48.1684                      85.9
+  Python scri: finite differences through its transformation
+    one evaluation                                     8.0418
+    forward differences (32)                      ~  257.3387                     459.1
+    central differences (63)                      ~  506.6355                     903.9
+  check: (P + 1) × one evaluation on main ÷ the gradient = 10.0
+
+ℓₘₐₓ = 16 │ h │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.1459          1.0
+    objective_and_gradient!                            0.5865          4.0          1.0
+    ForwardDiff through transform_objective           15.9989        109.7         27.3
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.2015
+    no resampling: forward differences (88)           20.9543                      35.7
+    no resampling: central differences (175)          40.7631                      69.5
+    careful resampling: one evaluation                 0.2229
+    careful resampling: forward differences (88)      23.0209                      39.2
+    careful resampling: central differences (175)     44.2381                      75.4
+    plain resampling: one evaluation                   0.7119
+    plain resampling: forward differences (88)    ~   62.6442                     106.8
+    plain resampling: central differences (175)   ~  124.5765                     212.4
+  Python scri: finite differences through its transformation
+    one evaluation                                    10.5341
+    forward differences (88)                      ~  926.9994                    1580.4
+    central differences (175)                     ~ 1843.4647                    3142.9
+  check: (P + 1) × one evaluation on main ÷ the gradient = 30.2
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.5087          1.0
+    objective_and_gradient!                            1.9193          3.8          1.0
+    ForwardDiff through transform_objective            5.5254         10.9          2.9
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.5777
+    no resampling: forward differences (8)             4.9919                       2.6
+    no resampling: central differences (15)            9.3201                       4.9
+    careful resampling: one evaluation                 0.6601
+    careful resampling: forward differences (8)        5.6385                       2.9
+    careful resampling: central differences (15)      10.9641                       5.7
+    plain resampling: one evaluation                   2.6157
+    plain resampling: forward differences (8)         21.2427                      11.1
+    plain resampling: central differences (15)        39.0352                      20.3
+  Python scri: finite differences through its transformation
+    one evaluation                                    86.8958
+    forward differences (8)                       ~  695.1661                     362.2
+    central differences (15)                      ~ 1303.4364                     679.1
+  check: (P + 1) × one evaluation on main ÷ the gradient = 2.4
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.5030          1.0
+    objective_and_gradient!                            1.9030          3.8          1.0
+    ForwardDiff through transform_objective           21.3158         42.4         11.2
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.5767
+    no resampling: forward differences (32)           21.0076                      11.0
+    no resampling: central differences (63)           40.7484                      21.4
+    careful resampling: one evaluation                 0.6758
+    careful resampling: forward differences (32)      25.6880                      13.5
+    careful resampling: central differences (63)      45.9143                      24.1
+    plain resampling: one evaluation                   2.6909
+    plain resampling: forward differences (32)    ~   86.1076                      45.2
+    plain resampling: central differences (63)    ~  169.5243                      89.1
+  Python scri: finite differences through its transformation
+    one evaluation                                   106.6158
+    forward differences (32)                      ~ 3411.7052                    1792.8
+    central differences (63)                      ~ 6716.7947                    3529.6
+  check: (P + 1) × one evaluation on main ÷ the gradient = 9.7
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.4926          1.0
+    objective_and_gradient!                            1.9656          4.0          1.0
+    ForwardDiff through transform_objective           57.4666        116.7         29.2
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.5745
+    no resampling: forward differences (88)           56.5834                      28.8
+    no resampling: central differences (175)      ~  100.5397                      51.2
+    careful resampling: one evaluation                 0.6431
+    careful resampling: forward differences (88)      67.0771                      34.1
+    careful resampling: central differences (175) ~  112.5410                      57.3
+    plain resampling: one evaluation                   2.6843
+    plain resampling: forward differences (88)    ~  236.2207                     120.2
+    plain resampling: central differences (175)   ~  469.7571                     239.0
+  Python scri: finite differences through its transformation
+    one evaluation                                   123.9834
+    forward differences (88)                      ~10910.5399                    5550.8
+    central differences (175)                     ~21697.0963                   11038.5
+  check: (P + 1) × one evaluation on main ÷ the gradient = 25.7
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 7
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.7970          1.0
+    objective_and_gradient!                            2.9407          3.7          1.0
+    ForwardDiff through transform_objective            8.2052         10.3          2.8
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.8286
+    no resampling: forward differences (8)             6.9817                       2.4
+    no resampling: central differences (15)           13.2680                       4.5
+    careful resampling: one evaluation                 0.9558
+    careful resampling: forward differences (8)        8.1409                       2.8
+    careful resampling: central differences (15)      15.2501                       5.2
+    plain resampling: one evaluation                   3.9195
+    plain resampling: forward differences (8)         30.3975                      10.3
+    plain resampling: central differences (15)        54.3588                      18.5
+  Python scri: finite differences through its transformation
+    one evaluation                                    86.8958
+    forward differences (8)                       ~  695.1661                     236.4
+    central differences (15)                      ~ 1303.4364                     443.2
+  check: (P + 1) × one evaluation on main ÷ the gradient = 2.3
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 31
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.7888          1.0
+    objective_and_gradient!                            2.9898          3.8          1.0
+    ForwardDiff through transform_objective           34.5629         43.8         11.6
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.8248
+    no resampling: forward differences (32)           28.4697                       9.5
+    no resampling: central differences (63)           56.0043                      18.7
+    careful resampling: one evaluation                 0.9905
+    careful resampling: forward differences (32)      33.9906                      11.4
+    careful resampling: central differences (63)  ~   62.4007                      20.9
+    plain resampling: one evaluation                   3.8195
+    plain resampling: forward differences (32)    ~  122.2240                      40.9
+    plain resampling: central differences (63)    ~  240.6285                      80.5
+  Python scri: finite differences through its transformation
+    one evaluation                                   106.6158
+    forward differences (32)                      ~ 3411.7052                    1141.1
+    central differences (63)                      ~ 6716.7947                    2246.6
+  check: (P + 1) × one evaluation on main ÷ the gradient = 8.8
+
+ℓₘₐₓ = 16 │ h ψ₄ ψ₃ ψ₂ ψ₁ ψ₀ │ P = 87
+  this branch                                         seconds   ÷ objective   ÷ gradient
+    one objective                                      0.7983          1.0
+    objective_and_gradient!                            3.0142          3.8          1.0
+    ForwardDiff through transform_objective           92.2666        115.6         30.6
+  main: finite differences through transform!
+    no resampling: one evaluation                      0.8411
+    no resampling: forward differences (88)       ~   74.0154                      24.6
+    no resampling: central differences (175)      ~  147.1897                      48.8
+    careful resampling: one evaluation                 1.0093
+    careful resampling: forward differences (88)  ~   88.8142                      29.5
+    careful resampling: central differences (175) ~  176.6192                      58.6
+    plain resampling: one evaluation                   3.9637
+    plain resampling: forward differences (88)    ~  348.8017                     115.7
+    plain resampling: central differences (175)   ~  693.6398                     230.1
+  Python scri: finite differences through its transformation
+    one evaluation                                   123.9834
+    forward differences (88)                      ~10910.5399                    3619.7
+    central differences (175)                     ~21697.0963                    7198.3
+  check: (P + 1) × one evaluation on main ÷ the gradient = 24.6
+
+A time marked ~ was not measured.  For a gradient, it is the number of
+evaluations times the time of one, because the gradient would have taken
+longer than the limit of 60 s.
+For Python `scri`, no gradient is ever run, and an evaluation marked ~ was
+timed with fewer time samples and scaled up.  It transforms the shear and
+all five Weyl components for either of the sets that has Weyl components,
+so that transformation was timed once, for the set with three of them, and
+the set with all five repeats those times.

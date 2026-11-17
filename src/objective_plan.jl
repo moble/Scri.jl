@@ -7,12 +7,12 @@ BMS parameters, computed once and reused at every evaluation:
 
 ```math
 Φ = \frac{1}{𝒩} ∑_j w_j ∑_i v_i ∑_k u_k
-    \left| {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right|^2,
+    \left| μ^{ki}_{j} - c^{ki}_{j} \right|^2,
 ```
 
-where ``{}^{k}d'^{i}_{j}`` is the transformed waveform at pixel `j`, output time `t′[i]`,
-and component `k`, and ``{}^{k}c^{i}_{j}`` is the target there.  The notation is that of
-the page [The gradient of the objective](@ref objective_gradient).
+where ``μ^{ki}_{j}`` is the transformed waveform at pixel `j`, output time `t′[i]`, and
+component `k`, and ``c^{ki}_{j}`` is the target there.  The notation is that of the page
+[The gradient of the objective](@ref objective_gradient).
 
 The arguments `target`, `t`, and `dc` are the target waveform's mode weights, its time
 samples, and its [`DataComponents`](@ref), as for [`transform!`](@ref); `t′` is the fixed
@@ -25,7 +25,7 @@ The keywords are:
 - `grid`: a pair `(R′ₚ, w)` of rotors and sphere weights ``w_j``.  The default is
   [`sphere_quadrature`](@ref Scri.sphere_quadrature)`(ℓₘₐₓ)`, at the target's band limit,
   which makes the sum over pixels an exact integral over the sphere when the transformed
-  data ``d'`` are band-limited to that ``ℓₘₐₓ`` too, so that ``Φ`` is then exactly the
+  data ``μ`` are band-limited to that ``ℓₘₐₓ`` too, so that ``Φ`` is then exactly the
   ``L²`` norm.  A boosted field is not band-limited, so in general the sum is a
   spectrally accurate approximation of that norm rather than an exact one; a finer grid,
   such as `sphere_quadrature(L)` with a larger `L`, can be passed to reduce the error.
@@ -37,25 +37,24 @@ The keywords are:
 - `time_weights`: the ``v_i``.  The default is the trapezoid rule on `t′`, so that the sum
   over time is an integral even on a non-uniform grid; a single time has weight 1.
 - `component_weights`: the ``u_k``, one per component of `dc`.  The default is one.
-- `normalize`: if `true`, ``𝒩`` is the same sum with ``d'`` set to zero, so that ``Φ`` is
+- `normalize`: if `true`, ``𝒩`` is the same sum with ``μ`` set to zero, so that ``Φ`` is
   relative to the target's norm; otherwise ``𝒩 = 1``.
 - `ℓ_fit`: if given, compare only the modes with ``ℓ ≤ ℓ_\mathrm{fit}`` of the difference,
   which leaves out high-``ℓ`` noise in the data or the target:
 
   ```math
-  Φ = \frac{1}{𝒩} ∑_i v_i ∑_k u_k ∑_{(ℓ,m):\, |s_k| ≤ ℓ ≤ ℓ_\mathrm{fit}}
-      \left| {}^{k}Π^{i}{}_{(ℓ,m)} - {}^{k}Π_{c}{}^{i}{}_{(ℓ,m)} \right|^2,
+  Φ = \frac{1}{𝒩} ∑_i v_i ∑_k u_k ∑_{ℓm:\, |s_k| ≤ ℓ ≤ ℓ_\mathrm{fit}}
+      \left| Π^{ki}{}_{ℓm} \right|^2,
   \qquad
-  {}^{k}Π^{i}{}_{(ℓ,m)}
-  = ∑_j w_j \left({}_{s_k}Y^{(ℓ,m)}(R'_j)\right)^* {}^{k}d'^{i}_{j},
+  Π^{ki}{}_{ℓm}
+  = ∑_j w_j\, \overline{{}_{s_k}Y'^{ℓm}_{j}} \left( μ^{ki}_{j} - c^{ki}_{j} \right),
   ```
 
-  where ``Π_{c}`` is the same projection of the target.
+  where ``{}_{s}Y'^{ℓm}_{j}`` is the harmonic evaluated at pixel `j` of the grid.
 
-  The projection is the quadrature's, so with the default grid it is exact when ``d'`` is
+  The projection is the quadrature's, so with the default grid it is exact when ``μ`` is
   band-limited to ``2ℓₘₐₓ - ℓ_\mathrm{fit}``; `ℓ_fit` must then be at most the target's
-  band limit.  It must be at
-  least the largest ``|s|`` among the components.
+  band limit.  It must be at least the largest ``|s|`` among the components.
 
 All weights must be finite and nonnegative.  The target's pixel values are computed with
 [`pixel_waveform`](@ref) on the grid.
@@ -65,15 +64,15 @@ struct ObjectivePlan{T<:AbstractFloat}
     w::Vector{T}
     t′::Vector{T}
     v::Vector{T}
-    c::Vector{T}
-    target::Array{Complex{T},3}
+    u::Vector{T}
+    c::Array{Complex{T},3}
     spins::Vector{Int}
     norm²::T
     normalize::Bool
     ℓ_fit::Int                     # -1 for the full objective
     ℓ_grid::Int                    # band limit of the default grid; -1 for a grid passed in
-    Ȳ::Vector{Matrix{Complex{T}}}  # per component, wᵢ conj(ₛYₙ(R′ᵢ)) at [n, i]
-    T̂::Vector{Matrix{Complex{T}}}  # per component, the target's projection at [n, j]
+    Ȳ::Vector{Matrix{Complex{T}}}  # per component, wⱼ conj(ₛYₙ(R′ⱼ)) at [n, j]
+    ĉ::Vector{Matrix{Complex{T}}}  # per component, the projection of `c` at [n, i]
 end
 
 function ObjectivePlan(
@@ -114,30 +113,30 @@ function ObjectivePlan(
     end
     check(good(w), "Pixel weights must be finite and nonnegative")
     t′ᵀ = convert(Vector{T}, t′)
-    target′ = convert(Array{Complex{T},3}, pixel_waveform(target, t, dc, t′ᵀ, R′ₚ))
+    c = convert(Array{Complex{T},3}, pixel_waveform(target, t, dc, t′ᵀ, R′ₚ))
     v = isnothing(time_weights) ? trapezoid_weights(t′ᵀ) : convert(Vector{T}, time_weights)
     check(
         length(v) == length(t′ᵀ),
         "`time_weights` has length $(length(v)), " * "but `t′` has $(length(t′ᵀ)) samples",
     )
     check(good(v), "Time weights must be finite and nonnegative")
-    c = if isnothing(component_weights)
+    u = if isnothing(component_weights)
         ones(T, length(C))
     else
         convert(Vector{T}, component_weights)
     end
     check(
-        length(c) == length(C),
-        "`component_weights` has length $(length(c)), " *
+        length(u) == length(C),
+        "`component_weights` has length $(length(u)), " *
         "but `dc` has $(length(C)) components",
     )
-    check(good(c), "Component weights must be finite and nonnegative")
+    check(good(u), "Component weights must be finite and nonnegative")
     spins = Int[spin_weight(Val(s)) for s ∈ C]
-    Ȳ, T̂ = Matrix{Complex{T}}[], Matrix{Complex{T}}[]
+    Ȳ, ĉ = Matrix{Complex{T}}[], Matrix{Complex{T}}[]
     norm² = zero(T)
     if isnothing(ℓ_fit)
-        for k ∈ eachindex(c), j ∈ eachindex(v), i ∈ eachindex(w)
-            norm² += w[i] * v[j] * c[k] * abs2(target′[i, j, k])
+        for k ∈ eachindex(u), i ∈ eachindex(v), j ∈ eachindex(w)
+            norm² += w[j] * v[i] * u[k] * abs2(c[j, i, k])
         end
     else
         check(
@@ -150,9 +149,9 @@ function ObjectivePlan(
         )
         for (k, s) ∈ enumerate(spins)
             push!(Ȳ, permutedims(conj.(sYlm_matrix(R′ₚ, ℓ_fit, s)) .* w))
-            push!(T̂, Ȳ[k] * view(target′, :, :, k))
-            for j ∈ eachindex(v)
-                norm² += v[j] * c[k] * sum(abs2, view(T̂[k], :, j))
+            push!(ĉ, Ȳ[k] * view(c, :, :, k))
+            for i ∈ eachindex(v)
+                norm² += v[i] * u[k] * sum(abs2, view(ĉ[k], :, i))
             end
         end
     end
@@ -164,15 +163,15 @@ function ObjectivePlan(
         w,
         t′ᵀ,
         v,
+        u,
         c,
-        target′,
         spins,
         norm²,
         normalize,
         isnothing(ℓ_fit) ? -1 : Int(ℓ_fit),
         isnothing(grid) ? max(ℓₘₐₓ, 0) : -1,
         Ȳ,
-        T̂,
+        ĉ,
     )
 end
 
@@ -210,7 +209,7 @@ function Base.show(io::IO, p::ObjectivePlan{T}) where {T}
     return print(
         io,
         "ObjectivePlan{$T}($(length(p.R′ₚ)) pixels, $(length(p.t′)) times, ",
-        "$(length(p.c)) components$(p.ℓ_fit ≥ 0 ? ", ℓ_fit=$(p.ℓ_fit)" : "")",
+        "$(length(p.u)) components$(p.ℓ_fit ≥ 0 ? ", ℓ_fit=$(p.ℓ_fit)" : "")",
         "$(p.normalize ? ", normalized" : ""))",
     )
 end

@@ -19,10 +19,10 @@
     plan = Scri.ObjectivePlan(target, t, dc, t)
     R, w = Scri.sphere_quadrature(ℓ)
     @test plan.R′ₚ == R && plan.w == w
-    @test plan.target ≈ Scri.pixel_waveform(target, t, dc, t, R) rtol = 1e-14
+    @test plan.c ≈ Scri.pixel_waveform(target, t, dc, t, R) rtol = 1e-14
     v = Scri.trapezoid_weights(t)
     @test plan.v == v && sum(v) ≈ t[end] - t[begin]
-    @test plan.c == [1.0, 1.0]
+    @test plan.u == [1.0, 1.0]
     expected = sum(v[j] * sum(abs2, target[5:end, j, k]) for j ∈ 1:Nᵗ, k ∈ 1:2)
     @test plan.norm² ≈ expected rtol = 1e-12
     @test !plan.normalize
@@ -33,13 +33,13 @@
     p2 = Scri.ObjectivePlan(
         target, t, dc, t; weights=pw, time_weights=ones(Nᵗ), component_weights=[2.0, 0.5]
     )
-    @test p2.w ≈ w .* pw && p2.v == ones(Nᵗ) && p2.c == [2.0, 0.5]
+    @test p2.w ≈ w .* pw && p2.v == ones(Nᵗ) && p2.u == [2.0, 0.5]
 
     # A grid may be given, here the pixels of `transform!` with unit weights, which are also
     # the default grid of `pixel_waveform`.
     pixels = Scri.transform_grid(ℓ, Float64)
     p3 = Scri.ObjectivePlan(target, t, dc, t[2:5]; grid=(pixels, ones(N)))
-    @test length(p3.R′ₚ) == N && p3.target ≈ Scri.pixel_waveform(target, t, dc, t[2:5])
+    @test length(p3.R′ₚ) == N && p3.c ≈ Scri.pixel_waveform(target, t, dc, t[2:5])
 
     # Bad weights and shapes are rejected.
     @test_throws ArgumentError Scri.ObjectivePlan(target, t, dc, t; weights=ones(3))

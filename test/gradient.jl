@@ -40,8 +40,8 @@ end
     using DoubleFloats: Double64
     import Random
 
-    # For harmonics Y and cotangents ΩX, the transpose ΩY satisfies
-    # Σ ΩY Y = Σ ΩX X, where X is synthesized from Y, with no conjugation.
+    # For harmonics Y and any array ∂ν╱∂σ, the transpose ∂ν╱∂Y satisfies
+    # Σ ∂ν╱∂Y Y = Σ ∂ν╱∂σ σ, where σ is synthesized from Y, with no conjugation.
     rng = Random.Xoshiro(3131)
     Nᵐ, Nᵗ, nb = 25, 6, 5
     spins = [-2, 0, -2]
@@ -49,19 +49,19 @@ end
     for (T, N₀) ∈ ((Float64, Nᵐ), (Float64, 16), (Double64, Nᵐ), (Double64, 16))
         data = Random.randn(rng, Complex{T}, Nᵐ, Nᵗ, length(spins))
         Y = Random.randn(rng, Complex{T}, Nᵐ, nb, 3)
-        ΩX = Random.randn(rng, Complex{T}, Nᵗ, nb, length(spins))
-        X = similar(ΩX)
-        Scri.synthesize_block!(X, data, Y, spins, N₀)
-        ΩY = fill(Complex{T}(NaN), Nᵐ, nb, 3)  # entries that must be left alone
-        Scri.synthesis_transpose_block!(ΩY, data, ΩX, spins, N₀)
+        ∂ν╱∂σ = Random.randn(rng, Complex{T}, Nᵗ, nb, length(spins))
+        σ = similar(∂ν╱∂σ)
+        Scri.synthesize_block!(σ, data, Y, spins, N₀)
+        ∂ν╱∂Y = fill(Complex{T}(NaN), Nᵐ, nb, 3)  # entries that must be left alone
+        Scri.synthesis_transpose_block!(∂ν╱∂Y, data, ∂ν╱∂σ, spins, N₀)
         lhs = sum(
-            sum(ΩY[m, q, col] * Y[m, q, col] for m ∈ ((s ^ 2 + 1):N₀), q ∈ 1:nb) for
+            sum(∂ν╱∂Y[m, q, col] * Y[m, q, col] for m ∈ ((s ^ 2 + 1):N₀), q ∈ 1:nb) for
             (s, col) ∈ zip(unique(spins), used)
         )
-        @test lhs ≈ sum(ΩX .* X) rtol = 10eps(T)
-        @test all(isnan, ΩY[:, :, 2])  # the spin weight −1 is unused
-        @test all(isnan, ΩY[1:3, :, 1])  # ℓ < 2 for the spin weight −2
-        N₀ < Nᵐ && @test all(isnan, ΩY[(N₀ + 1):end, :, :])
+        @test lhs ≈ sum(∂ν╱∂σ .* σ) rtol = 10eps(T)
+        @test all(isnan, ∂ν╱∂Y[:, :, 2])  # the spin weight −1 is unused
+        @test all(isnan, ∂ν╱∂Y[1:3, :, 1])  # ℓ < 2 for the spin weight −2
+        N₀ < Nᵐ && @test all(isnan, ∂ν╱∂Y[(N₀ + 1):end, :, :])
     end
 end
 
@@ -221,6 +221,42 @@ end
     @test err isa ArgumentError
     @test occursin("exceeds the valid range", err.msg)
     @test !occursin("Dual", err.msg)
+end
+
+@testitem "objective_and_gradient!: any number of parameters, in chunks of any width" tags = [
+    :validation
+] begin
+    import ForwardDiff
+    import Random
+
+    # The geometry's derivatives are computed for one chunk of the parameters at a time.
+    # With 42 parameters there are six chunks of eight, the last with slots to spare, and
+    # the gradient must still be ForwardDiff's.  It must also not depend on the width of
+    # the chunks: one parameter at a time, a width that does not divide their number, and
+    # all of them at once.
+    rng = Random.Xoshiro(6666)
+    ℓ = 6
+    N = (ℓ + 1)^2
+    Nᵗ = 12
+    t = collect(LinRange(-10.0, 10.0, Nᵗ))
+    t′ = Scri.compute_t′(t, 0.1, 1.0)
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 3)
+    θ = [0.1, -0.2, 0.3, 0.02, 0.01, -0.03, (0.02 .* Random.randn(rng, 36))...]
+    P = length(θ)
+    for kw ∈ ((;), (; ℓ_fit=4, normalize=true))
+        plan = Scri.ObjectivePlan(Random.randn(rng, ComplexF64, N, Nᵗ, 3), t, dc, t′; kw...)
+        J(θ) = Scri.transform_objective(data, t, Scri.bms_from_parameters(θ)..., dc, plan)
+        ∇ = similar(θ)
+        Φ = Scri.objective_and_gradient!(∇, θ, data, t, dc, plan)
+        @test Φ ≈ J(θ) rtol = 1e-13
+        @test ∇ ≈ ForwardDiff.gradient(J, θ) rtol = 1e-11
+        for W ∈ (1, 5, P)
+            Φᵂ, ∇ᵂ = Scri.gradient_core(data, t, θ, dc, plan, nothing, Val(W))
+            @test Φᵂ ≈ Φ rtol = 1e-14
+            @test ∇ᵂ ≈ ∇ rtol = 1e-13
+        end
+    end
 end
 
 @testitem "objective_and_gradient!: Double64" tags = [:validation] begin

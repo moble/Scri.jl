@@ -5,10 +5,11 @@
 @doc raw"""
     objective_and_gradient!(∇, θ, data, t, dc, plan; ℓₘₐₓ₀=nothing)
 
-Return the objective of [`transform_objective`](@ref) at the BMS transformation described
-by the parameter vector `θ`, and store its gradient with respect to `θ` in `∇`.  The cost is
-a few times that of the objective alone, whatever the number of parameters, where
-ForwardDiff's costs about one evaluation per parameter.
+Return the objective of [`transform_objective`](@ref) at the BMS transformation described by
+the parameter vector `θ`, and store its gradient with respect to `θ` in `∇`.  The cost is a
+few times that of the objective alone, and it grows only slowly with the number of
+parameters, whereas ForwardDiff's gradient costs at least one evaluation of the objective
+for each parameter.
 
 The parameters are
 ```math
@@ -41,12 +42,17 @@ function objective_and_gradient!(
     P = length(θ)
     length(∇) == P || throw(ArgumentError("∇ has length $(length(∇)), but θ has length $P"))
     T = promote_type(float(eltype(θ)), T1, T2, TQ)
-    θᵈ = [seeded(ParameterTag, T(θ[p]), p, Val(P)) for p ∈ 1:P]
-    v⃗, R, αᵢₙ = bms_from_parameters(θᵈ)
-    Φ, Ωθ = gradient_core(data, t, v⃗, R, αᵢₙ, dc, plan, ℓₘₐₓ₀, T, Val(P))
-    ∇ .= Ωθ
+    Φ, ∂Φ╱∂θ = gradient_core(
+        data, t, convert(Vector{T}, θ), dc, plan, ℓₘₐₓ₀, Val(parameter_chunk_width)
+    )
+    ∇ .= ∂Φ╱∂θ
     return Φ
 end
+
+# The number of parameters whose derivatives the dual numbers of the geometry hold at one
+# time.  The geometry is computed once for each chunk of this many parameters, so the
+# gradient is compiled once for any number of parameters, and its dual numbers stay narrow.
+const parameter_chunk_width = 8
 
 # Tags for the two kinds of dual number below: one holds derivatives with respect to the
 # parameters θ, the other with respect to the eight real scalars of a single pixel.
@@ -63,262 +69,275 @@ function seeded(::Type{Tag}, x::T, p, ::Val{P}) where {Tag,T,P}
     )
 end
 
-# The objective and its gradient with respect to the P parameters whose derivatives the
-# dual numbers in v⃗, R, and αᵢₙ hold.  The geometry of each pixel (its rest-frame rotor,
-# the conformal factor, the supertranslation and its eth derivatives there, and the
-# null-rotation parameter) is computed with those dual numbers, which is cheap: a few
-# operations per pixel and parameter.  The expensive part, synthesizing each pixel's time
-# series from the modes, interpolating, and mixing, runs on plain numbers, and its gradient
-# is propagated backwards by hand: through the mixing by its matrix, through the spline by
-# its transpose, and through the synthesis by one more product with the modes, as costly as
-# the synthesis itself.  The synthesis and its transpose are matrix products over a block
-# of pixels.  The dependence on the eight real scalars of a pixel is found by running the
-# interpolation and mixing once more with dual numbers in those scalars.  The derivation is
-# on the documentation page "The gradient of the objective".
+# The objective and its gradient with respect to the parameters θ.  The geometry of each
+# pixel (its rotor in the original frame, the conformal factor, the supertranslation and
+# its eth derivatives there, and the null-rotation parameter) is computed with dual numbers
+# that hold the derivatives with respect to W of the parameters, once for each chunk of W
+# parameters.  That is cheap: a few operations per pixel and parameter.  The expensive part,
+# synthesizing each pixel's time series from the modes, interpolating, and mixing, runs on
+# plain numbers, and its gradient is propagated backwards by hand: through the mixing by its
+# matrix, through the spline by its transpose, and through the synthesis by one more product
+# with the modes, as costly as the synthesis itself.  The synthesis and its transpose are
+# matrix products over a block of pixels.  The dependence on the eight real scalars of a
+# pixel is found by running the interpolation and mixing once more with dual numbers in
+# those scalars.  The derivation is on the documentation page "The gradient of the
+# objective".
 function gradient_core(
     data::Array{Complex{T1},3},
     t::AbstractVector{T2},
-    v⃗,
-    R,
-    αᵢₙ,
+    θ::Vector{T},
     dc::DataComponents{C,I},
     plan::ObjectivePlan{TQ},
     ℓₘₐₓ₀,
-    ::Type{T},
-    ::Val{P},
-) where {T1,T2,C,I,TQ,T,P}
-    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
-    validate_plan(plan, dc, N₀)
+    ::Val{W},
+) where {T1,T2,T,C,I,TQ,W}
+    P = length(θ)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
-    R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.c, plan.target
+    R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.u, plan.c
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
 
-    # The geometry, with derivatives with respect to the parameters, exactly as the
-    # objective computes it.
-    c_α = dc.conventions.c_α
-    γ = lorentz_factor(v⃗)
-    vˣ, vʸ, vᶻ = vec(v⃗)
-    # At ℐ⁺, where `I = 1`, this is the frame rotor `Λ = Boost(v⃗) * R`, which gives the new
-    # legs 𝐞′ = Λ 𝐞 Λ̃ (see "Frames and Components" in the docs).  At ℐ⁻, where `I = -1`, it is
-    # the parity conjugate `ℂconj(Λ) = Boost(-v⃗) * R`, which realizes the frame rotor on the
-    # antipodal labeling of the sphere.
-    Λℐ = Boost(I * v⃗) * R
+    # The transformation, with its derivatives with respect to one chunk of the parameters
+    # at a time.  In the dual numbers of the chunk `ps`, slot `a` holds the derivative with
+    # respect to parameter `ps[a]`.  The last chunk may have slots to spare, whose
+    # derivatives are zero.
+    chunks = [p:min(p + W - 1, P) for p ∈ 1:W:max(P, 1)]
+    transformations = map(chunks) do ps
+        return bms_from_parameters([
+            seeded(ParameterTag, θ[p], p - first(ps) + 1, Val(W)) for p ∈ 1:P
+        ])
+    end
+    Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(
+        data, t, first(transformations)..., dc, ℓₘₐₓ₀
+    )
+    validate_plan(plan, dc, N₀)
+
+    # The geometry of every pixel for each chunk, exactly as the objective computes it.
     cubic_spline_cache = CubicSplineCache(t)
-    Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
-    Tₚ = eltype(Rₚ)
-    validate_t′(t′, t, αₚ, Rₚ, v⃗, I)
-    ðt′╱2κₚ = compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
-    κ⁻¹ₚ = [γ * (1 - I * v⃗dotk̂(Rₚ[j], vˣ, vʸ, vᶻ)) for j ∈ 1:Nᵖ]
+    geometries = [
+        pixel_geometry(t, t′, v⃗, R, αᵢₙ, R′ₚ, dc) for (v⃗, R, αᵢₙ) ∈ transformations
+    ]
+    Tₚ = eltype(first(geometries).Rₚ)
 
     unique_spins = unique(spins)
     spin_range = minimum(spins):maximum(spins)
     Dg = ForwardDiff.Dual{PixelTag,T,8}
 
-    # The geometry without its derivatives.  `Rotor{T}` keeps the rotors' components
-    # exactly, without renormalizing them, so harmonics evaluated at these rotors are the
-    # values of the harmonics evaluated with derivatives.
-    Rₚ⁰ = [Rotor{T}(valueof.(components(r))...) for r ∈ Rₚ]
-    κ⁻¹ₚ⁰ = valueof.(κ⁻¹ₚ)
-    αₚ⁰ = valueof.(αₚ)
-    ðt′╱2κₚ⁰ = valueof.(ðt′╱2κₚ)
-    ð²αₚ⁰ = valueof.(ð²αₚ)
+    # The geometry without its derivatives, which is the same in every chunk.  `Rotor{T}`
+    # keeps the rotors' components exactly, without renormalizing them, so harmonics
+    # evaluated at these rotors are the values of the harmonics evaluated with derivatives.
+    G⁰ = first(geometries)
+    Rₚ⁰ = [Rotor{T}(valueof.(components(r))...) for r ∈ G⁰.Rₚ]
+    κ⁻¹ₚ⁰ = valueof.(G⁰.κ⁻¹ₚ)
+    αₚ⁰ = valueof.(G⁰.αₚ)
+    ðt′╱2κₚ⁰ = valueof.(G⁰.ðt′╱2κₚ)
+    ð²αₚ⁰ = valueof.(G⁰.ð²αₚ)
     scalars(j) = (κ⁻¹ₚ⁰[j], αₚ⁰[j], ðt′╱2κₚ⁰[1, j], ðt′╱2κₚ⁰[2, j], ð²αₚ⁰[j])
 
     # With ℓ_fit, the objective compares the projections of the transformed waveform and of
     # the target onto the modes up to ℓ_fit, which no single pixel determines, so a first
-    # pass computes the transformed waveform's projection, exactly as the objective does.
-    # Its difference from the target's, R̂, is what each pixel's adjoint is made from in
-    # the main pass.
-    R̂ = if plan.ℓ_fit ≥ 0
+    # pass computes the transformed waveform's projection, μ̂, exactly as the objective does.
+    # Its difference from the target's, Π, is what each pixel's ∂ν╱∂μ is made from in the
+    # main pass.
+    Π = if plan.ℓ_fit ≥ 0
         geometry⁰ = (; Rₚ=Rₚ⁰, κ⁻¹ₚ=κ⁻¹ₚ⁰, αₚ=αₚ⁰, ðt′╱2κₚ=ðt′╱2κₚ⁰, ð²αₚ=ð²αₚ⁰)
-        Pproj = transformed_projection(
+        μ̂ = transformed_projection(
             data, t, t′, cubic_spline_cache, geometry⁰, dc, spins, N₀, plan.Ȳ, T
         )
-        [Pproj[k] .- plan.T̂[k] for k ∈ 1:Nᵈ]
+        [μ̂[k] .- plan.ĉ[k] for k ∈ 1:Nᵈ]
     else
         nothing
     end
 
     # The main pass takes the pixels a block at a time.  The time series of a block are
-    # synthesized from the harmonics without derivatives.  With ℓ_fit, the cotangents of
-    # the block's transformed series come from R̂ by one more matrix product per
-    # component, into `ΩD′ᵇ`.
+    # synthesized from the harmonics without derivatives.  With ℓ_fit, the conjugate of Π
+    # is evaluated back at the block's pixels by one more matrix product per component,
+    # into `wr̄ᵇ`: each pixel's weight times the conjugate of the projected residual there.
     blocks = synthesis_blocks(
         data,
         Rₚ⁰,
         spins;
-        extra_bytes_per_pixel=isnothing(R̂) ? 0 : Nᵗ′ * Nᵈ * sizeof(Complex{T}),
+        extra_bytes_per_pixel=isnothing(Π) ? 0 : Nᵗ′ * Nᵈ * sizeof(Complex{T}),
     )
     B = maximum(length, blocks)
-    ΩD′ᵇ = Array{Complex{T}}(undef, isnothing(R̂) ? (0, 0, 0) : (B, Nᵗ′, Nᵈ))
-    conjR̂ = isnothing(R̂) ? nothing : [conj.(R̂[k]) for k ∈ 1:Nᵈ]
-    Yᵇ = Array{Complex{T}}(undef, Nᵐ, B, length(spin_range))  # harmonics, then cotangents
-    Xᵇ = Array{Complex{T}}(undef, Nᵗ, B, Nᵈ)  # synthesized series, then cotangents
+    wr̄ᵇ = Array{Complex{T}}(undef, isnothing(Π) ? (0, 0, 0) : (B, Nᵗ′, Nᵈ))
+    Π̄ = isnothing(Π) ? nothing : [conj.(Π[k]) for k ∈ 1:Nᵈ]
+    Yᵇ = Array{Complex{T}}(undef, Nᵐ, B, length(spin_range))  # the harmonics, then ∂ν╱∂Y
+    σᵇ = Array{Complex{T}}(undef, Nᵗ, B, Nᵈ)  # the synthesized series σ, then ∂ν╱∂σ
+    ∂ν╱∂gᵇ = Matrix{T}(undef, 8, B)  # ∂ν╱∂g for each pixel of the block
     calcs⁰ = [sYlmCalculator(one(eltype(Rₚ⁰)), ℓₘₐₓ, spin_range) for _ ∈ 1:nthreads()]
-    # One set of buffers for each parallel task.  Cotangents are in the canonical
-    # representation of the gradient page: a name such as Ωx holds ∂/∂(Re x) − i ∂/∂(Im x)
-    # of the objective, so that a change δx changes it by Re Σ Ωx δx.  Each is a covector,
-    # and each backward step applies the transpose of its forward step's Jacobian, with no
-    # conjugation.
+    # One set of buffers for each parallel task.  The names are those of the gradient page,
+    # for one pixel: `σⱼ`, `μⱼ`, and the derivatives of the pixel's share ν of the objective.
+    # A name such as `∂ν╱∂σ` holds the derivative of ν with respect to the complex σ, with σ
+    # and its conjugate treated as independent: it is (∂/∂(Re σ) − i ∂/∂(Im σ))/2, so that a
+    # change δσ changes ν by 2 Re Σ ∂ν╱∂σ δσ.  Each is a covector, and each backward step
+    # applies the transpose of its forward step's Jacobian, with no conjugation.
     buffers = [
         (;
             calc=sYlmCalculator(one(Tₚ), ℓₘₐₓ, spin_range),
             Yᵈ=Matrix{Complex{basetype(Tₚ)}}(undef, Nᵐ, length(spin_range)),
-            xⱼ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),
-            ẍⱼ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),
-            d′ⱼ=Matrix{Complex{Dg}}(undef, Nᵈ, Nᵗ′),
-            Ωd′=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′),  # cotangent of the transformed series
-            Ωy=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′),  # cotangent of the interpolated series
-            Ωx=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),  # cotangent of the synthesized series
+            σⱼ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),
+            σ̈ⱼ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),  # the spline's second derivatives
+            μⱼ=Matrix{Complex{Dg}}(undef, Nᵈ, Nᵗ′),  # μ, with its derivatives ∂μ/∂g
+            ∂ν╱∂μ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′),
+            ∂ν╱∂ι=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ′),
+            ∂ν╱∂σ=Matrix{Complex{T}}(undef, Nᵈ, Nᵗ),
             M=Matrix{Complex{T}}(undef, Nᵈ, Nᵈ),
             e=Vector{Complex{T}}(undef, Nᵈ),
             z=Vector{Complex{T}}(undef, Nᵈ),
-            Ωẍ=Vector{Complex{T}}(undef, Nᵗ),
-            ẑ=Vector{Complex{T}}(undef, Nᵗ),
+            ∂ν╱∂σ̈=Vector{Complex{T}}(undef, Nᵗ),
+            ζ=Vector{Complex{T}}(undef, Nᵗ),
             τ=Vector{T}(undef, Nᵗ′),
-            Ωg=Vector{T}(undef, 8),  # cotangent of the eight real numbers
         ) for _ ∈ 1:nthreads()
     ]
-    # Each pixel's share of the objective and of its gradient (the cotangent of θ, ∂Φ/∂θᵖ,
-    # a covector), summed in pixel order at the end.
-    Φₚ = zeros(T, Nᵖ)
-    Ωθₚ = zeros(T, P, Nᵖ)
+    # Each pixel's share of the objective, ν[j], and the gradient of that share with respect
+    # to the parameters, ∂ν╱∂θ[p, j], a covector.  Both are summed in pixel order at the end.
+    ν = zeros(T, Nᵖ)
+    ∂ν╱∂θ = zeros(T, P, Nᵖ)
 
     for block ∈ blocks
         nb = length(block)
-        Yb, Xb = view(Yᵇ, :, 1:nb, :), view(Xᵇ, :, 1:nb, :)
+        Yb, σb = view(Yᵇ, :, 1:nb, :), view(σᵇ, :, 1:nb, :)
+        # The backward pass overwrites the block's σ with ∂ν╱∂σ, and then its harmonics with
+        # ∂ν╱∂Y, so these are two more names for the same memory.
+        ∂ν╱∂Yb, ∂ν╱∂σb = Yb, σb
         harmonics_block!(Yb, calcs⁰, Rₚ⁰, block)
-        synthesize_block!(Xb, data, Yb, spins, N₀)
-        if !isnothing(R̂)
-            # ΩD′ᵇ[q, i, k] = Σₙ Ȳ[k][n, block[q]] conj(R̂[k][n, i])
+        synthesize_block!(σb, data, Yb, spins, N₀)
+        if !isnothing(Π)
+            # wr̄ᵇ[q, i, k] = Σₙ Ȳ[k][n, block[q]] conj(Π[k][n, i])
             for k ∈ 1:Nᵈ
-                mul!(view(ΩD′ᵇ, 1:nb, :, k), transpose(view(plan.Ȳ[k], :, block)), conjR̂[k])
+                mul!(view(wr̄ᵇ, 1:nb, :, k), transpose(view(plan.Ȳ[k], :, block)), Π̄[k])
             end
         end
 
         foreach_chunk(nb, buffers) do b, chunk
-            (; xⱼ, ẍⱼ, d′ⱼ, Ωd′, Ωy, Ωx, M, e, z, Ωẍ, ẑ, τ, Ωg) = b
+            (; σⱼ, σ̈ⱼ, μⱼ, ∂ν╱∂μ, ∂ν╱∂ι, ∂ν╱∂σ, M, e, z, ∂ν╱∂σ̈, ζ, τ) = b
             for q ∈ chunk
                 j = block[q]
-                permutedims!(xⱼ, view(Xb, :, q, :), (2, 1))
+                permutedims!(σⱼ, view(σb, :, q, :), (2, 1))
 
-                # Interpolate and mix with dual numbers in the pixel's eight real scalars.
-                κ⁻¹, α, ð₀, ð₁, ð² = scalars(j)
+                # Interpolate and mix with dual numbers in the pixel's eight real numbers g.
+                κ⁻¹, α, b⁰, b¹, ð²α = scalars(j)
                 g = (
                     seeded(PixelTag, T(κ⁻¹), 1, Val(8)),
                     seeded(PixelTag, T(α), 2, Val(8)),
                     complex(
-                        seeded(PixelTag, T(real(ð₀)), 3, Val(8)),
-                        seeded(PixelTag, T(imag(ð₀)), 4, Val(8)),
+                        seeded(PixelTag, T(real(b⁰)), 3, Val(8)),
+                        seeded(PixelTag, T(imag(b⁰)), 4, Val(8)),
                     ),
                     complex(
-                        seeded(PixelTag, T(real(ð₁)), 5, Val(8)),
-                        seeded(PixelTag, T(imag(ð₁)), 6, Val(8)),
+                        seeded(PixelTag, T(real(b¹)), 5, Val(8)),
+                        seeded(PixelTag, T(imag(b¹)), 6, Val(8)),
                     ),
                     complex(
-                        seeded(PixelTag, T(real(ð²)), 7, Val(8)),
-                        seeded(PixelTag, T(imag(ð²)), 8, Val(8)),
+                        seeded(PixelTag, T(real(ð²α)), 7, Val(8)),
+                        seeded(PixelTag, T(imag(ð²α)), 8, Val(8)),
                     ),
                 )
-                transform_pixel!(d′ⱼ, xⱼ, ẍⱼ, cubic_spline_cache, t, t′, g..., dc)
+                transform_pixel!(μⱼ, σⱼ, σ̈ⱼ, cubic_spline_cache, t, t′, g..., dc)
 
-                # The cotangent of the transformed series.  For the full objective it is
-                # the pixel's own weighted residual, conjugated; with ℓ_fit it is the
-                # conjugated residual of the projections, pulled back to the pixel through
-                # the weighted harmonics, as computed for the whole block above.
+                # Through ν.  For the full objective, ∂ν╱∂μ is the pixel's own weighted
+                # residual, conjugated.  With ℓ_fit, the residual is replaced by its
+                # projection onto the modes up to ℓ_fit, evaluated back at the pixel, as
+                # computed for the whole block above.
                 @inbounds for i ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
-                    if isnothing(R̂)
-                        r = valueof(d′ⱼ[k, i]) - c[j, i, k]
-                        Φₚ[j] += w[j] * v[i] * u[k] * abs2(r)
-                        Ωd′[k, i] = 2 * w[j] * v[i] * u[k] * conj(r)
+                    if isnothing(Π)
+                        r = valueof(μⱼ[k, i]) - c[j, i, k]
+                        ν[j] += w[j] * v[i] * u[k] * abs2(r)
+                        ∂ν╱∂μ[k, i] = w[j] * v[i] * u[k] * conj(r)
                     else
-                        Ωd′[k, i] = 2 * v[i] * u[k] * ΩD′ᵇ[q, i, k]
+                        ∂ν╱∂μ[k, i] = v[i] * u[k] * wr̄ᵇ[q, i, k]
                     end
                 end
 
-                # The parameters reach the pixel's scalars through the geometry.
-                # Each is Re Σ Ωd′ ∂d′/∂g, contracting the cotangent with a column of the
-                # forward-mode Jacobian of the interpolation and mixing.
-                fill!(Ωg, 0)
+                # The parameters reach the pixel through its eight numbers g, by
+                # ∂ν╱∂g = 2 Re Σ ∂ν╱∂μ ∂μ/∂g, where the ∂μ/∂g are the partials of `μⱼ`.
+                ∂ν╱∂g = view(∂ν╱∂gᵇ, :, q)
+                fill!(∂ν╱∂g, 0)
                 @inbounds for i ∈ 1:Nᵗ′, k ∈ 1:Nᵈ
-                    ∂re, ∂im = reim_partials(d′ⱼ[k, i])
+                    ∂Reμ╱∂g, ∂Imμ╱∂g = reim_partials(μⱼ[k, i])
                     for n ∈ 1:8
-                        Ωg[n] += real(Ωd′[k, i]) * ∂re[n] - imag(Ωd′[k, i]) * ∂im[n]
-                    end
-                end
-                for (n, gₙ) ∈ enumerate((
-                    κ⁻¹ₚ[j],
-                    αₚ[j],
-                    real(ðt′╱2κₚ[1, j]),
-                    imag(ðt′╱2κₚ[1, j]),
-                    real(ðt′╱2κₚ[2, j]),
-                    imag(ðt′╱2κₚ[2, j]),
-                    real(ð²αₚ[j]),
-                    imag(ð²αₚ[j]),
-                ))
-                    ∂gₙ = ForwardDiff.partials(gₙ)
-                    for p ∈ 1:P
-                        Ωθₚ[p, j] += Ωg[n] * ∂gₙ[p]
+                        ∂ν╱∂g[n] +=
+                            2 * (
+                                real(∂ν╱∂μ[k, i]) * ∂Reμ╱∂g[n] -
+                                imag(∂ν╱∂μ[k, i]) * ∂Imμ╱∂g[n]
+                            )
                     end
                 end
 
                 # They also reach it through the harmonics at the pixel's rotor, which enter
-                # the synthesis.  Pull the cotangent back to the synthesized time series:
-                # through the mixing at each output time by the transpose of its matrix,
-                # then through the spline by its transpose.  The result replaces the
-                # pixel's time series in the block.
+                # the synthesis.  Pull ∂ν╱∂μ back to the synthesized series: through μ, at
+                # each output time, by the transpose of its matrix, and then through ι by
+                # the spline's transpose.  The result replaces the pixel's series in the
+                # block.
                 for i ∈ 1:Nᵗ′
                     τ[i] = t′[i] * κ⁻¹ + α
-                    mixing_matrix!(M, κ⁻¹, ð₀ + τ[i] * ð₁, ð², dc; e, z)
-                    mul!(view(Ωy, :, i), transpose(M), view(Ωd′, :, i))
+                    mixing_matrix!(M, κ⁻¹, b⁰ + τ[i] * b¹, ð²α, dc; e, z)
+                    mul!(view(∂ν╱∂ι, :, i), transpose(M), view(∂ν╱∂μ, :, i))
                 end
-                fill!(Ωx, 0)
+                fill!(∂ν╱∂σ, 0)
                 for k ∈ 1:Nᵈ
                     @views spline_transpose!(
-                        Ωx[k, :], Ωy[k, :], cubic_spline_cache, t, τ; Ωẍ, z=ẑ
+                        ∂ν╱∂σ[k, :], ∂ν╱∂ι[k, :], cubic_spline_cache, t, τ; ∂ν╱∂σ̈, ζ
                     )
                 end
-                permutedims!(view(Xb, :, q, :), Ωx, (2, 1))
+                permutedims!(view(∂ν╱∂σb, :, q, :), ∂ν╱∂σ, (2, 1))
             end
         end
 
-        # Through the synthesis, xⱼ[k, h] = Σₘ Yₘ data[m, h, k], so for each spin weight
-        # the cotangent of the harmonic Yₘ is ΩYₘ = Σ data[m, h, k] Ωx[k, h].  These
-        # replace the harmonics in the block.
-        synthesis_transpose_block!(Yb, data, Xb, spins, N₀)
+        # Through σ.  The synthesis is σⱼ[k, h] = Σₘ Yₘ data[m, h, k], so for each spin
+        # weight ∂ν╱∂Yₘ = Σ ∂ν╱∂σ[k, h] data[m, h, k].  These replace the harmonics in the
+        # block.
+        synthesis_transpose_block!(∂ν╱∂Yb, data, ∂ν╱∂σb, spins, N₀)
 
-        # The parameters' share is Re Σ ΩYₘ ∂Yₘ/∂θ, for which the harmonics are evaluated
-        # again, this time with their derivatives.  Storing those for the whole block would
-        # take P + 1 times the memory of the harmonics themselves.
+        # Assemble the gradient of each pixel's ν,
+        # ∂ν╱∂θ = ∂ν╱∂g ∂g/∂θ + 2 Re Σ ∂ν╱∂Yₘ ∂Yₘ/∂θ, one chunk of the parameters at a time.
+        # The derivatives ∂g/∂θ are the partials of the chunk's geometry.  For ∂Yₘ/∂θ the
+        # harmonics are evaluated again, at the chunk's dual rotor.  Storing those for the
+        # whole block would take P + 1 times the memory of the harmonics themselves.
         foreach_chunk(nb, buffers) do b, chunk
             (; calc, Yᵈ) = b
             for q ∈ chunk
                 j = block[q]
-                sYlm_rows!(Yᵈ, calc, Rₚ[j])
-                for s ∈ unique_spins
-                    col = s - first(spin_range) + 1
-                    for m ∈ (s ^ 2 + 1):N₀
-                        ∂re, ∂im = reim_partials(Yᵈ[m, col])
-                        ΩYᵐ = Yb[m, q, col]
-                        for p ∈ 1:P
-                            Ωθₚ[p, j] += ∂re[p] * real(ΩYᵐ) - ∂im[p] * imag(ΩYᵐ)
+                for (ps, G) ∈ zip(chunks, geometries)
+                    g = (
+                        G.κ⁻¹ₚ[j],
+                        G.αₚ[j],
+                        reim(G.ðt′╱2κₚ[1, j])...,
+                        reim(G.ðt′╱2κₚ[2, j])...,
+                        reim(G.ð²αₚ[j])...,
+                    )
+                    # The chunk's W slots of ∂ν╱∂θ for this pixel.
+                    ∂ν╱∂θᶜ = zero(ForwardDiff.Partials{W,T})
+                    for n ∈ 1:8
+                        ∂ν╱∂θᶜ += ∂ν╱∂gᵇ[n, q] * ForwardDiff.partials(g[n])
+                    end
+                    sYlm_rows!(Yᵈ, calc, G.Rₚ[j])
+                    for s ∈ unique_spins
+                        col = s - first(spin_range) + 1
+                        for m ∈ (s ^ 2 + 1):N₀
+                            ∂ReY╱∂θ, ∂ImY╱∂θ = reim_partials(Yᵈ[m, col])
+                            ∂ν╱∂Yₘ = ∂ν╱∂Yb[m, q, col]
+                            ∂ν╱∂θᶜ += 2 * (∂ReY╱∂θ * real(∂ν╱∂Yₘ) - ∂ImY╱∂θ * imag(∂ν╱∂Yₘ))
                         end
+                    end
+                    for (a, p) ∈ enumerate(ps)
+                        ∂ν╱∂θ[p, j] = ∂ν╱∂θᶜ[a]
                     end
                 end
             end
         end
     end
-    Φ = sum(Φₚ)
-    Ωθ = vec(sum(Ωθₚ; dims=2))
-    if !isnothing(R̂)
-        Φ = sum(u[k] * sum(v[i] * sum(abs2, view(R̂[k], :, i)) for i ∈ 1:Nᵗ′) for k ∈ 1:Nᵈ)
+    Φ = sum(ν)
+    ∂Φ╱∂θ = vec(sum(∂ν╱∂θ; dims=2))
+    if !isnothing(Π)
+        Φ = sum(u[k] * sum(v[i] * sum(abs2, view(Π[k], :, i)) for i ∈ 1:Nᵗ′) for k ∈ 1:Nᵈ)
     end
     if plan.normalize
         Φ /= plan.norm²
-        Ωθ ./= plan.norm²
+        ∂Φ╱∂θ ./= plan.norm²
     end
-    return Φ, Ωθ
+    return Φ, ∂Φ╱∂θ
 end
 
 """
@@ -421,103 +440,109 @@ function parameters_from_bms(v⃗, R, α::AbstractVector)
 end
 
 """
-    spline_transpose!(Ωx, Ωy, cubic_spline_cache, t, τ; Ωẍ, z)
+    spline_transpose!(∂ν╱∂σ, ∂ν╱∂ι, cubic_spline_cache, t, τ; ∂ν╱∂σ̈, ζ)
 
-Add to `Ωx` (length `Nᵗ`) the transpose of natural-cubic-spline interpolation applied to
-`Ωy`: if `S` is the linear map from the values `x` at the knots `t` to the values `y` of
-the spline at the times `τ` (length `Nᵗ′`), as `transform_pixel!` evaluates them, this
-adds `Sᵀ Ωy`, which pulls a cotangent of `y` back to one of `x`.  `S` is real, so it acts
-alike on real and imaginary parts.  The
-interval of each time is chosen exactly as in `transform_pixel!`, and the weights of the
-knot values and second derivatives come from `spline_eval` itself, so the transpose matches
-the evaluation to roundoff.  The second derivatives solve a symmetric tridiagonal system,
-so their transpose is another solve with the same Thomas factors.  The keywords `Ωẍ` and
-`z` are work vectors of length `Nᵗ`, for callers that want to avoid allocating them.
+Take the backward step through the interpolation, for one component of one pixel.  If `S`
+is the linear map from the samples `σ` at the times `t` to the values `ι` of their natural
+cubic spline at the times `τ` (length `Nᵗ′`), as `transform_pixel!` evaluates them, this
+adds `Sᵀ ∂ν╱∂ι` to `∂ν╱∂σ` (length `Nᵗ`), which turns derivatives with respect to `ι` into
+derivatives with respect to `σ`.  `S` is real, so it acts alike on real and imaginary
+parts.  The interval of each time is chosen exactly as in `transform_pixel!`, and the
+weights of the knot values and second derivatives come from `spline_eval` itself, so the
+transpose matches the evaluation to roundoff.  The second derivatives solve a symmetric
+tridiagonal system, so their transpose is another solve with the same Thomas factors.
+
+The keywords `∂ν╱∂σ̈` and `ζ` are work vectors of length `Nᵗ`, for callers that want to
+avoid allocating them.  They hold the derivatives with respect to the spline's second
+derivatives, and the solution of the tridiagonal system, which the gradient page calls
+``ζ``.
 """
 function spline_transpose!(
-    Ωx,
-    Ωy,
+    ∂ν╱∂σ,
+    ∂ν╱∂ι,
     cubic_spline_cache::CubicSplineCache,
     t,
     τ;
-    Ωẍ=zeros(eltype(Ωx), length(t)),
-    z=similar(Ωẍ),
+    ∂ν╱∂σ̈=zeros(eltype(∂ν╱∂σ), length(t)),
+    ζ=similar(∂ν╱∂σ̈),
 )
     Nᵗ = length(t)
     h, h⁻¹, l, u⁻¹ = cubic_spline_cache.h,
     cubic_spline_cache.h⁻¹, cubic_spline_cache.l,
     cubic_spline_cache.u⁻¹
-    fill!(Ωẍ, 0)  # adjoint of the second derivatives
-    for j′ ∈ eachindex(τ, Ωy)
+    fill!(∂ν╱∂σ̈, 0)
+    for j′ ∈ eachindex(τ, ∂ν╱∂ι)
         j = clamp(searchsortedlast(t, τ[j′]), 1, Nᵗ - 1)
         Δ = τ[j′] - t[j]
         𝟙, 𝟘 = one(eltype(h)), zero(eltype(h))
-        Ωx[j] += spline_eval(𝟙, 𝟘, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
-        Ωx[j + 1] += spline_eval(𝟘, 𝟙, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
-        Ωẍ[j] += spline_eval(𝟘, 𝟘, 𝟙, 𝟘, h[j], h⁻¹[j], Δ) * Ωy[j′]
-        Ωẍ[j + 1] += spline_eval(𝟘, 𝟘, 𝟘, 𝟙, h[j], h⁻¹[j], Δ) * Ωy[j′]
+        ∂ν╱∂σ[j] += spline_eval(𝟙, 𝟘, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * ∂ν╱∂ι[j′]
+        ∂ν╱∂σ[j + 1] += spline_eval(𝟘, 𝟙, 𝟘, 𝟘, h[j], h⁻¹[j], Δ) * ∂ν╱∂ι[j′]
+        ∂ν╱∂σ̈[j] += spline_eval(𝟘, 𝟘, 𝟙, 𝟘, h[j], h⁻¹[j], Δ) * ∂ν╱∂ι[j′]
+        ∂ν╱∂σ̈[j + 1] += spline_eval(𝟘, 𝟘, 𝟘, 𝟙, h[j], h⁻¹[j], Δ) * ∂ν╱∂ι[j′]
     end
     # The end second derivatives are fixed at zero, so only the interior ones have
-    # adjoints; solve A z = Ωẍ on the interior with the Thomas factors, as the forward
+    # derivatives; solve A ζ = ∂ν╱∂σ̈ on the interior with the Thomas factors, as the forward
     # sweep of `transform_pixel!` does, since A is symmetric.
-    z[2] = Ωẍ[2] * u⁻¹[1]
+    ζ[2] = ∂ν╱∂σ̈[2] * u⁻¹[1]
     for j ∈ 3:(Nᵗ - 1)
-        z[j] = (Ωẍ[j] - h[j - 1] * z[j - 1]) * u⁻¹[j - 1]
+        ζ[j] = (∂ν╱∂σ̈[j] - h[j - 1] * ζ[j - 1]) * u⁻¹[j - 1]
     end
     for j ∈ (Nᵗ - 2):-1:2
-        z[j] -= l[j - 1] * z[j + 1]
+        ζ[j] -= l[j - 1] * ζ[j + 1]
     end
-    # Transpose of r[j] = 6(h⁻¹[j](x[j+1] − x[j]) − h⁻¹[j-1](x[j] − x[j-1])), j = 2..Nᵗ-1.
+    # Transpose of r[j] = 6(h⁻¹[j](σ[j+1] − σ[j]) − h⁻¹[j-1](σ[j] − σ[j-1])), j = 2..Nᵗ-1.
     for j ∈ 2:(Nᵗ - 1)
-        Ωx[j + 1] += 6 * h⁻¹[j] * z[j]
-        Ωx[j] -= 6 * (h⁻¹[j] + h⁻¹[j - 1]) * z[j]
-        Ωx[j - 1] += 6 * h⁻¹[j - 1] * z[j]
+        ∂ν╱∂σ[j + 1] += 6 * h⁻¹[j] * ζ[j]
+        ∂ν╱∂σ[j] -= 6 * (h⁻¹[j] + h⁻¹[j - 1]) * ζ[j]
+        ∂ν╱∂σ[j - 1] += 6 * h⁻¹[j - 1] * ζ[j]
     end
-    return Ωx
+    return ∂ν╱∂σ
 end
 
-@doc raw"""
-    synthesis_transpose_block!(ΩY, data, ΩX, spins, N₀)
+"""
+    synthesis_transpose_block!(∂ν╱∂Y, data, ∂ν╱∂σ, spins, N₀)
 
-Apply the transpose of [`synthesize_block!`](@ref) to the cotangents `ΩX` of a block's
-synthesized time series, which pulls them back to cotangents of the harmonics:
-```math
-ΩY[m, q, s - s₀ + 1] = ∑_{k:\, s_k = s}\; ∑_h \mathrm{data}[m, h, k]\, ΩX[h, q, k],
+Take the backward step through the synthesis, for a block of pixels.  This applies the
+transpose of [`synthesize_block!`](@ref) to `∂ν╱∂σ`, the derivatives with respect to the
+block's synthesized time series, which gives the derivatives with respect to the harmonics:
 ```
-for each spin weight ``s`` among the components' spin weights `spins`, whose least is
-``s₀``, and each ``m`` from ``s^2 + 1`` to `N₀`.  There is no conjugation, as for every
-cotangent here, and the other entries of `ΩY` are left alone.  As in `synthesize_block!`,
-data and cotangents of the same BLAS element type use one matrix product for each
-component, and other types use parallel tasks over the pixels.
+∂ν╱∂Y[m, q, s - s₀ + 1] = Σₖ Σₕ data[m, h, k] ∂ν╱∂σ[h, q, k],
+```
+where the sum over `k` runs over the components of spin weight `s`.  This is done for each
+spin weight `s` among the components' spin weights `spins`, whose least is `s₀`, and each
+`m` from `s^2 + 1` to `N₀`.  There is no conjugation, as in every backward step here, and
+the other entries of `∂ν╱∂Y` are left alone.  As in `synthesize_block!`, arrays of the same
+BLAS element type use one matrix product for each component, and other types use parallel
+tasks over the pixels.
 """
 function synthesis_transpose_block!(
-    ΩY::StridedArray{T,3}, data::StridedArray{T,3}, ΩX::StridedArray{T,3}, spins, N₀
+    ∂ν╱∂Y::StridedArray{T,3}, data::StridedArray{T,3}, ∂ν╱∂σ::StridedArray{T,3}, spins, N₀
 ) where {T<:LinearAlgebra.BlasComplex}
     s₀ = minimum(spins)
     for s ∈ unique(spins)
         m = (s ^ 2 + 1):N₀
-        ΩYˢ = view(ΩY, m, :, s - s₀ + 1)
+        ∂ν╱∂Yˢ = view(∂ν╱∂Y, m, :, s - s₀ + 1)
         for (n, k) ∈ enumerate(findall(==(s), spins))
-            mul!(ΩYˢ, view(data, m, :, k), view(ΩX, :, :, k), true, n > 1)
+            mul!(∂ν╱∂Yˢ, view(data, m, :, k), view(∂ν╱∂σ, :, :, k), true, n > 1)
         end
     end
-    return ΩY
+    return ∂ν╱∂Y
 end
-function synthesis_transpose_block!(ΩY, data, ΩX, spins, N₀)
+function synthesis_transpose_block!(∂ν╱∂Y, data, ∂ν╱∂σ, spins, N₀)
     s₀ = minimum(spins)
-    OhMyThreads.tforeach(axes(ΩX, 2)) do q
+    OhMyThreads.tforeach(axes(∂ν╱∂σ, 2)) do q
         for s ∈ unique(spins)
             col = s - s₀ + 1
-            fill!(view(ΩY, (s ^ 2 + 1):N₀, q, col), 0)
-            for k ∈ findall(==(s), spins), h ∈ axes(ΩX, 1)
-                ΩXₕₖ = ΩX[h, q, k]
+            fill!(view(∂ν╱∂Y, (s ^ 2 + 1):N₀, q, col), 0)
+            for k ∈ findall(==(s), spins), h ∈ axes(∂ν╱∂σ, 1)
+                ∂ν╱∂σₕₖ = ∂ν╱∂σ[h, q, k]
                 @inbounds @simd for m ∈ (s ^ 2 + 1):N₀
-                    ΩY[m, q, col] = muladd(data[m, h, k], ΩXₕₖ, ΩY[m, q, col])
+                    ∂ν╱∂Y[m, q, col] = muladd(data[m, h, k], ∂ν╱∂σₕₖ, ∂ν╱∂Y[m, q, col])
                 end
             end
         end
     end
-    return ΩY
+    return ∂ν╱∂Y
 end
 
 """

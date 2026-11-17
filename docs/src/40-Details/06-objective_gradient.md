@@ -4,435 +4,725 @@ CurrentModule = Scri
 
 # [The gradient of the objective](@id objective_gradient)
 
-The function [`objective_and_gradient!`](@ref) returns the value of
-[`transform_objective`](@ref) together with its gradient with respect
-to every parameter of the BMS transformation.  It costs a few
-evaluations of the objective, regardless of how many parameters there
-are; forward-mode automatic differentiation costs about one extra
-evaluation per parameter.  This page states the
-problem, sets up the notation, shows the structure of the computation
-in a diagram, and then derives each piece.
+One of the biggest challenges when comparing waveforms — whether from
+numerical simulations, or from surrogate, analytical (e.g., PN or
+EMRI), or quasi-analytical (e.g., EOB) models — is understanding how
+the gauge freedom affects the comparison.  *All* waveforms have this
+intrinsic BMS freedom.  One way to deal with this freedom is to
+optimize the BMS transformation that brings one waveform into the best
+agreement with another.  The obvious measure to use for "best
+agreement" is the weighted ``L^2`` difference between the two
+waveforms — integrated over both the sphere and time.  We call this
+the objective function ``Φ(θ)``, where ``θ`` parameterize the BMS
+transformation, implemented as the function
+[`transform_objective`](@ref).  One crucial element in making this
+efficient is the fact that the objective function eliminates the need
+to compute the full transformed waveform; we don't need to transform
+back to modes if we just need to *integrate* the difference from the
+other waveform.  But we can do better if we think specifically about
+the goal here.
 
-## The problem
+To actually minimize this quantity efficiently, we don't just need its
+*value*, we also need its *gradient* with respect to the parameters of
+the BMS transformation, ``∂Φ/∂θ^p``.  There are six parameters for the
+Lorentz transformation and ``(ℓ_α+1)^2`` more for a supertranslation
+with modes up to ``ℓ_α``, so there are easily dozens of parameters,
+and the obvious ways of computing the gradient — finite differences,
+or dual numbers in every parameter — cost about one evaluation of
+``Φ`` for each parameter.
 
-A BMS transformation is fitted to data by minimizing the distance
-between the transformed waveform and a waveform it is compared with.
-[`transform_objective`](@ref) measures that distance as
+This page explains how [`objective_and_gradient!`](@ref) computes the
+value *and* gradient of the objective function with respect to all of
+the parameters efficiently, at the cost of only a few evaluations of
+the objective function itself — almost independently of the number of
+parameters.  In brief, ``Φ`` is computed by a chain of four simple
+steps, repeated for each direction on the sphere.  The parameters
+enter that chain only through a small amount of geometry for each
+direction, which is cheap to compute but complicated.  The data enter
+through sums over every mode and every time, which are expensive but
+simple.  We differentiate the geometry *forward*, with dual numbers,
+and the four steps *backward*, by hand, and the two meet in the
+middle.
+
+## The objective
+
+The parameters are
+
+```math
+θ = \left(\vec{r},\ \vec{η},\ a_1, …, a_{(ℓ_α+1)^2}\right):
+```
+
+a rotation vector ``\vec{r}``, a rapidity vector ``\vec{η}``, and the
+real degrees of freedom of the supertranslation's modes.
+[`bms_from_parameters`](@ref) turns them into the boost velocity, the
+frame rotation, and the supertranslation that [`transform!`](@ref)
+takes.  We write ``P`` for the number of parameters.
+
+The objective is
 
 ```math
 Φ(θ) = \frac{1}{𝒩} \sum_j w_j \sum_i v_i \sum_k u_k
-       \left| {}^{k}d'^{i}_{j}(θ) - {}^{k}c^{i}_{j} \right|^2,
+       \left| μ^{ki}_{j}(θ) - c^{ki}_{j} \right|^2,
 ```
 
-where ``θ`` holds the parameters of the transformation, and
+where
 
-- ``j`` labels the pixels of a grid on the sphere, which are the
-  directions ``R'_j`` in the new frame, and the ``w_j`` are the weights
-  of a quadrature on that grid.  The default grid, from
-  [`sphere_quadrature`](@ref Scri.sphere_quadrature), is the product of
-  Gauss–Legendre nodes in the cosine of the polar angle and equally
-  spaced values of the azimuth.  With its weights, the sum over ``j``
-  is exactly the integral over the sphere of the product of two fields
-  band-limited to the grid's ``ℓ_\mathrm{max}``, such as
-  ``|d' - c|^2`` when both are.
-- ``i`` labels the output times ``t'_i``, and the ``v_i`` are the
-  weights of the trapezoidal rule on them,
+- ``j`` labels the *pixels*, which are the points of a grid of
+  directions on the sphere of the new frame, and the ``w_j`` are
+  weights for integrating over that sphere;
+- ``i`` labels the output times ``t'_i``, and the ``v_i`` are weights
+  for integrating over them;
+- ``k`` labels the components of the data, such as the strain and
+  ``ψ_4``, and the ``u_k`` weight them against each other;
+- ``μ^{ki}_{j}(θ)`` is the transformed waveform: its component ``k``
+  at pixel ``j`` and time ``t'_i``;
+- ``c^{ki}_{j}`` is the waveform that it is compared with, at the
+  same pixels and times; and
+- ``𝒩`` is a normalization, either 1 or the same sum with ``μ`` set
+  to zero.
 
-  ```math
-  v_1 = \frac{t'_2 - t'_1}{2},
-  \qquad
-  v_i = \frac{t'_{i+1} - t'_{i-1}}{2},
-  \qquad
-  v_{N_{t'}} = \frac{t'_{N_{t'}} - t'_{N_{t'}-1}}{2},
-  ```
+So ``Φ`` is a weighted and squared ``L^2`` distance between the two
+waveforms, over the sphere and the output times.  Everything in it
+except ``μ`` is fixed before the minimization starts, and is stored
+in an [`ObjectivePlan`](@ref), whose docstring describes the grid, the
+weights, and the choices that the caller has.
 
-  so that the sum over ``i`` approximates the integral over the output
-  interval, even when the times are unevenly spaced.
-- ``k`` labels the components of the data, and the ``u_k`` weight
-  them.  The components have different units and typical sizes, and
-  there is as yet no principled choice of these weights, so they are
-  left to the caller, and are 1 by default.
-- ``{}^{k}c^{i}_{j}`` is the waveform being compared with, which
-  [`ObjectivePlan`](@ref) calls the target: its component ``k`` at
-  pixel ``j`` and time ``t'_i``.
-- ``𝒩`` is a normalization, either 1 or the norm of ``c``, which is the
-  same sum with ``d'`` set to zero.
-- ``{}^{k}d'^{i}_{j}(θ)`` is the transformed waveform at the same
-  pixels and times.
-
-Everything here except ``d'`` is fixed before the minimization starts:
-the [`ObjectivePlan`](@ref) computes the grid, the weights, the values
-of ``c``, and the normalization once, and the caller may choose a
-different grid or other weights.  So ``Φ`` is a weighted and squared
-``L^2`` distance between the two waveforms, over the unit sphere
-``S^2`` and the output interval:
+Each pixel contributes to ``Φ`` on its own:
 
 ```math
-Φ ≈ \frac{1}{𝒩} \int dt' \int_{S^2} dA\, \sum_k u_k
-    \left| {}^{k}d' - {}^{k}c \right|^2.
-```
-
-Note that by approximating as we have above, we integrate over the
-sphere directly in terms of the pixel values.  This allows us to skip
-the expensive step of synthesizing the modes of ``|d' - c|^2``.
-
-### The derivative
-
-``Φ`` depends on ``θ`` only through the transformed values.  Splitting
-each of them into its real and imaginary parts, the chain rule gives
-
-```math
-\frac{∂Φ}{∂θ^p}
-= \sum_{i,j,k} \left[
-    \frac{∂Φ}{∂\left(\operatorname{Re} {}^{k}d'^{i}_{j}\right)}
-    \frac{∂\left(\operatorname{Re} {}^{k}d'^{i}_{j}\right)}{∂θ^p}
-  + \frac{∂Φ}{∂\left(\operatorname{Im} {}^{k}d'^{i}_{j}\right)}
-    \frac{∂\left(\operatorname{Im} {}^{k}d'^{i}_{j}\right)}{∂θ^p}
-  \right].
-```
-
-The first factor of each term is immediate:
-
-```math
-\frac{∂Φ}{∂\left(\operatorname{Re} {}^{k}d'^{i}_{j}\right)}
-= \frac{2}{𝒩}\, w_j\, v_i\, u_k
-  \operatorname{Re}\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right),
+Φ = \frac{1}{𝒩} \sum_j ν_j,
 \qquad
-\frac{∂Φ}{∂\left(\operatorname{Im} {}^{k}d'^{i}_{j}\right)}
-= \frac{2}{𝒩}\, w_j\, v_i\, u_k
-  \operatorname{Im}\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right).
+ν_j = \sum_{i,k} W_{jki} \left| μ^{ki}_{j} - c^{ki}_{j} \right|^2,
+\qquad
+W_{jki} = w_j\, v_i\, u_k.
 ```
 
-So we can rewrite the gradient as
-
-```math
-\frac{∂Φ}{∂θ^p}
-= \frac{2}{𝒩}\, \sum_{i,j,k} \left[
-  w_j\, v_i\, u_k\,
-  \operatorname{Re}\left\{
-  \overline{\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right)}
-  \ \frac{∂\,{{}^{k}d'^{i}_{j}}}{∂θ^p}
-  \right\} \right].
-```
-
-The factor ``\left({}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j}\right)`` is
-computed directly when ``Φ`` is evaluated; this page is concerned more
-with the next factor: the factor ``{∂\,{{}^{k}d'^{i}_{j}}} / {∂θ^p}``,
-representing how the transformed data at every pixel and time depends
-on each parameter.  Computing that response one parameter at a time,
-as forward-mode automatic differentiation does, costs about one
-evaluation of the objective per parameter.  The rest of this page
-shows how to obtain the whole sum for about two evaluations,
-essentially regardless of the number of parameters, by carrying the
-first factor backward through the computation of the transformed data
-``d'``.
-
-## Derivatives with respect to complex quantities
-
-Most of the quantities between ``θ`` and ``Φ`` are complex, while
-``θ`` and ``Φ`` are real.  As in
-[ChainRules](https://juliadiff.org/ChainRulesCore.jl/stable/maths/complex.html),
-each complex number is treated as the pair of its real and imaginary
-parts, so that every derivative is an ordinary derivative of real
-functions of real variables.  The ChainRulesCore documentation states
-the convention this way:
-
-> `ChainRules` follows the convention that `frule` applied to a function ``f(x + i y) = u(x,y) + i v(x,y)`` with perturbation ``Δx + i Δy`` returns the value and
->
-> ```math
-> \tfrac{∂u}{∂x} \, Δx + \tfrac{∂u}{∂y} \, Δy + i \, \Bigl( \tfrac{∂v}{∂x} \, Δx + \tfrac{∂v}{∂y} \, Δy \Bigr).
-> ```
->
-> Similarly, `rrule` applied to the same function returns the value and a pullback function which, when applied to the adjoint ``Δu + i Δv``, returns
->
-> ```math
-> Δu \, \tfrac{∂u}{∂x} + Δv \, \tfrac{∂v}{∂x} + i \, \Bigl(Δu \, \tfrac{∂u }{∂y} + Δv \, \tfrac{∂v}{∂y} \Bigr).
-> ```
->
-> If we interpret complex numbers as vectors in ``\mathbb{R}^2``, then `frule` (`rrule`) corresponds to multiplication with the (transposed) Jacobian of ``f(z)``, i.e. `frule` corresponds to
->
-> ```math
-> \begin{pmatrix}
-> \tfrac{∂u}{∂x} \, Δx + \tfrac{∂u}{∂y} \, Δy
-> \\
-> \tfrac{∂v}{∂x} \, Δx + \tfrac{∂v}{∂y} \, Δy
-> \end{pmatrix}
-> =
-> \begin{pmatrix}
-> \tfrac{∂u}{∂x} & \tfrac{∂u}{∂y} \\
-> \tfrac{∂v}{∂x} & \tfrac{∂v}{∂y} \\
-> \end{pmatrix}
-> \begin{pmatrix}
-> Δx \\ Δy
-> \end{pmatrix}
-> ```
->
-> and `rrule` corresponds to
->
-> ```math
-> \begin{pmatrix}
-> \tfrac{∂u}{∂x} \, Δu + \tfrac{∂v}{∂x} \, Δv
-> \\
-> \tfrac{∂u}{∂y} \, Δu + \tfrac{∂v}{∂y} \, Δv
-> \end{pmatrix}
-> =
-> \begin{pmatrix}
-> \tfrac{∂u}{∂x} & \tfrac{∂u}{∂y} \\
-> \tfrac{∂v}{∂x} & \tfrac{∂v}{∂y} \\
-> \end{pmatrix}^\mathsf{T}
-> \begin{pmatrix}
-> Δu \\ Δv
-> \end{pmatrix}.
-> ```
-
-So a tangent at a complex quantity ``z`` is a pair of real numbers,
-and so is a cotangent, which maps tangents linearly to real numbers.
-This page writes the cotangent of ``Φ`` at ``z`` as one complex
-number,
-
-```math
-Ω_z = \frac{∂Φ}{∂(\operatorname{Re} z)}
-    - \mathrm{i}\, \frac{∂Φ}{∂(\operatorname{Im} z)},
-```
-
-so that
-
-```math
-dΦ = \frac{∂Φ}{∂(\operatorname{Re} z)}\, d(\operatorname{Re} z)
-   + \frac{∂Φ}{∂(\operatorname{Im} z)}\, d(\operatorname{Im} z)
-   = \operatorname{Re}\left( Ω_z\, dz \right).
-```
-
-For complex quantities ``z^a``, the cotangent ``(Ω_z)_a`` is a
-covector, and ``dΦ = \operatorname{Re}\left[(Ω_z)_a\, dz^a\right]``.
-When ``z`` is real, ``Ω_z`` is the ordinary derivative.  The code uses
-the same representation and the same names, so a variable such as
-`Ωx` holds ``Ω_x``.
-
-With this representation, the pullback of a complex-linear map is its
-plain transpose.  Multiplication by a complex number ``A`` acts on the
-real and imaginary parts of a tangent with the Jacobian
-
-```math
-\begin{pmatrix}
-\operatorname{Re} A & -\operatorname{Im} A \\
-\operatorname{Im} A & \operatorname{Re} A
-\end{pmatrix},
-```
-
-whose transpose takes a cotangent ``(c_1, c_2)`` to
-
-```math
-\left(c_1 \operatorname{Re} A + c_2 \operatorname{Im} A,\
-      c_2 \operatorname{Re} A - c_1 \operatorname{Im} A\right).
-```
-
-Packed as above, that is ``A\,(c_1 - \mathrm{i}\, c_2)``, which is
-multiplication by ``A`` again.  So if ``z^a = A^a{}_b\, x^b``, with
-coefficients that do not depend on the ``x^b``, then
-
-```math
-(Ω_x)_b = (Ω_z)_a\, A^a{}_b,
-```
-
-with no conjugation.  A conjugate appears only where a function is not
-complex-linear, as the norm ``|z|^2`` is not.  And when complex
-quantities ``z^a`` depend on a real quantity ``g``,
-
-```math
-\frac{∂Φ}{∂g} = \operatorname{Re}\left[ (Ω_z)_a\, \frac{∂z^a}{∂g} \right].
-```
-
-ChainRules packs the same cotangent the other way, as
-``c_1 + \mathrm{i}\, c_2 = Ω_z^*``.  That number is the vector that
-represents the covector under the Euclidean inner product
-``\operatorname{Re}\left(z_1^*\, z_2\right)`` of the complex plane, and
-with it the pullback of multiplication by ``A`` is multiplication by
-``A^*``.  This page avoids that identification, so that every backward
-step is a plain transpose.  Readers used to Wirtinger derivatives may
-note that ``Ω_z = 2\, ∂Φ/∂z``.
-
-## Notation
+The computation of ``ν_j`` involves no pixel but ``j``.  So the pixel
+index passes untouched through everything that follows, until the sum
+over pixels at the very end, and we can differentiate one pixel at a
+time and add the results.
 
 ### Indices
 
-Upper indices are slots of vectors, and lower indices are slots of
-covectors.  An index repeated once up and once down is summed, as in
-Einstein's convention, and every other sum is written out.  The pixel
-``j`` and the spin weight ``s`` are labels: they select independent
-pieces of the computation and are never contracted.  Fixed numbers,
-such as the times and the weights, also carry their indices as labels.
-
-| Index | Runs over | Number |
+| Index | Labels | Number |
 | :--- | :--- | :--- |
-| ``j`` | pixels: the directions ``R'_j`` of the grid in the new frame | ``N_\mathrm{pix}`` |
-| ``i`` | output times ``t'_i`` | ``N_{t'}`` |
-| ``h, h', h''`` | input times ``t_h`` | ``N_t`` |
-| ``k, k'`` | components of the data, of spin weight ``s_k`` | ``N_\mathrm{comp}`` |
-| ``(ℓ,m)`` | modes, always written as one index in parentheses | ``N_\mathrm{modes}`` |
-| ``n`` | the eight real numbers that describe the geometry of one pixel | ``8`` |
-| ``p`` | parameters ``θ^p`` | ``P`` |
+| ``p`` | the parameters ``θ^p`` | ``P`` |
+| ``j`` | the pixels | ``N_\mathrm{pix}`` |
+| ``ℓm`` | the modes; always a pair, treated as one index | ``N_\mathrm{modes}`` |
+| ``h`` | the input times ``t_h`` | ``N_t`` |
+| ``i`` | the output times ``t'_i`` | ``N_{t'}`` |
+| ``k``, ``k'`` | the components of the data; ``s_k`` is the spin weight of component ``k`` | ``N_\mathrm{comp}`` |
+| ``n`` | eight real numbers that describe the geometry of a pixel | ``8`` |
 
-A component index is written in front of a waveform's symbol, as in
-``{}^{k}x^{h}_{j}``, and a spin weight in front of a harmonic, as in
-``{}_{s}Y^{(ℓ,m)}_{j}``.  The cotangent of ``Φ_j``, defined below, at a
-quantity of pixel ``j`` is written with its indices outside
-parentheses, as in ``\left(Ω_{x_j}\right)_{kh}``.
+Indices are placed as in general relativity.  An upper index is a
+slot of a vector, and a lower index is a slot of a covector; an upper
+index in the denominator of a derivative counts as a lower index.  An
+index that appears once up and once down in a product is summed, and
+every other sum is written out.
 
-### The parameters
+The pixel index ``j`` is only a label.  It is always written as the
+first lower index of whatever belongs to a pixel, and it is never
+summed except by the ``\sum_j`` above.  The weights ``W_{jki}`` and
+the times ``t_h``, ``t'_i``, and ``τ_{ji}`` are fixed arrays of
+numbers, and all of their indices are labels of the same kind.
 
-The parameters ``θ^p`` are
+### The four stages
+
+The transformed waveform at pixel ``j`` is computed from the modes of
+the original waveform in three stages, and a fourth compares the
+result with ``c``.  We name the stages ``σ``, ``ι``, ``μ``, and ``ν``
+— for synthesis, interpolation, mixing, and norm — and we use the same
+letter, with indices, for the output of each stage.  (On this page,
+``σ`` never denotes the shear.)  The first three answer, in turn,
+*where*, *when*, and *in which basis* the original waveform is to be
+evaluated.
+
+The input is the array ``d^{kh}{}_{ℓm}``: mode ``(ℓ,m)`` of component
+``k`` of the original waveform at the input time ``t_h``.
+
+**Synthesis, ``σ``.**  Because of the boost and the rotation, a
+direction in the new frame corresponds to a different direction in the
+original frame.  The first stage evaluates the original waveform in
+that direction, at each of its own time samples:
 
 ```math
-θ = \left(\vec{r},\ \vec{η},\ a_1, …, a_{(ℓ_α+1)^2}\right),
+σ^{kh}_{j} = d^{kh}{}_{ℓm}\ {}_{s_k}Y^{ℓm}_{j}.
 ```
 
-made of a rotation vector ``\vec{r}``, a rapidity vector ``\vec{η}``,
-and the real degrees of freedom ``a`` of the supertranslation's modes
-up to ``ℓ_α``.  [`bms_from_parameters`](@ref) maps ``θ`` to the boost
-velocity, the frame rotation, and the supertranslation:
+Here ``{}_{s}Y^{ℓm}_{j}`` stands for the spin-weighted spherical
+harmonic evaluated at the rotor of pixel ``j`` in the original frame,
+which [`aberration`](@ref) computes, and the sum runs over the modes
+with ``ℓ ≥ |s_k|``.  The harmonics are functions of the rotor, and not
+only of the direction, so this stage also accounts for the rotation of
+the dyad.
+
+We usually think of such a sum as a linear map applied to the modes,
+with the harmonics as its coefficients.  Here the roles are reversed.
+The modes are fixed data, and the harmonics are what depends on ``θ``.
+So we regard ``σ`` as a linear map applied to the *harmonics*, with
+the *data* as its coefficients, and the indices are placed
+accordingly.
+
+**Interpolation, ``ι``.**  At pixel ``j``, the output time ``t'_i``
+corresponds to the original time
 
 ```math
-v⃗ = \tanh|\vec{η}|\, \frac{\vec{η}}{|\vec{η}|},
-\qquad
-R = \exp(\vec{r}/2),
-\qquad
-α_{(ℓ,m)} \text{ from the } a,
+τ_{ji} = κ_j^{-1}\, t'_i + α_j,
 ```
 
-where the docstring of `bms_from_parameters` gives the layout of the
-``a``.
+where ``κ_j`` is the conformal factor and ``α_j`` is the
+supertranslation, both evaluated at that pixel.  This is the law
+``t' = κ(t - α)`` solved for ``t``, with any sign convention for ``α``
+already applied.  The second stage interpolates each component to
+those times, with the natural cubic spline through its samples:
 
-### The geometry of each pixel
+```math
+ι^{ki}_{j} = S_{j}{}^{i}{}_{h}\ σ^{kh}_{j}.
+```
 
-For each pixel ``j``, the transformation determines
+The value of a spline at any time is a linear combination of the
+samples it passes through, and ``S_{j}{}^{i}{}_{h}`` is the
+coefficient of the sample at ``t_h`` in the value at ``τ_{ji}``.
+These coefficients are real.  They depend on the times, but not on
+the samples.
 
-- the rotor ``R_j`` of the corresponding direction in the original
-  frame;
-- the conformal factor ``κ_j``;
-- the supertranslation and its derivatives there, ``α_j``, ``ðα_j``,
-  and ``ð^2α_j``;
-- the null-rotation parameter ``b = ðt'/2κ``, which is affine in the
-  original time ``t``:
+**Mixing, ``μ``.**  The components are defined relative to a tetrad,
+and the tetrad of the new frame differs from the original one by a
+rescaling and a null rotation.  So each new component is a combination
+of the original ones, and the shear and the strain are also shifted by
+a multiple of ``ð^2α``:
+
+```math
+μ^{ki}_{j} = M_{j}{}^{k}{}_{k'}(τ_{ji})\ ι^{k'i}_{j} + q^{k}_{j}.
+```
+
+These are the transformation laws of the page [BMS Action on
+Fields](@ref "BMS Action on Fields"), which [`mix_components!`](@ref)
+applies.  For example, if the components are the strain, ``ψ_3``, and
+``ψ_4`` at ``ℐ^+``, in that order and in the default conventions, then
+
+```math
+\begin{aligned}
+μ^{1i}_{j} &= κ_j^{-1} \left( ι^{1i}_{j} - \bar{ð}^2 α_j \right), \\
+μ^{2i}_{j} &= κ_j^{-3} \left( ι^{2i}_{j} + b_j(τ_{ji})\, ι^{3i}_{j} \right), \\
+μ^{3i}_{j} &= κ_j^{-3}\, ι^{3i}_{j},
+\end{aligned}
+```
+
+from which ``M_{j}{}^{k}{}_{k'}`` and ``q^{k}_{j}`` can be read off.
+The null-rotation parameter ``b = ðt'/2κ`` is linear in the original
+time,
+
+```math
+b_j(τ) = b^{(0)}_{j} + b^{(1)}_{j}\, τ,
+```
+
+which is why ``M_{j}{}^{k}{}_{k'}`` depends on ``τ_{ji}``; see
+[Computing ``ðt'/2κ``](@ref computing_eth_tprime_over_2kappa).
+
+**Norm, ``ν``.**  The last stage compares the result with ``c`` and
+reduces everything at the pixel to one real number:
+
+```math
+ν_j = \sum_{i,k} W_{jki} \left| μ^{ki}_{j} - c^{ki}_{j} \right|^2.
+```
+
+Each stage acts on one kind of index and passes the others along
+untouched, and the pixel index passes through all four:
+
+| Stage | Output | Acts on | Passes along |
+| :--- | :--- | :--- | :--- |
+| synthesis | ``σ^{kh}_{j} = d^{kh}{}_{ℓm}\ {}_{s_k}Y^{ℓm}_{j}`` | the modes ``ℓm`` | ``k``, ``h``, ``j`` |
+| interpolation | ``ι^{ki}_{j} = S_{j}{}^{i}{}_{h}\ σ^{kh}_{j}`` | the times, ``h → i`` | ``k``, ``j`` |
+| mixing | ``{μ^{ki}_{j} = M_{j}{}^{k}{}_{k'}(τ_{ji})\ ι^{k'i}_{j} + q^{k}_{j}}`` | the components, ``k' → k`` | ``i``, ``j`` |
+| norm | ``{ν_j = \sum_{i,k} W_{jki} \lvert μ^{ki}_{j} - c^{ki}_{j} \rvert^2}`` | the times ``i`` and the components ``k`` | ``j`` |
+
+Only the final sum, ``Φ = 𝒩^{-1} \sum_j ν_j``, acts on the pixels.
+
+### Where the parameters enter
+
+The data, the times, the weights, and ``c`` do not depend on ``θ``.
+The parameters enter only through the *geometry* of each pixel, which
+consists of two sets of numbers:
+
+- the harmonics ``{}_{s}Y^{ℓm}_{j}``, for each spin weight ``s`` among
+  the components, which enter ``σ``; and
+- eight real numbers,
 
   ```math
-  b_j(t) = b^{(0)}_j + t\, b^{(1)}_j
+  \left(g^1_j, …, g^8_j\right)
+  = \left( κ_j^{-1},\ α_j,\
+    \operatorname{Re} b^{(0)}_{j},\ \operatorname{Im} b^{(0)}_{j},\
+    \operatorname{Re} b^{(1)}_{j},\ \operatorname{Im} b^{(1)}_{j},\
+    \operatorname{Re} ð^2α_j,\ \operatorname{Im} ð^2α_j \right),
   ```
 
-  (see [Computing ``ðt'/2κ``](@ref computing_eth_tprime_over_2kappa);
-  ``ðα_j`` enters through ``b^{(0)}_j``).  The time is written ``t``,
-  rather than as a retarded or an advanced time, because the same
-  formulas serve on ``ℐ^+`` and on ``ℐ^-``.
+  which enter ``ι`` through the times ``τ_{ji}``, and ``μ`` through
+  ``M_{j}{}^{k}{}_{k'}`` and ``q^{k}_{j}``.
 
-From these, the geometry map ``Γ_j`` makes the two sets of numbers that
-everything after it uses.  The first is the harmonics at the original
-direction, for each spin weight ``s`` among the components:
+So, for each pixel,
 
 ```math
-{}_{s}Y^{(ℓ,m)}_{j} = {}_{s}Y^{(ℓ,m)}(R_j).
+ν_j = ν\Bigl(μ\bigl(ι\left(σ(Y_j),\, g_j\right),\, g_j\bigr)\Bigr),
 ```
 
-The second is eight real numbers:
+with ``Y_j`` and ``g_j`` functions of ``θ``.
+
+### Where the work is
+
+A waveform has hundreds of modes and thousands of time samples, or
+more of each.  The synthesis is a sum over every mode, for every time
+sample of every component, which is ``N_\mathrm{comp}\, N_t\,
+N_\mathrm{modes}`` multiplications for each pixel.  For all but the
+smallest band limits, that is much more work than everything else
+together.  The other stages never touch the modes: the interpolation
+costs a few operations for each input and output time, and the mixing
+and the norm cost a few for each output time.  The geometry never
+touches the times: it costs a few operations for each mode.  So the
+picture to keep in mind is of one expensive sum, ``σ``, with cheap
+computations on either side of it.
+
+## The chain rule, multiplied in two orders
+
+Everything on this page follows from the chain rule, together with
+one observation about the order in which its factors are multiplied.
+Suppose that a real number ``ν`` is computed from parameters ``θ^p``
+in stages: first some quantities ``a^A`` are computed from the
+``θ^p``, then some other quantities ``b^B`` from the ``a^A``, and
+then ``ν`` from the ``b^B``.  The chain rule says that
 
 ```math
-\left(g^1_j, …, g^8_j\right)
-= \left( κ_j^{-1},\ α_j,\
-  \operatorname{Re} b^{(0)}_j,\ \operatorname{Im} b^{(0)}_j,\
-  \operatorname{Re} b^{(1)}_j,\ \operatorname{Im} b^{(1)}_j,\
-  \operatorname{Re} ð^2α_j,\ \operatorname{Im} ð^2α_j \right).
+\frac{∂ν}{∂θ^p}
+= \frac{∂ν}{∂b^B}\, \frac{∂b^B}{∂a^A}\, \frac{∂a^A}{∂θ^p}.
 ```
 
-At pixel ``j``, the output time ``t'_i`` corresponds to the original
-time
+The right-hand side is a product of three arrays — the Jacobians of
+the three stages — with sums over ``A`` and ``B``.  The product may be
+multiplied out starting from either end.  The answer is the same, but
+the work is not, and the two choices are the two "modes" of automatic
+differentiation.
+
+**Forward mode** starts at the right, with the parameters.  It
+computes ``∂a^A/∂θ^p`` along with ``a^A``, then
 
 ```math
-τ_{ji} = κ_j^{-1}\, t'_i + α_j.
+\frac{∂b^B}{∂θ^p} = \frac{∂b^B}{∂a^A}\, \frac{∂a^A}{∂θ^p}
 ```
 
-### The four steps
+along with ``b^B``, and so on to the end.  At every stage it holds the
+derivatives of the current quantities with respect to all ``P``
+parameters.  In geometric terms, it pushes the ``P`` coordinate
+vectors ``∂/∂θ^p`` forward through each map.  This is what dual
+numbers do: every number is stored together with its ``P``
+derivatives, and every arithmetic operation updates both.  Nothing has
+to be remembered from one stage to the next, but all the work of every
+stage is done ``P + 1`` times.
 
-The objective is a sum over pixels, ``Φ = 𝒩^{-1} \sum_j Φ_j``, and each
-``Φ_j`` is computed from the input by four functions in turn.  The
-input is the modes ``{}^{k}d^{h}{}_{(ℓ,m)}`` of component ``k`` at
-input time ``t_h``.
-
-**The synthesis ``σ``** gives the value of component ``k`` in the
-original direction ``R_j`` at each input time:
+**Reverse mode** starts at the left, with the result.  It computes the
+covector ``∂ν/∂b^B``, then
 
 ```math
-{}^{k}x^{h}_{j} = {}^{k}d^{h}{}_{(ℓ,m)}\ {}_{s_k}Y^{(ℓ,m)}_{j}.
+\frac{∂ν}{∂a^A} = \frac{∂ν}{∂b^B}\, \frac{∂b^B}{∂a^A},
 ```
 
-It is linear in the harmonics, and its Jacobian is made of the modes:
-``\left(J_σ\right)^{kh}{}_{(ℓ,m)} = {}^{k}d^{h}{}_{(ℓ,m)}``, acting on the
-harmonics of spin weight ``s_k``.  It costs
-``N_t\, N_\mathrm{comp}\, N_\mathrm{modes}`` complex multiply-adds per
-pixel, which dominates everything else except at the smallest band
-limits.
+and so on back to the beginning.  At every stage it holds the
+derivatives of the *one* number ``ν`` with respect to the current
+quantities.  In geometric terms, it pulls the gradient ``dν`` back
+through each map.  There is one covector, however many parameters
+there are, so the work of every stage is done roughly twice: once to
+evaluate it, and once to pull the covector back through it.  The
+price is paid in bookkeeping.  The Jacobians are needed in the
+opposite order from the one in which the evaluation produces them, so
+the whole evaluation must be finished, and enough of it remembered,
+before the backward pass can start.  A general-purpose tool has to
+record every operation as it goes.
 
-**The interpolation ``ι``** evaluates the natural cubic spline through
-those samples at the times ``τ_{ji}``:
+| | Forward mode | Reverse mode |
+| :--- | :--- | :--- |
+| Starts from | the parameters | the result |
+| Holds, at each stage | ``P`` vectors: the derivatives of the current quantities with respect to each ``θ^p`` | one covector: the derivatives of ``ν`` with respect to the current quantities |
+| Work | ``P + 1`` evaluations | a few evaluations, whatever ``P`` is |
+| Must remember | nothing | the evaluation |
+
+Forward mode suits a computation with few inputs, then, and reverse
+mode suits one with few outputs.  But nothing forces us to use one
+mode throughout.  The product can be cut at any intermediate quantity,
+say ``a^A``: we push the ``P`` vectors forward as far as
+``∂a^A/∂θ^p``, pull the covector back as far as ``∂ν/∂a^A``, and
+contract the two there.
+
+!!! note "Other names for these things"
+
+    In the literature on automatic differentiation, ``∂a^A/∂θ^p`` is
+    called a *tangent*, and the step that advances it is called a
+    *pushforward* or a *Jacobian–vector product*.  The covector
+    ``∂ν/∂a^A`` is called a *cotangent* or an *adjoint*, and the step
+    that takes it back is called a *pullback* or a *vector–Jacobian
+    product*.
+
+## Derivatives with respect to complex quantities
+
+One wrinkle remains.  The parameters are real, and so is each
+``ν_j``, but most of the quantities between them are complex.  We handle a complex
+quantity ``z`` as we would a complex scalar field in a Lagrangian, by
+treating ``z`` and ``\bar{z}`` as independent variables, with
 
 ```math
-{}^{k}y^{i}_{j} = \left(S_j\right)^{i}{}_{h}\ {}^{k}x^{h}_{j}.
+\frac{∂}{∂z}
+= \frac{1}{2} \left( \frac{∂}{∂(\operatorname{Re} z)}
+  - \mathrm{i}\, \frac{∂}{∂(\operatorname{Im} z)} \right),
+\qquad
+\frac{∂}{∂\bar{z}}
+= \frac{1}{2} \left( \frac{∂}{∂(\operatorname{Re} z)}
+  + \mathrm{i}\, \frac{∂}{∂(\operatorname{Im} z)} \right).
 ```
 
-The coefficients ``\left(S_j\right)^{i}{}_{h}`` are real.  They depend
-on the input times and on ``τ_{ji}``, and so on ``g_j``, but not on the
-data.  With respect to ``x``, they are the Jacobian ``J_ι``.
+Three facts are all that we need, in which ``ν`` stands for any real
+quantity.
 
-**The mixing ``μ``** applies the transformation laws, which mix the
-components:
+1. Because ``ν`` is real, ``∂ν/∂\bar{z}`` is the conjugate of
+   ``∂ν/∂z``.  So the one complex number ``∂ν/∂z`` holds everything
+   about how ``ν`` responds to ``z``, and for complex quantities
+   ``z^a``
+
+   ```math
+   dν = \frac{∂ν}{∂z^a}\, dz^a + \frac{∂ν}{∂\bar{z}^a}\, d\bar{z}^a
+      = 2 \operatorname{Re} \left[ \frac{∂ν}{∂z^a}\, dz^a \right].
+   ```
+
+2. If quantities ``ζ^b`` are *holomorphic* functions of the ``z^a`` —
+   depending on the ``z^a``, but not on their conjugates — then the
+   chain rule has its ordinary form, with no conjugates anywhere:
+
+   ```math
+   \frac{∂ν}{∂z^a} = \frac{∂ν}{∂ζ^b}\, \frac{∂ζ^b}{∂z^a}.
+   ```
+
+   The stages ``σ``, ``ι``, and ``μ`` are of this kind.
+
+3. If the ``z^a`` depend on a *real* quantity ``x``, then by the first
+   fact
+
+   ```math
+   \frac{∂ν}{∂x}
+   = 2 \operatorname{Re} \left[ \frac{∂ν}{∂z^a}\, \frac{∂z^a}{∂x} \right].
+   ```
+
+   This is how the real parameters will meet the complex harmonics.
+
+A conjugate appears only where a function is not holomorphic, and
+here the only such function is the last one, ``ν``.
+
+!!! details "The same thing in ChainRules"
+
+    Julia's
+    [ChainRules](https://juliadiff.org/ChainRulesCore.jl/stable/maths/complex.html)
+    represents the same information by the conjugate of twice our
+    derivative, ``∂ν/∂(\operatorname{Re} z) + \mathrm{i}\,
+    ∂ν/∂(\operatorname{Im} z)``.  With that choice, the backward step
+    through multiplication by a complex number ``A`` is multiplication
+    by ``\bar{A}``.  With ours it is multiplication by ``A`` itself,
+    so that every backward step below uses the same array as its
+    forward step, with no conjugation.
+
+## Forward through the geometry, backward through the data
+
+For each pixel, the chain from the parameters to ``ν_j`` is
 
 ```math
-{}^{k}d'^{i}_{j}
-= M^{k}{}_{k'}\!\left(g_j, τ_{ji}\right)\, {}^{k'}y^{i}_{j}
-+ q^{k}\!\left(g_j\right).
+θ^p
+\ \longmapsto\ \left( {}_{s}Y^{ℓm}_{j},\ g^n_j \right)
+\ \longmapsto\ σ^{kh}_{j}
+\ \longmapsto\ ι^{ki}_{j}
+\ \longmapsto\ μ^{ki}_{j}
+\ \longmapsto\ ν_j,
 ```
 
-The coefficients ``M^{k}{}_{k'}`` hold the conformal factors and the
-mixing by the null rotation, so they depend on ``κ_j^{-1}`` and on
-``b_j(τ_{ji})``.  On ``ℐ^+``, for example, the transformed ``ψ_3`` is
-``κ^{-3}`` times ``ψ_3`` plus a multiple of ``ψ_4`` proportional to the
-null-rotation parameter.  The offsets ``q^{k}`` are nonzero only for
-the shear and the strain, and are proportional to ``κ_j^{-1}`` and to
-``ð^2α_j`` or its conjugate.  [`mix_components!`](@ref) applies both,
-and [`mixing_matrix!`](@ref Scri.mixing_matrix!) extracts
-``M^{k}{}_{k'}`` from it.  Each output time is mixed separately, so the
-Jacobian with respect to ``y`` is
-``\left(J_μ\right)^{ki}{}_{k'i'} = M^{k}{}_{k'}\!\left(g_j, τ_{ji}\right) δ^{i}{}_{i'}``.
+where the ``g^n_j`` skip the synthesis and enter ``ι`` and ``μ``
+directly.  We have to decide where to cut it.
 
-**The norm ``ν``** compares the result with ``c``:
+Forward mode all the way is what `ForwardDiff.gradient` does when it
+is applied to [`transform_objective`](@ref).  Each harmonic then has
+``P`` derivatives attached to it, and the synthesis has to be done for
+the values and again for each derivative: ``P + 1`` syntheses for each
+pixel.
+
+Reverse mode all the way would need only two sums of that size for
+each pixel: the synthesis, and one more to pull the covector back
+through it.  But it would also need the backward pass of the geometry:
+of the products of rotors, the recursion for the harmonics, the
+supertranslation and its derivatives, and the null-rotation parameter.
+Written by hand, that would be long and delicate, and it would have to
+be rewritten whenever the code for the geometry changed.
+
+Fortunately, it hardly matters how the geometry is differentiated.
+Nothing in it involves the time samples: the geometry of a pixel is
+computed once, however long the waveform is, and so are its
+derivatives.  Forward mode costs ``P`` times very little, where
+reverse mode would cost a few times very little, and dual numbers do
+it with no effort on our part.  What does matter is the direction in
+which we pass through the synthesis: one covector must go back through
+it, rather than ``P`` vectors forward.  So we cut the chain at the
+geometry.  The gradient of one pixel's ``ν_j`` is then
 
 ```math
-Φ_j = w_j \sum_i v_i \sum_k u_k
-      \left| {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right|^2.
+\frac{∂ν_j}{∂θ^p}
+= 2 \operatorname{Re} \left[ \sum_s
+    \frac{∂ν_j}{∂\,{}_{s}Y^{ℓm}_{j}}\,
+    \frac{∂\,{}_{s}Y^{ℓm}_{j}}{∂θ^p} \right]
++ \frac{∂ν_j}{∂g^n_j}\, \frac{∂g^n_j}{∂θ^p},
 ```
 
-The weights ``w_j\, v_i\, u_k`` are the components of the metric that
-defines this norm, and it is the only metric that the derivation of the
-full objective needs.
+where the sum over ``s`` runs over the spin weights among the
+components.  In each product, the first factor is a covector that has
+been pulled back from ``ν_j``, and the second is one of the ``P``
+vectors that have been pushed forward from the parameters.  So there
+are three things to compute:
 
-Altogether, ``Φ_j = ν\left(μ_{g_j}\left(ι_{g_j}\left(σ\left(Y_j\right)\right)\right)\right)``,
-where the subscripts mark the dependence of ``ι`` and ``μ`` on the
-eight numbers.
+1. ``∂\,{}_{s}Y^{ℓm}_{j}/∂θ^p`` and ``∂g^n_j/∂θ^p``, by forward mode
+   through the geometry, with dual numbers;
+2. ``∂ν_j/∂\,{}_{s}Y^{ℓm}_{j}``, by a backward pass through ``ν``,
+   ``μ``, ``ι``, and ``σ``, written by hand; and
+3. ``∂ν_j/∂g^n_j``, which is only eight numbers, by a combination of
+   the two.
 
-## The structure of the computation
+For example, take ``ℓ_\mathrm{max} = 16``, so that there are 289
+modes, with 4000 time samples, two components, and a supertranslation
+up to ``ℓ_α = 4``, so that ``P = 31``.  One synthesis is then about
+2.3 million multiplications for each pixel.  Forward mode all the way
+does 32 of them.  The cut chain does two, plus work that involves no
+sum of that size.
 
-In each pixel, the expensive work is the synthesis, the step that sums
-over every mode at every input time.  The parameters enter only
-through the geometry, ``{}_{s}Y^{(ℓ,m)}_{j}`` and ``g^{n}_{j}``, which
-is relatively cheap.  So the chain ``ν ∘ μ ∘ ι ∘ σ`` is differentiated
-in reverse, pulling a cotangent back through the transpose of each
-Jacobian, which costs one more pass of the same size.  The geometry is
-differentiated forward, with ForwardDiff's dual numbers carrying
-tangents through the Jacobian of ``Γ_j``.  The diagram shows the flow
-for one pixel and omits its label ``j``.
+The backward pass is easy to write by hand because the stages are so
+simple.  The stages ``σ`` and ``ι`` are linear in what flows through
+them, and ``μ`` is linear up to an offset.  So their Jacobians are
+just the arrays that the stages themselves apply:
+
+```math
+\frac{∂σ^{kh}_{j}}{∂\,{}_{s_k}Y^{ℓm}_{j}} = d^{kh}{}_{ℓm},
+\qquad
+\frac{∂ι^{ki}_{j}}{∂σ^{k'h}_{j}} = δ^{k}{}_{k'}\, S_{j}{}^{i}{}_{h},
+\qquad
+\frac{∂μ^{ki}_{j}}{∂ι^{k'i'}_{j}}
+= M_{j}{}^{k}{}_{k'}(τ_{ji})\, δ^{i}{}_{i'}.
+```
+
+None of these depends on the values that flow through the stages;
+they depend only on the data and on the ``g^n_j``.  So, unlike a
+general computation in reverse mode, ours has nothing to record on the
+way forward except its final result, the residual
+``μ^{ki}_{j} - c^{ki}_{j}``.
+
+## The backward pass
+
+Each step takes the derivatives of ``ν_j`` with respect to the output
+of a stage, and returns its derivatives with respect to the input of
+that stage.
+
+**Through ``ν``.**  Writing ``|z|^2 = z \bar{z}`` and differentiating
+with ``\bar{z}`` held fixed,
+
+```math
+\frac{∂ν_j}{∂μ^{ki}_{j}}
+= W_{jki} \left( \bar{μ}^{ki}_{j} - \bar{c}^{ki}_{j} \right),
+```
+
+with no sum, because the indices of the weights are labels.  This is
+the only conjugate in the backward pass.  The weights act as a metric:
+they turn the conjugated residual, which is a vector, into a covector.
+
+**Through ``μ``.**
+
+```math
+\frac{∂ν_j}{∂ι^{ki}_{j}}
+= \frac{∂ν_j}{∂μ^{k'i}_{j}}\, M_{j}{}^{k'}{}_{k}(τ_{ji}).
+```
+
+The mixing acts on the component index and passes the time index
+along, and so does this step: for each output time, the same
+coefficients are summed over their other index.  The offset
+``q^{k}_{j}`` does not depend on ``ι``, so it drops out here.  Its
+dependence on the geometry is not lost; it enters through
+``∂ν_j/∂g^n_j``, below.
+
+**Through ``ι``.**
+
+```math
+\frac{∂ν_j}{∂σ^{kh}_{j}}
+= \frac{∂ν_j}{∂ι^{ki}_{j}}\, S_{j}{}^{i}{}_{h}.
+```
+
+The interpolation acts on the time index and passes the component
+index along.  The array ``S_{j}{}^{i}{}_{h}`` is never formed.  It
+would be full, since every sample influences the spline everywhere,
+but the interpolation applies it in a number of operations
+proportional to ``N_t + N_{t'}``, by solving a tridiagonal system and
+then evaluating a cubic on each interval.  The sum over ``i`` here is
+done by the same operations in the opposite order, at the same cost;
+[`spline_transpose!`](@ref Scri.spline_transpose!) does it.
+
+!!! details "How the spline is run backward"
+
+    Consider one component, and drop its index ``k``.  Suppose that
+    ``t_{h_0} ≤ τ_{ji} < t_{h_0+1}``.  The value of the spline at
+    ``τ_{ji}`` is a combination of the two samples ``σ^{h_0}_{j}`` and
+    ``σ^{h_0+1}_{j}``, and of the second derivatives
+    ``\ddot{σ}^{h_0}_{j}`` and ``\ddot{σ}^{h_0+1}_{j}`` of the spline
+    at those two times:
+
+    ```math
+    ι^{i}_{j} = E_{j}{}^{i}{}_{h}\ σ^{h}_{j}
+              + F_{j}{}^{i}{}_{h}\ \ddot{σ}^{h}_{j},
+    ```
+
+    where ``E_{j}{}^{i}{}_{h}`` and ``F_{j}{}^{i}{}_{h}`` are nonzero
+    only for ``h = h_0`` and ``h = h_0 + 1``.  The second derivatives
+    vanish at the first and last times, which is what makes the spline
+    "natural", and at the times between they solve a tridiagonal
+    system,
+
+    ```math
+    Q^{h}{}_{h'}\, \ddot{σ}^{h'}_{j} = B^{h}{}_{h'}\, σ^{h'}_{j},
+    ```
+
+    where ``B^{h}{}_{h'}`` takes second differences of the samples.
+    Neither ``Q`` nor ``B`` depends on the pixel.  So
+
+    ```math
+    S_{j}{}^{i}{}_{h}
+    = E_{j}{}^{i}{}_{h}
+    + F_{j}{}^{i}{}_{h'} \left(Q^{-1}\right)^{h'}{}_{h''} B^{h''}{}_{h},
+    ```
+
+    and the backward step is
+
+    ```math
+    \frac{∂ν_j}{∂σ^{h}_{j}}
+    = \frac{∂ν_j}{∂ι^{i}_{j}}\, E_{j}{}^{i}{}_{h}
+    + ζ_{jh''}\, B^{h''}{}_{h},
+    \qquad \text{where} \qquad
+    ζ_{jh''}\, Q^{h''}{}_{h'}
+    = \frac{∂ν_j}{∂ι^{i}_{j}}\, F_{j}{}^{i}{}_{h'}.
+    ```
+
+    In words: each ``∂ν_j/∂ι^{i}_{j}`` is spread onto the two samples
+    and the two second derivatives on either side of ``τ_{ji}``; the
+    part on the second derivatives goes through a tridiagonal solve;
+    and the result is spread onto the samples by the second
+    differences.  The matrix of the coefficients ``Q^{h}{}_{h'}`` is
+    symmetric.  So the system for ``ζ``, in which ``Q`` is contracted
+    on its other index, has the same matrix as the forward solve, and
+    reuses its factors.
+
+    [`spline_transpose!`](@ref Scri.spline_transpose!) takes ``E`` and
+    ``F`` from the same evaluation function as the forward
+    interpolation, and chooses the interval of each ``τ_{ji}`` in the
+    same way, including for a ``τ_{ji}`` that lands on a sample or, by
+    roundoff, a hair outside the first or last one.  So the two agree
+    to roundoff.
+
+**Through ``σ``.**
+
+```math
+\frac{∂ν_j}{∂\,{}_{s}Y^{ℓm}_{j}}
+= \sum_{k:\, s_k = s} \frac{∂ν_j}{∂σ^{kh}_{j}}\, d^{kh}{}_{ℓm}.
+```
+
+The sum over ``k`` collects the components that share the spin weight
+``s``, and so share their harmonics.  The synthesis summed the data
+over the modes, for each time and component; this step sums the same
+data over the times and components, for each mode.  It is the same
+number of multiplications, ``N_\mathrm{comp}\, N_t\,
+N_\mathrm{modes}``, and it is the second of the two expensive
+operations, and the last.
+
+## The forward passes
+
+**The geometry, with ``P`` derivatives.**  Each parameter is made into
+a dual number that holds the value ``θ^p`` and the derivatives
+``∂θ^p/∂θ^q = δ^p{}_q``.  The same functions that compute the geometry
+for the objective then return it together with its derivatives:
+[`bms_from_parameters`](@ref); [`aberration`](@ref), for each pixel's
+rotor in the original frame; [`supertranslation_on_grid`](@ref
+Scri.supertranslation_on_grid); [`compute_ðt′╱2κ`](@ref
+Scri.compute_ðt′╱2κ); the conformal factor; and the calculator for the
+harmonics, from SphericalFunctions.  This gives
+``∂\,{}_{s}Y^{ℓm}_{j}/∂θ^p`` and ``∂g^n_j/∂θ^p``.
+
+!!! details "Eight parameters at a time"
+
+    A dual number that held all ``P`` derivatives would have a
+    different type for each ``P``, and the code would have to be
+    compiled again for every new number of parameters.  So the dual
+    numbers hold eight derivatives, and the geometry is computed once
+    for each group of eight parameters, with any places to spare in
+    the last group left at zero.  The derivatives that come out are
+    the same.  The extra work is that the values of the geometry are
+    computed again for each group, which costs about as much as a few
+    more derivatives.
+
+Note that a quantity may depend on the parameters in more than one
+way.  For example, ``ð^2α_j`` changes with the modes of the
+supertranslation, and also with the direction at which it is
+evaluated, which moves with the boost and the rotation.  Dual numbers
+account for every such path without our having to list them, which is
+exactly why we use them here.
+
+**The eight numbers.**  We still need ``∂ν_j/∂g^n_j``.  By the third
+fact about complex quantities,
+
+```math
+\frac{∂ν_j}{∂g^n_j}
+= 2 \operatorname{Re} \left[ \frac{∂ν_j}{∂μ^{ki}_{j}}\,
+  \left. \frac{∂μ^{ki}_{j}}{∂g^n_j} \right|_{σ} \right],
+```
+
+where the derivative of ``μ`` is taken through both ``ι`` and ``μ``,
+with the synthesized values ``σ^{kh}_{j}`` held fixed.  The eight
+numbers enter in three ways: ``κ_j^{-1}`` and ``α_j`` move the times
+``τ_{ji}`` at which the spline is evaluated; ``κ_j^{-1}``,
+``b^{(0)}_{j}``, and ``b^{(1)}_{j}`` set the coefficients
+``M_{j}{}^{k}{}_{k'}``, which also depend on ``τ_{ji}``; and
+``κ_j^{-1}`` and ``ð^2α_j`` set the offsets ``q^{k}_{j}``.  We could
+differentiate each of these by hand.  But there are only eight
+directions, so forward mode is cheap here too: ``ι`` and ``μ`` are
+evaluated with dual numbers that hold derivatives with respect to the
+eight ``g^n_j``, which gives ``μ^{ki}_{j}`` and
+``∂μ^{ki}_{j}/∂g^n_j`` together.  This costs several times as much as
+``ι`` and ``μ`` themselves, but it involves no sum over modes, and it
+is the same whatever the number of parameters.
+
+## Assembling the gradient
+
+Summing over the pixels,
+
+```math
+\frac{∂Φ}{∂θ^p}
+= \frac{1}{𝒩} \sum_j \frac{∂ν_j}{∂θ^p}
+= \frac{1}{𝒩} \sum_j \left\{
+    2 \operatorname{Re} \left[ \sum_s
+      \frac{∂ν_j}{∂\,{}_{s}Y^{ℓm}_{j}}\,
+      \frac{∂\,{}_{s}Y^{ℓm}_{j}}{∂θ^p} \right]
+  + \frac{∂ν_j}{∂g^n_j}\, \frac{∂g^n_j}{∂θ^p}
+\right\}.
+```
+
+Each pixel's term is complete in itself: its ``ν_j`` is evaluated, the
+covector is pulled back to its harmonics, and the contraction with its
+``P`` vectors is done, all without reference to any other pixel.  So
+nothing has to be stored for the whole grid at once, and the pixels
+can be shared among threads.
+
+The diagram shows the whole computation for one pixel.  The
+evaluation runs from left to right along the top, and the backward
+pass returns from right to left below it.  The derivatives of the
+geometry with respect to the parameters come down the left side, and
+meet the covectors at the bottom.
 
 ```@raw html
 <div class="gradient-flow-diagram" style="text-align: center; margin: 1.5em 0;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1070 790" width="100%" style="max-width: 900px;" role="img"
-     aria-label="The flow of the objective and its gradient through each direction of the grid">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1106 684" width="100%" style="max-width: 1000px;" role="img"
+     aria-label="The flow of the objective and its gradient for one pixel">
   <style>
     .grad-flow text { fill: currentColor; text-anchor: middle; font-size: 17px; white-space: pre; }
     .grad-flow text.cap { font-size: 14.5px; }
@@ -441,11 +731,12 @@ for one pixel and omits its label ``j``.
     .grad-flow .mu { font-family: KaTeX_Main, "Times New Roman", serif; }
     .grad-flow .pr { font-family: "Times New Roman", "Liberation Serif", serif; }
     .grad-flow .box { stroke: currentColor; stroke-width: 1.2; fill: none; }
-    .grad-flow .geom { fill: rgba(56, 132, 255, 0.17); }
+    .grad-flow .fwd { fill: rgba(56, 132, 255, 0.17); }
     .grad-flow .rev { fill: rgba(255, 140, 0, 0.22); }
     .grad-flow .plain { fill: rgba(128, 128, 128, 0.10); }
     .grad-flow .heavy { stroke-width: 3; }
     .grad-flow .edge { stroke: currentColor; stroke-width: 1.3; fill: none; marker-end: url(#grad-flow-arrow); }
+    .grad-flow .edge.bare { marker-end: none; }
   </style>
   <defs>
     <marker id="grad-flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
@@ -454,328 +745,278 @@ for one pixel and omits its label ``j``.
     </marker>
   </defs>
   <g class="grad-flow">
-    <path class="edge " d="M 52,54 L 70,54"/>
-  <path class="edge " d="M 166,54 L 195,54"/>
-  <path class="edge " d="M 222,96 L 222,139"/>
-  <path class="edge " d="M 567,96 L 567,139"/>
-  <path class="edge " d="M 222,197 L 222,273"/>
-  <path class="edge " d="M 527,197 L 476,273"/>
-  <path class="edge " d="M 607,197 L 658,273"/>
-  <path class="edge " d="M 94,318 L 117,318"/>
-  <path class="edge " d="M 327,318 L 347,318"/>
-  <path class="edge " d="M 557,318 L 577,318"/>
-  <path class="edge " d="M 787,318 L 805,318"/>
-  <path class="edge " d="M 1019,318 L 1046,318"/>
-  <text x="1052" y="323" class="lab" style="text-anchor: start"><tspan
-      class="mi">Φ</tspan></text>
-  <path class="edge " d="M 912,363 L 912,431"/>
-  <text x="921" y="402.0" class="lab" style="text-anchor: start"><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="pr" dy="-7" dx="1.5" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="7"> − </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">c</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan></text>
-  <path class="edge rev" d="M 805,476 L 787,476"/>
-  <path class="edge rev" d="M 577,476 L 557,476"/>
-  <path class="edge rev" d="M 347,476 L 327,476"/>
-  <path class="edge " d="M 892,521 L 862,562"/>
-  <path class="edge " d="M 222,521 L 222,673"/>
-  <path class="edge " d="M 800,638 L 800,673"/>
+    <path class="edge" d="M 95,8 L 95,50"/>
+  <text x="104" y="26" class="lab" style="text-anchor: start"><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
+  <path class="edge" d="M 180,104 L 232,104"/>
+  <text x="205.0" y="93" class="lab" style="text-anchor: middle"><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan></text>
+  <path class="edge" d="M 155,50 L 155,22 L 761,22 L 761,62"/>
+  <text x="185" y="14" class="lab" style="text-anchor: start"><tspan
+      class="mi">g</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan></text>
+  <path class="edge" d="M 553,22 L 553,62"/>
+  <path class="edge" d="M 450,104 L 466,104"/>
+  <path class="edge" d="M 640,104 L 656,104"/>
+  <path class="edge" d="M 866,104 L 882,104"/>
+  <path class="edge" d="M 341,188 L 341,146"/>
+  <path class="edge" d="M 341,238 L 341,280"/>
+  <path class="edge" d="M 989,146 L 989,280"/>
+  <text x="979" y="218" class="lab" style="text-anchor: end"><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> − </tspan><tspan
+      class="mi">c</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan></text>
+  <path class="edge" d="M 882,322 L 866,322"/>
+  <path class="edge" d="M 656,322 L 640,322"/>
+  <path class="edge" d="M 466,322 L 450,322"/>
+  <path class="edge" d="M 989,364 L 989,448 L 907,448"/>
+  <path class="edge" d="M 667,487 L 667,526"/>
+  <path class="edge" d="M 341,364 L 341,526"/>
+  <text x="331" y="453" class="lab" style="text-anchor: end"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan></text>
+  <path class="edge" d="M 55,158 L 55,526"/>
+  <text x="65" y="241" class="lab" style="text-anchor: start"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="10.9">/∂</tspan><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
+      class="mu" dy="7">,</tspan></text>
+  <text x="65" y="267" class="lab" style="text-anchor: start"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">g</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="2.3">/∂</tspan><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
     <g>
-    <rect class="box io" x="8" y="32" width="44" height="44" rx="7"/>
-    <text x="30" y="59"><tspan
-      class="mi">θ</tspan></text>
-  </g>
-  <g>
-    <rect class="box geom" x="70" y="32" width="96" height="44" rx="7"/>
-    <text x="118" y="59"><tspan
-      class="mi">v</tspan><tspan
-      class="mu">⃗, </tspan><tspan
-      class="mi">R</tspan><tspan
-      class="mu">, </tspan><tspan
-      class="mi">α</tspan></text>
-  </g>
-  <g>
-    <rect class="box geom" x="195" y="12" width="830" height="84" rx="7"/>
-    <text x="610" y="38" class="cap">for each pixel of the new frame’s grid: the original direction, the conformal factor,</text>
-    <text x="610" y="59" class="cap">the supertranslation and its derivatives there, and the null-rotation parameter</text>
-    <text x="610" y="80"><tspan
-      class="mi">R</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5">,   </tspan><tspan
-      class="mi">κ</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5">,   </tspan><tspan
-      class="mi">α</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5">,   ð</tspan><tspan
-      class="mi">α</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5">,   ð</tspan><tspan
-      class="mu" dy="-7" font-size="72%">2</tspan><tspan
-      class="mi" dy="7">α</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5">,   </tspan><tspan
-      class="mi">b</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-12" dx="-4.9" font-size="72%">(0)</tspan><tspan
-      class="mu" dy="7"> + </tspan><tspan
-      class="mi">t</tspan><tspan
-      class="mu"> </tspan><tspan
-      class="mi">b</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-12" dx="-4.9" font-size="72%">(1)</tspan></text>
-  </g>
-  <g>
-    <rect class="box geom" x="117" y="139" width="210" height="58" rx="7"/>
-    <text x="222" y="162" class="cap">harmonics</text>
-    <text x="222" y="184"><tspan
+    <rect class="box fwd" x="10" y="50" width="170" height="108" rx="7"/>
+    <text x="95" y="87" class="cap">geometry of the pixel,</text>
+    <text x="95" y="109" class="cap">with its P derivatives</text>
+    <text x="95" y="131"><tspan
       class="mi" dy="5" font-size="72%">s</tspan><tspan
       class="mi" dy="-5">Y</tspan><tspan
-      class="mu" dy="-7" dx="1.5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
-      class="mu" dy="7">,   ∂(</tspan><tspan
-      class="mi" dy="5" font-size="72%">s</tspan><tspan
-      class="mi" dy="-5">Y</tspan><tspan
-      class="mu" dy="-7" dx="1.5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
-      class="mu" dy="7">)/∂</tspan><tspan
-      class="mi">θ</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
-  </g>
-  <g>
-    <rect class="box geom" x="457" y="139" width="220" height="58" rx="7"/>
-    <text x="567" y="162" class="cap">eight real numbers</text>
-    <text x="567" y="184"><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="10.9">,   </tspan><tspan
       class="mi">g</tspan><tspan
       class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
-      class="mu" dy="7">,   ∂</tspan><tspan
-      class="mi">g</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
-      class="mu" dy="7">/∂</tspan><tspan
-      class="mi">θ</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan></text>
   </g>
   <g>
-    <rect class="box io" x="10" y="289" width="84" height="58" rx="7"/>
-    <text x="52" y="312" class="cap">input</text>
-    <text x="52" y="334"><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">h</tspan><tspan
-      class="mu" dy="12" dx="-6.4" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan></text>
-  </g>
-  <g>
-    <rect class="box plain heavy" x="117" y="273" width="210" height="90" rx="7"/>
-    <text x="222" y="312" class="cap">1. synthesis, <tspan class="mi">σ</tspan></text>
-    <text x="222" y="334"><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">x</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">h</tspan><tspan
-      class="mu" dy="7"> = </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">h</tspan><tspan
-      class="mu" dy="12" dx="-6.4" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
+    <rect class="box plain heavy" x="232" y="62" width="218" height="84" rx="7"/>
+    <text x="341" y="98" class="cap">synthesis, <tspan class="mi">σ</tspan></text>
+    <text x="341" y="120"><tspan
+      class="mi">σ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="8.4"> = </tspan><tspan
+      class="mi">d</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">ℓm</tspan><tspan
       class="mu" dy="-5"> </tspan><tspan
       class="mi" dy="5" font-size="72%">s</tspan><tspan
       class="mi" dy="3" font-size="58%">k</tspan><tspan
       class="mi" dy="-8">Y</tspan><tspan
-      class="mu" dy="-7" dx="1.5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan></text>
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan></text>
   </g>
   <g>
-    <rect class="box plain" x="347" y="273" width="210" height="90" rx="7"/>
-    <text x="452" y="302" class="cap">2. interpolation, <tspan class="mi">ι</tspan></text>
-    <text x="452" y="323"><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">y</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan><tspan
-      class="mu" dy="7"> = </tspan><tspan
+    <rect class="box plain" x="466" y="62" width="174" height="84" rx="7"/>
+    <text x="553" y="98" class="cap">interpolation, <tspan class="mi">ι</tspan></text>
+    <text x="553" y="120"><tspan
+      class="mi">ι</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> = </tspan><tspan
       class="mi">S</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan><tspan
-      class="mi" dy="12" dx="-6.4" font-size="72%">h</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5"></tspan><tspan
+      class="mi" dy="-7" font-size="72%">i</tspan><tspan
+      class="mu" dy="7"></tspan><tspan
+      class="mi" dy="5" font-size="72%">h</tspan><tspan
       class="mu" dy="-5"> </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">x</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">h</tspan></text>
-    <text x="452" y="344"><tspan
-      class="mi">τ</tspan><tspan
-      class="mi" dy="5" font-size="72%">i</tspan><tspan
-      class="mu" dy="-5"> = </tspan><tspan
-      class="mi">κ</tspan><tspan
-      class="mu" dy="-7" dx="1.5" font-size="72%">−1</tspan><tspan
-      class="mi" dy="7">t</tspan><tspan
-      class="pr">′</tspan><tspan
-      class="mi" dy="5" font-size="72%">i</tspan><tspan
-      class="mu" dy="-5"> + </tspan><tspan
-      class="mi">α</tspan></text>
+      class="mi">σ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">j</tspan></text>
   </g>
   <g>
-    <rect class="box plain" x="577" y="273" width="210" height="90" rx="7"/>
-    <text x="682" y="302" class="cap">3. mixing, <tspan class="mi">μ</tspan></text>
-    <text x="682" y="323"><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="pr" dy="-7" dx="1.5" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="7"> = </tspan><tspan
+    <rect class="box plain" x="656" y="62" width="210" height="84" rx="7"/>
+    <text x="761" y="98" class="cap">mixing, <tspan class="mi">μ</tspan></text>
+    <text x="761" y="120"><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> = </tspan><tspan
       class="mi">M</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">k</tspan><tspan
-      class="mi" dy="12" dx="-6.4" font-size="72%">k</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5"></tspan><tspan
+      class="mi" dy="-7" font-size="72%">k</tspan><tspan
+      class="mu" dy="7"></tspan><tspan
+      class="mi" dy="5" font-size="72%">k</tspan><tspan
       class="pr" font-size="72%">′</tspan><tspan
       class="mu" dy="-5"> </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
+      class="mi">ι</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">k</tspan><tspan
       class="pr" font-size="72%">′</tspan><tspan
-      class="mi" dy="7">y</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan></text>
-    <text x="682" y="344"><tspan
-      class="mu">+ </tspan><tspan
+      class="mi" font-size="72%">i</tspan><tspan
+      class="mi" dy="12" dx="-14.1" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="9.1"> + </tspan><tspan
       class="mi">q</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">k</tspan></text>
+      class="mi" dy="-7" dx="1.5" font-size="72%">k</tspan><tspan
+      class="mi" dy="12" dx="-6.4" font-size="72%">j</tspan></text>
   </g>
   <g>
-    <rect class="box plain" x="805" y="273" width="214" height="90" rx="7"/>
-    <text x="912" y="302" class="cap">4. norm, <tspan class="mi">ν</tspan></text>
-    <text x="912" y="323"><tspan
-      class="mi">Φ</tspan><tspan
+    <rect class="box plain" x="882" y="62" width="214" height="84" rx="7"/>
+    <text x="989" y="98" class="cap">norm, <tspan class="mi">ν</tspan></text>
+    <text x="989" y="120"><tspan
+      class="mi">ν</tspan><tspan
       class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5"> = </tspan><tspan
-      class="mi">w</tspan><tspan
-      class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5"> Σ</tspan><tspan
+      class="mu" dy="-5"> = Σ</tspan><tspan
       class="mi" dy="5" font-size="72%">ik</tspan><tspan
       class="mu" dy="-5"> </tspan><tspan
-      class="mi">v</tspan><tspan
-      class="mi" dy="5" font-size="72%">i</tspan><tspan
-      class="mi" dy="-5">u</tspan><tspan
-      class="mi" dy="5" font-size="72%">k</tspan></text>
-    <text x="912" y="344"><tspan
-      class="mu">× |</tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="pr" dy="-7" dx="1.5" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="7"> − </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">c</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan><tspan
-      class="mu" dy="7">|</tspan><tspan
+      class="mi">W</tspan><tspan
+      class="mi" dy="5" font-size="72%">jki</tspan><tspan
+      class="mu" dy="-5"> |</tspan><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> − </tspan><tspan
+      class="mi">c</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6">|</tspan><tspan
       class="mu" dy="-7" font-size="72%">2</tspan></text>
   </g>
   <g>
-    <rect class="box rev" x="805" y="431" width="214" height="90" rx="7"/>
-    <text x="912" y="460" class="cap">back through <tspan class="mi">ν</tspan></text>
-    <text x="912" y="481"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">d</tspan><tspan
-      class="pr" font-size="72%">′</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">ki</tspan><tspan
-      class="mu" dy="-5"> =</tspan></text>
-    <text x="912" y="502"><tspan
-      class="mu">2</tspan><tspan
-      class="mi">w</tspan><tspan
+    <rect class="box io" x="266" y="188" width="150" height="50" rx="7"/>
+    <text x="341" y="218"><tspan
+      class="mu">data</tspan><tspan
+      class="mu">  </tspan><tspan
+      class="mi">d</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">ℓm</tspan></text>
+  </g>
+  <g>
+    <rect class="box rev" x="882" y="280" width="214" height="84" rx="7"/>
+    <text x="989" y="305" class="cap">back through <tspan class="mi">ν</tspan></text>
+    <text x="989" y="327"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
       class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mi" dy="-5">v</tspan><tspan
-      class="mi" dy="5" font-size="72%">i</tspan><tspan
-      class="mi" dy="-5">u</tspan><tspan
-      class="mi" dy="5" font-size="72%">k</tspan><tspan
-      class="mu" dy="-5">(</tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="pr" dy="-7" dx="1.5" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="7"> − </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">c</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan><tspan
-      class="mu" dy="7">)</tspan><tspan
-      class="mu" dy="-7" font-size="72%">*</tspan></text>
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> =</tspan></text>
+    <text x="989" y="349"><tspan
+      class="mi">W</tspan><tspan
+      class="mi" dy="5" font-size="72%">jki</tspan><tspan
+      class="mu" dy="-5"> (</tspan><tspan
+      class="mi">μ</tspan><tspan
+      class="mu" dy="-1.5" dx="-9.5">ˉ</tspan><tspan
+      class="mi" dy="-5.5" dx="3.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> − </tspan><tspan
+      class="mi">c</tspan><tspan
+      class="mu" dy="-1.5" dx="-8.0">ˉ</tspan><tspan
+      class="mi" dy="-5.5" dx="2.0" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6">)</tspan></text>
   </g>
   <g>
-    <rect class="box rev" x="577" y="431" width="210" height="90" rx="7"/>
-    <text x="682" y="460" class="cap">back through <tspan class="mi">μ</tspan></text>
-    <text x="682" y="481"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">y</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">k</tspan><tspan
-      class="pr" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="-5"> =</tspan></text>
-    <text x="682" y="502"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">d</tspan><tspan
-      class="pr" font-size="72%">′</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">ki</tspan><tspan
-      class="mu" dy="-5"> </tspan><tspan
-      class="mi">M</tspan><tspan
+    <rect class="box rev" x="656" y="280" width="210" height="84" rx="7"/>
+    <text x="761" y="305" class="cap">back through <tspan class="mi">μ</tspan></text>
+    <text x="761" y="327"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">ι</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6"> =</tspan></text>
+    <text x="761" y="349"><tspan
+      class="mu">(∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">μ</tspan><tspan
       class="mi" dy="-7" dx="1.5" font-size="72%">k</tspan><tspan
-      class="mi" dy="12" dx="-6.4" font-size="72%">k</tspan><tspan
-      class="pr" font-size="72%">′</tspan></text>
+      class="pr" font-size="72%">′</tspan><tspan
+      class="mi" font-size="72%">i</tspan><tspan
+      class="mi" dy="12" dx="-14.1" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="9.1">) </tspan><tspan
+      class="mi">M</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5"></tspan><tspan
+      class="mi" dy="-7" font-size="72%">k</tspan><tspan
+      class="pr" font-size="72%">′</tspan><tspan
+      class="mu" dy="7"></tspan><tspan
+      class="mi" dy="5" font-size="72%">k</tspan></text>
   </g>
   <g>
-    <rect class="box rev" x="347" y="431" width="210" height="90" rx="7"/>
-    <text x="452" y="460" class="cap">back through <tspan class="mi">ι</tspan></text>
-    <text x="452" y="481"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">x</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">kh</tspan><tspan
-      class="mu" dy="-5"> =</tspan></text>
-    <text x="452" y="502"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">y</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">ki</tspan><tspan
-      class="mu" dy="-5"> </tspan><tspan
+    <rect class="box rev" x="466" y="280" width="174" height="84" rx="7"/>
+    <text x="553" y="305" class="cap">back through <tspan class="mi">ι</tspan></text>
+    <text x="553" y="327"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">σ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="8.4"> =</tspan></text>
+    <text x="553" y="349"><tspan
+      class="mu">(∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">ι</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6">) </tspan><tspan
       class="mi">S</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">i</tspan><tspan
-      class="mi" dy="12" dx="-6.4" font-size="72%">h</tspan></text>
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5"></tspan><tspan
+      class="mi" dy="-7" font-size="72%">i</tspan><tspan
+      class="mu" dy="7"></tspan><tspan
+      class="mi" dy="5" font-size="72%">h</tspan></text>
   </g>
   <g>
-    <rect class="box rev heavy" x="117" y="431" width="210" height="90" rx="7"/>
-    <text x="222" y="460" class="cap">back through <tspan class="mi">σ</tspan></text>
-    <text x="222" y="481"><tspan
+    <rect class="box rev heavy" x="232" y="280" width="218" height="84" rx="7"/>
+    <text x="341" y="305" class="cap">back through <tspan class="mi">σ</tspan></text>
+    <text x="341" y="327"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
       class="mi" dy="5" font-size="72%">s</tspan><tspan
-      class="mu" dy="-5">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">Y</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mu" dy="5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
-      class="mu" dy="-5"> =</tspan></text>
-    <text x="222" y="502"><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="10.9"> =</tspan></text>
+    <text x="341" y="349"><tspan
       class="mu">Σ</tspan><tspan
       class="mi" dy="5" font-size="72%">k</tspan><tspan
       class="mu" font-size="72%">:</tspan><tspan
@@ -783,387 +1024,320 @@ for one pixel and omits its label ``j``.
       class="mi" dy="3" font-size="58%">k</tspan><tspan
       class="mu" dy="-3" font-size="72%">=</tspan><tspan
       class="mi" font-size="72%">s</tspan><tspan
-      class="mu" dy="-5"> (</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">x</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">kh</tspan><tspan
-      class="mu" dy="-5"> </tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">h</tspan><tspan
-      class="mu" dy="12" dx="-6.4" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan></text>
+      class="mu" dy="-5"> (∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">σ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="8.4">) </tspan><tspan
+      class="mi">d</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">kh</tspan><tspan
+      class="mi" dy="12" dx="-13.5" font-size="72%">ℓm</tspan></text>
   </g>
   <g>
-    <rect class="box geom" x="580" y="562" width="440" height="76" rx="7"/>
-    <text x="800" y="594" class="cap"><tspan class="mi">ι</tspan> and <tspan class="mi">μ</tspan> again, with derivatives in the eight numbers</text>
-    <text x="800" y="616"><tspan
-      class="mu">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">g</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">n</tspan><tspan
-      class="mu" dy="-5"> = </tspan><tspan
-      class="mu">Re</tspan><tspan
-      class="mu"> [(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">d</tspan><tspan
-      class="pr" font-size="72%">′</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">ki</tspan><tspan
-      class="mu" dy="-5"> ∂(</tspan><tspan
-      class="mi" dy="-7" font-size="72%">k</tspan><tspan
-      class="mi" dy="7">d</tspan><tspan
-      class="pr" dy="-7" dx="1.5" font-size="72%">′</tspan><tspan
-      class="mi" font-size="72%">i</tspan><tspan
-      class="mu" dy="7">)/∂</tspan><tspan
+    <rect class="box fwd" x="427" y="409" width="480" height="78" rx="7"/>
+    <text x="667" y="442" class="cap"><tspan class="mi">ι</tspan> and <tspan class="mi">μ</tspan>, with derivatives in the eight numbers, give ∂<tspan class="mi">μ</tspan>/∂g</text>
+    <text x="667" y="464"><tspan
+      class="mu">∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
       class="mi">g</tspan><tspan
       class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
-      class="mu" dy="7">]</tspan></text>
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="2.3"> = 2 </tspan><tspan
+      class="mu">Re</tspan><tspan
+      class="mu"> [(∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6">) ∂</tspan><tspan
+      class="mi">μ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ki</tspan><tspan
+      class="mi" dy="12" dx="-10.6" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="5.6">/∂</tspan><tspan
+      class="mi">g</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="2.3">]</tspan></text>
   </g>
   <g>
-    <rect class="box plain" x="70" y="673" width="900" height="62" rx="7"/>
-    <text x="520" y="698" class="cap">chain rule, summed over pixels</text>
-    <text x="520" y="720"><tspan
+    <rect class="box plain" x="40" y="526" width="1056" height="96" rx="7"/>
+    <text x="568" y="557" class="cap">contract the covectors with the P vectors, and sum over the pixels</text>
+    <text x="568" y="579"><tspan
       class="mu">∂</tspan><tspan
-      class="mi">Φ</tspan><tspan
-      class="mu">/∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
+      class="mu" dy="7"> = 2 </tspan><tspan
+      class="mu">Re</tspan><tspan
+      class="mu"> [ Σ</tspan><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mu" dy="-5"> (∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="10.9">) ∂</tspan><tspan
+      class="mi" dy="5" font-size="72%">s</tspan><tspan
+      class="mi" dy="-5">Y</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">ℓm</tspan><tspan
+      class="mi" dy="12" dx="-15.9" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="10.9">/∂</tspan><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
+      class="mu" dy="7"> ] + (∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
+      class="mi">g</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="2.3">) ∂</tspan><tspan
+      class="mi">g</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
+      class="mi" dy="12" dx="-7.3" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5" dx="2.3">/∂</tspan><tspan
+      class="mi">θ</tspan><tspan
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
+    <text x="568" y="601"><tspan
+      class="mu">∂Φ/∂</tspan><tspan
       class="mi">θ</tspan><tspan
       class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
       class="mu" dy="7"> = (1/𝒩) Σ</tspan><tspan
       class="mi" dy="5" font-size="72%">j</tspan><tspan
-      class="mu" dy="-5"> [ Σ</tspan><tspan
-      class="mi" dy="5" font-size="72%">s</tspan><tspan
-      class="mu" dy="-5"> </tspan><tspan
-      class="mu">Re</tspan><tspan
-      class="mu"> [</tspan><tspan
-      class="mi" dy="5" font-size="72%">s</tspan><tspan
-      class="mu" dy="-5">(</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">Y</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mu" dy="5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
-      class="mu" dy="-5"> ∂(</tspan><tspan
-      class="mi" dy="5" font-size="72%">s</tspan><tspan
-      class="mi" dy="-5">Y</tspan><tspan
-      class="mu" dy="-7" dx="1.5" font-size="72%">(</tspan><tspan
-      class="mi" font-size="72%">ℓ</tspan><tspan
-      class="mu" font-size="72%">,</tspan><tspan
-      class="mi" font-size="72%">m</tspan><tspan
-      class="mu" font-size="72%">)</tspan><tspan
-      class="mu" dy="7">)/∂</tspan><tspan
-      class="mi">θ</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
-      class="mu" dy="7">] + (</tspan><tspan
-      class="mi">Ω</tspan><tspan
-      class="mi" dy="5" font-size="72%">g</tspan><tspan
-      class="mu" dy="-5">)</tspan><tspan
-      class="mi" dy="5" font-size="72%">n</tspan><tspan
       class="mu" dy="-5"> ∂</tspan><tspan
-      class="mi">g</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">n</tspan><tspan
-      class="mu" dy="7">/∂</tspan><tspan
+      class="mi">ν</tspan><tspan
+      class="mi" dy="5" font-size="72%">j</tspan><tspan
+      class="mu" dy="-5">/∂</tspan><tspan
       class="mi">θ</tspan><tspan
-      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan><tspan
-      class="mu" dy="7"> ]</tspan></text>
+      class="mi" dy="-7" dx="1.5" font-size="72%">p</tspan></text>
   </g>
 
   <g class="legend">
-    <rect class="box geom" x="110" y="758" width="22" height="16" rx="3"/>
-    <text x="140" y="771" class="cap" style="text-anchor: start">forward mode: dual numbers, cheap</text>
-    <rect class="box rev" x="420" y="758" width="22" height="16" rx="3"/>
-    <text x="450" y="771" class="cap" style="text-anchor: start">reverse pass, by hand</text>
-    <rect class="box plain heavy" x="650" y="758" width="22" height="16" rx="3"/>
-    <text x="680" y="771" class="cap" style="text-anchor: start">a sum over every mode and time</text>
+    <rect class="box fwd" x="80" y="648" width="22" height="16" rx="3"/>
+    <text x="110" y="661" class="cap" style="text-anchor: start">forward mode: dual numbers</text>
+    <rect class="box rev" x="356" y="648" width="22" height="16" rx="3"/>
+    <text x="386" y="661" class="cap" style="text-anchor: start">backward pass, by hand</text>
+    <rect class="box plain heavy" x="606" y="648" width="22" height="16" rx="3"/>
+    <text x="636" y="661" class="cap" style="text-anchor: start">a sum over every mode, time, and component</text>
   </g>
   </g>
 </svg>
 </div>
 ```
 
-## Where the parameters enter
-
-Within pixel ``j``, ``θ`` enters only through ``{}_{s}Y^{(ℓ,m)}_{j}`` and
-``g^{n}_{j}``, so the chain rule gives the covector that
-`objective_and_gradient!` returns,
-
-```math
-\frac{∂Φ}{∂θ^p}
-= \frac{1}{𝒩} \sum_j \left[
-    \sum_s \operatorname{Re}\left(
-      {}_{s}\left(Ω_{Y_j}\right)_{(ℓ,m)}\,
-      \frac{∂\,{}_{s}Y^{(ℓ,m)}_{j}}{∂θ^p} \right)
-  + \left(Ω_{g_j}\right)_{n}\, \frac{∂g^{n}_{j}}{∂θ^p}
-\right],
-```
-
-where ``Ω_{Y_j}`` and ``Ω_{g_j}`` are cotangents of ``Φ_j``.  There are
-three kinds of factor here, computed in three different ways:
-
-- The Jacobian of the geometry, ``∂\,{}_{s}Y^{(ℓ,m)}_{j}/∂θ^p`` and
-  ``∂g^{n}_{j}/∂θ^p``, comes from forward-mode differentiation in all
-  the parameters.  It is cheap: a few operations per number and
-  parameter.
-- The cotangent of the harmonics, ``{}_{s}\left(Ω_{Y_j}\right)_{(ℓ,m)}``,
-  comes from the reverse pass through ``ν``, ``μ``, ``ι``, and ``σ``,
-  holding ``g_j`` fixed.
-- The cotangent of the eight numbers, ``\left(Ω_{g_j}\right)_{n}``,
-  comes from forward-mode differentiation of ``ι`` and ``μ`` alone, in
-  those eight numbers.
-
-Each ``Φ_j`` depends only on the quantities of pixel ``j``.  So each
-pixel is computed and then differentiated at once, and nothing has to
-be stored from one pixel to the next.
-
-## The reverse pass
-
-Each step pulls the cotangent of ``Φ_j`` back from the output of a
-function to its input, through the transpose of the function's
-Jacobian.
-
-**Through the norm ``ν``:**
-
-```math
-\left(Ω_{d'_j}\right)_{ki}
-= 2\, w_j\, v_i\, u_k
-  \left( {}^{k}d'^{i}_{j} - {}^{k}c^{i}_{j} \right)^*.
-```
-
-Here a conjugate belongs, because ``ν`` is not complex-linear, and the
-metric ``w_j\, v_i\, u_k`` lowers the indices of the conjugated
-residual.
-
-**Through the mixing ``μ``:**
-
-```math
-\left(Ω_{y_j}\right)_{k'i}
-= \left(Ω_{d'_j}\right)_{ki}\, M^{k}{}_{k'}\!\left(g_j, τ_{ji}\right).
-```
-
-The offsets ``q^{k}`` do not depend on the data, so they contribute
-nothing here.  Their dependence on the geometry is not lost: it enters
-through ``Ω_{g_j}``, below.
-
-**Through the interpolation ``ι``:**
-
-```math
-\left(Ω_{x_j}\right)_{kh}
-= \left(Ω_{y_j}\right)_{ki} \left(S_j\right)^{i}{}_{h}.
-```
-
-This runs the interpolation backwards, so it needs the structure of
-``S_j``.  For one pixel and one component, whose labels are dropped
-here, suppose that ``t_{h_0} ≤ τ_{i} < t_{h_0+1}``.  The spline's value
-at ``τ_i`` is a combination of the two samples ``x^{h_0}`` and
-``x^{h_0+1}`` and of the spline's second derivatives ``\ddot{x}^{h_0}``
-and ``\ddot{x}^{h_0+1}`` there:
-
-```math
-y^{i} = E^{i}{}_{h}\, x^{h} + F^{i}{}_{h}\, \ddot{x}^{h},
-```
-
-where ``E^{i}{}_{h}`` and ``F^{i}{}_{h}`` are nonzero only for
-``h ∈ \{h_0, h_0+1\}``.  The second derivatives at the interior knots
-solve a tridiagonal system, and vanish at the ends:
-
-```math
-Q^{h}{}_{h'}\, \ddot{x}^{h'} = B^{h}{}_{h'}\, x^{h'},
-```
-
-where ``B^{h}{}_{h'}`` takes second differences.  So
-
-```math
-S^{i}{}_{h}
-= E^{i}{}_{h} + F^{i}{}_{h'} \left(Q^{-1}\right)^{h'}{}_{h''} B^{h''}{}_{h},
-```
-
-and the pullback of a cotangent ``(Ω_y)_i`` is
-
-```math
-(Ω_x)_{h} = (Ω_y)_{i}\, E^{i}{}_{h} + ζ_{h''}\, B^{h''}{}_{h},
-\qquad
-ζ_{h''}\, Q^{h''}{}_{h'} = (Ω_y)_{i}\, F^{i}{}_{h'}.
-```
-
-The matrix of ``Q`` is symmetric in this basis, so the system for
-``ζ`` has the same matrix as the forward solve and reuses its factors.
-That is an equality of matrix entries, not an identification of vectors
-with covectors.  So each ``(Ω_y)_i`` is spread onto the samples and the
-second derivatives on either side of ``τ_i``, the second-derivative
-parts go through the tridiagonal solve, and the result is spread by the
-second differences.  [`spline_transpose!`](@ref Scri.spline_transpose!)
-takes ``E`` and ``F`` from the same evaluation function, and chooses
-each time's interval in the same way, as the forward interpolation, so
-the two agree to roundoff.
-
-**Through the synthesis ``σ``:**
-
-```math
-{}_{s}\left(Ω_{Y_j}\right)_{(ℓ,m)}
-= \sum_{k:\, s_k = s} \left(Ω_{x_j}\right)_{kh}\, {}^{k}d^{h}{}_{(ℓ,m)}.
-```
-
-The sum over ``k`` collects the components that share a spin weight,
-and so share harmonics.  This is a sum of the same size as the
-synthesis itself, and it is the second of the two expensive operations.
-
-## The eight numbers of the geometry
-
-The cotangent of ``Φ_j`` at the eight numbers of pixel ``j`` is
-
-```math
-\left(Ω_{g_j}\right)_{n}
-= \operatorname{Re}\left[ \left(Ω_{d'_j}\right)_{ki}\,
-  \left.\frac{∂\,{}^{k}d'^{i}_{j}}{∂g^{n}_{j}}\right|_{x} \right],
-```
-
-where the derivative holds the original time series ``x_j`` fixed.  The
-eight numbers enter ``ι`` and ``μ`` in three ways: ``κ_j^{-1}`` and
-``α_j`` move the interpolation times ``τ_{ji}``; ``κ_j^{-1}`` and the
-null-rotation parameter set ``M^{k}{}_{k'}``, which also depends on
-``τ_{ji}``; and ``κ_j^{-1}`` and ``ð^2α_j`` set the offsets ``q^{k}``.
-Rather than differentiating each of these by hand, ``ι`` and ``μ`` are
-run once more for the pixel, with dual numbers that carry the eight
-tangent directions, which gives the columns
-``∂\,{}^{k}d'^{i}_{j}/∂g^{n}_{j}`` of their forward Jacobian.  The
-spline's second derivatives depend only on ``x_j``, so they stay plain
-numbers.  This costs a small multiple of ``ι`` and ``μ``, with no sum
-over modes, and it includes the offsets of the shear and the strain.
-
-## Assembling the gradient
-
-For the Jacobian of the geometry, ``θ`` is turned into dual numbers
-whose partials carry the ``P`` tangent directions of the parameters.
-The same functions that compute the objective's geometry then return it
-with its derivatives: [`bms_from_parameters`](@ref), the boost and
-rotation of the grid, [`supertranslation_on_grid`](@ref
-Scri.supertranslation_on_grid), [`compute_ðt′╱2κ`](@ref
-Scri.compute_ðt′╱2κ), the conformal factor, and the recursion for the
-harmonics at ``R_j``.  These are contracted with
-``{}_{s}\left(Ω_{Y_j}\right)_{(ℓ,m)}`` and ``\left(Ω_{g_j}\right)_{n}``
-as in the formula above, and summed over the pixels, in parallel over
-threads.
-
-A quantity of the geometry can depend on the parameters in more than
-one way at once.  ``ð^2α_j``, for example, changes with the
-supertranslation's modes, and with the direction ``R_j`` at which it is
-evaluated, which moves with the boost and the rotation, including the
-spin phase of the rotor.  Both enter through the dual numbers, by the
-product rule.
-
-The harmonics depend only on the boost and the rotation, not on the
-``a``, but they hold derivatives with respect to all the parameters.
-They are evaluated twice for each pixel: without derivatives for the
-synthesis, and again with them for this contraction, since keeping them
-from the first evaluation would take ``P + 1`` times the memory.  Both
-evaluations together take from 2 to 8 percent of the total in the
-benchmarks below.
-
 ## Comparing only the modes up to ``ℓ_\mathrm{fit}``
 
-With ``ℓ_\mathrm{fit} = L``, the objective compares projections onto
-the modes with ``ℓ ≤ L``, using the harmonics at the grid's own
-directions, ``{}_{s}Y'^{(ℓ,m)}_{j} = {}_{s}Y^{(ℓ,m)}(R'_j)``:
+An [`ObjectivePlan`](@ref) built with `ℓ_fit = L` compares only the
+modes with ``ℓ ≤ L`` of the two waveforms, which leaves out noise at
+higher ``ℓ``.  The residual is projected onto those modes by the
+quadrature,
 
 ```math
-Φ = \frac{1}{𝒩} \sum_i v_i \sum_k u_k \sum_{(ℓ,m):\, |s_k| ≤ ℓ ≤ L}
-    \left| {}^{k}Π^{i}{}_{(ℓ,m)} - {}^{k}Π_{c}{}^{i}{}_{(ℓ,m)} \right|^2,
-\qquad
-{}^{k}Π^{i}{}_{(ℓ,m)}
-= \sum_j w_j \left({}_{s_k}Y'^{(ℓ,m)}_{j}\right)^* {}^{k}d'^{i}_{j},
+Π^{ki}{}_{ℓm}
+= \sum_j w_j\ \overline{{}_{s_k}Y'^{ℓm}_{j}}\,
+  \left( μ^{ki}_{j} - c^{ki}_{j} \right),
 ```
 
-where ``Π_{c}`` is the same projection of ``c``.  The projection uses
-the inner product of the sphere, whose metric is the quadrature weights
-``w_j``, and the conjugate of the harmonic; together they lower the
-mode index.  ``Φ`` is not a sum of terms that each depend on one pixel.
-But it depends on ``d'`` only through ``Π``, which is complex-linear in
-it, so the rules above give the cotangent of ``𝒩 Φ`` at pixel ``j``,
+where ``{}_{s}Y'^{ℓm}_{j}`` is the harmonic evaluated at pixel ``j``
+of the grid itself, in the new frame, and so does not depend on
+``θ``.  The objective is then the weighted sum of squares of these
+modes:
 
 ```math
-\left(Ω_{d'_j}\right)_{ki}
-= 2\, w_j\, v_i\, u_k \sum_{(ℓ,m)}
-  \left( {}^{k}Π^{i}{}_{(ℓ,m)} - {}^{k}Π_{c}{}^{i}{}_{(ℓ,m)} \right)^*
-  \left({}_{s_k}Y'^{(ℓ,m)}_{j}\right)^*:
+Φ = \frac{1}{𝒩} \sum_{i,k} v_i\, u_k
+    \sum_{ℓm:\ |s_k| ≤ ℓ ≤ L} \left| Π^{ki}{}_{ℓm} \right|^2.
 ```
 
-the conjugated residual of the projection, evaluated back at pixel
-``j``.  Each pixel's reverse pass starts from this in place of the
-cotangent through ``ν``.  Since it needs ``Π`` before any pixel can
-start, a first pass over the pixels computes the projection, at the
-cost of one evaluation of the objective.
+This is no longer a sum of terms that each belong to one pixel.  But
+it depends on the transformed waveform only through ``Π``, which is
+linear in it, so the facts above give
+
+```math
+𝒩\, \frac{∂Φ}{∂μ^{ki}_{j}}
+= W_{jki}\ \overline{\,\sum_{ℓm} Π^{ki}{}_{ℓm}\ {}_{s_k}Y'^{ℓm}_{j}\,}.
+```
+
+That is the formula for ``∂ν_j/∂μ^{ki}_{j}`` again, with the residual
+replaced by its projection onto the modes with ``ℓ ≤ L``, evaluated
+back at the pixel.  The backward pass for each pixel starts from this
+covector, and nothing else changes.  Because ``Π`` is needed before
+any pixel can start, a first pass over all the pixels computes it, at
+the cost of one more evaluation of the objective.
 
 ## Cost and memory
 
-Per pixel, the objective costs one synthesis and the gradient two sums
-of that size, plus work that involves no sum over modes: the second run
-of ``ι`` and ``μ`` with eight derivatives, the harmonics' derivatives,
-and the geometry.  Both take the pixels a block at a time, so that the
-synthesis, and in the gradient its transpose, is a matrix product over
-the block.  Forward-mode differentiation of the objective instead
-carries a derivative for every parameter through the synthesis.
-Measured with strain and ``ψ_4`` data, ``N_t = 400``, and 8 threads, as
-multiples of the time for one evaluation of the objective:
+For each pixel, the objective costs one synthesis, and the gradient
+costs two sums of that size: the synthesis, and the backward step
+through it.  Nothing else in the gradient involves a sum over the
+modes and the times together: not the interpolation and the mixing
+with their eight derivatives, nor the backward steps through them, nor
+the geometry with its ``P`` derivatives.  Only the last of these grows
+with the number of parameters.  For each pixel it takes a number of
+operations proportional to ``P\, N_\mathrm{modes}``, mostly for the
+derivatives of the harmonics, where a synthesis takes
+``N_\mathrm{comp}\, N_t\, N_\mathrm{modes}``.  So its share is
+proportional to ``P / (N_\mathrm{comp}\, N_t)``, which is small
+whenever the waveform has many more time samples than the
+transformation has parameters.
 
-| ``ℓ_\mathrm{max}`` | ``ℓ_\mathrm{fit}`` | ``P`` | gradient | ForwardDiff |
-| :---: | :---: | :---: | :---: | :---: |
-| 8 | — | 7 | 3.9 | 13.6 |
-| 8 | — | 22 | 4.8 | 28.9 |
-| 8 | 4 | 7 | 4.0 | 8.1 |
-| 8 | 4 | 22 | 5.8 | 40.8 |
-| 16 | — | 7 | 3.3 | 8.5 |
-| 16 | — | 22 | 3.9 | 23.9 |
-| 16 | 8 | 7 | 4.4 | 8.3 |
-| 16 | 8 | 22 | 6.1 | 39.5 |
-| 32 | — | 7 | 2.7 | 9.1 |
-| 32 | — | 22 | 3.4 | 27.1 |
-| 32 | 16 | 7 | 3.3 | 8.4 |
-| 32 | 16 | 22 | 4.2 | 31.0 |
+Both the objective and the gradient take the pixels a block at a
+time, so that the synthesis of a block — and, in the gradient, the
+backward step through it — is one matrix product for each component.
 
-The matrix products made the objective three to four times faster at
-``ℓ_\mathrm{max} = 16`` and six to eight times faster at 32, so the
-gradient's work that involves no sum over modes now takes most of its
-time, and its multiple is three to six.  In absolute terms the gradient
-also became faster, by about one and a half to two times at
-``ℓ_\mathrm{max} = 16`` and three to five at 32.  At
-``ℓ_\mathrm{max} = 8`` it became slower, by up to two times, because
-the matrix products there are too small to occupy BLAS's threads well.
-With ``ℓ_\mathrm{fit}``, the first pass adds about one evaluation.
+The table gives the measured time for the gradient, and for
+`ForwardDiff.gradient` applied to [`transform_objective`](@ref), as
+multiples of the time for one evaluation of the objective.  The data
+were the strain and ``ψ_4``, on 8 threads.  The column for
+``ℓ_\mathrm{fit}`` uses a plan with ``ℓ_\mathrm{fit} =
+ℓ_\mathrm{max}/2``, and is a multiple of that plan's own objective.
 
-Besides a few buffers for each thread, the size of one pixel's time
-series and harmonics, the storage is the harmonics and synthesized
-time series of one block, which are overwritten by their cotangents.
-A block holds as many pixels as fit in the memory of the mode array
-itself, or in 128 MiB if that is larger, but at least four for each
-thread.  A general reverse-mode tool
-would
-instead record every operation of every synthesis, of which there are
-``N_\mathrm{pix}\, N_t\, N_\mathrm{comp}\, N_\mathrm{modes}``.
+| ``ℓ_\mathrm{max}`` | ``N_t`` | ``P`` | gradient | gradient with ``ℓ_\mathrm{fit}`` | ForwardDiff |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 8 | 400 | 7 | 4.3 | 5.4 | 16.9 |
+| 8 | 400 | 31 | 7.5 | 7.2 | 68.5 |
+| 8 | 4000 | 7 | 5.2 | 5.4 | 11.0 |
+| 8 | 4000 | 31 | 5.1 | 5.4 | 41.9 |
+| 16 | 400 | 7 | 3.8 | 4.8 | 10.8 |
+| 16 | 400 | 31 | 5.6 | 5.3 | 46.1 |
+| 16 | 4000 | 7 | 3.3 | 4.2 | 9.3 |
+| 16 | 4000 | 31 | 3.6 | 4.3 | 40.7 |
+| 32 | 400 | 7 | 2.8 | 3.9 | 9.1 |
+| 32 | 400 | 31 | 3.9 | 4.8 | 42.6 |
+| 32 | 4000 | 7 | 2.9 | 3.4 | 8.3 |
+| 32 | 4000 | 31 | 2.8 | 3.3 | 43.8 |
+
+So the gradient costs from about three to nearly eight evaluations of
+the objective.  The multiple is smallest for large band limits and
+long time series, where the synthesis is the bulk of the work.  At
+small band limits, the matrix products make the synthesis so fast that
+the interpolation and the mixing, with their eight derivatives, take
+most of the gradient's time.  And for short time series the
+derivatives of the geometry begin to show, as in the rows with ``N_t =
+400`` and ``P = 31``.  They show more with more parameters: with ``P =
+87``, for a supertranslation up to ``ℓ_α = 8``, the same tests cost
+from three to seven evaluations with ``N_t = 4000``, and from seven to
+thirteen with ``N_t = 400``.  ForwardDiff costs between one and a
+little over two evaluations for each parameter.
+
+Besides a few buffers for each thread, the storage is the harmonics
+and the synthesized values ``σ^{kh}_{j}`` of one block of pixels,
+which the backward pass overwrites with the derivatives of ``ν_j``
+with respect to them.  A block holds as many pixels as fit in the memory
+that the data themselves occupy, or in 128 MiB if that is larger, but
+at least four for each thread.  The harmonics of each pixel are
+evaluated first as plain numbers, for the synthesis, and again with
+their derivatives, for the contraction, because keeping the
+derivatives for a whole block would take ``P + 1`` times the memory.
+A general-purpose tool for reverse mode would instead have to record
+every operation of every synthesis, of which there are
+``N_\mathrm{pix}\, N_\mathrm{comp}\, N_t\, N_\mathrm{modes}``.
+
+### Against finite differences
+
+Before [`transform_objective`](@ref) existed, the only way to get a
+gradient was by finite differences through [`transform!`](@ref).  That
+transformation chooses its own output times, which move with the
+parameters, as does the one in the Python package `scri`.  So each
+evaluation of an objective is a transformation, an interpolation onto
+the times of the waveform it is compared with, and a sum of squares,
+and a gradient by forward differences is ``P + 1`` of those.
+
+The next table gives the time for a gradient by each method as a
+multiple of the time for [`objective_and_gradient!`](@ref), which is
+given in seconds.  The waveforms have 20,000 time samples and the
+transformation has ``P = 31`` parameters, on 8 threads of an otherwise
+idle machine.  The finite differences in Julia are through version 0.1
+of this package, with the interpolation written as carefully as the
+transformation itself.  Those in Python are not measured as gradients:
+they are 32 times the measured time of one evaluation.
+
+| ``ℓ_\mathrm{max}`` | components | gradient | ForwardDiff | forward differences | forward differences, Python `scri` |
+| :---: | :--- | :---: | :---: | :---: | :---: |
+| 8 | ``h`` | 0.11 s | 8.5 | 17 | 810 |
+| 8 | ``h, ψ_4, ψ_3, ψ_2`` | 0.43 s | 8.6 | 10 | 2400 |
+| 8 | ``h, ψ_4, …, ψ_0`` | 0.68 s | 8.3 | 9.4 | 1500 |
+| 16 | ``h`` | 0.56 s | 10 | 14 | 460 |
+| 16 | ``h, ψ_4, ψ_3, ψ_2`` | 1.9 s | 11 | 13 | 1800 |
+| 16 | ``h, ψ_4, …, ψ_0`` | 3.0 s | 12 | 11 | 1100 |
+
+The gradient itself costs from 3.8 to 6.5 evaluations of the objective
+in these six cases.  With ``P = 7`` the factors are smaller, as a
+count of evaluations suggests: from 2 to 3 for ForwardDiff, from 2 to
+4 for forward differences, and from 90 to 420 for Python.  With ``P =
+87`` they are from 20 to 31, from 26 to 43, and from 1600 to 7400.
+Central differences cost twice as much as forward differences.  And an
+interpolation written plainly, with one spline for each mode, makes
+the finite differences in Julia three to five times slower again.
+
+The Python package transforms the shear and all five Weyl components
+together whenever any Weyl component is wanted, which is why its
+factor is largest for the set with three of them.  All of these
+timings, and the scripts that produce them, are in the directory
+`benchmark` of the repository, as `comparison_2026-11-16.txt` and
+`comparison/run.jl`.
 
 ## How it is checked
 
-The tests in `test/gradient.jl` check each piece and the whole:
+The tests in `test/gradient.jl` check each piece, and the whole.
 
-- ``X_i \left(S_j\right)^{i}{}_{h} Z^{h}``, computed as ``X_i``
-  contracted with ``S_j Z`` and as ``X S_j`` from
-  [`spline_transpose!`](@ref Scri.spline_transpose!) contracted with
-  ``Z``, for random complex ``X_i`` and ``Z^h`` on uneven grids, from
-  four knots up, with times on the knots and at the ends;
-- ``M^{k}{}_{k'}`` and ``q^{k}`` against [`mix_components!`](@ref), for
-  components that mix, on both null infinities and in more than one
-  convention;
-- the value and the gradient against ForwardDiff through
-  [`transform_objective`](@ref), at the identity and away from it, for
-  components that mix, on both null infinities, with weights,
-  normalization, and ``ℓ_\mathrm{fit}``; they agree to about
-  ``10^{-15}``, and to about ``10^{-25}`` in `Double64`;
-- the gradient against central differences, independently of
-  ForwardDiff.
+- The backward step through ``ι`` is checked against the forward
+  interpolation: for random complex ``X_i`` and ``Z^h``, the number
+  ``X_i\, S_{j}{}^{i}{}_{h}\, Z^{h}`` is computed once by interpolating
+  ``Z`` and once by applying [`spline_transpose!`](@ref
+  Scri.spline_transpose!) to ``X``.  This is done on unevenly spaced
+  times, from four samples up, with output times on the samples and at
+  the ends.
+- The backward step through ``σ`` is checked against the synthesis in
+  the same way, including for components that share a spin weight.
+- ``M_{j}{}^{k}{}_{k'}`` and ``q^{k}_{j}``, as [`mixing_matrix!`](@ref
+  Scri.mixing_matrix!) extracts them, are checked against
+  [`mix_components!`](@ref), on both null infinities and in more than
+  one convention.
+- The value and the gradient are checked against ForwardDiff applied
+  to [`transform_objective`](@ref): at the identity and away from it,
+  for components that mix, on both null infinities, with weights, with
+  normalization, and with ``ℓ_\mathrm{fit}``.  The two gradients agree
+  to a relative error of about ``10^{-15}``, and the same comparison
+  passes in `Double64` with a tolerance of ``10^{-25}``.
+- The gradient is checked against central differences, which is
+  independent of ForwardDiff.
+
+## The notation and the code
+
+The function that does all of this is `gradient_core`, in
+`src/gradient.jl`.  Its variables are named for the quantities on this
+page, as far as Julia allows: the indices are dropped, and the
+character `╱` stands in for the slash of a derivative, so that
+``∂ν_j/∂μ^{ki}_{j}`` is `∂ν╱∂μ[k, i]`.
+
+| On this page | In the code |
+| :--- | :--- |
+| ``d^{kh}{}_{ℓm}`` | `data[m, h, k]`, where `m` counts the modes |
+| ``{}_{s}Y^{ℓm}_{j}`` | `Yb[m, q, s - s₀ + 1]`, for pixel `j = block[q]` of a block |
+| ``σ^{kh}_{j}`` | `σb[h, q, k]` for a block, copied to `σⱼ[k, h]` for one pixel |
+| ``μ^{ki}_{j}`` and ``∂μ^{ki}_{j}/∂g^n_j`` | the values and the partials of `μⱼ[k, i]` |
+| ``τ_{ji}`` and ``M_{j}{}^{k}{}_{k'}(τ_{ji})`` | `τ[i]`, and `M` from [`mixing_matrix!`](@ref Scri.mixing_matrix!) |
+| ``W_{jki}`` and ``c^{ki}_{j}`` | `w[j] * v[i] * u[k]` and `c[j, i, k]` |
+| ``∂ν_j/∂μ^{ki}_{j}`` | `∂ν╱∂μ[k, i]` |
+| ``∂ν_j/∂ι^{ki}_{j}`` | `∂ν╱∂ι[k, i]` |
+| ``∂ν_j/∂σ^{kh}_{j}`` | `∂ν╱∂σ[k, h]` for one pixel, copied to `∂ν╱∂σb[h, q, k]` for a block |
+| ``∂ν_j/∂\,{}_{s}Y^{ℓm}_{j}`` | `∂ν╱∂Yb[m, q, s - s₀ + 1]`, from [`synthesis_transpose_block!`](@ref Scri.synthesis_transpose_block!) |
+| ``∂ν_j/∂g^n_j`` | `∂ν╱∂g[n]` |
+| ``∂ν_j/∂θ^p`` | `∂ν╱∂θ[p, j]` |
+
+The arrays `∂ν╱∂σb` and `∂ν╱∂Yb` are second names for the memory of
+`σb` and `Yb`, which the backward pass overwrites.  The interpolated
+values ``ι^{ki}_{j}`` are never stored, because [`transform_pixel!`](@ref
+Scri.transform_pixel!) interpolates and mixes in one sweep.
