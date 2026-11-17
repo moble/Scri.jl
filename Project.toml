@@ -27,7 +27,7 @@ ScriPlotsExt = ["Plots", "Colors"]
 
 [compat]
 Colors = "0.13.1"
-ForwardDiff = "0.10, 1"
+ForwardDiff = "1"
 Hwloc = "3"
 LinearAlgebra = "1.10.0"
 Logging = "1.10.0"
