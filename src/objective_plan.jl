@@ -134,7 +134,7 @@ function ObjectivePlan(
         "but `dc` has $(length(C)) components",
     )
     check(good(u), "Component weights must be finite and nonnegative")
-    spins = Int[spin_weight(Val(s)) for s ∈ C]
+    spins = collect(spin_weights(dc))
     Ȳ, ĉ = Matrix{Complex{T}}[], Matrix{Complex{T}}[]
     norm² = zero(T)
     if isnothing(ℓ_fit)
@@ -186,8 +186,8 @@ nonzero modes are the first `N₀`.  The components must have the plan's spin we
 the default grid, the data's band limit must also not exceed the target's, because the grid
 integrates exactly only up to that band limit; past it the objective is silently wrong.
 """
-function validate_plan(plan::ObjectivePlan, dc::DataComponents{C}, N₀) where {C}
-    spins = Int[spin_weight(Val(c)) for c ∈ C]
+function validate_plan(plan::ObjectivePlan, dc::DataComponents, N₀)
+    spins = collect(spin_weights(dc))
     spins == plan.spins || throw(
         ArgumentError(
             "`dc` has components of spin weights $spins, but the plan was built " *

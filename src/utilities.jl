@@ -411,3 +411,22 @@ numbers in error messages.  For ordinary real numbers this is `x` itself.
 """
 primal_value(x::Real) = x
 primal_value(x::ForwardDiff.Dual) = primal_value(ForwardDiff.value(x))
+
+"""
+    transpose_into!(dest, src)
+
+Copy the transpose of the matrix `src` into `dest`, and return `dest`.  This does what
+`permutedims!(dest, src, (2, 1))` does, but the permutation is written into the type of
+the `PermutedDimsArray` through which it copies.  `permutedims!` has to infer that type
+from the value of its permutation, and it fails to when `dest` is a view, so each call then
+dispatches dynamically and allocates.  When `dest` is a `Matrix`, `permutedims!` is clean,
+and which of the two is faster depends on the layout of `src`.
+
+When the element types differ, as when dual numbers are gathered from a block of plain
+numbers, this falls back to `permutedims!`, which converts each element.
+"""
+function transpose_into!(dest::AbstractMatrix{T}, src::AbstractMatrix{T}) where {T}
+    copyto!(PermutedDimsArray{T,2,(2, 1),(2, 1),typeof(dest)}(dest), src)
+    return dest
+end
+transpose_into!(dest::AbstractMatrix, src::AbstractMatrix) = permutedims!(dest, src, (2, 1))

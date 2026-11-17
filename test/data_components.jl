@@ -145,6 +145,20 @@ end
     @test Scri.spin_weight(Val(:News)) == -2
 end
 
+@testitem "spin_weights: a constant tuple in component order" tags = [:unit, :fast] begin
+    for dc ∈ (
+        DataComponents(:h, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀),
+        DataComponents(:λ, :ψ₀, :ψ₁; ℐ=-1),
+        DataComponents(:News, :φ₂, :φ₁, :φ₀),
+    )
+        C = typeof(dc).parameters[1]
+        @test Scri.spin_weights(dc) === map(c -> Scri.spin_weight(Val(c)), C)
+        # The tuple is computed by the compiler, so the method body is just the constant.
+        code = only(code_typed(Scri.spin_weights, (typeof(dc),)))[1].code
+        @test code == Any[Core.ReturnNode(Scri.spin_weights(dc))]
+    end
+end
+
 @testitem "conformal_weight: known values for all components" tags = [:unit, :fast] begin
     # All five Weyl components share conformal weight −3.
     for s ∈ (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄)

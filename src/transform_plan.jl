@@ -43,10 +43,10 @@ struct TransformPlan{T<:AbstractFloat,F}
 end
 
 function TransformPlan(
-    ℓₘₐₓ::Integer, dc::DataComponents{C}, ::Type{T}=Float64
-) where {C,T<:AbstractFloat}
+    ℓₘₐₓ::Integer, dc::DataComponents, ::Type{T}=Float64
+) where {T<:AbstractFloat}
     ℓₘₐₓ ≥ 2 || throw(ArgumentError("ℓₘₐₓ=$ℓₘₐₓ, but the transformation needs ℓₘₐₓ ≥ 2"))
-    spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
+    spins = unique(spin_weights(dc))
     R′ₚ = transform_grid(ℓₘₐₓ, T)
     factorizations = OhMyThreads.tmap(s -> augmented_factorization(R′ₚ, ℓₘₐₓ, s), spins)
     return TransformPlan{T,eltype(factorizations)}(

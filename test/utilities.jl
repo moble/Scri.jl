@@ -418,3 +418,34 @@ end
     end
     @test Scri.cachesize_L2() == l2 > 0
 end
+
+@testitem "transpose_into!: permutedims! without dynamic dispatch" tags = [
+    :unit, :type_stability
+] begin
+    using JET
+    # Measured inside a function, so that no global variable is involved.
+    allocations(dest, src) = @allocations Scri.transpose_into!(dest, src)
+    # The layouts used for each pixel: a block of series with time first, and `data` with
+    # the modes or pixels first, each viewed at one pixel, and a component-by-time matrix.
+    for (Nᵗ, Nᵈ) ∈ ((7, 1), (40, 2), (33, 6))
+        block = view(randn(ComplexF64, Nᵗ, 9, Nᵈ), :, 1:8, :)
+        data = randn(ComplexF64, 11, Nᵗ, Nᵈ)
+        x = randn(ComplexF64, Nᵈ, Nᵗ)
+        for dest ∈ (view(block, :, 3, :), view(data, 5, :, :))
+            expected = permutedims(x)
+            @test Scri.transpose_into!(dest, x) === dest
+            @test dest == expected
+            @test_opt Scri.transpose_into!(dest, x)
+            allocations(dest, x)
+            @test allocations(dest, x) == 0
+        end
+        y = similar(x)
+        @test Scri.transpose_into!(y, view(block, :, 3, :)) ==
+            permutedims(view(block, :, 3, :))
+        @test_opt Scri.transpose_into!(y, view(block, :, 3, :))
+        # Different element types are converted, as `permutedims!` converts them.
+        y64 = Matrix{ComplexF64}(undef, Nᵈ, Nᵗ)
+        block32 = ComplexF32.(view(block, :, 3, :))
+        @test Scri.transpose_into!(y64, block32) == permutedims(block32)
+    end
+end

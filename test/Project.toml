@@ -1,6 +1,7 @@
 [deps]
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Quaternionic = "0756cd96-85bf-4b6f-a009-b5012ea7a443"
@@ -17,6 +18,7 @@ Scri = {path = ".."}
 
 [compat]
 DoubleFloats = "1.12"
+JET = "0.13"
 Pkg = "1"
 TOML = "1"
 Test = "1"

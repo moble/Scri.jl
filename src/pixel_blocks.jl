@@ -266,7 +266,7 @@ function transform_pixel_blocks(
         foreach_chunk(nb, buffers) do (σⱼ, σ̈ⱼ, μⱼ), chunk
             for q ∈ chunk
                 j = block[q]
-                permutedims!(σⱼ, view(σb, :, q, :), (2, 1))
+                transpose_into!(σⱼ, view(σb, :, q, :))
                 transform_pixel!(
                     μⱼ,
                     σⱼ,
@@ -313,7 +313,7 @@ function transformed_projection!(
     for k ∈ 1:Nᵈ
         fill!(μ̂[k], 0)
     end
-    gather!(μⱼ, j, q) = permutedims!(view(μᵇ, :, q, :), μⱼ, (2, 1))
+    gather!(μⱼ, j, q) = transpose_into!(view(μᵇ, :, q, :), μⱼ)
     function project!(block)
         for k ∈ 1:Nᵈ
             μᵇₖ = transpose(view(μᵇ, :, 1:length(block), k))

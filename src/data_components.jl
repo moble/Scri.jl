@@ -178,6 +178,16 @@ spin_weight(::Val{:φ₂}) = -1
 Base.@constprop :aggressive spin_weight(s)::Int = spin_weight(Val(s))
 
 """
+    spin_weights(dc::DataComponents)
+
+Return a tuple of the spin weights of the components of `dc`, in the order in which they
+appear in `dc`.  The components are a type parameter of `dc`, so the compiler evaluates
+this tuple when it compiles the caller.  Indexing it with an integer known only at run time
+then involves no dynamic dispatch, as `spin_weight(C[k])` would.
+"""
+spin_weights(::DataComponents{C}) where {C} = map(c -> spin_weight(Val(c)), C)
+
+"""
     conformal_weight(::Val{S})
 
 Return the conformal weight of field component `S` — the integer `w` such that the

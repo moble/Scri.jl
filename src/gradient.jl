@@ -94,7 +94,7 @@ function gradient_core(
     budget::Integer=synthesis_budget(data),
 ) where {T1,T2,T,C,I,TQ,W}
     P = length(θ)
-    spins = Int[spin_weight(Val(c)) for c ∈ C]
+    spins = collect(spin_weights(dc))
     R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.u, plan.c
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
@@ -249,7 +249,7 @@ function gradient_core(
             (; σⱼ, σ̈ⱼ, μⱼ, ∂ν╱∂μ, ∂ν╱∂ι, ∂ν╱∂σ, M, e, z, ∂ν╱∂σ̈, ζ, τ) = b
             for q ∈ chunk
                 j = block[q]
-                permutedims!(σⱼ, view(σb, :, q, :), (2, 1))
+                transpose_into!(σⱼ, view(σb, :, q, :))
 
                 # Interpolate and mix with dual numbers in the pixel's eight real numbers g.
                 κ⁻¹, α, b⁰, b¹, ð²α = scalars(j)
@@ -316,7 +316,7 @@ function gradient_core(
                         ∂ν╱∂σ[k, :], ∂ν╱∂ι[k, :], cubic_spline_cache, t, τ; ∂ν╱∂σ̈, ζ
                     )
                 end
-                permutedims!(view(∂ν╱∂σb, :, q, :), ∂ν╱∂σ, (2, 1))
+                transpose_into!(view(∂ν╱∂σb, :, q, :), ∂ν╱∂σ)
             end
         end
 

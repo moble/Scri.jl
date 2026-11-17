@@ -504,7 +504,7 @@ function transform!(
     # constant `qr`/`lu` factorizations, whose Householder steps would otherwise turn the
     # (identically zero) perturbations into NaNs.
     T4′ = primal_float(T4)
-    spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
+    spins = unique(spin_weights(dc))
     if !isnothing(plan)
         check_plan(plan, ℓₘₐₓ, T4′, spins)
     end
@@ -602,7 +602,7 @@ function transform!(
         # 𝒯[s] — a column-contiguous view, so BLAS still runs at full speed — cutting
         # stage 1's cost from O(Nᵐ²Nᵗ) to O(NᵐN₀Nᵗ).
         for k ∈ 1:Nᵈ
-            s = spin_weight(C[k])
+            s = spin_weights(dc)[k]
             valid_modes = (s ^ 2 + 1):N₀  # skip leading ℓ < |s| entries
             data_k = view(data, :, :, k)  # (Nᵐ × Nᵗ), fully contiguous
             workspace = Matrix{Complex{T1}}(undef, length(valid_modes), block_size)
@@ -634,7 +634,8 @@ function transform!(
 
         # Copy pixel time series into the dᵢ buffer.  Note that tests comparing this
         # `permutedims!` approach to `LinearAlgebra.copy_transpose!` and to `.= transpose`
-        # show this to be fastest and least allocating by up to ~2x, depending on Nᵈ.
+        # show this to be fastest and least allocating by up to ~2x, depending on Nᵈ.  It
+        # is also about 20% faster here than `transpose_into!`.
         data_view = view(data, i, :, :)
         permutedims!(dᵢ, data_view, (2, 1))
 
@@ -653,8 +654,9 @@ function transform!(
             dc,
         )
 
-        # Copy the transformed pixel time series back from the d′ᵢ buffer
-        permutedims!(data_view, d′ᵢ, (2, 1))
+        # Copy the transformed pixel time series back from the d′ᵢ buffer.  Into a view,
+        # `permutedims!` would dispatch dynamically and allocate; see `transpose_into!`.
+        transpose_into!(data_view, d′ᵢ)
     end  # OhMyThreads.@tasks
 
     ###
@@ -663,7 +665,7 @@ function transform!(
 
     let
         for k ∈ 1:Nᵈ
-            s = spin_weight(C[k])
+            s = spin_weights(dc)[k]
             for sub_start ∈ 1:block_size:Nᵗ
                 sub = sub_start:min(sub_start + block_size - 1, Nᵗ)
                 ldiv!(augmented_lu[s], view(data, :, sub, k))
@@ -866,7 +868,7 @@ function pixel_waveform(
 
     # Synthesize modes → pixels on the grid, one GEMM per unique spin weight, as in stage 1
     # of `transform!` — but out of place, into `P`.
-    spins = Int[spin_weight(Val(c)) for c ∈ C]
+    spins = collect(spin_weights(dc))
     P = Array{Complex{TP},3}(undef, Nᵖ, Nᵗ, Nᵈ)
     for s ∈ unique(spins)
         # `sYlm_matrix` columns cover modes with ℓ ≥ |s|; the leading ℓ < |s| rows of
@@ -906,7 +908,7 @@ function pixel_waveform(
             zero(Complex{TP}),
             dc,
         )
-        permutedims!(view(out, i, :, :), d′ᵢ, (2, 1))
+        transpose_into!(view(out, i, :, :), d′ᵢ)
     end
     return out
 end
@@ -996,7 +998,7 @@ function transform_objective(
 
     Nᵐ, Nᵗ, Nᵈ, ℓₘₐₓ, N₀ = validate_transform_inputs(data, t, v⃗, R, αᵢₙ, dc, ℓₘₐₓ₀)
     validate_plan(plan, dc, N₀)
-    spins = Int[spin_weight(Val(c)) for c ∈ C]
+    spins = collect(spin_weights(dc))
     R′ₚ, w, t′, v, u, c = plan.R′ₚ, plan.w, plan.t′, plan.v, plan.u, plan.c
     Nᵖ = length(R′ₚ)
     Nᵗ′ = length(t′)
