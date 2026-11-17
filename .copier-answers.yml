@@ -24,8 +24,8 @@ ExplicitImportsChecklist: exclude_all_qualified_accesses_are_public
 GitHubActionVersionAutoUpdate: dependabot
 JuliaCompatAutoUpdate: dependabot
 JuliaIndentation: 4
-JuliaMinCIVersion: lts
-JuliaMinVersion: '1.10'
+JuliaMinCIVersion: '1.12'
+JuliaMinVersion: '1.12'
 License: MIT
 LicenseCopyrightHolders: Michael Boyle
 MarkdownIndentation: 2
@@ -38,4 +38,5 @@ StrategyLevel: 2
 StrategyReviewExcluded: true
 TestingStrategy: testitem_cli
 UseCirrusCI: false
-_src_path: /Users/boyle/.julia/packages/BestieTemplate/fOzc4
+_commit: v0.18.6
+_src_path: https://github.com/JuliaBesties/BestieTemplate.jl

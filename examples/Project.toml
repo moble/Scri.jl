@@ -13,3 +13,10 @@ SphericalFunctions = "af6d55de-b1f7-4743-b797-0829a72cf84e"
 
 [sources]
 Scri = {path = ".."}
+
+[compat]
+ArgParse = "1.2"
+DoubleFloats = "1.12"
+JLD2 = "0.6"
+LaTeXStrings = "1.4"
+PythonPlot = "1.0"

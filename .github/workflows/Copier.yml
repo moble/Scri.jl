@@ -9,7 +9,7 @@ jobs:
   Copier:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.COPIER_PAT }}
       - uses: julia-actions/setup-julia@v3
@@ -22,7 +22,7 @@ jobs:
       - name: Hack for setup-python cache # https://github.com/actions/setup-python/issues/807
         run: touch requirements.txt
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           cache: 'pip'
           python-version: "3.11"
@@ -31,7 +31,7 @@ jobs:
       - name: Check for update in the template
         run: |
           pip install copier
-          copier update -A -o rej
+          copier update -A --defaults -o rej
           echo -e "Automated changed by Copier.yml workflow\n" > /tmp/body.md
           echo -e 'Rejected changes (if any):\n```diff\n' >> /tmp/body.md
           find . -name "*.rej" | xargs cat >> /tmp/body.md

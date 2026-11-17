@@ -14,3 +14,10 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [sources]
 Scri = {path = ".."}
+
+[compat]
+DoubleFloats = "1.12"
+Pkg = "1"
+TOML = "1"
+Test = "1"
+TestItemRunner = "1.3"
