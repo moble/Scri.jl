@@ -46,9 +46,9 @@ function in_F(x, y, z)
 end
 function in_F(R)
     θ, ϕ = Quaternionic.to_spherical_coordinates(R)
-    in_vert = 1π/12 < θ < 6π/12 && 0 < ϕ < 1π/8
-    in_top = 1π/12 < θ < 2π/12 && 0 < ϕ < 4π/8
-    in_mid = 3π/12 < θ < 4π/12 && 0 < ϕ < 3π/8
+    in_vert = 1π / 12 < θ < 6π / 12 && 0 < ϕ < 1π / 8
+    in_top = 1π / 12 < θ < 2π / 12 && 0 < ϕ < 4π / 8
+    in_mid = 3π / 12 < θ < 4π / 12 && 0 < ϕ < 3π / 8
     return in_vert || in_top || in_mid
 end
 
@@ -66,7 +66,7 @@ const N_modes = (ℓₘₐₓ + 1)^2
 const ℓ_samp = 2 * ℓₘₐₓ   # (ℓ_samp+1)² ≈ 4 × N_modes sample points
 
 println("Computing SSHT sample grid…")
-const R_f = exp(Quaternionic.QuatVecF64(0.0, 0.0, 1.0) * (π/4))
+const R_f = exp(Quaternionic.QuatVecF64(0.0, 0.0, 1.0) * (π / 4))
 const Rₛ = golden_ratio_spiral_rotors(0, ℓ_samp, Float64)
 const mask_vals = [in_F(vec(R(𝐤))...) for R ∈ Rₛ]
 #const mask_vals = [in_F(R) for R ∈ Rₛ]
@@ -80,7 +80,7 @@ const α_orig = Y_samp \ complex(mask_vals)         # least-squares → ψ₂ mo
 # Panel 2's camera sits at −x looking toward +x, where the rotated F is face-on.
 
 #const R_rot = rotor(-π/2, 0.0, 0.0, 1.0)   # CW 90° about z
-const R_rot = exp(normalize(𝐢/3+𝐣+𝐤) * (π/3) / 2)   # rotate by π/3 about (y+z)/√2
+const R_rot = exp(normalize(𝐢 / 3 + 𝐣 + 𝐤) * (π / 3) / 2)   # rotate by π/3 about (y+z)/√2
 const M = Quaternionic.to_rotation_matrix(R_rot) # active rotation matrix
 
 # DataComponents(:ψ₂, :ψ₃, :ψ₄): ψ₂ = spin-0, ψ₃ = −1, ψ₄ = −2.
@@ -116,7 +116,7 @@ const θg = range(0.0, Float64(π), Nθ)
 const φg = range(0.0, 2Float64(π), Nφ)
 
 println("Building dense evaluation grid…")
-const Rs_mat = [R_f*from_spherical_coordinates(Float64(t), Float64(p)) for t ∈ θg, p ∈ φg]
+const Rs_mat = [R_f * from_spherical_coordinates(Float64(t), Float64(p)) for t ∈ θg, p ∈ φg]
 const Y_dense = sYlm_matrix(vec(Rs_mat), ℓₘₐₓ, 0)
 
 const f_orig = clamp.(reshape(real.(Y_dense * α_orig), Nθ, Nφ), 0.0, 1.0)

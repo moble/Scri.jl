@@ -87,7 +87,7 @@ end
             Rotor{basetype(Q)}(Q)
         else
             Θ = 2atan(exp(-ε * φ) * tan(Θ̑ / 2))  # Eq. (C7): rest-frame polar angle; ε flips sign
-            exp((k̂′xv⃗/μ) * (Θ̑-Θ)/2)              # Eq. (C8): sign of (Θ̑-Θ) implicitly includes ε
+            exp((k̂′xv⃗ / μ) * (Θ̑ - Θ) / 2)              # Eq. (C8): sign of (Θ̑-Θ) implicitly includes ε
         end
 
         return B′ * RRₚᵢ
@@ -184,7 +184,7 @@ end
         ϵ = eps(T)
         for β ∈ T.([1//10^6, 1//1000, 1//2, 9//10, 999//1000]),
             R′ₚᵢ ∈
-            (one(Rotor{T}), normalize(Rotor{T}(1, T(1)/10^7, 0, 0)), randn(rng, Rotor{T}))
+            (one(Rotor{T}), normalize(Rotor{T}(1, T(1) / 10^7, 0, 0)), randn(rng, Rotor{T}))
 
             R = randn(rng, Rotor{T})  # frame rotation, as folded in by the caller
             v⃗ = β * normalize(randn(rng, QuatVec{T}))
@@ -229,7 +229,7 @@ end
     # ℐ = -1 (ℐ⁻): rest-frame direction is in the southern hemisphere (cosΘ = -β).
     for T ∈ FloatTypes, ℐ ∈ (-1, +1)
         let π = T(π)
-            R = Rotor(cos(π/4), 0, sin(π/4), 0)
+            R = Rotor(cos(π / 4), 0, sin(π / 4), 0)
             for β ∈ T.([0.1, 0.3, 0.5, 0.7, 0.9])
                 v⃗ = QuatVec(0, 0, β)
                 R_rest = Scri.aberration(R, Boost(ℐ * v⃗))
@@ -268,9 +268,9 @@ end
         let π = T(π)
             rotors = [
                 Rotor(one(T), 0, 0, 0),
-                Rotor(cos(π/4), sin(π/4), 0, 0),
-                Rotor(cos(π/4), 0, sin(π/4), 0),
-                Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0),
+                Rotor(cos(π / 4), 0, sin(π / 4), 0),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0) * Rotor(cos(π / 3), 0, sin(π / 3), 0),
             ]
             for β ∈ T.([0.1, 0.5, 0.9]), R ∈ rotors
                 v⃗ = QuatVec(T(0.6) * β, T(-0.8) * β, 0)
@@ -302,11 +302,11 @@ end
     # equivariance of the K factor under rotations about the boost axis.
     for T ∈ FloatTypes
         let π = T(π)
-            R_base = Rotor(cos(π/4), 0, sin(π/4), 0)  # equatorial pixel
+            R_base = Rotor(cos(π / 4), 0, sin(π / 4), 0)  # equatorial pixel
             for β ∈ T.([0.3, 0.7])
                 v⃗ = QuatVec(0, 0, β)
-                for α ∈ [π/6, π/3, 2π/3]
-                    Rz = Rotor(cos(α/2), 0, 0, sin(α/2))  # rotation by α about z
+                for α ∈ [π / 6, π / 3, 2π / 3]
+                    Rz = Rotor(cos(α / 2), 0, 0, sin(α / 2))  # rotation by α about z
                     lhs = Scri.aberration(Rz * R_base, Boost(v⃗))
                     rhs = Rz * Scri.aberration(R_base, Boost(v⃗))
                     @test components(lhs) ≈ components(rhs) atol = 4eps(T)
@@ -329,7 +329,7 @@ end
     # mathematical function at higher precision.
     for ℐ ∈ (-1, +1),
         β64 ∈ [1e-18, sqrt(eps(Float64)), cbrt(eps(Float64)), 1e-3],
-        θ64 ∈ [0.0, 1e-8, 1e-4, 0.5, π/2]  # pixel angle from the boost (z) axis
+        θ64 ∈ [0.0, 1e-8, 1e-4, 0.5, π / 2]  # pixel angle from the boost (z) axis
 
         θ = BigFloat(θ64)
         R_big = Rotor(cos(θ / 2), sin(θ / 2), 0, 0)
@@ -364,9 +364,9 @@ end
             ]
             rotors = [
                 Rotor(one(T), 0, 0, 0),
-                Rotor(cos(π/4), sin(π/4), 0, 0),
-                Rotor(cos(π/4), 0, sin(π/4), 0),
-                Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0),
+                Rotor(cos(π / 4), 0, sin(π / 4), 0),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0) * Rotor(cos(π / 3), 0, sin(π / 3), 0),
             ]
             for (η₁, k̂₁, η₂, k̂₂) ∈ boost_pairs
                 L₁ = Boost(η₁, k̂₁)
@@ -423,8 +423,8 @@ end
     pixels = [
         Rotor{Float64}(1, 0, 0, 0),                  # pole
         Rotor{Float64}(1, 1e-10, 0, 0),              # essentially at the pole
-        Rotor{Float64}(cos(π/8), sin(π/8), 0, 0),    # mid-latitude
-        Rotor{Float64}(cos(π/4), 0, sin(π/4), 0),    # equator
+        Rotor{Float64}(cos(π / 8), sin(π / 8), 0, 0),    # mid-latitude
+        Rotor{Float64}(cos(π / 4), 0, sin(π / 4), 0),    # equator
     ]
     for β ∈ (0.9, 0.99, 0.999, 0.9999), ℐ ∈ (-1, +1)
         v⃗ = QuatVec(0.0, 0.0, β)
@@ -479,7 +479,7 @@ end
     # the xz-plane; the rest-frame direction is K(𝐤).
     for β ∈ (0.1, 0.5, 0.9), ℐ ∈ (-1, +1)
         v⃗ = QuatVec(0.0, 0.0, β)
-        for Θ̑ ∈ (π/6, π/4, π/3, π/2, 2π/3, 3π/4)
+        for Θ̑ ∈ (π / 6, π / 4, π / 3, π / 2, 2π / 3, 3π / 4)
             R = Rotor{Float64}(cos(Θ̑ / 2), 0, sin(Θ̑ / 2), 0)  # rotate 𝐤 by Θ̑ about y
             K = aberration(R, Boost(ℐ * v⃗))
             k̂_rest = K(𝐤)

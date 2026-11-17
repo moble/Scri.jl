@@ -1513,8 +1513,8 @@ matrices via [`rotate_modes`](@ref Scri.rotate_modes)).
 function compose(
     g₁::BMS{T,A,I},
     g₂::BMS{T,A,I};
-    ℓₘₐₓ::Int=max(ell_max(g₂)+1, ell_max(g₁)),
-    ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g₂)+1, ell_max(g₁)),
+    ℓₘₐₓ::Int=max(ell_max(g₂) + 1, ell_max(g₁)),
+    ℓʷ::Int=max(2ℓₘₐₓ + 1, ell_max(g₂) + 1, ell_max(g₁)),
 ) where {T<:Real,A,I}
     ℓʷ ≥ ℓₘₐₓ ||
         throw(ArgumentError("Working bandwidth ℓʷ=$ℓʷ must be at least ℓₘₐₓ=$ℓₘₐₓ"))

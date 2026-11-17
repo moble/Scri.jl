@@ -110,14 +110,14 @@ end
         t = T.(cumsum(dt))
         # random linear: p(x) = a + b·x
         a, b = T.(randn(rng, 2))
-        poly(x) = a + b*x
+        poly(x) = a + b * x
         d = poly.(t)
         cache = Scri.CubicSplineCache(t)
         # query at 30 interior points
         for _ ∈ 1:30
             xq = t[1] + rand(rng) * (t[end] - t[1])
             s = cubic_spline_interp(cache, t, d, T(xq))
-            @test s ≈ poly(T(xq)) atol = 100 * eps(T) * (abs(a) + abs(b)*t[end] + 1)
+            @test s ≈ poly(T(xq)) atol = 100 * eps(T) * (abs(a) + abs(b) * t[end] + 1)
         end
     end
 end
@@ -165,13 +165,13 @@ end
         dt = T.(sort(rand(rng, N - 1)) .* T(4) .+ T(0.05))
         t = T.(cumsum(dt))
         a, b = T.(randn(rng, 2))
-        poly(x) = a + b*x
+        poly(x) = a + b * x
         d = poly.(t)
         cache = Scri.CubicSplineCache(t)
         for _ ∈ 1:20
             xq = t[1] + rand(rng) * (t[end] - t[1])
             s = cubic_spline_interp(cache, t, d, T(xq))
-            @test s ≈ poly(T(xq)) atol = 1000 * eps(T) * (abs(a) + abs(b)*t[end] + 1)
+            @test s ≈ poly(T(xq)) atol = 1000 * eps(T) * (abs(a) + abs(b) * t[end] + 1)
         end
     end
 end
@@ -194,9 +194,9 @@ end
         c = Scri.CubicSplineCache(t)
         # Forward sweep
         d̈ = zeros(T, N)
-        d̈[2] = T(6) * (c.h⁻¹[2]*(d[3]-d[2]) - c.h⁻¹[1]*(d[2]-d[1])) * c.u⁻¹[1]
+        d̈[2] = T(6) * (c.h⁻¹[2] * (d[3] - d[2]) - c.h⁻¹[1] * (d[2] - d[1])) * c.u⁻¹[1]
         for j ∈ 3:(N - 1)
-            r = T(6) * (c.h⁻¹[j]*(d[j + 1]-d[j]) - c.h⁻¹[j - 1]*(d[j]-d[j - 1]))
+            r = T(6) * (c.h⁻¹[j] * (d[j + 1] - d[j]) - c.h⁻¹[j - 1] * (d[j] - d[j - 1]))
             d̈[j] = (r - c.h[j - 1] * d̈[j - 1]) * c.u⁻¹[j - 1]
         end
         # Backward sweep
@@ -207,11 +207,11 @@ end
         @test d̈[end] == 0
         # The interior system A·d̈[2..N-1] = r should be satisfied to machine precision.
         for j ∈ 2:(N - 1)
-            r = T(6) * (c.h⁻¹[j]*(d[j + 1]-d[j]) - c.h⁻¹[j - 1]*(d[j]-d[j - 1]))
+            r = T(6) * (c.h⁻¹[j] * (d[j + 1] - d[j]) - c.h⁻¹[j - 1] * (d[j] - d[j - 1]))
             lhs =
-                (j > 2 ? c.h[j - 1]*d̈[j - 1] : 0) +
-                2*(c.h[j - 1]+c.h[j])*d̈[j] +
-                (j < N-1 ? c.h[j]*d̈[j + 1] : 0)
+                (j > 2 ? c.h[j - 1] * d̈[j - 1] : 0) +
+                2 * (c.h[j - 1] + c.h[j]) * d̈[j] +
+                (j < N - 1 ? c.h[j] * d̈[j + 1] : 0)
             @test lhs ≈ r atol = 1e4 * eps(T) * (abs(r) + 1)
         end
     end

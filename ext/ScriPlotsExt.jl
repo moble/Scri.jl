@@ -17,7 +17,7 @@ function Scri.diagnostics(t, data, data_components)
         colors = reshape(
             [
                 [red for _ ∈ 0:(abs(s) - 1)];
-                range(green; stop=yellow, length=ℓₘₐₓ-abs(s)+1)
+                range(green; stop=yellow, length=ℓₘₐₓ - abs(s) + 1)
             ],
             1,
             :,

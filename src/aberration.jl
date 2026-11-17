@@ -53,10 +53,10 @@ end
             Λℐ = Boost(ℐ * v⃗_zero)
             for R′ₚᵢ ∈ [
                 Rotor(one(T), 0, 0, 0),
-                Rotor(cos(π/4), sin(π/4), 0, 0),
-                Rotor(cos(π/4), 0, sin(π/4), 0),
-                Rotor(cos(π/4), 0, 0, sin(π/4)),
-                Rotor(cos(π/4), sin(π/4), 0, 0) * Rotor(cos(π/3), 0, sin(π/3), 0),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0),
+                Rotor(cos(π / 4), 0, sin(π / 4), 0),
+                Rotor(cos(π / 4), 0, 0, sin(π / 4)),
+                Rotor(cos(π / 4), sin(π / 4), 0, 0) * Rotor(cos(π / 3), 0, sin(π / 3), 0),
             ]
                 @test components(aberration(R′ₚᵢ, Λℐ)) ≈ components(R′ₚᵢ) atol = 4eps(T)
             end
@@ -84,8 +84,8 @@ end
         for β ∈ T.([0.1, 0.5, 0.9])
             v⃗ = QuatVec(0, 0, β)
             Λℐ = Boost(ℐ * v⃗)
-            @test components(aberration(R_north, Λℐ)) ≈ components(R_north) atol=4ϵ
-            @test components(aberration(R_south, Λℐ)) ≈ components(R_south) atol=4ϵ
+            @test components(aberration(R_north, Λℐ)) ≈ components(R_north) atol = 4ϵ
+            @test components(aberration(R_south, Λℐ)) ≈ components(R_south) atol = 4ϵ
         end
     end
 end

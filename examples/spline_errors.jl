@@ -84,7 +84,7 @@ ENV["GKSwstype"] = "100"  # suppress GR GUI window; still writes PNG files
 function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     rng = Random.Xoshiro(123)
 
-    Nᵐ = (ℓₘₐₓ+1)^2
+    Nᵐ = (ℓₘₐₓ + 1)^2
     ℓₘₐₓ₀ = min(8, ℓₘₐₓ)
     Nᵐ₀ = (ℓₘₐₓ₀ + 1)^2
     data_components = (:σ,)
@@ -102,8 +102,8 @@ function generate_parameters(T, ℓₘₐₓ; Nᵗ, t₁, t₂, β)
     αᵢₙ = zeros(Complex{T}, Nᵐ)
 
     # (ℓ, m) for each mode index
-    ℓᵢ = [isqrt(i-1) for i ∈ 1:Nᵐ]
-    mᵢ = [(i-1) - ℓᵢ[i]*(ℓᵢ[i]+1) for i ∈ 1:Nᵐ]
+    ℓᵢ = [isqrt(i - 1) for i ∈ 1:Nᵐ]
+    mᵢ = [(i - 1) - ℓᵢ[i] * (ℓᵢ[i] + 1) for i ∈ 1:Nᵐ]
 
     c = zeros(Complex{T}, Nᵐ, Nᵈ)
     for (d, comp) ∈ enumerate(data_components)
@@ -129,7 +129,7 @@ function compute_example(T, ℓₘₐₓ; Nᵗ=10_001, t₁=-5_000, t₂=5_000, 
     data, t, v⃗, R, αᵢₙ, M₄ = parameters
     dc = Scri.DataComponents(:σ)
 
-    N = floor(Int, 1/2β)  # Time samples away from 0 where plateau begins
+    N = floor(Int, 1 / 2β)  # Time samples away from 0 where plateau begins
     t₋, t₊ = let
         i₀ = argmin(abs.(t))
         t[i₀ - N], t[i₀ + N]

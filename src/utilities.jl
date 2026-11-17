@@ -294,19 +294,19 @@ function compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, ℐ=One())
     @inbounds @simd ivdep for i ∈ eachindex(Rₚ, αₚ, ðαₚ)
         Rₚᵢʷ, Rₚᵢˣ, Rₚᵢʸ, Rₚᵢᶻ = components(Rₚ[i])
         λˣ = (
-            (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vˣ +
-            (-Rₚᵢʷ*Rₚᵢʸ + Rₚᵢˣ*Rₚᵢᶻ)*2vᶻ +
-            (Rₚᵢˣ*Rₚᵢʸ + Rₚᵢʷ*Rₚᵢᶻ)*2vʸ
+            (Rₚᵢʷ^2 + Rₚᵢˣ^2 - Rₚᵢʸ^2 - Rₚᵢᶻ^2) * vˣ +
+            (-Rₚᵢʷ * Rₚᵢʸ + Rₚᵢˣ * Rₚᵢᶻ) * 2vᶻ +
+            (Rₚᵢˣ * Rₚᵢʸ + Rₚᵢʷ * Rₚᵢᶻ) * 2vʸ
         )
         λʸ = (
-            (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2)*vʸ +
-            (Rₚᵢˣ*Rₚᵢʸ - Rₚᵢʷ*Rₚᵢᶻ)*2vˣ +
-            (Rₚᵢʸ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢˣ)*2vᶻ
+            (Rₚᵢʷ^2 - Rₚᵢˣ^2 + Rₚᵢʸ^2 - Rₚᵢᶻ^2) * vʸ +
+            (Rₚᵢˣ * Rₚᵢʸ - Rₚᵢʷ * Rₚᵢᶻ) * 2vˣ +
+            (Rₚᵢʸ * Rₚᵢᶻ + Rₚᵢʷ * Rₚᵢˣ) * 2vᶻ
         )
         λᶻ = (
-            (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2)*vᶻ +
-            (-Rₚᵢʷ*Rₚᵢˣ + Rₚᵢʸ*Rₚᵢᶻ)*2vʸ +
-            (Rₚᵢˣ*Rₚᵢᶻ + Rₚᵢʷ*Rₚᵢʸ)*2vˣ
+            (Rₚᵢʷ^2 + Rₚᵢᶻ^2 - Rₚᵢˣ^2 - Rₚᵢʸ^2) * vᶻ +
+            (-Rₚᵢʷ * Rₚᵢˣ + Rₚᵢʸ * Rₚᵢᶻ) * 2vʸ +
+            (Rₚᵢˣ * Rₚᵢᶻ + Rₚᵢʷ * Rₚᵢʸ) * 2vˣ
         )
         ðκ╱2κ = (λˣ + im * λʸ) / 2(λᶻ - ℐ)
         ðt′╱2κ[2, i] = ðκ╱2κ
@@ -348,7 +348,7 @@ function diagnostics(data, data_components::DataComponents{C,ℐ}) where {C,ℐ}
     ℓₘₐₓ = L - 1
     diag = Dict{Symbol,Matrix{real(eltype(data))}}()
     for (d, comp) ∈ enumerate(C)
-        power = Matrix{real(eltype(data))}(undef, Nᵗ, ℓₘₐₓ+1)
+        power = Matrix{real(eltype(data))}(undef, Nᵗ, ℓₘₐₓ + 1)
         for ℓ ∈ 0:ℓₘₐₓ
             mode_indices = (ℓ ^ 2 + 1):((ℓ + 1) ^ 2)
             power[:, ℓ + 1] = sum(abs2, (@view data[mode_indices, :, d]); dims=1)[1, :]

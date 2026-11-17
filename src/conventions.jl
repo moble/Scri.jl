@@ -64,7 +64,7 @@ function Conventions(;
             "c_ð = $c_ð has no effect: Scri always computes ð with the Newman–Penrose " *
                 "normalization, which is c_ð = 1.  The value is recorded only to " *
                 "describe the convention.",
-            maxlog = 1,
+            maxlog=1,
         )
     end
     return c
