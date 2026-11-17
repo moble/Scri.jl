@@ -108,6 +108,20 @@ times faster with the plan than without it:
 Building the plan takes about as long as the setup that it replaces:
 6 ms at ``ℓ_\mathrm{max} = 16``, and 0.14 s at ``ℓ_\mathrm{max} = 32``.
 
+Most of the time of a call at a high ``ℓ_\mathrm{max}`` starts with
+modes, "synthesizes" to pixel values, (does some processing and) then
+"analyzes" back to modes — which are dense matrix products and solves.
+Those run on BLAS's own threads, however many threads Julia has been
+started with, so starting Julia with more threads speeds up only the
+work done pixel by pixel.  With 20,000 time samples and 8 BLAS
+threads, that work is 2.3 to 4.5 times faster with 8 Julia threads
+than with 1, but a whole call is only about 1.2 times faster, or 1.25
+to 1.5 times with a plan.  With 8 Julia threads, the matrix products
+and solves take 42% of the time at ``ℓ_\mathrm{max} = 8`` for the
+strain alone, and 78% at ``ℓ_\mathrm{max} = 16`` for the strain and
+all five Weyl components.  For those, the BLAS library and its number
+of threads matter far more than Julia's.
+
 ## Signatures
 
 The fully explicit form takes the transformation as separate parts —

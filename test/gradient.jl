@@ -259,23 +259,86 @@ end
     end
 end
 
+@testitem "objective_and_gradient!: the same with several blocks of pixels" tags = [
+    :validation
+] begin
+    import Random
+
+    # The pixels are taken in blocks, and with ℓ_fit the main pass takes them in reverse
+    # order and reuses the harmonics and series that the first pass left from its last
+    # block.  A tiny memory budget forces several blocks of the smallest size, four pixels
+    # for each thread, with a shorter last block, on a grid fine enough for at least three
+    # of them.  The results must be those of the default budget, which makes one block.
+    rng = Random.Xoshiro(6868)
+    ℓ = 4
+    N = (ℓ + 1)^2
+    Nᵗ = 30
+    t = collect(LinRange(-20.0, 20.0, Nᵗ))
+    t′ = Scri.compute_t′(t, 0.1, 1.0)
+    dc = Scri.DataComponents(:h, :ψ₄, :ψ₃)
+    data = Random.randn(rng, ComplexF64, N, Nᵗ, 3)
+    target = Random.randn(rng, ComplexF64, N, Nᵗ, 3)
+    θ = [0.1, -0.2, 0.3, 0.02, 0.01, -0.03, (0.05 .* Random.randn(rng, 9))...]
+    Bₘᵢₙ = 4 * Threads.nthreads()
+    Nᵖ(L) = (L + 1) * (2L + 1)  # the pixels of `sphere_quadrature(L)`
+    L = first(L for L ∈ ℓ:100 if Nᵖ(L) ≥ 3Bₘᵢₙ && Nᵖ(L) % Bₘᵢₙ ≠ 0)
+    tiny = 1
+    for kw ∈ ((;), (; ℓ_fit=3, normalize=true))
+        plan = Scri.ObjectivePlan(target, t, dc, t′; grid=Scri.sphere_quadrature(L), kw...)
+        @test length(plan.R′ₚ) == Nᵖ(L)
+        # Any budget too small for the smallest blocks gives the same blocks.
+        blocks = Scri.synthesis_blocks(data, plan.R′ₚ, plan.spins; budget=tiny)
+        @test length(blocks) ≥ 3
+        @test length(last(blocks)) < length(first(blocks))
+        @test length(Scri.synthesis_blocks(data, plan.R′ₚ, plan.spins)) == 1
+
+        Φ, ∇ = Scri.gradient_core(data, t, θ, dc, plan, nothing, Val(8))
+        Φᵇ, ∇ᵇ = Scri.gradient_core(data, t, θ, dc, plan, nothing, Val(8), tiny)
+        @test Φᵇ ≈ Φ rtol = 1e-13
+        @test ∇ᵇ ≈ ∇ rtol = 1e-13
+        J = Scri.transform_objective(data, t, Scri.bms_from_parameters(θ)..., dc, plan)
+        @test Φᵇ ≈ J rtol = 1e-13
+
+        # The objective's projection, in the tiny blocks, is the one in a single block.
+        if plan.ℓ_fit ≥ 0
+            cache = Scri.CubicSplineCache(t)
+            geometry = Scri.pixel_geometry(
+                t, t′, Scri.bms_from_parameters(θ)..., plan.R′ₚ, dc
+            )
+            args = (data, t, t′, cache, geometry, dc, plan.spins, N, plan.Ȳ)
+            μ̂ = Scri.transformed_projection(args..., Float64)
+            workspace = Scri.block_workspace(
+                blocks, data, t′, geometry.Rₚ, plan.spins, Float64
+            )
+            μᵇ = Array{ComplexF64}(undef, length(t′), length(first(blocks)), 3)
+            μ̂ᵇ = Scri.transformed_projection!(similar.(μ̂), μᵇ, blocks, args..., workspace)
+            @test μ̂ᵇ ≈ μ̂ rtol = 1e-13
+        end
+    end
+end
+
 @testitem "objective_and_gradient!: Double64" tags = [:validation] begin
     using DoubleFloats: Double64
     import ForwardDiff
     import Random
 
+    # In Double64 the products are generic rather than BLAS, also with ℓ_fit, where the
+    # projected residual is evaluated back at the pixels by a product with its adjoint.
     rng = Random.Xoshiro(6565)
     ℓ = 3
     N = (ℓ + 1)^2
     Nᵗ = 16
     t = collect(LinRange(Double64(-10), Double64(10), Nᵗ))
+    t′ = Scri.compute_t′(t, Double64(0.1), Double64(1))
     dc = Scri.DataComponents(:h, :ψ₄)
     data = Complex{Double64}.(Random.randn(rng, ComplexF64, N, Nᵗ, 2))
     target = Complex{Double64}.(Random.randn(rng, ComplexF64, N, Nᵗ, 2))
-    plan = Scri.ObjectivePlan(target, t, dc, Scri.compute_t′(t, Double64(0.1), Double64(1)))
     θ = Double64.([0.1, -0.2, 0.3, 0.02, 0.01, -0.03, 0.05, -0.04, 0.03, 0.02])
-    J(θ) = Scri.transform_objective(data, t, Scri.bms_from_parameters(θ)..., dc, plan)
-    ∇ = similar(θ)
-    @test Scri.objective_and_gradient!(∇, θ, data, t, dc, plan) ≈ J(θ) rtol = 1e-28
-    @test ∇ ≈ ForwardDiff.gradient(J, θ) rtol = 1e-25
+    for kw ∈ ((;), (; ℓ_fit=2))
+        plan = Scri.ObjectivePlan(target, t, dc, t′; kw...)
+        J(θ) = Scri.transform_objective(data, t, Scri.bms_from_parameters(θ)..., dc, plan)
+        ∇ = similar(θ)
+        @test Scri.objective_and_gradient!(∇, θ, data, t, dc, plan) ≈ J(θ) rtol = 1e-28
+        @test ∇ ≈ ForwardDiff.gradient(J, θ) rtol = 1e-25
+    end
 end

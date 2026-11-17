@@ -574,6 +574,13 @@ function transform!(
     # Compute ðt′/2κ parts.
     task_ðt′╱2κₚ = OhMyThreads.@spawn compute_ðt′╱2κ(Rₚ, v⃗, αₚ, ðαₚ, I)
 
+    # The analysis factorization is needed only in stage 3, but we wait for it here.  It
+    # calls BLAS and LAPACK, and if it were still running during stage 1 its threads would
+    # compete with those of the synthesis products, which happens whenever Julia has more
+    # than one thread.  It has had all of the setup above to overlap with.
+    augmented_lu =
+        isnothing(task_augmented_lu) ? plan.factorizations : fetch(task_augmented_lu)
+
     ###
     ### Stage 1: Evaluate all input data on the distorted grid
     ###
@@ -654,8 +661,6 @@ function transform!(
     ### Stage 3: Transform back to modes of the transformed data
     ###
 
-    augmented_lu =
-        isnothing(task_augmented_lu) ? plan.factorizations : fetch(task_augmented_lu)
     let
         for k ∈ 1:Nᵈ
             s = spin_weight(C[k])
@@ -1051,14 +1056,23 @@ function transform_objective(
     else
         # The band-limited objective compares the projections of the transformed waveform
         # and of the target onto the modes with ℓ ≤ ℓ_fit.
-        μ̂ = transformed_projection(
+        # Their difference, Π, is formed in place of the transformed waveform's projection,
+        # and its weighted sum of squares is added up in the same order as in the gradient.
+        # The `let` keeps the sums' names local, apart from those in the closure above.
+        Π = transformed_projection(
             data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, plan.Ȳ, TR
         )
-        sum(
-            u[k] * sum(
-                v[i] * sum(abs2, view(μ̂[k], :, i) .- view(plan.ĉ[k], :, i)) for i ∈ 1:Nᵗ′
-            ) for k ∈ 1:Nᵈ
-        )
+        let Σₖ = zero(TR)
+            for k ∈ 1:Nᵈ
+                Π[k] .-= plan.ĉ[k]
+                Σᵢ = zero(TR)
+                for i ∈ 1:Nᵗ′
+                    Σᵢ += v[i] * sum(abs2, view(Π[k], :, i))
+                end
+                Σₖ += u[k] * Σᵢ
+            end
+            Σₖ
+        end
     end
     return plan.normalize ? Φ / plan.norm² : Φ
 end

@@ -1976,6 +1976,127 @@ end
         Scri.transform!(copy(data), t, v⃗₆₄, R₆₄, ComplexF64.(αᵢ), dc)
 end
 
+@testitem "transform!: Float32 data stay Float32 end to end and agree with Float64" tags = [
+    :validation, :integration, :fast
+] begin
+    using Quaternionic: QuatVec, Rotor, randn
+    using Test: @inferred
+    import Random
+
+    # We run a generic BMS transformation (a boost, a rotation, and a supertranslation with
+    # content up to ℓ = 3) on Float32 data and times, and run it again on the same values
+    # converted to Float64.  Every input is drawn in Float64 and rounded to Float32 first,
+    # so the two runs start from exactly the same numbers, and any difference between them
+    # comes from the Float32 arithmetic alone.
+    rng = Random.Xoshiro(3232)
+    ℓₘₐₓ = 8
+    N = (ℓₘₐₓ + 1)^2
+    Nᵗ = 300
+    u = collect(LinRange(-1.0, 1.0, Nᵗ))
+    grids = (
+        Float32.(150u),
+        # A non-uniform grid, whose steps vary smoothly between 0.75 and 1.25 times the
+        # mean step.
+        Float32.(150(u .+ sin.(π * u) / 4π)),
+    )
+    v⃗₃₂ = QuatVec{Float32}(0.1f0, -0.2f0, 0.15f0)
+    R₃₂ = Rotor{Float32}(randn(rng, Rotor{Float64}))
+    α₃₂ = ComplexF32.(Scri.impose_reality(3Random.randn(rng, ComplexF64, 16), 3, 1))
+    v⃗₆₄, R₆₄, α₆₄ = QuatVec{Float64}(v⃗₃₂), Rotor{Float64}(R₃₂), ComplexF64.(α₃₂)
+    g₃₂ = Scri.BMS{Float32}(; boost_velocity=v⃗₃₂, frame_rotation=R₃₂, supertranslation=α₃₂)
+    g₆₄ = Scri.BMS{Float64}(; boost_velocity=v⃗₆₄, frame_rotation=R₆₄, supertranslation=α₆₄)
+
+    # The largest difference between the two runs, relative to the largest value of each
+    # component, over all components.
+    relerr(d₃₂, d₆₄) = maximum(
+        maximum(abs, d₃₂[:, :, k] - d₆₄[:, :, k]) / maximum(abs, d₆₄[:, :, k]) for
+        k ∈ axes(d₆₄, 3)
+    )
+
+    # The tolerance is set by the round trip from modes to pixels and back.  The pixel
+    # values are sums of 81 harmonics, rounded at a few times eps(Float32), and the analysis
+    # back into modes amplifies that by the condition number of its matrix, which is about
+    # 16, 11, and 8 for |s| = 0, 1, and 2 at ℓₘₐₓ = 8.  So even the identity transformation
+    # differs from Float64 by about 50 eps(Float32), and generic transformations of random
+    # data, with either grid and at either null infinity, differ by at most 85 eps(Float32)
+    # over 120 cases; this test's own cases differ by at most 62.  The time interpolation
+    # and the component mixing add little to that over a span of a few hundred, but the
+    # rounding of the transformed times grows like ω|t| eps(Float32), so much longer spans
+    # would need a larger tolerance.  We allow 400 eps(Float32), about 5e-5,
+    # which still catches a Float32 defect: an error of 1e-5 in the conformal factor shifts
+    # the times at the ends of the grid by about 1e-3 and gives 3e-4 here, and the spline's
+    # inverse steps held at Float16 precision give 7e-5 on the non-uniform grid.
+    tol = 400eps(Float32)
+
+    # The difference must also be at least 4 eps(Float32).  A computation done in Float64
+    # and rounded to Float32 at the end would differ from the Float64 run by less than one
+    # eps(Float32), so this bound fails if `transform!` stops computing in Float32.
+
+    # The strain alone, and with the Weyl components at either null infinity.
+    dcs = (
+        Scri.DataComponents(:h),
+        Scri.DataComponents(:h, :ψ₄, :ψ₃, :ψ₂, :ψ₁, :ψ₀),
+        Scri.DataComponents(:h, :ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄; ℐ=-1),
+    )
+    for dc ∈ dcs, t₃₂ ∈ grids
+        Nᵈ = Scri.ncomponents(dc)
+        t₆₄ = Float64.(t₃₂)
+        # Smooth data, band-limited in ℓ and in time: each mode oscillates with its own
+        # frequency, at 12 to 60 samples per cycle, under a Gaussian envelope wide enough
+        # that the ends of the grid, where errors in the time law are largest, still count.
+        A = Random.randn(rng, ComplexF64, N, Nᵈ)
+        ω = 0.1 .+ 0.3rand(rng, N)
+        data₃₂ = ComplexF32[
+            A[i, k] * exp(-(t / 200)^2) * cis(ω[i] * t) for i ∈ 1:N, t ∈ t₆₄, k ∈ 1:Nᵈ
+        ]
+        data₆₄ = ComplexF64.(data₃₂)
+
+        # On the default output grid, nothing is promoted to Float64, and the grid itself
+        # agrees with the Float64 one to a few eps(Float32) (at most 3.1 measured).
+        d₃₂, t′₃₂ = @inferred Scri.transform!(copy(data₃₂), t₃₂, v⃗₃₂, R₃₂, α₃₂, dc)
+        _, t′₆₄ = Scri.transform!(copy(data₆₄), t₆₄, v⃗₆₄, R₆₄, α₆₄, dc)
+        @test d₃₂ isa Array{ComplexF32,3}
+        @test t′₃₂ isa Vector{Float32}
+        @test maximum(abs, t′₃₂ - t′₆₄) < 16eps(Float32) * maximum(abs, t′₆₄)
+
+        # The type of the output would hide a promotion inside, because the result is stored
+        # back into the Float32 array, so we also check the per-pixel geometry, which is
+        # built from the functions that `transform!` calls, and the spline.
+        R′ₚ = Scri.transform_grid(ℓₘₐₓ, Float32)
+        geometry = Scri.pixel_geometry(t₃₂, t′₃₂, v⃗₃₂, R₃₂, α₃₂, R′ₚ, dc)
+        @test geometry.Rₚ isa Vector{Rotor{Float32}}
+        @test geometry.κ⁻¹ₚ isa Vector{Float32}
+        @test geometry.αₚ isa Vector{Float32}
+        @test geometry.ðt′╱2κₚ isa Matrix{ComplexF32}
+        @test geometry.ð²αₚ isa Vector{ComplexF32}
+        @test Scri.CubicSplineCache(t₃₂) isa Scri.CubicSplineCache{Float32}
+
+        # The two default grids differ by a few eps(Float32), which would add to the
+        # difference of the data, so we compare the two runs on one grid.  It is the Float64
+        # default pulled in by 0.1% toward t′ = 0, which keeps it inside the valid span of
+        # both runs, and rounded to Float32, so that both runs use exactly the same times.
+        t′ = Float32.(t′₆₄ * (1 - 1e-3))
+        e₃₂, e′ = Scri.transform!(copy(data₃₂), t₃₂, v⃗₃₂, R₃₂, α₃₂, dc; t′)
+        e₆₄, _ = Scri.transform!(copy(data₆₄), t₆₄, v⃗₆₄, R₆₄, α₆₄, dc; t′=Float64.(t′))
+        @test e₃₂ isa Array{ComplexF32,3}
+        @test e′ isa Vector{Float32}
+        @test 4eps(Float32) < relerr(e₃₂, e₆₄) < tol
+
+        # A Float32 plan gives exactly the result without one.
+        plan = Scri.TransformPlan(data₃₂, dc)
+        @test plan isa Scri.TransformPlan{Float32}
+        @test first(Scri.transform!(copy(data₃₂), t₃₂, v⃗₃₂, R₃₂, α₃₂, dc; t′, plan)) == e₃₂
+
+        # The BMS-element form stays in Float32 too.  Its accessors recover the parameters
+        # with Float32 rounding, which stays well within the tolerance.
+        b₃₂, b′ = Scri.transform!(copy(data₃₂), t₃₂, g₃₂, dc; t′)
+        b₆₄, _ = Scri.transform!(copy(data₆₄), t₆₄, g₆₄, dc; t′=Float64.(t′))
+        @test b₃₂ isa Array{ComplexF32,3}
+        @test b′ isa Vector{Float32}
+        @test 4eps(Float32) < relerr(b₃₂, b₆₄) < tol
+    end
+end
+
 @testitem "transform!: boosted Schwarzschild has the boosted Bondi four-momentum" tags = [
     :validation, :integration, :fast
 ] begin

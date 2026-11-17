@@ -112,4 +112,10 @@ end
     @test flat(Scri.add_product!(copy(C), view(A, :, 2:4), view(B, 2:4, :))) ≈
         flat(LinearAlgebra.mul!(copy(C), view(A, :, 2:4), view(B, 2:4, :), true, true)) rtol =
         1e-14
+
+    # So does the product with the transpose of an array stored with time first, as the
+    # projection with ℓ_fit gathers it.
+    Bᵀ = permutedims(B)
+    product = Scri.add_product!(copy(C), A, transpose(view(Bᵀ, :, 1:5)))
+    @test flat(product) ≈ flat(expected) rtol = 1e-14
 end

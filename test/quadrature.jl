@@ -24,11 +24,11 @@
     # Every weight, including the tiny ones at the outermost nodes, has a small relative
     # error.  Computed directly from the nodes, the outermost lost about 500ε at n = 100.
     for n ∈ (33, 100, 300)
-        w = Scri.gauss_legendre(n)[2]
+        wᶠ = Scri.gauss_legendre(n)[2]
         wᵇ = setprecision(BigFloat, 256) do
             Scri.gauss_legendre(n, BigFloat)[2]
         end
-        @test maximum(abs.(big.(w) .- wᵇ) ./ wᵇ) < n * eps(Float64) / 4
+        @test maximum(abs.(big.(wᶠ) .- wᵇ) ./ wᵇ) < n * eps(Float64) / 4
     end
 end
 

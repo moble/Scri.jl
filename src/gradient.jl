@@ -81,7 +81,8 @@ end
 # matrix products over a block of pixels.  The dependence on the eight real scalars of a
 # pixel is found by running the interpolation and mixing once more with dual numbers in
 # those scalars.  The derivation is on the documentation page "The gradient of the
-# objective".
+# objective".  The optional `budget` is the memory budget of `synthesis_blocks`, which tests
+# make tiny to get several blocks of pixels from a small problem.
 function gradient_core(
     data::Array{Complex{T1},3},
     t::AbstractVector{T2},
@@ -90,6 +91,7 @@ function gradient_core(
     plan::ObjectivePlan{TQ},
     ℓₘₐₓ₀,
     ::Val{W},
+    budget::Integer=synthesis_budget(data),
 ) where {T1,T2,T,C,I,TQ,W}
     P = length(θ)
     spins = Int[spin_weight(Val(c)) for c ∈ C]
@@ -134,38 +136,25 @@ function gradient_core(
     ð²αₚ⁰ = valueof.(G⁰.ð²αₚ)
     scalars(j) = (κ⁻¹ₚ⁰[j], αₚ⁰[j], ðt′╱2κₚ⁰[1, j], ðt′╱2κₚ⁰[2, j], ð²αₚ⁰[j])
 
-    # With ℓ_fit, the objective compares the projections of the transformed waveform and of
-    # the target onto the modes up to ℓ_fit, which no single pixel determines, so a first
-    # pass computes the transformed waveform's projection, μ̂, exactly as the objective does.
-    # Its difference from the target's, Π, is what each pixel's ∂ν╱∂μ is made from in the
-    # main pass.
-    Π = if plan.ℓ_fit ≥ 0
-        geometry⁰ = (; Rₚ=Rₚ⁰, κ⁻¹ₚ=κ⁻¹ₚ⁰, αₚ=αₚ⁰, ðt′╱2κₚ=ðt′╱2κₚ⁰, ð²αₚ=ð²αₚ⁰)
-        μ̂ = transformed_projection(
-            data, t, t′, cubic_spline_cache, geometry⁰, dc, spins, N₀, plan.Ȳ, T
-        )
-        [μ̂[k] .- plan.ĉ[k] for k ∈ 1:Nᵈ]
-    else
-        nothing
-    end
-
-    # The main pass takes the pixels a block at a time.  The time series of a block are
-    # synthesized from the harmonics without derivatives.  With ℓ_fit, the conjugate of Π
-    # is evaluated back at the block's pixels by one more matrix product per component,
-    # into `wr̄ᵇ`: each pixel's weight times the conjugate of the projected residual there.
+    # The pixels are taken a block at a time.  The time series of a block are synthesized
+    # from the harmonics without derivatives.  The memory for the blocks is allocated once,
+    # here, and the pass with ℓ_fit below uses it too.
+    fit = plan.ℓ_fit ≥ 0
     blocks = synthesis_blocks(
         data,
         Rₚ⁰,
         spins;
-        extra_bytes_per_pixel=isnothing(Π) ? 0 : Nᵗ′ * Nᵈ * sizeof(Complex{T}),
+        extra_bytes_per_pixel=fit ? Nᵗ′ * Nᵈ * sizeof(Complex{T}) : 0,
+        budget,
     )
     B = maximum(length, blocks)
-    wr̄ᵇ = Array{Complex{T}}(undef, isnothing(Π) ? (0, 0, 0) : (B, Nᵗ′, Nᵈ))
-    Π̄ = isnothing(Π) ? nothing : [conj.(Π[k]) for k ∈ 1:Nᵈ]
     Yᵇ = Array{Complex{T}}(undef, Nᵐ, B, length(spin_range))  # the harmonics, then ∂ν╱∂Y
     σᵇ = Array{Complex{T}}(undef, Nᵗ, B, Nᵈ)  # the synthesized series σ, then ∂ν╱∂σ
     ∂ν╱∂gᵇ = Matrix{T}(undef, 8, B)  # ∂ν╱∂g for each pixel of the block
     calcs⁰ = [sYlmCalculator(one(eltype(Rₚ⁰)), ℓₘₐₓ, spin_range) for _ ∈ 1:nthreads()]
+    # With ℓ_fit, the transformed series of a block, then the projected residual evaluated
+    # back at its pixels, both with time first.
+    r̄ᵇ = Array{Complex{T}}(undef, fit ? (Nᵗ′, B, Nᵈ) : (0, 0, 0))
     # One set of buffers for each parallel task.  The names are those of the gradient page,
     # for one pixel: `σⱼ`, `μⱼ`, and the derivatives of the pixel's share ν of the objective.
     # A name such as `∂ν╱∂σ` holds the derivative of ν with respect to the complex σ, with σ
@@ -190,23 +179,69 @@ function gradient_core(
             τ=Vector{T}(undef, Nᵗ′),
         ) for _ ∈ 1:nthreads()
     ]
+
+    # With ℓ_fit, the objective compares the projections of the transformed waveform and of
+    # the target onto the modes up to ℓ_fit, which no single pixel determines, so a first
+    # pass computes the transformed waveform's projection, μ̂, exactly as the objective does.
+    # Its difference from the target's, Π, is formed in the same memory, and it is what
+    # each pixel's ∂ν╱∂μ is made from in the main pass.  The first pass works in the main
+    # pass's memory: the harmonics and series of a block in `Yᵇ` and `σᵇ`; a pixel's series,
+    # its spline's second derivatives, and its transformed series in each task's `σⱼ`, `σ̈ⱼ`,
+    # and `∂ν╱∂μ`; and a block's transformed series in `r̄ᵇ`.
+    Π = if fit
+        geometry⁰ = (; Rₚ=Rₚ⁰, κ⁻¹ₚ=κ⁻¹ₚ⁰, αₚ=αₚ⁰, ðt′╱2κₚ=ðt′╱2κₚ⁰, ð²αₚ=ð²αₚ⁰)
+        workspace = (;
+            Y=Yᵇ, σ=σᵇ, calcs=calcs⁰, buffers=[(b.σⱼ, b.σ̈ⱼ, b.∂ν╱∂μ) for b ∈ buffers]
+        )
+        μ̂ = [Matrix{Complex{T}}(undef, size(plan.Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
+        transformed_projection!(
+            μ̂,
+            r̄ᵇ,
+            blocks,
+            data,
+            t,
+            t′,
+            cubic_spline_cache,
+            geometry⁰,
+            dc,
+            spins,
+            N₀,
+            plan.Ȳ,
+            workspace,
+        )
+        for k ∈ 1:Nᵈ
+            μ̂[k] .-= plan.ĉ[k]
+        end
+        μ̂
+    else
+        nothing
+    end
+
     # Each pixel's share of the objective, ν[j], and the gradient of that share with respect
     # to the parameters, ∂ν╱∂θ[p, j], a covector.  Both are summed in pixel order at the end.
     ν = zeros(T, Nᵖ)
     ∂ν╱∂θ = zeros(T, P, Nᵖ)
 
-    for block ∈ blocks
+    # With ℓ_fit, the main pass takes the blocks in reverse order.  So it starts with the
+    # block that the first pass ended with, whose harmonics and synthesized series are still
+    # in `Yᵇ` and `σᵇ`, exactly as they would be computed again here.
+    for block ∈ (fit ? reverse(blocks) : blocks)
         nb = length(block)
         Yb, σb = view(Yᵇ, :, 1:nb, :), view(σᵇ, :, 1:nb, :)
         # The backward pass overwrites the block's σ with ∂ν╱∂σ, and then its harmonics with
         # ∂ν╱∂Y, so these are two more names for the same memory.
         ∂ν╱∂Yb, ∂ν╱∂σb = Yb, σb
-        harmonics_block!(Yb, calcs⁰, Rₚ⁰, block)
-        synthesize_block!(σb, data, Yb, spins, N₀)
+        if !(fit && block == last(blocks))
+            harmonics_block!(Yb, calcs⁰, Rₚ⁰, block)
+            synthesize_block!(σb, data, Yb, spins, N₀)
+        end
         if !isnothing(Π)
-            # wr̄ᵇ[q, i, k] = Σₙ Ȳ[k][n, block[q]] conj(Π[k][n, i])
+            # The conjugate of Π is evaluated back at the block's pixels by one more matrix
+            # product per component, the adjoint of Π times the weighted conjugate
+            # harmonics, which gives each pixel's weight times the conjugate of the
+            # projected residual there: r̄ᵇ[i, q, k] = Σₙ conj(Π[k][n, i]) Ȳ[k][n, block[q]].
             for k ∈ 1:Nᵈ
-                mul!(view(wr̄ᵇ, 1:nb, :, k), transpose(view(plan.Ȳ[k], :, block)), Π̄[k])
+                mul!(view(r̄ᵇ, :, 1:nb, k), adjoint(Π[k]), view(plan.Ȳ[k], :, block))
             end
         end
 
@@ -246,7 +281,7 @@ function gradient_core(
                         ν[j] += w[j] * v[i] * u[k] * abs2(r)
                         ∂ν╱∂μ[k, i] = w[j] * v[i] * u[k] * conj(r)
                     else
-                        ∂ν╱∂μ[k, i] = v[i] * u[k] * wr̄ᵇ[q, i, k]
+                        ∂ν╱∂μ[k, i] = v[i] * u[k] * r̄ᵇ[i, q, k]
                     end
                 end
 

@@ -236,7 +236,7 @@ A few things to know:
   for a transformed waveform that is band-limited to ``2ℓ_\mathrm{max}
   -ℓ_\mathrm{fit}``, which is 16 or 24 in these examples.  It takes
   one more pass over the pixels, so the objective and its gradient
-  cost about one and a half times as much with `ℓ_fit` as without it.
+  cost about 1.3 to 1.4 times as much with `ℓ_fit` as without it.
   For padded data, pass the keyword `ℓₘₐₓ₀=8` to
   [`transform_objective`](@ref) or [`objective_and_gradient!`](@ref)
   as well.  It declares that the modes above ``ℓ = 8`` of `data` are
@@ -338,7 +338,7 @@ takes, and [`parameters_from_bms`](@ref) gives the ``θ`` of a known
 transformation, to start from it.  Plans with `ℓ_fit` work as well, at
 the cost of one more pass over the pixels to project the transformed
 waveform before the gradient is computed, which makes the gradient
-about one and a half times as expensive.
+about 1.3 to 1.4 times as expensive.
 
 The gradient is computed by running the expensive part of each pixel's
 transformation backwards: the residual is propagated through the

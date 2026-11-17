@@ -57,7 +57,7 @@ The keywords are:
   band-limited to ``2ℓₘₐₓ - ℓ_\mathrm{fit}``; `ℓ_fit` must then be at most the target's
   band limit.  It must be at least the largest ``|s|`` among the components.  The
   projection takes one more pass over the pixels, so the objective and its gradient cost
-  about one and a half times as much with `ℓ_fit` as without it.
+  about 1.3 to 1.4 times as much with `ℓ_fit` as without it.
 
 All weights must be finite and nonnegative.  The target's pixel values are computed with
 [`pixel_waveform`](@ref) on the grid.

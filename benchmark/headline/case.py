@@ -19,10 +19,12 @@
 # transformation is left at its default, except that the `AsymptoticBondiData` truncates
 # products at the larger band limit, as its documentation advises.
 #
-# The conventions of `scri` differ from those of Scri.jl in the sign of the
-# supertranslation and in the order of the factors, so the parameters do not describe the
-# same transformation as in `case.jl`.  It is one of the same size, which is all that the
-# timing needs.  The data are random, as there.
+# The keywords of `scri`'s `transform` describe the same transformation as the same
+# keywords of Scri.jl's `BMS`; a cross-check on real waveforms on 2026-11-17 found no
+# difference of sign or of order.  The supertranslation's modes here are drawn with
+# NumPy's generator rather than Julia's, however, so the transformation is not exactly the
+# one in `case.jl`.  It is one of the same size, which is all that the timing needs.  The
+# data are random, as there.
 #
 # A gradient that would take longer than the limit is not run: its time is the number of
 # evaluations times the time of one, and it is marked as an estimate.

@@ -123,28 +123,77 @@ function synthesize_block!(σ, data, Y, spins, N₀)
 end
 
 """
-    synthesis_blocks(data, Rₚ, spins; extra_bytes_per_pixel=0)
+    synthesis_blocks(data, Rₚ, spins; extra_bytes_per_pixel=0,
+                     budget=synthesis_budget(data))
 
 Split the pixels at the rotors `Rₚ` into blocks with [`pixel_blocks`](@ref), counting the
 memory that [`harmonics_block!`](@ref) and [`synthesize_block!`](@ref) need for each pixel
-of a block, plus `extra_bytes_per_pixel` for whatever else the caller stores per pixel.
-The budget is the size of `data` itself, or 128 MiB if that is larger.  So for large data
-the blocks scale with the problem and take no more memory than the mode array the caller
-already holds, while for short time series, whose pixels' harmonics take as much room as
-their series, the blocks are not made needlessly small.
+of a block, plus `extra_bytes_per_pixel` for whatever else the caller stores per pixel,
+within `budget` bytes.  The default budget is the size of `data` itself, or 128 MiB if
+that is larger.  So for large data the blocks scale with the problem and take no more
+memory than the mode array the caller already holds, while for short time series, whose
+pixels' harmonics take as much room as their series, the blocks are not made needlessly
+small.  Tests pass a tiny budget to get several blocks from a small problem.
 """
-function synthesis_blocks(data, Rₚ, spins; extra_bytes_per_pixel::Integer=0)
+function synthesis_blocks(
+    data,
+    Rₚ,
+    spins;
+    extra_bytes_per_pixel::Integer=0,
+    budget::Integer=synthesis_budget(data),
+)
     Nᵐ, Nᵗ, Nᵈ = size(data)
     Tʸ = Complex{basetype(eltype(Rₚ))}
     Tˣ = promote_type(eltype(data), Tʸ)
     Nˢ = maximum(spins) - minimum(spins) + 1
     bytes = Nᵐ * Nˢ * sizeof(Tʸ) + Nᵗ * Nᵈ * sizeof(Tˣ) + extra_bytes_per_pixel
-    return pixel_blocks(length(Rₚ), bytes, max(sizeof(data), 2^27))
+    return pixel_blocks(length(Rₚ), bytes, budget)
+end
+
+"""
+    synthesis_budget(data)
+
+The default memory budget of [`synthesis_blocks`](@ref), in bytes: the size of `data`, or
+128 MiB if that is larger.
+"""
+synthesis_budget(data) = max(sizeof(data), 2^27)
+
+"""
+    block_workspace(blocks, data, t′, Rₚ, spins, TR)
+
+Allocate the memory that [`transform_pixel_blocks`](@ref) needs to transform the data at
+the pixels whose rotors are `Rₚ`, a block at a time, for the blocks `blocks`, as the
+named tuple `(; Y, σ, calcs, buffers)`.  `Y` holds the harmonics of a block, and `σ` the
+time series synthesized from them.  `calcs` holds one harmonics calculator for each
+parallel task, and `buffers` one tuple `(σⱼ, σ̈ⱼ, μⱼ)` for each parallel task: one
+pixel's time series, its spline's second derivatives, and its transformed series, of
+element type `Complex{TR}`.  A caller that already holds memory of these shapes and types
+may pass its own named tuple instead.
+"""
+function block_workspace(blocks, data, t′, Rₚ, spins, ::Type{TR}) where {TR}
+    Nᵐ, Nᵗ, Nᵈ = size(data)
+    Nᵗ′ = length(t′)
+    ℓₘₐₓ = isqrt(Nᵐ) - 1
+    spin_range = minimum(spins):maximum(spins)
+    B = maximum(length, blocks)
+    Y = Array{Complex{basetype(eltype(Rₚ))}}(undef, Nᵐ, B, length(spin_range))
+    σ = Array{promote_type(eltype(data), eltype(Y))}(undef, Nᵗ, B, Nᵈ)
+    calcs = [sYlmCalculator(one(eltype(Rₚ)), ℓₘₐₓ, spin_range) for _ ∈ 1:nthreads()]
+    buffers = [
+        (
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
+            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′),
+        ) for _ ∈ 1:nthreads()
+    ]
+    return (; Y, σ, calcs, buffers)
 end
 
 """
     transform_pixel_blocks(on_pixel!, on_block!, blocks, data, t, t′, cubic_spline_cache,
                            geometry, dc, spins, N₀, TR)
+    transform_pixel_blocks(on_pixel!, on_block!, blocks, data, t, t′, cubic_spline_cache,
+                           geometry, dc, spins, N₀, workspace)
 
 Transform the data at every pixel, one block of pixels at a time.  The named tuple
 `geometry = (; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ)` holds each pixel's rotor in the rest frame
@@ -157,6 +206,11 @@ each pixel `j = block[q]` with `transform_pixel!`, into a buffer `μⱼ` of elem
 `Complex{TR}`, and call `on_pixel!(μⱼ, j, q)`.  The buffer is reused for the next pixel,
 so `on_pixel!` must copy anything it keeps.  When every pixel of the block is done,
 `on_block!(block)` is called.
+
+The memory for all of this is allocated once, by [`block_workspace`](@ref), and used for
+every block.  Pass a `workspace` of that form in place of `TR` to use memory the caller
+already holds.  When the call returns, the workspace still holds the harmonics and the
+synthesized series of the last block.
 """
 function transform_pixel_blocks(
     on_pixel!,
@@ -172,23 +226,38 @@ function transform_pixel_blocks(
     N₀,
     ::Type{TR},
 ) where {TR}
+    workspace = block_workspace(blocks, data, t′, geometry.Rₚ, spins, TR)
+    return transform_pixel_blocks(
+        on_pixel!,
+        on_block!,
+        blocks,
+        data,
+        t,
+        t′,
+        cubic_spline_cache,
+        geometry,
+        dc,
+        spins,
+        N₀,
+        workspace,
+    )
+end
+function transform_pixel_blocks(
+    on_pixel!,
+    on_block!,
+    blocks,
+    data,
+    t,
+    t′,
+    cubic_spline_cache::CubicSplineCache,
+    geometry,
+    dc::DataComponents,
+    spins,
+    N₀,
+    workspace::NamedTuple,
+)
     (; Rₚ, κ⁻¹ₚ, αₚ, ðt′╱2κₚ, ð²αₚ) = geometry
-    Nᵐ, Nᵗ, Nᵈ = size(data)
-    Nᵗ′ = length(t′)
-    ℓₘₐₓ = isqrt(Nᵐ) - 1
-    spin_range = minimum(spins):maximum(spins)
-    B = maximum(length, blocks)
-    Y = Array{Complex{basetype(eltype(Rₚ))}}(undef, Nᵐ, B, length(spin_range))
-    σ = Array{promote_type(eltype(data), eltype(Y))}(undef, Nᵗ, B, Nᵈ)
-    # One calculator and one set of buffers for each parallel task, used for every block.
-    calcs = [sYlmCalculator(one(eltype(Rₚ)), ℓₘₐₓ, spin_range) for _ ∈ 1:nthreads()]
-    buffers = [
-        (
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ),
-            Matrix{Complex{TR}}(undef, Nᵈ, Nᵗ′),
-        ) for _ ∈ 1:nthreads()
-    ]
+    (; Y, σ, calcs, buffers) = workspace
     for block ∈ blocks
         nb = length(block)
         Yb, σb = view(Y, :, 1:nb, :), view(σ, :, 1:nb, :)
@@ -221,33 +290,34 @@ function transform_pixel_blocks(
 end
 
 """
-    transformed_projection(data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, TR)
+    transformed_projection!(μ̂, μᵇ, blocks, data, t, t′, cubic_spline_cache, geometry, dc,
+                            spins, N₀, Ȳ, workspace)
 
 Project the transformed waveform onto the modes up to an `ObjectivePlan`'s `ℓ_fit` by its
-quadrature, returning one matrix `μ̂[k]` for each component `k`, with
+quadrature.  The result is stored in `μ̂`, which holds one matrix for each component `k`:
 ```
 μ̂[k][n, i] = Σⱼ Ȳ[k][n, j] μⱼ[k, i],
 ```
 where `μⱼ` is pixel `j`'s transformed time series, from
 [`transform_pixel_blocks`](@ref), and `Ȳ` is the plan's weighted conjugate harmonics.  The
-other arguments are as for `transform_pixel_blocks`.  The transformed series of each block
-are gathered into a matrix with one row for each pixel, and one matrix product for each
-component adds the block's share to `μ̂[k]`.
+other arguments are as for `transform_pixel_blocks`, with the blocks `blocks` and the
+`workspace` that it takes.  The transformed series of each block are gathered into
+`μᵇ[i, q, k]`, with time first, so that each pixel's series fills contiguous memory, and
+one matrix product for each component adds the block's share to `μ̂[k]`.  So `μᵇ` must
+have at least as many columns as the largest block.  Returns `μ̂`.
 """
-function transformed_projection(
-    data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, ::Type{TR}
-) where {TR}
+function transformed_projection!(
+    μ̂, μᵇ, blocks, data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, workspace
+)
     Nᵈ = size(data, 3)
-    Nᵗ′ = length(t′)
-    μ̂ = [zeros(Complex{TR}, size(Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
-    blocks = synthesis_blocks(
-        data, geometry.Rₚ, spins; extra_bytes_per_pixel=Nᵗ′ * Nᵈ * sizeof(Complex{TR})
-    )
-    μᵇ = Array{Complex{TR}}(undef, maximum(length, blocks), Nᵗ′, Nᵈ)
-    gather!(μⱼ, j, q) = permutedims!(view(μᵇ, q, :, :), μⱼ, (2, 1))
+    for k ∈ 1:Nᵈ
+        fill!(μ̂[k], 0)
+    end
+    gather!(μⱼ, j, q) = permutedims!(view(μᵇ, :, q, :), μⱼ, (2, 1))
     function project!(block)
         for k ∈ 1:Nᵈ
-            add_product!(μ̂[k], view(Ȳ[k], :, block), view(μᵇ, 1:length(block), :, k))
+            μᵇₖ = transpose(view(μᵇ, :, 1:length(block), k))
+            add_product!(μ̂[k], view(Ȳ[k], :, block), μᵇₖ)
         end
     end
     transform_pixel_blocks(
@@ -262,9 +332,43 @@ function transformed_projection(
         dc,
         spins,
         N₀,
-        TR,
+        workspace,
     )
     return μ̂
+end
+
+"""
+    transformed_projection(data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, TR)
+
+Return the projection that [`transformed_projection!`](@ref) computes, as a vector of
+matrices of element type `Complex{TR}`, in new memory and with blocks of its own choosing.
+"""
+function transformed_projection(
+    data, t, t′, cubic_spline_cache, geometry, dc, spins, N₀, Ȳ, ::Type{TR}
+) where {TR}
+    Nᵈ = size(data, 3)
+    Nᵗ′ = length(t′)
+    μ̂ = [Matrix{Complex{TR}}(undef, size(Ȳ[k], 1), Nᵗ′) for k ∈ 1:Nᵈ]
+    blocks = synthesis_blocks(
+        data, geometry.Rₚ, spins; extra_bytes_per_pixel=Nᵗ′ * Nᵈ * sizeof(Complex{TR})
+    )
+    μᵇ = Array{Complex{TR}}(undef, Nᵗ′, maximum(length, blocks), Nᵈ)
+    workspace = block_workspace(blocks, data, t′, geometry.Rₚ, spins, TR)
+    return transformed_projection!(
+        μ̂,
+        μᵇ,
+        blocks,
+        data,
+        t,
+        t′,
+        cubic_spline_cache,
+        geometry,
+        dc,
+        spins,
+        N₀,
+        Ȳ,
+        workspace,
+    )
 end
 
 """
