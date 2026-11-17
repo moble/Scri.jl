@@ -12,8 +12,8 @@ authors:
     orcid: 'https://orcid.org/0000-0002-5075-5116'
 repository-code: 'https://github.com/moble/Scri.jl/'
 abstract: >-
-  Julia code for manipulating time-dependent functions of
-  spin-weighted spherical harmonics
+  Julia code for BMS transformations of electromagnetic
+  waveforms at future or past null infinity
 license: MIT
-version: '0.1'
-date-released: '2026-06-10'
+version: '1.0'
+date-released: '2026-11-17'
