@@ -169,10 +169,14 @@ function supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
     αₚ = Vector{TΘ}(undef, Nᵖ)
     ðαₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
     ð²αₚ = Vector{Complex{TΘ}}(undef, Nᵖ)
+    # The task-local values are given their types.  Without one, `@local` asks the compiler
+    # for the type of the calculator while the program runs, because that type cannot be
+    # inferred ahead of time, and the first such question in a process takes about 70 ms.
+    Tᶜ = typeof(sYlmCalculator(one(Tₚ), ℓᵅ, 0:2))
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
         OhMyThreads.@local begin
-            calc = sYlmCalculator(one(Tₚ), ℓᵅ, 0:2)
-            Y = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵅ, 3)
+            calc::Tᶜ = sYlmCalculator(one(Tₚ), ℓᵅ, 0:2)
+            Y::Matrix{Complex{basetype(Tₚ)}} = Matrix{Complex{basetype(Tₚ)}}(undef, Nᵅ, 3)
         end
         # The sign `ℐ`, folded into `Λℐ`, selects the future-cone (ℐ⁺) or past-cone (ℐ⁻)
         # direction map; see the `aberration` docstring and the "Future and past null
@@ -494,33 +498,35 @@ function transform!(
     # The grid of the transformed frame, on which the transformed data are analyzed back
     # into modes; see `transform_grid`.  It is chosen for spin weight 0, because all the
     # components must share one grid, and it is a grid in the *transformed* frame, so the
-    # data are evaluated on its image in the rest frame below.
-    # The grid is parameter-independent, so build it (and, below, the analysis
-    # factorizations) at the primal float type — see `primal_float`; this keeps AD dual
-    # numbers out of the constant `qr`/`lu` factorizations, whose Householder steps would
-    # otherwise turn the (identically zero) perturbations into NaNs.
+    # data are evaluated on its image in the rest frame below.  The grid is
+    # parameter-independent, so we build it (and, below, the analysis factorizations) with
+    # the primal float type — see `primal_float`; this keeps AD dual numbers out of the
+    # constant `qr`/`lu` factorizations, whose Householder steps would otherwise turn the
+    # (identically zero) perturbations into NaNs.
     T4′ = primal_float(T4)
     spins = unique(Int[spin_weight(Val(c)) for c ∈ C])
-    if isnothing(plan)
-        R′ₚ = transform_grid(ℓₘₐₓ, T4′)
-        # The analysis factorization on the grid, for each spin weight that the
-        # data have, and no others; it overlaps with the setup below.
-        task_augmented_lu = OhMyThreads.@spawn Dict(
-            s => augmented_factorization(R′ₚ, ℓₘₐₓ, s) for s ∈ spins
-        )
-    else
+    if !isnothing(plan)
         check_plan(plan, ℓₘₐₓ, T4′, spins)
-        R′ₚ = plan.R′ₚ
-        task_augmented_lu = nothing
+    end
+    # The grid is assigned just once.  If captured in a closure, as the task below does, and
+    # assigned in more than one place, it would be stored in a `Core.Box`, which leads to
+    # dynamic dispatch.
+    R′ₚ = isnothing(plan) ? transform_grid(ℓₘₐₓ, T4′) : plan.R′ₚ
+    # The analysis factorization on the grid, for each spin weight that the data have; it
+    # overlaps with the setup below.  Already in the plan if one was supplied.
+    task_augmented_lu = if isnothing(plan)
+        OhMyThreads.@spawn Dict(s => augmented_factorization(R′ₚ, ℓₘₐₓ, s) for s ∈ spins)
+    else
+        nothing
     end
 
     # Calculate the LU factorization of the tridiagonal matrix for cubic spline
     task_cubic_spline_cache = OhMyThreads.@spawn CubicSplineCache(t)
 
-    # That grid is the one seen in the transformed frame; here we compute
-    # the corresponding rotors in the rest frame, on which we will evaluate the input data
-    # (the boosted or distorted grid), together with the supertranslation and its eth
-    # derivatives there.  See `supertranslation_on_grid`.
+    # That grid is the one seen in the transformed frame; here we compute the corresponding
+    # rotors in the rest frame, on which we will evaluate the input data (the boosted or
+    # distorted grid), together with the supertranslation and its eth derivatives there.
+    # See `supertranslation_on_grid`.
     Rₚ, αₚ, ðαₚ, ð²αₚ = supertranslation_on_grid(R′ₚ, Λℐ, αᵢₙ, c_α)
     Tₚ = eltype(Rₚ)
 
@@ -871,11 +877,14 @@ function pixel_waveform(
     # for which every mixing law reduces to the identity.
     cubic_spline_cache = CubicSplineCache(t)
     out = Array{Complex{TP},3}(undef, Nᵖ, Nᵗ′, Nᵈ)
+    # The task-local buffers are given their types, as in `supertranslation_on_grid`: `TP`
+    # is a local variable rather than a parameter of the method, and the compiler does not
+    # work out the type of a closure's result ahead of time when it depends on one.
     OhMyThreads.@tasks for i ∈ 1:Nᵖ
         OhMyThreads.@local begin
-            dᵢ = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
-            d̈ᵢ = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
-            d′ᵢ = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ′)
+            dᵢ::Matrix{Complex{TP}} = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
+            d̈ᵢ::Matrix{Complex{TP}} = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ)
+            d′ᵢ::Matrix{Complex{TP}} = Matrix{Complex{TP}}(undef, Nᵈ, Nᵗ′)
         end
         permutedims!(dᵢ, view(P, i, :, :), (2, 1))
         transform_pixel!(

@@ -190,7 +190,8 @@ t′ = compute_t′(t, β_max, δt_max)
 # 2. Everything that does not depend on the parameters, from the
 #    target's modes and its own time samples.  (If the target has a
 #    smaller band limit than `data`, zero-pad its modes up to the same
-#    Nᵐ first.)
+#    Nᵐ first.)  Add `ℓ_fit=8`, say, to compare only the modes up to
+#    ℓ = 8; see "Band limits" below.
 plan = ObjectivePlan(target_modes, t_target, dc, t′)
 
 # 3. The differentiable objective, with θ read by `bms_from_parameters`
@@ -220,14 +221,34 @@ A few things to know:
   four as a rotor `(w, x, y, z)`, which is normalized; see
   [`rotor_argument`](@ref Scri.rotor_argument).
 
-- **Weights and noise.**  The plan's keywords set the weights:
-  `time_weights` for the ``v_i``, `component_weights` for the ``u_k``,
-  and `weights` for per-pixel factors that multiply the quadrature
-  weights, for example to down-weight part of the sky.
-  `normalize=true` divides by the target's norm.  `ℓ_fit=L` compares
-  only the modes with ``ℓ ≤ L`` of the difference, projected exactly
-  by the quadrature, which leaves out high-``ℓ`` noise in the data or
-  the target.
+- **Band limits.**  A boost or a supertranslation moves power to
+  higher ``ℓ``, so the data usually have to be padded beyond the modes
+  of interest, as for `transform!`; see [Choosing
+  ``ℓ_\mathrm{max}``](@ref choosing_ell_max).  For example, we might
+  have waveforms with modes up to ``ℓ = 8``.  Then, a typical choice
+  might be to pad both `data` and the target to ``ℓ_\mathrm{max} =
+  12`` or ``16``, but to build the plan with `ℓ_fit=8`.  The
+  transformation acts on `data`, but doesn't alias power to lower
+  modes (at least, not as much as it would without padding).  But the
+  objective only compares the modes of the difference with ``ℓ ≤ 8``.
+  Much of the aliasing and any high-``ℓ`` noise are left out of ``Φ``.
+  The projection onto those modes is the quadrature's, and it is exact
+  for a transformed waveform that is band-limited to ``2ℓ_\mathrm{max}
+  -ℓ_\mathrm{fit}``, which is 16 or 24 in these examples.  It takes
+  one more pass over the pixels, so the objective and its gradient
+  cost about one and a half times as much with `ℓ_fit` as without it.
+  For padded data, pass the keyword `ℓₘₐₓ₀=8` to
+  [`transform_objective`](@ref) or [`objective_and_gradient!`](@ref)
+  as well.  It declares that the modes above ``ℓ = 8`` of `data` are
+  zero, so that they are skipped, which saves about a tenth of the
+  time at ``ℓ_\mathrm{max} = 12`` and about a third at
+  ``ℓ_\mathrm{max} = 16``.
+
+- **Weights.**  The plan's keywords set the weights: `time_weights`
+  for the ``v_i``, `component_weights` for the ``u_k``, and `weights`
+  for per-pixel factors that multiply the quadrature weights, for
+  example to down-weight part of the sky.  `normalize=true` divides by
+  the target's norm.
 
 - **Memory.**  The dual-typed storage is for one block of pixels at a
   time: their harmonics and their synthesized time series, a copy of
@@ -267,9 +288,18 @@ for each parameter: with a supertranslation up to ``ℓ = 4``, that is
 31 evaluations or more.  [`objective_and_gradient!`](@ref) computes
 the objective and its exact gradient together, at a few times the cost
 of the objective alone.  That cost grows only slowly with the number
-of parameters: with 31 parameters at ``ℓ_\mathrm{max} = 16``, it is
-between four and six evaluations, with or without `ℓ_fit`.  It takes
-the transformation as one parameter vector,
+of parameters.  For waveforms with 20,000 time samples (as the average
+SXS waveform has, as of time of writing) and ``ℓ_\mathrm{max}`` from 8
+to 16, it is between four and seven evaluations on 8 threads, with 31
+parameters or with 87, and with or without `ℓ_fit`.  As a guide to the
+time itself: for the strain alone, padded to ``ℓ_\mathrm{max} = 16``
+and compared up to ``ℓ_\mathrm{fit} = 8``, the objective and its
+gradient together take about 0.8 s on 8 threads, and about 2.4 s on
+one.  The page [The gradient of the objective](@ref
+objective_gradient) compares this with finite differences, which take
+12 to 95 times as long.
+
+The function takes the transformation as one parameter vector,
 
 ```math
 θ = (\vec{r},\; \vec{η},\; a_1, …, a_{(ℓ_α+1)^2}),
@@ -307,7 +337,8 @@ velocity, rotation, and supertranslation that [`transform!`](@ref)
 takes, and [`parameters_from_bms`](@ref) gives the ``θ`` of a known
 transformation, to start from it.  Plans with `ℓ_fit` work as well, at
 the cost of one more pass over the pixels to project the transformed
-waveform before the gradient is computed.
+waveform before the gradient is computed, which makes the gradient
+about one and a half times as expensive.
 
 The gradient is computed by running the expensive part of each pixel's
 transformation backwards: the residual is propagated through the

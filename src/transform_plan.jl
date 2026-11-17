@@ -28,10 +28,13 @@ on that grid for each spin weight among the components of `dc`.
 
 Pass it as `transform!(…; plan)` when transforming many times at one band limit, precision,
 and set of spin weights, as in a scan over parameters.  Each call then skips those
-factorizations, which dominate the cost of `transform!` at high ``ℓ_\mathrm{max}``.  `T` is
-the primal floating-point type of the data (`Float64` for `ComplexF64` data, also when the
-data carry ForwardDiff duals); the second form takes `ℓₘₐₓ` and `T` from `data`.  A plan
-built for some components serves any components whose spin weights it covers.
+factorizations.  Their cost does not grow with the number of time samples, so they dominate
+the cost of `transform!` at high ``ℓ_\mathrm{max}`` for a short waveform, and are a small
+part of it for a long one; see [Reusing the setup across calls](@ref) for measurements.
+
+`T` is the primal floating-point type of the data (`Float64` for `ComplexF64` data, also
+when the data carry ForwardDiff duals); the second form takes `ℓₘₐₓ` and `T` from `data`.
+A plan built for some components serves any components whose spin weights it covers.
 """
 struct TransformPlan{T<:AbstractFloat,F}
     ℓₘₐₓ::Int

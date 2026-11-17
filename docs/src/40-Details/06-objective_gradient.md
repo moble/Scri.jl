@@ -1140,9 +1140,11 @@ meet the covectors at the bottom.
 ## Comparing only the modes up to ``ℓ_\mathrm{fit}``
 
 An [`ObjectivePlan`](@ref) built with `ℓ_fit = L` compares only the
-modes with ``ℓ ≤ L`` of the two waveforms, which leaves out noise at
-higher ``ℓ``.  The residual is projected onto those modes by the
-quadrature,
+modes with ``ℓ ≤ L`` of the two waveforms.  This is the usual way to
+compare waveforms that were padded to a higher band limit to make room
+for the transformation, because it leaves out the modes that were
+added, and it also leaves out noise at higher ``ℓ``.  The residual is
+projected onto the modes with ``ℓ ≤ L`` by the quadrature,
 
 ```math
 Π^{ki}{}_{ℓm}
@@ -1283,10 +1285,54 @@ the finite differences in Julia three to five times slower again.
 
 The Python package transforms the shear and all five Weyl components
 together whenever any Weyl component is wanted, which is why its
-factor is largest for the set with three of them.  All of these
-timings, and the scripts that produce them, are in the directory
-`benchmark` of the repository, as `comparison_2026-11-16.txt` and
-`comparison/run.jl`.
+factor is largest for the set with three of them.
+
+A second set of measurements is closer to what a user of either
+package would have written, and to how the gradient is usually used.
+The data have the band limit ``ℓ_\mathrm{max}`` at which they are
+transformed, but the objective compares only the modes up to ``ℓ =
+8``: the gradient uses a plan with `ℓ_fit = 8`, and the finite
+differences interpolate and sum only those modes.  Their interpolation
+is written plainly, with one spline for each mode.  The waveforms
+again have 20,000 time samples, on 8 threads of an otherwise idle
+machine, and each measurement ran in a process of its own.  The
+gradient's time is in seconds, and the others are multiples of it.  A
+multiple marked ≈ is ``P + 1`` times the measured time of one
+evaluation, for a gradient that would have taken more than ten
+minutes.
+
+| ``ℓ_\mathrm{max}`` | components | ``P`` | gradient | finite differences | finite differences, Python `scri` |
+| :---: | :--- | :---: | :---: | :---: | :---: |
+| 8 | ``h`` | 31 | 0.18 s | 35x | 500x |
+| 8 | ``h`` | 87 | 0.18 s | 95x | 2300x |
+| 8 | ``h, ψ_4, …, ψ_0`` | 31 | 1.1 s | 30x | ≈ 950x |
+| 8 | ``h, ψ_4, …, ψ_0`` | 87 | 1.0 s | 84x | ≈ 3300x |
+| 12 | ``h`` | 31 | 0.39 s | 21x | 400x |
+| 12 | ``h`` | 87 | 0.42 s | 52x | ≈ 1600x |
+| 12 | ``h, ψ_4, …, ψ_0`` | 31 | 2.2 s | 17x | ≈ 840x |
+| 12 | ``h, ψ_4, …, ψ_0`` | 87 | 2.3 s | 46x | ≈ 2800x |
+| 16 | ``h`` | 31 | 0.77 s | 15x | 340x |
+| 16 | ``h`` | 87 | 0.84 s | 39x | ≈ 1100x |
+| 16 | ``h, ψ_4, …, ψ_0`` | 31 | 4.4 s | 12x | ≈ 760x |
+| 16 | ``h, ψ_4, …, ψ_0`` | 87 | 4.5 s | 34x | ≈ 2400x |
+
+With one thread, the gradient takes 3.0 to 3.5 times as long.  The
+finite differences in Julia take about as long as with eight, because
+much of their time goes to the interpolation, which is written for one
+thread, and because `transform!` in version 0.1 gains little from
+threads.  Their multiples are then from 4 to 26.
+
+The peak memory of each process was recorded as well.  With the strain
+alone, it is 1.0 to 1.5 GB for the gradient, 1.1 to 1.9 GB for the
+finite differences in Julia, and 1.1 to 2.8 GB for those in Python.
+With the Weyl components, it is 2.5 to 4.4 GB for the gradient, 2.2 to
+3.4 GB for the finite differences in Julia, and 11 to 42 GB for those
+in Python.
+
+All of these timings, and the scripts that produce them, are in the
+directory `benchmark` of the repository: `comparison_2026-11-16.txt`
+and `comparison/run.jl` for the first table, and
+`headline_2026-11-17.txt` and `headline/run.jl` for the second.
 
 ## How it is checked
 

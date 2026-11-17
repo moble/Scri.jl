@@ -39,8 +39,9 @@ The keywords are:
 - `component_weights`: the ``u_k``, one per component of `dc`.  The default is one.
 - `normalize`: if `true`, ``𝒩`` is the same sum with ``μ`` set to zero, so that ``Φ`` is
   relative to the target's norm; otherwise ``𝒩 = 1``.
-- `ℓ_fit`: if given, compare only the modes with ``ℓ ≤ ℓ_\mathrm{fit}`` of the difference,
-  which leaves out high-``ℓ`` noise in the data or the target:
+- `ℓ_fit`: if given, compare only the modes with ``ℓ ≤ ℓ_\mathrm{fit}`` of the difference.
+  This leaves out the modes that the data and the target were padded with to make room
+  for the transformation, and any high-``ℓ`` noise in either:
 
   ```math
   Φ = \frac{1}{𝒩} ∑_i v_i ∑_k u_k ∑_{ℓm:\, |s_k| ≤ ℓ ≤ ℓ_\mathrm{fit}}
@@ -54,7 +55,9 @@ The keywords are:
 
   The projection is the quadrature's, so with the default grid it is exact when ``μ`` is
   band-limited to ``2ℓₘₐₓ - ℓ_\mathrm{fit}``; `ℓ_fit` must then be at most the target's
-  band limit.  It must be at least the largest ``|s|`` among the components.
+  band limit.  It must be at least the largest ``|s|`` among the components.  The
+  projection takes one more pass over the pixels, so the objective and its gradient cost
+  about one and a half times as much with `ℓ_fit` as without it.
 
 All weights must be finite and nonnegative.  The target's pixel values are computed with
 [`pixel_waveform`](@ref) on the grid.

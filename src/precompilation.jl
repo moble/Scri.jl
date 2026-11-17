@@ -50,13 +50,25 @@
         # A small primal `transform_objective` call, for the most common component sets,
         # and its gradient.  The gradient does not specialize on the number of parameters,
         # so this one call, with a supertranslation up to ℓ = 2, serves them all.
+        # The same is done with a plan that compares only the modes up to `ℓ_fit`, because
+        # the keyword changes the method that builds the plan.
         for dcsymbols ∈ ((:h,), (:ψ₄,))
             dc = DataComponents(dcsymbols...)
             data = randn(rng, Complex{Float64}, Nᵐ, Nᵗ, length(dcsymbols))
-            plan = ObjectivePlan(data, t, dc, compute_t′(t, 1e-4, 1e-4))
-            transform_objective(data, t, v⃗, R, αᵢₙ, dc, plan)
             θ = zeros(6 + 9)
-            objective_and_gradient!(similar(θ), θ, data, t, dc, plan)
+            t′ = compute_t′(t, 1e-4, 1e-4)
+            plans = (
+                ObjectivePlan(data, t, dc, t′), ObjectivePlan(data, t, dc, t′; ℓ_fit=2)
+            )
+            for plan ∈ plans
+                transform_objective(data, t, v⃗, R, αᵢₙ, dc, plan)
+                transform_objective(data, t, bms_from_parameters(θ)..., dc, plan)
+                objective_and_gradient!(similar(θ), θ, data, t, dc, plan)
+            end
+
+            # A `TransformPlan`, and `transform!` with it.
+            plan = TransformPlan(data, dc)
+            transform!(data, t, v⃗, R, αᵢₙ, dc; plan)
         end
     end
 end

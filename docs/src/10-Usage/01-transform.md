@@ -79,8 +79,11 @@ choosing_ell_max).
 Part of every call to `transform!` depends on no BMS parameter: the
 grid on which the transformed data are analyzed back into modes, and
 the factorization of the analysis matrix there for each spin weight in
-the data.  At high ``ℓ_\mathrm{max}`` those factorizations are a large
-share of the cost.  When transforming many times at one band limit,
+the data.  The cost of that setup grows steeply with
+``ℓ_\mathrm{max}``, but not with the number of time samples, as the
+rest of the call's cost does.  So the setup is a large share of the
+cost at a high ``ℓ_\mathrm{max}`` for a short waveform, and a small
+share for a long one.  When transforming many times at one band limit,
 precision, and set of components, as in a scan over parameters, build
 a [`TransformPlan`](@ref) once and pass it along:
 
@@ -93,8 +96,17 @@ end
 ```
 
 The result is identical to what the call would compute without the
-plan.  At ``ℓ_\mathrm{max} = 32`` with strain alone, a call takes
-about a third as long with the plan as without it.
+plan.  How much time the plan saves depends on the length of the
+waveform.  For the strain alone, on 8 threads, a call is this many
+times faster with the plan than without it:
+
+| ``ℓ_\mathrm{max}`` | 400 time samples | 4000 | 20,000 |
+| :---: | :---: | :---: | :---: |
+| 16 | 2.3 | 1.2 | 1.1 |
+| 32 | 5.0 | 1.6 | 1.3 |
+
+Building the plan takes about as long as the setup that it replaces:
+6 ms at ``ℓ_\mathrm{max} = 16``, and 0.14 s at ``ℓ_\mathrm{max} = 32``.
 
 ## Signatures
 
