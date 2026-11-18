@@ -30,6 +30,7 @@ bibliography = CitationBibliography(
 links = InterLinks(
     "Quaternionic" => "https://moble.github.io/Quaternionic.jl/stable/",
     "SphericalFunctions" => "https://moble.github.io/SphericalFunctions.jl/stable/",
+    "DoubleFloats" => "https://juliamath.github.io/DoubleFloats.jl/stable/",
     "Julia" => "https://docs.julialang.org/en/v1/",
 )
 

@@ -166,6 +166,12 @@ function plot_example(data::Array{Complex{T}}, t, v⃗, data′, t′, M₄, t�
         plt, [spline_bound]; color=:purple, z_order=:back, label=L"\frac{5}{384} M_4\, δt^4"
     )
     vline!(plt, [t₋, t₊]; color=:black, z_order=:back, label=L"N = \lfloor 1/(2β) \rfloor")
+    # Ticks at 1 and every 10⁻⁵ below it — or every 10⁻¹⁰ for `BigFloat`, whose range
+    # would otherwise need too many.  The axis is extended up to 1 so that tick always shows.
+    y₋, y₊ = Plots.ylims(plt)
+    Δ = T <: BigFloat ? 10 : 5
+    ylims!(plt, (y₋, max(y₊, 1)))
+    yticks!(plt, exp10.(0:(-Δ):floor(Int, log10(y₋))))
     plot!(
         plt; legend_position=(0.82, 0.99), title=L"\sigma' \quad(\beta=%$beta c)", dpi=300
     )

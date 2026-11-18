@@ -72,10 +72,11 @@ Once the kinks appear, the high-``ℓ`` modes no longer converge to
 roundoff, but stop at a floor comparable to the pointwise error of the
 spline, which for a cubic spline is at most ``(5/384) M₄ (δt)^4``
 [HallMeyer_1976](@cite).[^ends]  This floor can't be beaten by raising
-``ℓ_\text{max}'`` or even by raising the precision of the number type
-used in the calculation; it behaves like the persistent error of the
-Gibbs phenomenon [GottliebShu_1997](@cite).  Using higher-order
-splines lowers the floor as ``Mₙ(δt)^n``, but convergence requires
+the precision of the number type used in the calculation, and raising
+``ℓ_\text{max}'`` lowers it only slowly; it behaves like the
+persistent error of the Gibbs phenomenon [GottliebShu_1997](@cite).
+Using higher-order splines lowers the floor as ``Mₙ(δt)^n``, but
+convergence requires
 ``ω_\text{max}\,δ t < 1`` (all frequencies sampled above Nyquist), and
 for numerical-relativity waveforms the effective upper frequency is
 close to Nyquist, limiting practical improvement.
@@ -139,18 +140,15 @@ roughly constant in time and converge exponentially with increasing
 ``ℓ``, as expected.  Modes with ``ℓ > 8`` converge very quickly to
 machine precision at ``t=0,`` but increase in both directions from
 there, roughly linearly with time.  Again, this is the expected
-analytical behavior.  The modes with ``ℓ ≳ 13`` are initially below
+analytical behavior.  The modes with ``ℓ ≥ 14`` are initially at about
+``5 × 10^{-16}``, significantly below their expected error bound of
 ``ℓₘₐₓ ϵ`` (where ``ϵ ≈ 10^{-16}`` is machine precision), but beyond
-``N_\text{good} = ⌊ 1/(2β) ⌋`` they immediately jump up to the
-resolved ``ℓ=12`` mode, until they reach a plateau.  By ``|t| ≈ 4000``
-the noise is oscillating around the expected plateau of ``3.5 ×
-10^{-7}`` given by the cubic spline's pointwise error bound.
-
-The horizontal line in each plot marks that bound.  The plateau does
-not fall as ``ℓ_\text{max}'`` grows, as a power-law floor in
-``ℓ_\text{max}'`` would: a run at ``ℓ_\text{max}' = 24`` in `Double64`
-precision has a higher noise plateau in its top modes than the run
-shown here, not a lower one.
+``N_\text{good} = ⌊ 1/(2β) ⌋`` they immediately jump up past the
+resolved ``ℓ=13`` mode, and keep rising until they reach a plateau.
+By ``|t| ≈ 3000`` the noise is oscillating around ``10^{-7}``.  This
+is somewhat below the cubic spline's pointwise error bound of ``3.5 ×
+10^{-7}`` — in line with our expectations for an upper bound.  The
+horizontal line in each plot marks that bound.
 
 Note that the ``ℓ=0`` and ``1`` modes shown in red would analytically
 be zero, but are retained for diagnostic purposes.  These are the
@@ -162,19 +160,76 @@ limitation.
 
 ![Plot showing converging modes until reaching the spline plateau](spline_errors_Float64.png)
 
-One very important point is that this structure is the same regardless
-of the precision of the numbers being used.  We can use Julia's
-built-in extended-precision number type
-[`BigFloat`](https://docs.julialang.org/en/v1/manual/integers-and-floating-point-numbers/#Arbitrary-Precision-Arithmetic),
-which have ``ϵ ≈ 10^{-77}``.  We also have to extend to ``ℓₘₐₓ = 35``
-to obtain full convergence to this new ``ℓₘₐₓ ϵ``.  As seen in the
-plot below, near ``t=0``, the modes do indeed converge nicely all the
-way down to nearly that precision.  However, exactly at the expected
-distance from ``t=0``, the modes again jump up to a plateau of the
-same size as before: by ``t ≈ 4000`` the top modes reach about ``2 ×
-10^{-6}``, within an order of magnitude of the same bound.  There is
-no improvement in the plateau level, despite the much higher
-precision, because the plateau is determined by the spline
-interpolation error, which is independent of the numerical precision.
+Now, it is in any good researcher's nature to push back, and ask
+questions about easy ways to get around this limitation.  The obvious
+first things that might come to mind for the skeptic are typically
 
-![Extended-precision version of the plot above, converging to 1e-72 near t=0, but still rising to the same plateau as above away from t=0](spline_errors_BigFloat.png)
+  1. Reduce the time step ``δt``.
+  2. Increase ``ℓ_\text{max}'``.
+  3. Use higher-precision numbers.
+
+Reducing the time step can indeed help, though it is not always
+possible to reduce the time step — as, for example, when the waveform
+comes from a numerical simulation.  Moreover, it only helps relatively
+slowly; even a factor of 2 reduction in ``δt`` can be very expensive
+to obtain, but will only reduce the error by a factor of 16 — which is
+still a relatively large number, and will not reasonably reduce the
+error anywhere close to the truncation level seen near ``t=0``.
+
+Increasing ``ℓ_\text{max}'`` helps, but only slowly.  For ``3000 < |t|
+< 4800``, the top modes of the plateau sit at about ``10^{-7}`` with
+``ℓ_\text{max}' = 16``, ``5 × 10^{-8}`` with ``ℓ_\text{max}' = 24``,
+and ``8 × 10^{-9}`` with ``ℓ_\text{max}' = 35``.  Part of that
+improvement comes simply from no longer folding the unresolved higher
+modes onto the top modes, which are always slightly raised by that
+pile-up.  Within a single run, the modes decrease with ``ℓ`` only up
+to a point, and then level off into a nearly flat floor, rather than
+continuing to fall as the ``E(ℓ) ∼ ℓ^{-8}`` tail would.  With
+``ℓ_\text{max}' = 35``, that floor is at about ``10^{-9}`` for ``1500 <
+|t| < 3000`` and about ``7 × 10^{-9}`` for ``3000 < |t| < 4800`` —
+still seven or eight orders of magnitude above the roundoff level of
+`Float64`.
+
+Finally, *the structure of these spline-induced errors is the same
+regardless of the precision of the numbers being used*.  Julia makes
+it easy to use higher-precision numbers, so we can test this with two
+different precisions: the [`Double64`](@extref DoubleFloats
+:std:label:`Double64,-Double32,-Double16`) type which has ``ϵ ≈
+10^{-32}``, and the arbitrary-precision [`BigFloat`](@extref Julia
+Arbitrary-Precision-Arithmetic) type which (by default) has ``ϵ ≈
+10^{-77}``.  The results are shown in the plots below.  In both cases,
+we have to increase ``ℓ_\text{max}'`` to obtain full convergence to
+the respective ``ℓ_\text{max}' ϵ``: to ``ℓ_\text{max}' = 24`` for
+`Double64`, and to ``ℓ_\text{max}' = 35`` for `BigFloat`.  Near
+``t=0``, the modes do indeed converge nicely, down to about
+``10^{-31}`` and ``10^{-75}``, respectively.  However, exactly at the
+expected distance from ``t=0``, the modes again jump up to a plateau.
+That plateau is lower than in the plot above, but only because of the
+higher ``ℓ_\text{max}'``: a `Float64` run at the same
+``ℓ_\text{max}'`` gives the same plateau as the `Double64` or
+`BigFloat` run, mode for mode, to two significant figures.  The
+plateau is determined by the spline interpolation error and the band
+limit, and not at all by the numerical precision.
+
+The last plot is truly remarkable.  It shows that even with *75 orders
+of magnitude of precision*, we still have just 7 or so digits of
+accuracy throughout most of the waveform.  It shows that even with
+much higher ``ℓ_\text{max}'``, the modes still pile up right under the
+plateau at the same level.  And it shows that the transition between
+convergence to machine precision and convergence to the plateau is at
+*exactly* the predicted time, independent of time step, band limit, or
+numerical precision.
+
+!!! tip "Main takeaway"
+    It is worth repeating that — assuming we are using cubic splines —
+    the plateau is only weakly dependent on the time step, and is
+    *entirely independent of the numerical precision and the band
+    limit.*  The main thing we buy by increasing the precision or band
+    limit is that we can resolve the modes down to roughly machine
+    precision near ``t=0``.  And even this benefit disappears whenever
+    we have a nontrivial supertranslation (other than a pure time
+    offset).
+
+![Higher-precision version of the plot above, converging to about 1e-31 near t=0, but still rising to a plateau away from t=0](spline_errors_Double64.png)
+
+![Extended-precision version of the plot above, converging to about 1e-76 near t=0, but still rising to a plateau away from t=0](spline_errors_BigFloat.png)
