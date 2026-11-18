@@ -1,0 +1,78 @@
+# The cluster benchmark (2026-11-18): Scri.jl 1.0 and 0.1, and Python scri, under SLURM
+# AMD EPYC 9654 96-Core Processor, on c0006; Julia 1.13.4
+# 1.0: Scri 1.0.0; Chairmarks 1.3.1; OhMyThreads 0.8.9; Quaternionic 5.0.0; SphericalFunctions 3.0.3
+# 0.1: Scri 0.1.0; Chairmarks 1.3.1; OhMyThreads 0.8.9; Quaternionic 4.5.0; SphericalFunctions 2.2.9
+# Python: Python 3.15.2; scri 2024.0.14; numpy 2.5.5; numba 0.68.1
+# Every case: 20000 time samples, ℓₘₐₓ = 8, a supertranslation with modes up to ℓ = 4
+# (31 parameters), and an objective that compares the modes up to ℓ = 8.
+
+Each case ran in a process of its own, inside a SLURM job that allocated it the
+cores shown, one job after another.  Julia was started with one thread for each
+allocated core, and BLAS and numba chose their own numbers of threads: with one
+core, BLAS had 1 and numba had 1.  Each time is the least of several, in
+seconds.  The gradient on 0.1 and in Python is by forward differences, which
+take 32 evaluations of the objective; a time marked ~ was not measured, but is
+32 times one evaluation, because the gradient would have taken longer than 600
+seconds.  Memory is the peak resident set size of the process just after its
+first call at full size, in gigabytes (2³⁰ bytes).
+
+==============================================================================
+1.  One core: seconds for one call, and their ratios
+==============================================================================
+
+                        │ Python │   0.1 │   1.0 │ 0.1 ÷ 1.0 │ Python ÷ 1.0
+  ──────────────────────┼────────┼───────┼───────┼───────────┼─────────────
+  transform!, h         │   5.21 │ 0.112 │ 0.108 │       1.0 │           48
+  transform!, h ψ₄ … ψ₀ │   33.5 │ 0.606 │ 0.590 │       1.0 │           57
+  objective, h          │   5.35 │ 0.272 │ 0.145 │       1.9 │           37
+  gradient, h           │    173 │  8.65 │ 0.924 │       9.4 │          187
+
+Peak memory, GB
+                        │ Python │  0.1 │  1.0
+  ──────────────────────┼────────┼──────┼─────
+  transform!, h         │   0.70 │ 0.63 │ 0.64
+  transform!, h ψ₄ … ψ₀ │  10.70 │ 0.73 │ 0.79
+  gradient, h           │   0.73 │ 0.86 │ 0.79
+
+==============================================================================
+2.  A cold start: seconds for a new process that loads the package, transforms
+    the strain once, and exits, with the least of 3 starts
+==============================================================================
+
+                               │ Python │   0.1 │   1.0
+  ─────────────────────────────┼────────┼───────┼──────
+  the first start in the job   │   8.17 │  3.82 │  2.08
+  the least                    │   7.32 │  3.13 │  1.42
+  of which, loading            │   1.70 │  2.25 │ 0.526
+  of which, the transformation │   5.26 │ 0.122 │ 0.196
+  peak memory, GB              │   0.70 │  0.46 │  0.43
+
+==============================================================================
+3.  Scaling of 1.0: seconds for one call with the cores of the job, Julia's
+    threads, and BLAS's threads
+==============================================================================
+
+  cores │ BLAS │ transform!, h │ transform!, h ψ₄ … ψ₀ │ gradient, h │ gradient, h ψ₄ … ψ₀
+  ──────┼──────┼───────────────┼───────────────────────┼─────────────┼────────────────────
+  1     │    1 │         0.108 │                 0.590 │       0.924 │                5.88
+  2     │    1 │         0.117 │                 0.528 │       0.580 │                3.76
+  4     │    2 │         0.054 │                 0.303 │       0.357 │                2.42
+  8     │    4 │         0.030 │                 0.207 │       0.219 │                1.52
+  16    │    8 │         0.025 │                 0.156 │       0.134 │               0.922
+  32    │   16 │         0.023 │                 0.134 │       0.088 │               0.569
+  64    │   32 │         0.024 │                 0.146 │       0.073 │               0.373
+  96    │   48 │         0.029 │                 0.173 │       0.067 │               0.344
+  192   │   96 │         0.040 │                 0.202 │       0.070 │               0.369
+
+Speedup over one core
+  cores │ transform!, h │ transform!, h ψ₄ … ψ₀ │ gradient, h │ gradient, h ψ₄ … ψ₀
+  ──────┼───────────────┼───────────────────────┼─────────────┼────────────────────
+  1     │           1.0 │                   1.0 │         1.0 │                 1.0
+  2     │           0.9 │                   1.1 │         1.6 │                 1.6
+  4     │           2.0 │                   2.0 │         2.6 │                 2.4
+  8     │           3.6 │                   2.9 │         4.2 │                 3.9
+  16    │           4.3 │                   3.8 │         6.9 │                 6.4
+  32    │           4.7 │                   4.4 │          11 │                  10
+  64    │           4.4 │                   4.0 │          13 │                  16
+  96    │           3.7 │                   3.4 │          14 │                  17
+  192   │           2.7 │                   2.9 │          13 │                  16

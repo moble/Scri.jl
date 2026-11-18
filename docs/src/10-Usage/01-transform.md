@@ -122,6 +122,21 @@ strain alone, and 78% at ``ℓ_\mathrm{max} = 16`` for the strain and
 all five Weyl components.  For those, the BLAS library and its number
 of threads matter far more than Julia's.
 
+On a cluster, the number of BLAS threads deserves some thought.  By
+default, Julia gives BLAS half the cores that the process may use.
+The matrix products in a transformation are fairly small, so beyond a
+modest number of threads (8 or so) they cannot be divided usefully,
+and each further thread costs more in coordination than it saves.  On
+a job with many cores, it therefore helps to cap BLAS's threads, with
+`BLAS.set_num_threads` or the environment variable
+`OPENBLAS_NUM_THREADS`; on a job with only a few cores, it helps a
+little to let BLAS use all of them.  `objective_and_gradient!` is less
+dominated by BLAS, and scales further with Julia's threads, but the
+same advice applies.  Even so, neither kind of thread scales anywhere
+near perfectly, so when many waveforms are to be processed, the most
+efficient use of a cluster is usually one core for each waveform, in
+many jobs running at once.
+
 ## Signatures
 
 The fully explicit form takes the transformation as separate parts —

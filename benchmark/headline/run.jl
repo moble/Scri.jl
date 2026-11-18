@@ -615,4 +615,8 @@ function main(args)
     end
     return nothing
 end
-main(ARGS)
+
+# Run only as a script, so that `benchmark/cluster/run.jl` can include the functions above.
+if abspath(PROGRAM_FILE) == @__FILE__
+    main(ARGS)
+end
