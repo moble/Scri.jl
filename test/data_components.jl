@@ -154,7 +154,9 @@ end
         C = typeof(dc).parameters[1]
         @test Scri.spin_weights(dc) === map(c -> Scri.spin_weight(Val(c)), C)
         # The tuple is computed by the compiler, so the method body is just the constant.
+        # Coverage runs (as on CI) insert `code_coverage_effect` markers, which we ignore.
         code = only(code_typed(Scri.spin_weights, (typeof(dc),)))[1].code
+        code = filter(x -> !Meta.isexpr(x, :code_coverage_effect), code)
         @test code == Any[Core.ReturnNode(Scri.spin_weights(dc))]
     end
 end
