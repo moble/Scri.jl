@@ -85,6 +85,8 @@ Examples:
     DataComponents(:φ₀, :φ₁, :φ₂)                          # Faraday components
     DataComponents(:φ₀, :φ₁, :φ₂; ℐ=-1)                    # Faraday components on ℐ⁻
     DataComponents(:ψ₄, :h; conventions=Conventions(:MB))  # data in the MB convention
+    DataComponents(:σ, :ψ₄; conventions=Conventions(:scri2024abd))  # scri's Bondi data
+    DataComponents(:h, :ψ₄; conventions=Conventions(:scri2024wm))  # scri's WaveformModes
 """
 struct DataComponents{C,I,V<:Conventions}
     conventions::V

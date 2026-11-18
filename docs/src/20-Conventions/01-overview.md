@@ -86,6 +86,7 @@ within their own conventions, but might differ over the value of the
 | [``c_σ``](@ref "Tensor Components")    | Shear definition (``ℐ⁺``) | ``1``   | ``ℂ^×``       |
 | [``c_λ``](@ref "Tensor Components")    | Shear definition (``ℐ⁻``) | ``1``   | ``ℂ^×``       |
 | [``c_h``](@ref "Tensor Components")    | Complex strain definition | ``1``   | ``ℂ^×``       |
+| [``c_N``](@ref "Tensor Components")    | News definition           | ``1``   | ``ℂ^×``       |
 | [``c_φ``](@ref "Tensor Components")    | Faraday definition        | ``1``   | ``ℂ^×``       |
 | [``c_ð``](@ref the-operator-eth)       | ``ð`` definition          | ``1``   | ``ℂ^×``       |
 | [``c_α``](@ref "BMS Transformations")  | Supertranslation sign     | ``1``   | ``\{-1,+1\}`` |

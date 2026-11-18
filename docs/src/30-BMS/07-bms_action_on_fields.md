@@ -259,8 +259,9 @@ h' = κ^{-1}\left(h - ð̄^2 α\right),
 since ``α`` is real and ``\overline{ð^2 α} = ð̄^2 α``.
 
 The **news** is the retarded-time derivative ``N = ∂_u h`` (spin
-weight ``-2``).  A ``u``-derivative induces one more factor of ``1/κ``
-(because ``u' = κ u``), so the news has conformal weight ``κ^{-2}``.
+weight ``-2``), up to a convention factor ``c_N`` discussed below.  A
+``u``-derivative induces one more factor of ``1/κ`` (because ``u' = κ
+u``), so the news has conformal weight ``κ^{-2}``.
 Crucially, the supertranslation shift ``ð̄^2 α`` is *independent* of
 ``u``, so the derivative annihilates it and the news transforms
 **homogeneously**:
@@ -440,8 +441,9 @@ is why the code keeps the shear and strain shifts as separate
 arguments.  The news, being ``∂_u`` of the strain with its
 inhomogeneous part annihilated, transforms homogeneously and so is
 convention-independent up to its ``κ^{-2}`` weight; its *conversion*
-factor is exactly the strain's, ``F_N = F_h``, because ``N = ∂_u h``
-and the coordinates (including ``u``) are shared by every convention.
+factor is the strain's times ``c_N``, ``F_N = c_N F_h``, because ``N =
+c_N ∂_u h`` and the coordinates (including ``u``) are shared by every
+convention.
 
 **The eth coefficient ``c_ð``.**  The geometric ``b`` and the
 geometric shift ``ð^2 α/2\sqrt2 = m̃^A m̃^B D_A D_B α/\sqrt2`` do not

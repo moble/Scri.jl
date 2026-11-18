@@ -363,7 +363,15 @@ end
     rng = Random.Xoshiro(3)
     # The radiative-shear slot differs by null infinity: σ on ℐ⁺, λ on ℐ⁻.
     X = Conventions(;
-        c_s=-1, c_ψ=-1, c_σ=-1, c_λ=-1, c_φ=-1, c_l=(-√2), c_m=cis(π / 4), c_h=2
+        c_s=-1,
+        c_ψ=-1,
+        c_σ=-1,
+        c_λ=-1,
+        c_φ=-1,
+        c_l=(-√2),
+        c_m=cis(π / 4),
+        c_h=2,
+        c_N=(1 - 2im),
     )
     Y = Conventions(:MB)
 

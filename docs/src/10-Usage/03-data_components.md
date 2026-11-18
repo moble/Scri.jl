@@ -90,6 +90,21 @@ convention in another.
 DataComponents(:ψ₄, :h; conventions=Conventions(:MB))
 ```
 
+Data taken from the Python package `scri` in its versions 2024.x have
+two presets of their own, chosen by the kind of object the data come
+from: `:scri2024abd` for an `AsymptoticBondiData`, which differs from
+`:MB` in the strain and the News, and `:scri2024wm` for a
+`WaveformModes`, which differs from the SXS conventions only in the
+shear:
+
+```julia
+DataComponents(:σ, :ψ₄, :h; conventions=Conventions(:scri2024abd))
+DataComponents(:h, :ψ₄; conventions=Conventions(:scri2024wm))
+```
+
+The presets are described in detail on the [conventions
+page](@ref conventions-type).
+
 Because the components, the `ℐ` sign, and the conventions are all
 encoded at the type level, the per-component spin weights, array
 indices, and convention factors are compile-time constants — the branch

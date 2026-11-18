@@ -192,6 +192,25 @@ we have
 {}^{[A]}h = c_s c_h\, h.
 ```
 
+The News is the time derivative of the strain, up to one more
+convention factor:
+
+```math
+N = c_N\, ∂_u h,
+```
+
+where ``u`` is the retarded time on ``ℐ⁺``, and the advanced time
+``v`` takes its place on ``ℐ⁻``.  The SXS convention has ``c_N = 1``.
+But [Boyle_2015](@citet) defines the news as ``n = -∂_u σ̄`` (Eq. 22 of
+the arXiv version), which is minus the time derivative of its strain
+``h = σ̄``, so ``c_N = -1`` there.  The time coordinates are the same
+in every convention, so the News converts as the strain does, times
+``c_N``:
+
+```math
+{}^{[A]}N = c_N c_s c_h\, N.
+```
+
 Near *future* null infinity, the radiative parts of these fields are
 related.  In the default convention, the relation takes the familiar
 form

@@ -1,5 +1,5 @@
 """
-    Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
+    Conventions{S,R,L,M,Ψ,Σ,Λ,H,N,Φ,Ð,A}
 
 Sign and scale factors setting conventions.  The parameters are
 
@@ -11,6 +11,7 @@ Sign and scale factors setting conventions.  The parameters are
   - `c_σ` for the shear
   - `c_λ` for the "incoming" shear
   - `c_h` for the complex strain
+  - `c_N` for the News, ``N = c_N ∂ᵤh``
   - `c_φ` for the Faraday components
   - `c_ð` for the ð operator
   - `c_α` for the supertranslation law
@@ -30,18 +31,18 @@ keyword constructor warns whenever `c_ð ≠ 1`, though the named presets do not
 warning about it.
 
 The types of all of these factors are retained as the type parameters of `Conventions`
-listed above — `S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A` — to allow for type stability and compile-time
+listed above — `S,R,L,M,Ψ,Σ,Λ,H,N,Φ,Ð,A` — to allow for type stability and compile-time
 optimization.  Most common conventions — or those that only use ±1 — will compile away
 entirely.
 
-Construct with keywords (validated), or by name from the table of published conventions:
+Construct with keywords (validated), or by name from the named presets:
 
     Conventions()                   # SXS defaults
     Conventions(; c_s=-1, c_l=-√2)  # a custom convention
     Conventions(:MB)                # a named preset; see the symbol-argument docstring
 
 """
-struct Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
+struct Conventions{S,R,L,M,Ψ,Σ,Λ,H,N,Φ,Ð,A}
     c_s::S
     c_R::R
     c_l::L
@@ -50,15 +51,16 @@ struct Conventions{S,R,L,M,Ψ,Σ,Λ,H,Φ,Ð,A}
     c_σ::Σ
     c_λ::Λ
     c_h::H
+    c_N::N
     c_φ::Φ
     c_ð::Ð
     c_α::A
 end
 
 function Conventions(;
-    c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_φ=1, c_ð=1, c_α=1
+    c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_N=1, c_φ=1, c_ð=1, c_α=1
 )
-    c = validated_conventions(; c_s, c_R, c_l, c_m, c_ψ, c_σ, c_λ, c_h, c_φ, c_ð, c_α)
+    c = validated_conventions(; c_s, c_R, c_l, c_m, c_ψ, c_σ, c_λ, c_h, c_N, c_φ, c_ð, c_α)
     if c_ð ≠ 1
         @warn(
             "c_ð = $c_ð has no effect: Scri always computes ð with the Newman–Penrose " *
@@ -79,7 +81,7 @@ the `Conventions` they define.  This is the keyword constructor without its warn
 silently.
 """
 function validated_conventions(;
-    c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_φ=1, c_ð=1, c_α=1
+    c_s=1, c_R=1, c_l=1, c_m=1, c_ψ=1, c_σ=1, c_λ=1, c_h=1, c_N=1, c_φ=1, c_ð=1, c_α=1
 )
     for (name, c) ∈ (("c_s", c_s), ("c_R", c_R), ("c_α", c_α))
         if c ≠ 1 && c ≠ -1
@@ -108,6 +110,7 @@ function validated_conventions(;
         ("c_σ", c_σ),
         ("c_λ", c_λ),
         ("c_h", c_h),
+        ("c_N", c_N),
         ("c_φ", c_φ),
         ("c_ð", c_ð),
         ("c_α", c_α),
@@ -129,6 +132,7 @@ function validated_conventions(;
         signify(c_σ),
         signify(c_λ),
         signify(c_h),
+        signify(c_N),
         signify(c_φ),
         signify(c_ð),
         signify(c_α),
@@ -138,22 +142,65 @@ end
 @doc raw"""
     Conventions(name::Symbol; T=Float64)
 
-Named presets.  Available: `:SXS` (the package default) and `:MB` (Moreschi/Boyle).  `T`
-sets the type of every value other than ``±1``, such as `√2` and `1/2`; the signs are stored
-exactly regardless.  Values that are not clear from the references are left at the default.
+Named presets.  Available: `:SXS` (the package default), `:MB` (Moreschi/Boyle), and two for
+the Python package `scri` in its versions 2024.x: `:scri2024abd` for its
+`AsymptoticBondiData` and `:scri2024wm` for its `WaveformModes`.  `T` sets the type of every
+value other than ``±1``, such as `√2` and `1/2`; the signs are stored exactly regardless.
+Values that are not clear from the references are left at the default.
 
-The `:MB` preset is the convention of [Boyle_2015](@citet) and of the Python package `scri`,
-which converts SXS data into it.  Its tetrad has ``c_s = -1``, ``c_l = \sqrt{2}``, and
-``c_m = -1``, as explained in a footnote of the "Tetrad" page.  The remaining values are fixed
-by three statements: the conversion factors of `scri`, ``ψₙ^{[MB]} = (-\sqrt{2})^{2-n}
-ψₙ^{[SXS]}`` and ``σ^{[MB]} = \tfrac{1}{2} h̄^{[SXS]}``, and the relation ``h = σ̄`` of
-that paper.  They give ``c_ψ = -1``, ``c_σ = -1``, and ``c_h = -1/2``; the last is negative
-because the metric perturbation itself changes sign with the signature.  The paper's ``ð``
-is that of Geroch, Held, and Penrose, which is ``1/\sqrt{2}`` times the one used here, so
-``c_ð = 1/\sqrt{2}``.  These values make the Schwarzschild ``ψ₂`` equal to ``-M``, as in
-the SXS convention and in the mass aspect of `scri`.  The convention table of
-[Iozzo_2021](@citet) lists the opposite sign for the Weyl components and the strain of this
-convention, which is inconsistent with that mass aspect.
+The `:MB` preset follows [Boyle_2015](@citet) exactly.  (Equation numbers here refer to the
+arXiv version of that paper.)  Its tetrad has ``c_s = -1``, ``c_l = \sqrt{2}``, and ``c_m =
+-1``, as explained in a footnote of the "Tetrad" page; the mixing of the Weyl components in
+Eqs. (17) confirms the product ``c_l c_m = -\sqrt{2}``.  The paper's ``ð`` is that of
+Geroch, Held, and Penrose, which is ``1/\sqrt{2}`` times the one used here, so ``c_ð =
+1/\sqrt{2}``.  Its time law ``u' = k(u - α)`` (Eq. 8a) has the same sign as ours, so ``c_α =
+1``.  The paper defines the shear in spinor form as ``σ = o^A o^B ῑ^{B'} ∇_{BB'} o_A`` (Eq.
+18).  In the paper's ``+---`` signature, where ``g_{ab} = ε_{AB} ε̄_{A'B'}`` and ``l_a = o_A
+ō_{A'}``, this is ``σ = m^a m^b ∇_b l_a``, which gives ``c_σ = -1`` and ``σ^{[MB]} =
+\tfrac{1}{2} h̄^{[SXS]}``, as the supertranslation law of Eq. (19) confirms.  The relation
+``ψ₄ = -∂²ᵤσ̄`` (Eq. 20) then fixes the product ``c_s c_ψ c_R = 1``, which gives ``ψₙ^{[MB]}
+= (-\sqrt{2})^{2-n} ψₙ^{[SXS]}`` and makes the Schwarzschild ``ψ₂`` equal to ``-M``, as in
+the SXS convention.  The paper fixes no sign of the Riemann tensor, and the split of that
+product between ``c_ψ`` and ``c_R`` affects no result; we record ``c_ψ = -1`` and ``c_R =
+1``.  The paper defines the strain by ``h = σ̄``, so ``c_h = -1/2``, negative because the
+metric perturbation itself changes sign with the signature.  The paper calls this the
+commonly used strain, but with its own normalization of ``σ`` it is *half* the usual ``h₊ -
+i h_×``; we follow the equation.  Finally, the paper's news is ``n = -∂ᵤσ̄`` (Eq. 22), which
+is minus the time derivative of this strain, so ``c_N = -1``.  The paper defines no fields
+on ``ℐ⁻`` and no Faraday components, so ``c_λ`` and ``c_φ`` keep their defaults.  The
+convention table of [Iozzo_2021](@citet) lists the opposite sign for the Weyl components and
+the strain of this convention.  That contradicts the paper, in which Eqs. (18) and (20) fix
+the sign of the Weyl components, so that the Schwarzschild ``ψ₂`` is ``-M``, and ``h = σ̄``
+fixes the sign of the strain.  It would also contradict the mass aspect ``-\mathrm{Re}\,
+ψ₂`` of `scri`.
+
+The Python package `scri` stores ``σ`` and the ``ψₙ`` of its `AsymptoticBondiData` in this
+convention, but its strain and News are not this convention's; see `:scri2024abd` below.
+
+The presets `:scri2024abd` and `:scri2024wm` describe the data of the Python package `scri`
+in its versions 2024.x (checked against version 2024.0.12); a later version of `scri` is
+expected to change these conventions.  `scri` uses two conventions side by side, one for
+each kind of object, so a preset is chosen by the kind of object the data come from.
+
+The `:scri2024abd` preset describes an `AsymptoticBondiData`.  It differs from `:MB` only in
+the strain and the News.  The `sigma` and `psi0` through `psi4` of an `AsymptoticBondiData`
+are exactly those of `:MB`, but its strain `h` is ``2σ̄``, which is the usual ``h₊ - i
+h_×``, so ``c_h = -1``.  `scri` has no News of its own for an `AsymptoticBondiData`; where
+it needs one internally, it forms ``2∂ᵤσ̄`` with data type `hdot`, the time derivative of
+its strain, so ``c_N = 1``.  In this convention, then, ``ψ₄ = -\tfrac{1}{2} ḧ``.  The preset
+applies to the fields of an `AsymptoticBondiData`, to its strain `h`, and to the time
+derivative of that strain.
+
+The `:scri2024wm` preset describes a `WaveformModes`.  Its strain, News (data types `h`,
+`hdot`, and `news`), and Weyl components — including any read from an SXS file — are in the
+SXS convention, and `scri` transforms them with the SXS laws.  The exception is the data
+type `sigma`, which holds the shear of an `AsymptoticBondiData`, ``σ = \tfrac{1}{2} h̄ =
+\sqrt{2} σ^{[SXS]}``, and which `scri` shifts by ``ð_{\mathrm{GHP}}^2 α = \tfrac{1}{2} ð^2
+α``.  With the SXS tetrad, both are reproduced by ``c_σ = \sqrt{2}``, so this preset is the
+SXS convention with that one change.
+
+Data that `scri` reads with `create_abd_from_h5(..., convention="Moreschi-Boyle")` are taken
+to have the strain ``σ̄``, and so are in the `:MB` convention.
 """
 function Conventions(name::Symbol; T::Type{<:Real}=Float64)
     s2 = sqrt(T(2))
@@ -162,16 +209,35 @@ function Conventions(name::Symbol; T::Type{<:Real}=Float64)
     elseif name === :MB
         # The tetrad comes from the footnote on the "Tetrad" conventions page: lowering the
         # cotetrad of Boyle (2015) identifies c_s = -1 and c_l = +√2 exactly, with the sign
-        # of the m leg (relative to the polar spin frame) booked as c_m = -1.  The field
-        # definitions reproduce the SXS → MB factors of scri's `create_abd_from_h5`, which
-        # are ψₙ: (2, -√2, 1, -1/√2, 1/2) for n = 0, …, 4 and σ = conj(h)/2, together with
-        # the paper's h = σ̄.  The paper's ð is the GHP ð = ð_NP/√2.
+        # of the m leg (relative to the polar spin frame) booked as c_m = -1.  The fields
+        # follow the paper's own definitions (arXiv numbering): u' = k(u - α) (Eq. 8a), so
+        # c_α = 1; σ = o o ῑ ∇ o (Eq. 18), which is m m ∇l in the paper's +--- metric, so
+        # c_σ = -1; ψ₄ = -∂²ᵤσ̄ (Eq. 20), which fixes only c_s c_ψ c_R = 1; h = σ̄ (before
+        # Eq. 21), so c_h = -1/2; and n = -∂ᵤσ̄ (Eq. 22), so c_N = -1.  The paper's ð is
+        # the GHP ð = ð_NP/√2.
         validated_conventions(;
-            c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_ð=inv(s2)
+            c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=(-inv(T(2))), c_N=-1, c_ð=inv(s2)
         )
+    elseif name === :scri2024abd
+        # scri 2024.0.12: the AsymptoticBondiData σ and ψₙ are those of Boyle (2015), but
+        # `AsymptoticBondiData.h` is 2σ̄ (asymptotic_bondi_data/__init__.py), which is the
+        # SXS strain, so c_h = -1; and the News is formed internally as 2σ̄̇ with data type
+        # `hdot` (map_to_superrest_frame.py), which is +∂ᵤh, so c_N = 1.
+        validated_conventions(;
+            c_s=-1, c_l=s2, c_m=-1, c_ψ=-1, c_σ=-1, c_h=-1, c_N=1, c_ð=inv(s2)
+        )
+    elseif name === :scri2024wm
+        # scri 2024.0.12: a WaveformModes holds SXS data, which WaveformGrid transforms with
+        # the SXS laws (waveform_grid.py), except that the data type `sigma` holds the
+        # AsymptoticBondiData shear h̄/2 = √2 σ^SXS, shifted by ð_GHP²α.  With the SXS
+        # tetrad, F_σ = c_σ, so c_σ = √2 reproduces both.
+        validated_conventions(; c_σ=s2)
     else
         throw(
-            ArgumentError("Unknown convention preset :$name; expected either :SXS or :MB")
+            ArgumentError(
+                "Unknown convention preset :$name; expected :SXS, :MB, :scri2024abd, " *
+                "or :scri2024wm",
+            ),
         )
     end
 end
@@ -301,11 +367,12 @@ strain_factor(c::Conventions) = c.c_s * c.c_h
 """
     news_factor(c::Conventions)
 
-Factor taking the News from the SXS convention to convention `c`.  The News is ``∂ᵤ`` of the
-strain, and the coordinates (including ``u``) are shared by all conventions — only tetrad
-and field *definitions* differ — so the News inherits the strain factor exactly.
+Factor taking the News from the SXS convention to convention `c`: ``N^{[c]} = c_N c_s c_h
+N^{[SXS]}``.  The defining relation is ``N = c_N ∂ᵤh``, with the advanced time in place of
+``u`` on ``ℐ⁻``.  The coordinates (including ``u``) are shared by all conventions — only
+tetrad and field *definitions* differ — so the News takes the strain factor times ``c_N``.
 """
-news_factor(c::Conventions) = strain_factor(c)
+news_factor(c::Conventions) = c.c_N * strain_factor(c)
 
 """
     conversion_factor(c::Conventions, ::Val{S})

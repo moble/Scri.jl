@@ -467,7 +467,7 @@ end
     comps⁺ = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :σ, :h, :News, :φ₀, :φ₁, :φ₂)
     comps⁻ = (:ψ₀, :ψ₁, :ψ₂, :ψ₃, :ψ₄, :λ, :h, :News, :φ₀, :φ₁, :φ₂)
     # A maximally generic convention: every sign flipped, dyad rescaled and rotated in
-    # phase, strain rescaled.  (c_ð is set too, but must not affect any transform.)
+    # phase, strain and News rescaled.  (c_ð is set too, but must not affect any transform.)
     X = @test_logs (:warn, r"c_ð") Scri.Conventions(;
         c_s=-1,
         c_R=-1,
@@ -478,6 +478,7 @@ end
         c_l=(-√2),
         c_m=cis(π / 4),
         c_h=2,
+        c_N=(1 - 2im),
         c_ð=1 / √2,
     )
     v⃗ = QuatVec(0.02, -0.03, 0.05)
@@ -511,6 +512,99 @@ end
 
         @test maximum(abs, dA .- dB) < 1e-12 * maximum(abs, dB)
         @test t′A == t′B
+    end
+end
+
+@testitem "transform!: each preset keeps its own strain, shear, and News relations" tags = [
+    :validation, :integration
+] begin
+    using Quaternionic: QuatVec, Rotor
+    using LinearAlgebra: norm
+    using Random
+
+    # Boyle (2015) defines h = σ̄, n = -∂ᵤσ̄, and ψ₄ = -∂²ᵤσ̄, while scri 2024 has h = 2σ̄,
+    # forms its News as 2∂ᵤσ̄, and stores ψ₄ = -∂²ᵤσ̄ = -ḧ/2 in its AsymptoticBondiData but
+    # the SXS ψ₄ = -ḧ in its WaveformModes.  SXS data converted to each preset must satisfy
+    # that preset's own definitions, which pins its strain, News, and Weyl factors.  A
+    # transformation of those data in that preset must then keep h = kσ̄, which depends on
+    # the strain factor through the shift by ð̄²α; and the same data transformed as if in
+    # another preset with a different strain factor must not.
+    rng = Xoshiro(2024)
+    ℓₘₐₓ, ℓᵢₙ, ℓcmp = 12, 4, 6
+    idx(ℓ, m) = ℓ^2 + ℓ + m + 1
+    t = collect(range(-60.0, 60.0; length=2401))
+    σ = zeros(ComplexF64, (ℓₘₐₓ + 1)^2, length(t))
+    σ̇ = zero(σ)
+    σ̈ = zero(σ)
+    for ℓ ∈ 2:ℓᵢₙ, m ∈ (-ℓ):ℓ
+        c = randn(rng, ComplexF64) / ℓ^2
+        ω = 0.1 + 0.05ℓ + 0.01m
+        g = @. c * exp(-(t / 20)^2) * cis(ω * t)
+        σ[idx(ℓ, m), :] .= g
+        σ̇[idx(ℓ, m), :] .= @. (-t / 200 + im * ω) * g
+        σ̈[idx(ℓ, m), :] .= @. ((-t / 200 + im * ω)^2 - 1 / 200) * g
+    end
+    # The modes of the conjugate of a spin-s function: (f̄)ℓm = (-1)^(s+m) conj(fℓ,-m).
+    function conjmodes(f, s)
+        f̄ = similar(f)
+        for ℓ ∈ 0:ℓₘₐₓ, m ∈ (-ℓ):ℓ
+            f̄[idx(ℓ, m), :] .= (-1)^(s + m) .* conj.(f[idx(ℓ, -m), :])
+        end
+        return f̄
+    end
+    v⃗ = QuatVec(0.011, -0.013, 0.009)
+    R = Rotor(exp(QuatVec(0.05, -0.1, 0.15)))
+    α = zeros(ComplexF64, 9)
+    α[idx(0, 0)] = 3.7 * sqrt(4π)
+    α[idx(1, 0)] = -0.3
+    α[idx(1, -1)] = 0.2 + 0.1im
+    α[idx(1, 1)] = -conj(α[idx(1, -1)])
+    α[idx(2, 0)] = 0.15
+    α[idx(2, 1)] = 0.08 - 0.05im
+    α[idx(2, -1)] = -conj(α[idx(2, 1)])
+    α[idx(2, 2)] = -0.06 + 0.11im
+    α[idx(2, -2)] = conj(α[idx(2, 2)])
+
+    relerr(a, b) = norm(a - b) / norm(b)
+    low = 1:idx(ℓcmp, ℓcmp)
+    # SXS data: σ is the shear, so h = 2√2 σ̄, N = ∂ᵤh, and ψ₄ = -∂²ᵤh.
+    sxs = cat(
+        σ, 2√2 * conjmodes(σ, 2), 2√2 * conjmodes(σ̇, 2), -2√2 * conjmodes(σ̈, 2); dims=3
+    )
+    dc_sxs = Scri.DataComponents(:σ, :h, :News, :ψ₄)
+    # For each preset: the multiple k in h = kσ̄, the sign c_N in N = c_N ∂ᵤh, the factor p
+    # in ψ₄ = p ∂²ᵤh, and another preset whose strain factor differs.
+    for (name, k, c_N, p, other) ∈ (
+        (:MB, 1, -1, -1, :scri2024abd),
+        (:scri2024abd, 2, 1, -1 / 2, :MB),
+        (:scri2024wm, 2, 1, -1, :MB),
+    )
+        data, dc = Scri.represent!(copy(sxs), dc_sxs, Scri.Conventions(name))
+        # The converted shear is a multiple F σ of the SXS shear, so its derivatives are F σ̇
+        # and F σ̈.
+        F = sum(data[:, :, 1] .* conj.(σ)) / sum(abs2, σ)
+        @test data[:, :, 1] ≈ F * σ
+        @test data[:, :, 2] ≈ k * conjmodes(data[:, :, 1], 2)
+        @test data[:, :, 3] ≈ c_N * k * conjmodes(F * σ̇, 2)
+        @test data[:, :, 4] ≈ p * k * conjmodes(F * σ̈, 2)
+
+        out, t′ = transform!(copy(data), t, v⃗, R, α, dc)
+        σ′, h′, N′ = out[:, :, 1], out[:, :, 2], out[:, :, 3]
+        mid = findall(x -> abs(x) < 40, t′)
+        # The relation holds to about 1e-10, limited by the band limit.
+        @test relerr(h′[low, mid], k * conjmodes(σ′, 2)[low, mid]) < 1e-8
+        # The News transforms homogeneously, so this holds for any c_N; it checks that the
+        # transformed News is still the derivative of the transformed strain.
+        Δt = t′[2] - t′[1]
+        ḣ′ = (h′[:, mid .+ 1] - h′[:, mid .- 1]) / 2Δt
+        @test relerr(N′[low, mid], c_N * ḣ′[low, :]) < 1e-3  # centered differences: 3e-5
+
+        # The same data transformed as if in the other preset get the wrong shift.
+        dc″ = Scri.DataComponents(:σ, :h, :News, :ψ₄; conventions=Scri.Conventions(other))
+        out″, t″ = transform!(copy(data), t, v⃗, R, α, dc″)
+        mid″ = findall(x -> abs(x) < 40, t″)
+        σ″, h″ = out″[:, :, 1], out″[:, :, 2]
+        @test relerr(h″[low, mid″], k * conjmodes(σ″, 2)[low, mid″]) > 0.1
     end
 end
 
