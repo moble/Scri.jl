@@ -51,9 +51,24 @@
         @test_opt target_modules = (Scri,) transform_objective(
             data, t, v⃗, R, αᵢₙ, dc, objective_plan
         )
-        @test_opt target_modules = (Scri,) objective_and_gradient!(
-            similar(θ), θ, data, t, dc, objective_plan
-        )
+        # On Julia 1.12, inference gives up on part of the gradient's call graph and leaves
+        # it unoptimized, which JET reports as "failed to optimize due to recursion."  The
+        # loop in `supertranslation_on_grid` runs under OhMyThreads' serial fallback, which
+        # is a `mapreduce`, and normalizing the dual-number rotor in `aberration` calls
+        # `hypot`, which 1.12 implements with another `mapreduce`.  Inference takes the
+        # second call for unbounded recursion and stops optimizing every frame between the
+        # two.  Julia 1.13 does not do this, and the code runs correctly either way, so on
+        # 1.12 we accept those reports but still reject any runtime dispatch.
+        if VERSION ≥ v"1.13"
+            @test_opt target_modules = (Scri,) objective_and_gradient!(
+                similar(θ), θ, data, t, dc, objective_plan
+            )
+        else
+            result = @report_opt target_modules = (Scri,) objective_and_gradient!(
+                similar(θ), θ, data, t, dc, objective_plan
+            )
+            @test all(r -> r isa JET.OptimizationFailureReport, JET.get_reports(result))
+        end
     end
 
     # Other precisions take the same code paths, with different element types.
