@@ -49,10 +49,32 @@ To submit to `slurm`, run something like
 
     sbatch \
       --ntasks=1 \
-      --cpus-per-task=192 \
-      --mem-per-cpu=2G \
-      -t 36:00:00 \
+      --cpus-per-task=8 \
+      --mem=96G \
+      -t 12:00:00 \
+      --export=ALL,JULIA_HEAP_SIZE_HINT=64G \
       spline_errors.jl BigFloat 35
+
+Only the `BigFloat` case needs a cluster; on a laptop, the `Float64` case takes seconds and
+the `Double64` case at ℓₘₐₓ = 24 about five minutes.  The numbers above come from a run of
+version 1.0 at ℓₘₐₓ = 35, with the default 10,001 time samples, on 8 cores of a 192-core AMD
+EPYC node:
+
+  - *Time.*  The job took 6.6 hours, of which the transformation took 6.45.  Part of that
+    is setup, chiefly the dense QR and LU factorizations of the 1296 × 1296 analysis
+    matrix; the rest is the synthesis and analysis products for each time step.  Twelve
+    hours leaves a comfortable margin.
+  - *Cores.*  For `BigFloat` and `Double64`, the matrix products and solves fall back to
+    Julia's generic, single-threaded code, because BLAS does not support those types; only
+    the interpolation between them is threaded.  The job used about 1.5 cores on average,
+    so more than 8 would sit idle.  A run of version 0.1 on all 192 cores took 9.9 hours.
+  - *Memory.*  The input and output data take about 12 GiB, but the resident memory grew
+    steadily, reaching 46 GiB after 2.8 hours, when monitoring stopped, so the peak was not
+    recorded.  Julia's garbage collector lets the heap grow well beyond the live data, and
+    it takes its heap limit only from the memory limit of its own cgroup, not from the
+    job's, so it does not know about the `--mem` request.  `JULIA_HEAP_SIZE_HINT` tells it
+    directly, so that it collects harder as its heap approaches about 80% of the hint; we
+    have not yet measured how much that lowers the peak.
 
 """
 
