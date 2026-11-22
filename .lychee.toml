@@ -2,13 +2,12 @@ exclude = [
   "@ref",
   "@[Cc]ite.*",
   "^https://github.com/.*/releases/tag/v.*$",
-  "^https://github.com/.*/compare/v.*HEAD$",
   "^https://doi.org/FIXME$",
-  "^https://moble.github.io/Scri.jl/stable$",
+  "^https://moble.github.io/Scri.jl/stable/?$",
+
   "zenodo.org/badge/DOI/FIXME$"
 ]
 
 exclude_path = [
-  "docs/build",
-  "test/conda-env"
+  "docs/build"
 ]

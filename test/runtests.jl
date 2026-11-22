@@ -1,6 +1,5 @@
 #!/usr/bin/env julia
 
-using Pkg
 using TestItemRunner
 using TOML
 
@@ -22,6 +21,9 @@ function _print_help()
         julia --project=test test/runtests.jl --name "Some test name"       # Run specific test by name
         julia --project=test test/runtests.jl --pattern "Some pattern"      # Run test names or files that match pattern
         julia --project=test test/runtests.jl --exclude tag1,tags2          # Exclude tests with any of the tags
+
+    The same flags can be passed through `Pkg.test`:
+        julia --project=. -e 'using Pkg; Pkg.test(; test_args = ["--tags", "fast"])'
     """
     return nothing
 end
@@ -52,10 +54,17 @@ const TAGS_DATA = Dict( # The tags below are a suggestion
     :slow => "Resource-intensive tests requiring significant time or memory",
 
     # Features (What features are being tested?)
-    :type_stability => "JET finds no dynamic dispatch in Scri's own code",
 )
 
-function main()
+"""
+    main(; verbose_default = false)
+
+Parse `ARGS` and run the selected test items.
+
+`verbose_default` is used when neither `--verbose` nor `-v` is passed. It is set for the
+`Pkg.test` entry point, which has always shown the per-test-item breakdown.
+"""
+function main(; verbose_default=false)
     args = parse_arguments()
 
     if args.help
@@ -71,23 +80,13 @@ function main()
     println("Running Test Items")
     println("="^30)
 
+    verbose = args.verbose || verbose_default
     filter_func = _create_filter(args)
-    test_project_toml_path = joinpath(@__DIR__, "Project.toml")
 
-    mktempdir() do envdir
-        cd(envdir) do
-            # Copy test/Project.toml over to temporary folder
-            cp(test_project_toml_path, joinpath(envdir, "Project.toml"))
-            # `pkg> dev` the package
-            Pkg.activate(envdir)
-            Pkg.develop(; path=joinpath(@__DIR__, ".."))
-            # Run the tests
-            if isnothing(filter_func)
-                @run_package_tests verbose = args.verbose
-            else
-                @run_package_tests verbose = args.verbose filter = filter_func
-            end
-        end
+    if isnothing(filter_func)
+        @run_package_tests verbose = verbose
+    else
+        @run_package_tests verbose = verbose filter = filter_func
     end
 
     return nothing
@@ -245,12 +244,12 @@ function _create_filter(args)
 
     # Tags filter
     if !isnothing(args.tags)
-        push!(filters, test_item -> all(tag ∈ test_item.tags for tag ∈ args.tags))
+        push!(filters, test_item -> all(tag in test_item.tags for tag ∈ args.tags))
     end
 
     # Exclude filter
     if !isnothing(args.exclude)
-        push!(filters, test_item -> !(any(tag ∈ test_item.tags for tag ∈ args.exclude)))
+        push!(filters, test_item -> !(any(tag in test_item.tags for tag ∈ args.exclude)))
     end
 
     # Name filter
@@ -276,9 +275,11 @@ function _create_filter(args)
     return test_item -> all(f(test_item) for f ∈ filters)
 end
 
-# Run only if this script is executed directly
 if abspath(PROGRAM_FILE) == @__FILE__
+    # Executed as a program, e.g. `julia --project=test test/runtests.jl --tags fast`
     main()
 else
-    @run_package_tests verbose = true
+    # Included instead of executed, which is what `Pkg.test` does. It forwards its
+    # `test_args` through `ARGS`, so the filters above work from `pkg> test` as well.
+    main(; verbose_default=true)
 end
