@@ -28,5 +28,6 @@ jobs:
           - ubuntu-latest
 
         arch:
-          - x64
+          # "default" means the architecture of the runner executing the job
+          - default
         allow_failure: [false]

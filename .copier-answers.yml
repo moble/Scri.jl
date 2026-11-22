@@ -1,5 +1,7 @@
 # Changes here will be overwritten by Copier
+AddAgentsMd: false
 AddAllcontributors: false
+AddChangelog: false
 AddCitationCFF: false
 AddCodeOfConduct: false
 AddContributionDocs: false
@@ -16,6 +18,7 @@ AddPrecommit: true
 AddPrecommitUpdateCI: true
 AddTagBotCI: true
 AddTestCI: true
+AddVSCodeRecommendations: false
 AddWinToCI: false
 Authors: Michael Boyle <michael.oliver.boyle@gmail.com>
 CheckExplicitImports: true
@@ -37,6 +40,5 @@ StrategyConfirmIncluded: true
 StrategyLevel: 2
 StrategyReviewExcluded: true
 TestingStrategy: testitem_cli
-UseCirrusCI: false
-_commit: v0.18.6
+_commit: py-v0.2.0
 _src_path: https://github.com/JuliaBesties/BestieTemplate.jl
