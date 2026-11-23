@@ -54,6 +54,7 @@ const TAGS_DATA = Dict( # The tags below are a suggestion
     :slow => "Resource-intensive tests requiring significant time or memory",
 
     # Features (What features are being tested?)
+    :type_stability => "JET finds no dynamic dispatch in Scri's own code",
 )
 
 """
@@ -244,12 +245,12 @@ function _create_filter(args)
 
     # Tags filter
     if !isnothing(args.tags)
-        push!(filters, test_item -> all(tag in test_item.tags for tag ∈ args.tags))
+        push!(filters, test_item -> all(tag ∈ test_item.tags for tag ∈ args.tags))
     end
 
     # Exclude filter
     if !isnothing(args.exclude)
-        push!(filters, test_item -> !(any(tag in test_item.tags for tag ∈ args.exclude)))
+        push!(filters, test_item -> !(any(tag ∈ test_item.tags for tag ∈ args.exclude)))
     end
 
     # Name filter
